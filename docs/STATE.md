@@ -1,31 +1,55 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 3 November 2026  
-**Session Context:** Foundation P0-T2 Baseline Committed & Pushed to GitHub; Ready for P0-T3  
+**Session Context:** Foundation P0-T3 Agent Rules Drafted on Branch task/p0-t3-agent-rules  
 
 ---
 
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 0 (Foundation)
-- **Current Task:** P0-T2 (Create documentation baseline) -> Completed & Pushed
-- **Task Status:** Completed, Committed, and Pushed to `origin/main`
-- **Current Git Branch:** `main` (tracking `origin/main`)
+- **Current Task:** P0-T3 (Create AGENTS.md and .agents rules and workflows)
+- **Task Status:** Implemented & Verified; Pending Human Review & Commit by Refat
+- **Current Git Branch:** `task/p0-t3-agent-rules`
 - **Remote:** `https://github.com/BlazeDashX/LNA-Website.git`
 
 ---
 
 ## 2. Completed Tasks
 
+### Task P0-T3: Agent Rules and Workflows
+- **SRS IDs Covered:** NFR-MNT-01
+- **Target Branch:** `task/p0-t3-agent-rules`
+- **Commit Status:** Pending (awaiting Refat review and commit)
+- **Commit Hash:** Pending
+- **Files Created:**
+  - `AGENTS.md` (standing agent rules with human-controlled Git rule R14 from ADR 0007)
+  - `.agents/rules/10-security-payments.md` (Part 7 invariants, 9-step gateway flow, T1-T20 threat table, banned patterns)
+  - `.agents/rules/20-content-json.md` (Part 5 directory tree, Class A/B provenance, repository interfaces)
+  - `.agents/rules/30-ui-accessibility.md` (Part 4 token system, breakpoints, components, WCAG 2.2 AA checklist)
+  - `.agents/rules/40-testing.md` (Part 11 test pyramid, coverage thresholds, definition of done)
+  - `.agents/rules/50-database.md` (forward-only migrations, RLS template, SECURITY DEFINER RPC template, pgTAP)
+  - `.agents/workflows/start-task.md` (context reading sequence, plan format, stop conditions)
+  - `.agents/workflows/finish-task.md` (verification checklist, GIT CHECKPOINT mandatory, no agent commits)
+  - `.agents/workflows/security-review.md` (per-task audit against threats T1 to T20)
+- **Files Modified:**
+  - `docs/traceability.csv` (NFR-MNT-01 marked implemented)
+  - `docs/STATE.md` (updated with P0-T3 status)
+- **Checks Run & Results:**
+  - `node scripts/check-traceability.mjs`: PASSED (all 129 IDs verified 1:1)
+  - File size checks: All rule files range from 1.6 KB to 5.7 KB (strictly within the 24 KB / 24,000 bytes system cap and 12,000 char threshold).
+  - Rule review gate: Per Blueprint Part 8.1, agent rules are treated as drafted pending Refat's review and approval before becoming active.
+
 ### Task P0-T2: Documentation Baseline
 - **SRS IDs Covered:** All (77 FR, 15 NFR, 18 BR, 15 AT, 4 UC)
 - **Target Branch:** `main`
-- **Commit Status:** Pushed to `origin/main`
+- **Commit Status:** Merged & Pushed to `origin/main`
 - **Confirmed Commit Hashes:**
   - `5a669fd`: `chore(repo): initialize git repository with gitignore and source documentation`
   - `778ecad`: `docs(srs): add plain-text copy of LNA-SRS-001 specification`
   - `254f9be`: `docs(arch): add architecture specification, initial ADRs 0001-0008, and dependencies allowlist`
   - `6f3dae7`: `docs(traceability): add requirement traceability matrix and validation script`
   - `7ea6051`: `docs(state): initialize persistent project state tracker`
+  - `dd87afa`: `docs(state): record remote push and verified runtime environment`
 - **Files in Repository:**
   - `.gitignore` (configured to exclude all root PDFs and `*SRS*.pdf` per owner directive)
   - `docs/source/LNA Website Development Blueprint.pdf` (source of truth copy)
@@ -107,7 +131,7 @@
 ---
 
 ## 6. Exact Next Eligible Task
-- **Branch:** `task/p0-t3-agent-rules` (to be created locally from `main`)
-- **Task:** **Task P0-T3: Create `AGENTS.md` and `.agents/` rules and workflows from Blueprint Part 8**
-  - *Note:* Blueprint Part 8.1 notes that agent rules must be reviewed and approved by Refat before taking effect.
+- **Prerequisite:** Human review and merge of `task/p0-t3-agent-rules` pull request into `main`.
+- **Next Task:** **Phase 1 (Scaffold and CI) — Task P1-T1: Scaffold Next.js application with exact pinned versions** (on branch `task/p1-t1-scaffold`).
+  - *Note:* P1-T1 Step 1 produces a resolved package version and peer dependency compatibility table for Refat's review and approval before any package is installed.
 
