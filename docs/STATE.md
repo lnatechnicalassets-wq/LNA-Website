@@ -1,15 +1,16 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 3 November 2026  
-**Session Context:** Bootstrap / P0-T2 Documentation Baseline Completion  
+**Session Context:** Foundation P0-T2 Baseline Committed & Pushed to GitHub; Ready for P0-T3  
 
 ---
 
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 0 (Foundation)
-- **Current Task:** P0-T2 (Create documentation baseline)
-- **Task Status:** Implemented & Locally Verified (Workspace files created; pending Git repository initialization and commit by Refat)
-- **Current Git Branch:** None (Git repository is not yet initialized; working tree is in workspace root)
+- **Current Task:** P0-T2 (Create documentation baseline) -> Completed & Pushed
+- **Task Status:** Completed, Committed, and Pushed to `origin/main`
+- **Current Git Branch:** `main` (tracking `origin/main`)
+- **Remote:** `https://github.com/BlazeDashX/LNA-Website.git`
 
 ---
 
@@ -17,12 +18,17 @@
 
 ### Task P0-T2: Documentation Baseline
 - **SRS IDs Covered:** All (77 FR, 15 NFR, 18 BR, 15 AT, 4 UC)
-- **Target Branch:** `task/p0-t2-docs-baseline` (to be created locally from `main` once initialized per Section 6.2)
-- **Commit Status:** Pending (awaiting Git repository initialization, staging, and commit by Refat)
-- **Commit Hash:** Pending
-- **Files Created:**
+- **Target Branch:** `main`
+- **Commit Status:** Pushed to `origin/main`
+- **Confirmed Commit Hashes:**
+  - `5a669fd`: `chore(repo): initialize git repository with gitignore and source documentation`
+  - `778ecad`: `docs(srs): add plain-text copy of LNA-SRS-001 specification`
+  - `254f9be`: `docs(arch): add architecture specification, initial ADRs 0001-0008, and dependencies allowlist`
+  - `6f3dae7`: `docs(traceability): add requirement traceability matrix and validation script`
+  - `7ea6051`: `docs(state): initialize persistent project state tracker`
+- **Files in Repository:**
+  - `.gitignore` (configured to exclude all root PDFs and `*SRS*.pdf` per owner directive)
   - `docs/source/LNA Website Development Blueprint.pdf` (source of truth copy)
-  - `docs/source/LNA_Website_SRS.pdf` (source of truth copy)
   - `docs/SRS.md` (faithful plain-text transcription of LNA-SRS-001)
   - `docs/architecture.md` (derived system architecture from Blueprint Parts 3, 5, 6, 7)
   - `docs/decisions/0001-core-tech-stack-and-runtime.md`
@@ -38,8 +44,12 @@
   - `scripts/check-traceability.mjs` (Node.js ES module validation script)
   - `scripts/check-traceability.py` (Python validation script)
   - `docs/STATE.md` (this file)
+- **Excluded per Owner Directive:**
+  - `LNA_Website_SRS.pdf` and `docs/source/LNA_Website_SRS.pdf` are preserved locally on disk but permanently excluded from Git tracking and remote upload via `.gitignore`.
 - **Checks Run & Results:**
-  - `python scripts/check-traceability.py`: PASSED (129 IDs extracted from `docs/SRS.md`, 129 rows in `docs/traceability.csv`: 77 FR, 15 NFR, 18 BR, 15 AT, 4 UC; zero duplicates, zero missing, 1:1 exact match).
+  - `node scripts/check-traceability.mjs`: PASSED (129 IDs extracted from `docs/SRS.md`, 129 rows in `docs/traceability.csv`: 77 FR, 15 NFR, 18 BR, 15 AT, 4 UC; zero duplicates, zero missing, 1:1 exact match).
+  - `python scripts/check-traceability.py`: PASSED (identical 1:1 validation result).
+  - Runtime Environment Verification: Node.js `v26.13.0` and pnpm `12.16.1` installed and verified.
   - Inspection of Antigravity custom limits: PASSED (verified 24 KB / 24,000 bytes per-file cap; 20,000-token aggregate rules budget).
 
 ---
@@ -80,32 +90,24 @@
 
 ## 4. Pending Actions Awaiting Human (Refat)
 
-1. **Repository Setup (Task P0-T1):**
-   - Initialize Git repository locally (`git init`).
-   - Create initial commit on `main` branch.
-   - Configure remote repository (`git remote add origin <url>`).
+1. **Repository Settings (P0-T1 completion):**
    - Configure branch protection rules on GitHub for `main` (require PR, require checks, no force push).
    - Configure `CODEOWNERS` requiring Refat's review on `src/server/payments`, `src/server/auth`, `supabase/migrations`, `AGENTS.md`, `.agents/`, and `docs/DEPENDENCIES.md`.
-2. **Review and Commit P0-T2 Baseline:**
-   - Execute recommended Git review, staging, and commit commands from the GIT CHECKPOINT.
-3. **Environment Tooling:**
-   - Node.js and `pnpm` are currently not installed or not in PATH in the environment. Install Node.js (v24 LTS recommended) and `pnpm`.
-4. **Antigravity Execution Protection Settings:**
+2. **Antigravity Execution Protection Settings:**
    - Configure Antigravity `Command Denylist` (or review settings) to require confirmation for mutating Git commands (`git add`, `commit`, `push`, `merge`, `rebase`, `reset`, `tag`, `stash`, `clean`, `checkout`, `branch -d`).
-5. **Decide Gate D1:**
+3. **Decide Gate D1:**
    - Formally approve resolutions for G1 (navigation), G2 (URL slug), and G11 (SRS version label baseline).
 
 ---
 
 ## 5. Known Issues, Deviations, and Unverified Items
 1. **Missing Blueprint Appendices:** The supplied Blueprint PDF (77 pages) references "Appendix A" (requirement mapping) and "Part 13" in earlier sections, but ends at page 77 without these appendices. Per protocol, phase mappings were derived directly from the Blueprint Part 9.4 Task Table and Section 11.3 instead of reconstructing from memory.
-2. **Runtime Tooling Missing:** `node` and `pnpm` are not recognized in the current terminal environment. Validation of `docs/traceability.csv` was verified using Python 3.14 via `scripts/check-traceability.py`. `scripts/check-traceability.mjs` is provided for execution once Node is installed.
-3. **Git State:** Workspace is currently uninitialized (`.git` does not exist). Branch `task/p0-t2-docs-baseline` could not be created locally because `main` does not yet exist.
+2. **SRS PDF Excluded from Git:** Per Refat's explicit directive, `LNA_Website_SRS.pdf` is excluded from Git tracking via `.gitignore` and was not pushed to GitHub. The plain-text specification copy [`docs/SRS.md`](docs/SRS.md) remains fully tracked and tested.
 
 ---
 
 ## 6. Exact Next Eligible Task
-- **Prerequisite:** Refat completes repository setup (P0-T1) and commits P0-T2 baseline on `main`.
-- **Next Task:** **Task P0-T3: Create `AGENTS.md` and `.agents/` rules and workflows from Blueprint Part 8** (on branch `task/p0-t3-agent-rules`).
-  - *Note:* Blueprint notes that agent rules must be reviewed and approved by Refat before taking effect.
+- **Branch:** `task/p0-t3-agent-rules` (to be created locally from `main`)
+- **Task:** **Task P0-T3: Create `AGENTS.md` and `.agents/` rules and workflows from Blueprint Part 8**
+  - *Note:* Blueprint Part 8.1 notes that agent rules must be reviewed and approved by Refat before taking effect.
 
