@@ -9,10 +9,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "echo \"ESLint will be configured in P1-T2\"",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"Vitest will be configured in P1-T2\"",
-    "verify": "pnpm typecheck && pnpm build"
+    "test": "vitest run",
+    "verify": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build"
   },
   "dependencies": {
     "next": "16.4.4",
@@ -21,12 +23,18 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.4",
+    "@testing-library/react": "16.2.0",
     "@types/node": "22.13.10",
     "@types/react": "19.0.10",
     "@types/react-dom": "19.0.4",
+    "eslint": "9.22.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "jsdom": "26.0.0",
     "postcss": "8.5.3",
+    "prettier": "3.5.3",
     "tailwindcss": "4.3.4",
-    "typescript": "5.8.2"
+    "typescript": "5.8.2",
+    "typescript-eslint": "8.26.0",
+    "vitest": "3.0.8"
   }
 }
-

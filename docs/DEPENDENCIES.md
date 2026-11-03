@@ -1,12 +1,12 @@
 # Dependency Allowlist
 
 **Authority:** LNA Website Development Blueprint Part 3.3  
-**Status:** Phase 1 Scaffolding Pinned (P1-T1 installed packages verified; subsequent package versions pre-resolved & approved)  
+**Status:** Phase 1 Tooling Pinned (P1-T1 & P1-T2 installed packages verified; subsequent package versions pre-resolved & approved)  
 **Policy:** Only packages on this allowlist may be installed. Exact versions must be pinned with `save-exact=true`. Upgrades require written approval and dedicated pull requests.
 
 ---
 
-## 1. Installed Core Packages (Phase 1: Task P1-T1)
+## 1. Installed Core & Tooling Packages (Phase 1: Task P1-T1 & P1-T2)
 
 | Package | Pinned Version | Purpose | Peer / Runtime Status |
 | :--- | :--- | :--- | :--- |
@@ -20,6 +20,13 @@
 | `@types/node` | `22.13.10` | Node.js type definitions | Node runtime typing |
 | `@types/react` | `19.0.10` | React 19 type definitions | React 19 typing |
 | `@types/react-dom` | `19.0.4` | React DOM 19 type definitions | React DOM typing |
+| `eslint` | `9.22.0` | Static code analysis engine | Flat config enabled |
+| `typescript-eslint` | `8.26.0` | TypeScript AST parser and tooling for ESLint 9 | Approved via Rule R3 review |
+| `eslint-plugin-jsx-a11y` | `6.10.2` | JSX accessibility rule linter | WCAG 2.2 AA linting |
+| `prettier` | `3.5.3` | Code syntax and style formatter | Formatter verified |
+| `vitest` | `3.0.8` | Fast unit and integration test runner | Unit tests passing |
+| `@testing-library/react` | `16.2.0` | React DOM testing utilities | Component tests passing |
+| `jsdom` | `26.0.0` | DOM environment simulation for Vitest | Test environment |
 
 ---
 
@@ -55,15 +62,9 @@ These packages and versions were verified against the npm registry and approved 
 - `pdf-lib`: `1.17.1` — Pure JS PDF generation for receipts and certificates.
 - `@pdf-lib/fontkit`: `1.1.1` — Font embedding engine for PDF rendering.
 
-### Development, Linting & Testing (P1-T2+)
-- `vitest`: `3.0.8` — Fast unit and integration test runner.
-- `@testing-library/react`: `16.2.0` — React component test utilities.
-- `jsdom`: `26.0.0` — DOM simulation environment for Vitest.
+### Future Testing & CI (P1-T4, P1-T5+)
 - `@playwright/test`: `1.51.0` — Cross-browser end-to-end test runner.
 - `@axe-core/playwright`: `4.10.1` — Automated WCAG 2.2 AA accessibility auditor.
-- `eslint`: `9.22.0` — Static code analysis.
-- `eslint-plugin-jsx-a11y`: `6.10.2` — JSX accessibility rule linter.
-- `prettier`: `3.5.3` — Code formatting.
 - `supabase`: `2.15.8` — Local Supabase stack, CLI, and migrations runner.
 - `@lhci/cli`: `0.14.0` — Lighthouse CI performance auditor.
 

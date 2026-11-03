@@ -90,7 +90,7 @@ NFR-SEO-01,NFR,"Search engine optimization via semantic markup, XML sitemaps, Op
 NFR-CMP-01,NFR,"Cross-browser compatibility across Chrome, Safari, Edge, Firefox, and mobile widths from 320px.",M,P4,app/(public),AT-15,not_started,
 NFR-BCK-01,NFR,Automated daily database backups with documented restore verification drills.,M,P13,supabase/backup,AT-15,not_started,
 NFR-OBS-01,NFR,"Comprehensive error logging, health checks, and alerting with strict credential and PII scrubbing.",M,P5,"api/health, sentry",AT-15,not_started,
-NFR-MNT-01,NFR,"Maintainable engineering using strict migrations, pinned packages, automated tests, and runbooks.",M,P1,"root config, CI",AT-15,implemented,AGENTS.md;.agents/rules/;.agents/workflows/;package.json;pnpm-lock.yaml;.npmrc;.nvmrc
+NFR-MNT-01,NFR,"Maintainable engineering using strict migrations, pinned packages, automated tests, and runbooks.",M,P1,"root config, CI",AT-15,implemented,AGENTS.md;.agents/rules/;.agents/workflows/;package.json;pnpm-lock.yaml;.npmrc;.nvmrc;eslint.config.mjs;.prettierrc.json;vitest.config.mts
 BR-01,BR,Learner account activation occurs only after successful payment validation or free confirmation.,,P9,server/enrollment,AT-01,not_started,
 BR-02,BR,SSLCOMMERZ browser redirects cannot confirm payments without independent server validation.,,P10,server/payments,AT-01,not_started,
 BR-03,BR,"An applicant may enroll in multiple courses, but cannot hold duplicate confirmed seats in one batch.",,P9,server/enrollment,AT-01,not_started,
