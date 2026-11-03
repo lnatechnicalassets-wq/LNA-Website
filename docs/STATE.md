@@ -19,8 +19,8 @@
 ### Task P1-T1: Scaffold Next.js with Exact Pinned Versions
 - **SRS IDs Covered:** NFR-MNT-01
 - **Target Branch:** `task/p1-t1-scaffold`
-- **Commit Status:** Pending (awaiting Refat review and commit)
-- **Commit Hash:** Pending
+- **Commit Status:** Committed & Pushed to `origin/task/p1-t1-scaffold` (awaiting PR merge to `main`)
+- **Commit Hash:** `ac27c115ada14f6ae8fc322edc82cb447f0a369f`
 - **Deliverables Created / Modified:**
   - `.nvmrc` (pinned Node.js engine `26.13.0`)
   - `.npmrc` (`save-exact=true`)
