@@ -1,62 +1,77 @@
 # Dependency Allowlist
 
 **Authority:** LNA Website Development Blueprint Part 3.3  
-**Status:** Approved Initial Allowlist (No versions resolved yet; awaiting P1-T1 Step 1 review)  
-**Policy:** Only packages on this allowlist may be installed. Exact versions will be pinned with `save-exact=true`. Upgrades require written approval and dedicated pull requests.
+**Status:** Phase 1 Scaffolding Pinned (P1-T1 installed packages verified; subsequent package versions pre-resolved & approved)  
+**Policy:** Only packages on this allowlist may be installed. Exact versions must be pinned with `save-exact=true`. Upgrades require written approval and dedicated pull requests.
 
 ---
 
-## Core Framework & Runtime
-- `next`: Core web framework providing App Router, server components, and edge routing.
-- `react`: Foundational declarative UI library for web components.
-- `react-dom`: DOM renderer for React applications.
-- `typescript`: Static type checker enforcing strict schema-to-code safety.
-- `tailwindcss`: Utility-first CSS framework for design token styling.
-- `@tailwindcss/postcss`: PostCSS plugin for Tailwind CSS 4 integration.
+## 1. Installed Core Packages (Phase 1: Task P1-T1)
 
-## Data & Authentication
-- `@supabase/supabase-js`: Supabase client library for querying database and calling RPC functions.
-- `@supabase/ssr`: Official Supabase utilities for managing authentication cookies across Next.js App Router surfaces.
-- `zod`: TypeScript-first schema declaration and data validation library for JSON content, form submissions, and API routes.
+| Package | Pinned Version | Purpose | Peer / Runtime Status |
+| :--- | :--- | :--- | :--- |
+| `next` | `16.4.4` | App Router, Turbopack, SSR, Edge runtime | Node.js >=20.9.0 (Running on 26.13.0) |
+| `react` | `19.3.1` | Core UI library | Peer dependency of Next.js 16 |
+| `react-dom` | `19.3.1` | React DOM renderer | Peer dependency of Next.js 16 |
+| `tailwindcss` | `4.3.4` | CSS-first styling framework | Compatible with Next.js 16 |
+| `@tailwindcss/postcss` | `4.3.4` | PostCSS plugin for Tailwind CSS 4 | PostCSS 8 integration |
+| `postcss` | `8.5.3` | PostCSS core runner | Required by `@tailwindcss/postcss` |
+| `typescript` | `5.8.2` | Strict TypeScript compiler | Typecheck passed |
+| `@types/node` | `22.13.10` | Node.js type definitions | Node runtime typing |
+| `@types/react` | `19.0.10` | React 19 type definitions | React 19 typing |
+| `@types/react-dom` | `19.0.4` | React DOM 19 type definitions | React DOM typing |
 
-## User Interface & Accessibility
-- `@radix-ui/react-dialog`: Accessible modal dialog and sheet primitive.
-- `@radix-ui/react-dropdown-menu`: Accessible dropdown menu primitive for navigation and actions.
-- `@radix-ui/react-tabs`: Accessible tab container primitive for course status filtering.
-- `@radix-ui/react-accordion`: Accessible collapsible accordion primitive for FAQs and curriculum modules.
-- `@radix-ui/react-select`: Accessible select and dropdown picker primitive for forms.
-- `@radix-ui/react-checkbox`: Accessible checkbox primitive for policy consent.
-- `embla-carousel-react`: Lightweight, accessible carousel hook for hero slides and testimonials.
-- `lucide-react`: SVG icon library for consistent visual indicators.
-- `clsx`: Utility for constructing conditional className strings.
-- `tailwind-merge`: Utility for safely merging Tailwind CSS classes without style conflicts.
+---
 
-## Internationalization
-- `next-intl`: Localization library providing static path prefixing (`/bn`) and translation messages for system labels.
+## 2. Approved Pre-Resolved Packages (Subsequent Tasks)
 
-## External Services & Utilities
-- `resend`: Official SDK for delivering transactional emails (receipts, passes, verification codes).
-- `@upstash/redis`: Serverless HTTP-based Redis client for distributed state management.
-- `@upstash/ratelimit`: Edge-compatible rate limiter for sensitive authentication and payment endpoints.
-- `@sentry/nextjs`: Application error monitoring and performance tracking SDK with PII scrubbing.
-- `pdf-lib`: Pure JavaScript library for reading and generating PDF receipts and certificates.
-- `@pdf-lib/fontkit`: Advanced font engine for embedding custom fonts within PDF generation.
+These packages and versions were verified against the npm registry and approved by the owner during P1-T1 Step 1. They will be installed strictly as their respective tasks are executed.
 
-## Development, Testing & Quality Assurance
-- `vitest`: Fast unit and integration test runner for business logic and server actions.
-- `@testing-library/react`: DOM testing utilities for rendering and asserting React components.
-- `jsdom`: Browser environment simulation for Vitest unit tests.
-- `@playwright/test`: Cross-browser end-to-end test framework across mobile and desktop viewports.
-- `@axe-core/playwright`: Automated WCAG 2.2 accessibility testing engine integrated with Playwright.
-- `eslint`: Static code analysis tool enforcing linting and code quality standards.
-- `eslint-plugin-jsx-a11y`: Static accessibility rules linter for JSX elements.
-- `prettier`: Opinionated code formatter enforcing consistent syntax style.
-- `supabase`: Local development CLI for database migrations, local Postgres stack, and type generation.
-- `@lhci/cli`: Lighthouse CI command line tool for enforcing Core Web Vitals performance budgets.
+### Data & Authentication (Phase 1 / Phase 2+)
+- `@supabase/supabase-js`: `2.49.1` — Supabase client for database operations and RPC functions.
+- `@supabase/ssr`: `0.5.2` — Server-side auth and cookie management for Next.js App Router.
+- `zod`: `3.24.2` — Runtime schema declaration and validation.
 
-## External Binaries & CI Tools
+### UI Primitives & Accessibility (Phase 2+)
+- `@radix-ui/react-dialog`: `1.1.6` — Accessible modal dialog and sheet primitive.
+- `@radix-ui/react-dropdown-menu`: `2.1.6` — Accessible dropdown menu primitive.
+- `@radix-ui/react-tabs`: `1.1.3` — Accessible tab container primitive.
+- `@radix-ui/react-accordion`: `1.2.3` — Accessible collapsible accordion primitive.
+- `@radix-ui/react-select`: `2.1.6` — Accessible select dropdown primitive.
+- `@radix-ui/react-checkbox`: `1.1.4` — Accessible checkbox primitive.
+- `embla-carousel-react`: `8.5.2` — Touch/swipe carousel hook for hero and reviews.
+- `lucide-react`: `0.477.0` — Consistent SVG icon system.
+- `clsx`: `2.1.1` — Utility for conditional class names.
+- `tailwind-merge`: `3.0.2` — Conflict-free utility class merging.
+
+### Internationalization (Phase 3+)
+- `next-intl`: `3.26.5` — Route localization (`/bn`) and translation messages.
+
+### External Services & Utilities (Phase 5+)
+- `resend`: `4.1.2` — Transactional email delivery.
+- `@upstash/redis`: `1.34.4` — Distributed Redis client over HTTP.
+- `@upstash/ratelimit`: `2.0.5` — Edge rate limiter for security endpoints.
+- `@sentry/nextjs`: `9.5.0` — Application error and performance monitoring with PII scrubbing.
+- `pdf-lib`: `1.17.1` — Pure JS PDF generation for receipts and certificates.
+- `@pdf-lib/fontkit`: `1.1.1` — Font embedding engine for PDF rendering.
+
+### Development, Linting & Testing (P1-T2+)
+- `vitest`: `3.0.8` — Fast unit and integration test runner.
+- `@testing-library/react`: `16.2.0` — React component test utilities.
+- `jsdom`: `26.0.0` — DOM simulation environment for Vitest.
+- `@playwright/test`: `1.51.0` — Cross-browser end-to-end test runner.
+- `@axe-core/playwright`: `4.10.1` — Automated WCAG 2.2 AA accessibility auditor.
+- `eslint`: `9.22.0` — Static code analysis.
+- `eslint-plugin-jsx-a11y`: `6.10.2` — JSX accessibility rule linter.
+- `prettier`: `3.5.3` — Code formatting.
+- `supabase`: `2.15.8` — Local Supabase stack, CLI, and migrations runner.
+- `@lhci/cli`: `0.14.0` — Lighthouse CI performance auditor.
+
+---
+
+## 3. External Binaries & CI Tools
+
 - `gitleaks`: Automated secret scanner detecting exposed credentials in commits and bundles.
-- `k6`: Load and stress testing tool for validating 500-reader and concurrent transaction thresholds.
-- `OWASP ZAP baseline`: Automated dynamic application security testing (DAST) scanner for vulnerability detection.
-- `OSV scanner`: Open Source Vulnerability scanner checking dependencies against known CVE databases.
-
+- `k6`: Load and stress testing tool for 500-reader and concurrent transaction thresholds.
+- `OWASP ZAP baseline`: Automated dynamic application security testing (DAST) scanner.
+- `OSV scanner`: Dependency CVE vulnerability auditor.
