@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.env
+.env*.local
+dist/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Exclude root PDFs
+/*.pdf
+
+# Exclude SRS PDF everywhere per owner directive
+*SRS*.pdf
+*LNA_Website_SRS.pdf
