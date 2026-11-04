@@ -1,51 +1,59 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 4 November 2026  
-**Session Context:** Phase 2 Task P2-T3 (Public Layout Shell: SiteHeader, SiteFooter, MobileNav, SkipLink, PublicShell)  
+**Session Context:** Phase 3 Task P3-T1 (Content Architecture: Zod Schemas, JSON Repositories, Money Utilities, and Content Validation)  
 
 ---
 
 ## 1. Current Phase and Task
-- **Current Phase:** Phase 2 (Design System & Foundational UI)
-- **Current Task:** P2-T3 (Public Layout Shell: SiteHeader, SiteFooter, MobileNav, SkipLink, PublicShell)
+- **Current Phase:** Phase 3 (Content Architecture & Repositories)
+- **Current Task:** P3-T1 (Zod Schemas, JSON Content Repository Abstraction, Integer Poisha Engine, Seed Catalog & Content Validation)
 - **Task Status:** Implemented & Verified; Pending Human Review, Commit & Merge by Refat
-- **Current Git Branch:** `task/p2-t3-layout-shell`
-- **Base Commit:** `de0b604` (`main`)
+- **Current Git Branch:** `task/p3-t1-content-schemas`
+- **Base Commit:** `dcc02e1` (`main`, containing merged `task/p2-t3-layout-shell` via PR #7)
 - **Remote:** `https://github.com/BlazeDashX/LNA-Website.git`
 
 ---
 
 ## 2. Completed Tasks
 
+### Task P3-T1: Content Architecture, Repositories, Integer Poisha Engine & Content Validation
+- **SRS IDs Covered:** FR-PUB-005, NFR-MNT-01, NFR-SEC-02, BR-05
+- **Target Branch:** `task/p3-t1-content-schemas`
+- **Commit Status:** Pending (awaiting Refat review and commit)
+- **Deliverables Created / Modified:**
+  - `src/lib/money.ts`: Pure integer poisha monetary mathematics and BDT formatting (`formatPoishaToBDT`, `poishaToTakaString`, `takaStringToPoisha`, `calculateDiscountedPoisha`) strictly compliant with Rule R5 (zero floats, zero `Number()`, zero `.toFixed()`).
+  - `src/lib/money.test.ts`: Vitest test suite (4 tests) verifying financial formatting, bigint/integer conversions, decimal string parsing, and boundary error guards.
+  - `src/lib/content/provenance.ts`: `ProvenanceSchema` enforcing Rule R15 and metadata verification for Provenance Class A and Class B records.
+  - `src/lib/content/courses.ts`: `CourseSchema` and `CourseModuleSchema` enforcing offline-only delivery mode (`deliveryMode: "offline"`, Module 1 invariant).
+  - `src/lib/content/batches.ts`: `BatchSchema` enforcing 30-minute seat hold durations (`seatHoldDurationMinutes: 30`, Module 2 / BR-05 invariant), integer poisha pricing, and venue details.
+  - `src/lib/content/home.ts`: `HeroSlideSchema`, `HomeSectionsSchema`, and `ImpactFigureSchema` for homepage editorial content.
+  - `src/lib/content/repository.ts`: Repository interfaces (`ICourseRepository`, `IBatchRepository`, `IHomeRepository`, `ISiteRepository`) and `JsonContentRepository` implementation supporting future Supabase swap without modifying presentation components (Rule R4).
+  - `src/lib/content/index.ts`: Centralized barrel export for all content types, schemas, and repository accessors (`getCourseRepository()`, `getBatchRepository()`, `getHomeRepository()`).
+  - `content/catalog/courses.json`: 3 complete offline executive courses (`executive-leadership`, `corporate-finance`, `digital-transformation`) with Provenance Class B metadata.
+  - `content/catalog/batches.json`: 3 dated offline batches with integer poisha fees (`3500000`, `2800000`, `2500000`), venues, and 30-min holds.
+  - `content/home/hero-slides.json`: 3 hero slides with CTA links and Provenance Class B.
+  - `content/home/sections.json`: Homepage section order and visibility toggle state (SRS 4.1).
+  - `content/home/impact-figures.json`: 4 verified statistics (`500+`, `100%`, `15+`, `98%`) satisfying FR-PUB-005.
+  - `scripts/validate-content.mjs`: Standalone content validation CLI verifying all 8 content JSON files against Zod schemas, checking referential integrity between batches and courses, and scanning for credentials.
+  - `package.json`: Added `"content:validate"` script and integrated into `pnpm verify`.
+  - `src/lib/content/repository.test.ts`: Vitest test suite (10 tests) validating course, batch, and homepage content repository methods.
+  - `docs/traceability.csv`: Updated `FR-PUB-005` to `implemented` with test evidence.
+- **Verification Evidence:**
+  - `pnpm tokens:check`: PASSED (`node scripts/generate-tokens.mjs --check`, exit code 0).
+  - `pnpm content:validate`: PASSED (`node scripts/validate-content.mjs`, exit code 0; all 8 content JSON files validated, referential integrity verified).
+  - `pnpm typecheck`: PASSED (`tsc --noEmit`, exit code 0).
+  - `pnpm lint`: PASSED (`eslint .`, exit code 0).
+  - `pnpm format:check`: PASSED (`prettier --check .`, exit code 0).
+  - `pnpm test`: PASSED (`vitest run`, 17 test files, 66 passed).
+  - `pnpm build`: PASSED (`next build`, Turbopack production build succeeded; static & dynamic routes compiled cleanly).
+  - `node scripts/check-traceability.mjs`: PASSED (129/129 exact 1:1 match).
+
 ### Task P2-T3: Public Layout Shell (SiteHeader, SiteFooter, MobileNav, SkipLink, PublicShell)
 - **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
 - **Target Branch:** `task/p2-t3-layout-shell`
-- **Commit Status:** Pending (awaiting Refat review and commit)
-- **Deliverables Created / Modified:**
-  - `content/site/navigation.json`: Centralized configuration for header navigation links, courses CTA, multi-column footer sections, and legal notices with Provenance Class B.
-  - `content/site/organization.json`: Centralized repository configuration for academy address, telephone, email, domain, and operational business hours.
-  - `src/lib/content/navigation.ts`: Type-safe repository module with Zod validation enforcing Rule R4.
-  - `src/lib/content/organization.ts`: Type-safe organization details repository with Zod validation.
-  - `src/lib/content/index.ts`: Updated barrel export for navigation and organization content repositories.
-  - `src/components/public/skip-link.tsx`: Accessible landmark bypass link (`<a href="#main-content">`) complying with WCAG 2.2 AA (2.4.1 Bypass Blocks).
-  - `src/components/public/mobile-nav.tsx`: Accessible responsive drawer powered by Radix UI Dialog primitives with full screen-reader title/description, focus trapping, Escape key closing, and 44px+ touch targets (WCAG 2.5.8).
-  - `src/components/public/site-header.tsx`: Sticky corporate website header featuring demo branding banner, demo logo lockup, desktop navigation items, courses CTA button, and mobile hamburger trigger.
-  - `src/components/public/site-footer.tsx`: Semantic corporate footer (`<footer role="contentinfo">`) displaying academy address, contact details, multi-column dynamic navigation links, copyright, and demo notice.
-  - `src/components/public/public-shell.tsx`: Unified layout shell integrating `SkipLink`, `SiteHeader`, `<main id="main-content">`, and `SiteFooter`.
-  - `src/components/public/index.ts`: Barrel export for all public layout components.
-  - `src/app/layout.tsx`: Configured root layout to wrap application pages with `<PublicShell>{children}</PublicShell>`.
-  - `src/app/page.tsx`: Cleaned up to render the design system showcase inside `PublicShell` without duplicate headers, footers, or landmarks.
-  - Tests: `navigation.test.ts`, `skip-link.test.tsx`, `site-header.test.tsx`, `site-footer.test.tsx`, `mobile-nav.test.tsx`, and `public-shell.test.tsx` (52 total passing tests across 15 test suites).
-  - `docs/traceability.csv`: Updated `NFR-A11Y-01` evidence to include public layout components.
-  - `docs/STATE.md`: This file.
-- **Verification Evidence:**
-  - `pnpm tokens:check`: PASSED (`node scripts/generate-tokens.mjs --check`, exit code 0; tokens in sync).
-  - `pnpm typecheck`: PASSED (`tsc --noEmit`, exit code 0; strict typechecking compliant).
-  - `pnpm lint`: PASSED (`eslint .`, exit code 0; zero errors, zero warnings).
-  - `pnpm format:check`: PASSED (`prettier --check .`, exit code 0; all matched files use Prettier style).
-  - `pnpm test`: PASSED (`vitest run`, 15 test files, 52 passed).
-  - `pnpm build`: PASSED (`next build`, exit code 0; static & dynamic routes compiled cleanly in Turbopack).
-  - `node scripts/check-traceability.mjs`: PASSED (129/129 exact 1:1 match).
+- **Commit Status:** Merged into `main` via PR #7 (`dcc02e1`)
+- **Key Commit Hashes:** `751f93f`, `dcc02e1`
 
 ### Task P2-T2: Base Accessible UI Primitives (Button, Badge, Card, Input, Dialog)
 - **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
@@ -109,13 +117,13 @@
 
 ## 4. Pending Actions Awaiting Human (Refat)
 
-1. **Review and Commit `task/p2-t3-layout-shell`:**
+1. **Review and Commit `task/p3-t1-content-schemas`:**
    - Review modified and created files.
-   - Stage, commit, push, and open PR for `task/p2-t3-layout-shell`.
+   - Stage, commit, push, and open PR for `task/p3-t1-content-schemas`.
    - Merge PR into `main`.
 
 ---
 
 ## 5. Exact Next Eligible Task
-- **Prerequisite:** Human review and merge of `task/p2-t3-layout-shell` pull request into `main`.
-- **Next Task:** **Phase 4 (Public Website & Course Presentation) — Task P4-T1: Public Homepage Hero, Course Catalog & Search Interface** (on branch `task/p4-t1-homepage`).
+- **Prerequisite:** Human review and merge of `task/p3-t1-content-schemas` pull request into `main`.
+- **Next Task:** **Phase 4 (Public Website & Course Presentation) — Task P4-T1: Public Homepage Hero, Impact Figures, and Course Catalog Search Interface** (on branch `task/p4-t1-homepage`).

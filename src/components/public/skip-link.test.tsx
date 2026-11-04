@@ -18,4 +18,3 @@ describe("SkipLink Component (WCAG 2.2 AA 2.4.1 Bypass Blocks)", () => {
     expect(link.getAttribute("href")).toBe("#custom-target");
   });
 });
-

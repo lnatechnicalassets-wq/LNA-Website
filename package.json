@@ -16,7 +16,8 @@
     "test": "vitest run",
     "tokens": "node scripts/generate-tokens.mjs",
     "tokens:check": "node scripts/generate-tokens.mjs --check",
-    "verify": "pnpm tokens:check && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build"
+    "content:validate": "node scripts/validate-content.mjs",
+    "verify": "pnpm tokens:check && pnpm content:validate && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.1.6",

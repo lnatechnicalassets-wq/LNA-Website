@@ -1,0 +1,71 @@
+[
+  {
+    "id": "batch-el-2026-01",
+    "courseId": "executive-leadership",
+    "batchNumber": 1,
+    "name": "Cohort 01 — Executive Leadership & Strategic Governance",
+    "startDate": "2026-11-20",
+    "endDate": "2027-01-15",
+    "scheduleDescription": "Every Friday & Saturday, 10:00 AM – 4:00 PM (8 Weeks)",
+    "capacity": 25,
+    "enrolledCount": 14,
+    "seatHoldDurationMinutes": 30,
+    "feePoisha": 3500000,
+    "discountFeePoisha": 3000000,
+    "status": "open_for_enrollment",
+    "venue": "LNA Executive Hall A, Dhanmondi, Dhaka",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo batch seed (Gate B0 deferred until official schedule release)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "batch-cf-2026-01",
+    "courseId": "corporate-finance",
+    "batchNumber": 1,
+    "name": "Cohort 01 — Corporate Finance & Capital Structuring",
+    "startDate": "2026-12-04",
+    "endDate": "2027-01-22",
+    "scheduleDescription": "Every Friday, 9:00 AM – 5:00 PM (6 Weeks)",
+    "capacity": 20,
+    "enrolledCount": 8,
+    "seatHoldDurationMinutes": 30,
+    "feePoisha": 2800000,
+    "status": "open_for_enrollment",
+    "venue": "LNA Seminar Room 2, Dhanmondi, Dhaka",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo batch seed (Gate B0 deferred until official schedule release)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "batch-dt-2026-01",
+    "courseId": "digital-transformation",
+    "batchNumber": 1,
+    "name": "Cohort 01 — Digital Transformation & Enterprise AI",
+    "startDate": "2026-12-18",
+    "endDate": "2027-01-29",
+    "scheduleDescription": "Every Saturday, 10:00 AM – 5:00 PM (6 Weeks)",
+    "capacity": 30,
+    "enrolledCount": 0,
+    "seatHoldDurationMinutes": 30,
+    "feePoisha": 2500000,
+    "discountFeePoisha": 2200000,
+    "status": "upcoming",
+    "venue": "LNA Innovation Lab, Dhanmondi, Dhaka",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo batch seed (Gate B0 deferred until official schedule release)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]
+

@@ -1,0 +1,59 @@
+[
+  {
+    "id": "impact-alumni",
+    "metric": "500+",
+    "label": "Corporate Leaders Trained",
+    "description": "Executive alumni spanning banking, RMG, telecom, and technology sectors across Bangladesh.",
+    "order": 1,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo impact figure placeholder (Gate B0 deferred until official statistics audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "impact-courses",
+    "metric": "100%",
+    "label": "In-Person Executive Delivery",
+    "description": "Exclusively offline immersive boardroom learning with peer networking in Dhanmondi, Dhaka.",
+    "order": 2,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo impact figure placeholder (Gate B0 deferred until official statistics audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "impact-faculty",
+    "metric": "15+",
+    "label": "Industry Veteran Faculty",
+    "description": "Masterclasses led by active managing directors, CFOs, and regulatory governance specialists.",
+    "order": 3,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo impact figure placeholder (Gate B0 deferred until official statistics audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "impact-satisfaction",
+    "metric": "98%",
+    "label": "Leadership Net Promoter Score",
+    "description": "Consistently rated exceptional by corporate sponsor organizations and executive cohorts.",
+    "order": 4,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo impact figure placeholder (Gate B0 deferred until official statistics audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]
+

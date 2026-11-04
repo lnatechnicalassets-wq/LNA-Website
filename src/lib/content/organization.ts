@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { ProvenanceSchema } from "./brand";
+import { ProvenanceSchema } from "./provenance";
 
 export const OrganizationSchema = z.object({
   name: z.string().min(1),
@@ -44,4 +44,3 @@ export function getOrganizationConfig(): Organization {
   cachedOrg = validated;
   return validated;
 }
-
