@@ -56,4 +56,3 @@ describe("Button Primitive (WCAG 2.2 AA)", () => {
     expect(handleClick).not.toHaveBeenCalled();
   });
 });
-

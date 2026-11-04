@@ -1,0 +1,22 @@
+{
+  "name": "Lead Nation Academy",
+  "shortName": "LNA",
+  "domain": "lnabd.org",
+  "email": "info@lnabd.org",
+  "phone": "+880 1700-000000",
+  "address": {
+    "street": "Dhanmondi, Road 27",
+    "city": "Dhaka",
+    "postalCode": "1209",
+    "country": "Bangladesh"
+  },
+  "businessHours": "Saturday – Thursday: 9:00 AM – 6:00 PM (GMT+6)",
+  "provenance": {
+    "class": "B",
+    "verified": false,
+    "source": "Demo organization contact details (Gate B0 deferred until pre-launch)",
+    "verifiedBy": null,
+    "verifiedOn": null
+  }
+}
+

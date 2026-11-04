@@ -1,0 +1,69 @@
+{
+  "provenance": {
+    "class": "B",
+    "verified": false,
+    "source": "Demo navigation configuration (Gate B0 deferred until pre-launch)",
+    "verifiedBy": null,
+    "verifiedOn": null
+  },
+  "header": {
+    "navItems": [
+      {
+        "label": "Courses",
+        "href": "/courses",
+        "description": "Explore executive and professional offline training programs"
+      },
+      {
+        "label": "About",
+        "href": "/about",
+        "description": "Learn about Lead Nation Academy's mission, governance, and faculty"
+      },
+      {
+        "label": "Application Status",
+        "href": "/status",
+        "description": "Track your offline batch enrollment and payment status"
+      },
+      {
+        "label": "Contact",
+        "href": "/contact",
+        "description": "Get in touch with academy campus administration"
+      }
+    ],
+    "cta": {
+      "label": "Browse Courses",
+      "href": "/courses"
+    }
+  },
+  "footer": {
+    "columns": [
+      {
+        "title": "Programs & Courses",
+        "links": [
+          { "label": "Executive Leadership", "href": "/courses" },
+          { "label": "Batch Schedules & Venues", "href": "/courses#schedules" },
+          { "label": "Fee Structure & Enrollment", "href": "/courses#fees" }
+        ]
+      },
+      {
+        "title": "Learner Services",
+        "links": [
+          { "label": "Check Application Status", "href": "/status" },
+          { "label": "bKash Payment Guide", "href": "/payment-guide" },
+          { "label": "Seat Hold & Refund Policy", "href": "/refund-policy" }
+        ]
+      },
+      {
+        "title": "Governance & Policies",
+        "links": [
+          { "label": "About Lead Nation Academy", "href": "/about" },
+          { "label": "Terms & Conditions", "href": "/terms" },
+          { "label": "Privacy Policy", "href": "/privacy" },
+          { "label": "Staff Administration", "href": "/admin/login" }
+        ]
+      }
+    ],
+    "bottomNote": "Lead Nation Academy (lnabd.org). Professional & Executive Offline Training.",
+    "demoNotice": "Demo branding configuration. Official verified credentials and brand assets to be configured prior to production cutover (Gate B0)."
+  }
+}
+

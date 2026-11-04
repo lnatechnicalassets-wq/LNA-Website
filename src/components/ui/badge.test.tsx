@@ -32,4 +32,3 @@ describe("Badge Primitive (SRS 11.1 Color + Text Pairs)", () => {
     expect(dot?.className).toContain("rounded-full");
   });
 });
-
