@@ -161,6 +161,7 @@ const ImpactFigureSchema = z.object({
   label: z.string().min(2),
   description: z.string().min(5),
   order: z.number().int().nonnegative(),
+  isPlaceholder: z.boolean().optional(),
   provenance: ProvenanceSchema,
 });
 

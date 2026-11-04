@@ -28,4 +28,3 @@ export const CourseSchema = z.object({
 
 export type CourseModule = z.infer<typeof CourseModuleSchema>;
 export type Course = z.infer<typeof CourseSchema>;
-

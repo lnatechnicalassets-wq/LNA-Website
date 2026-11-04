@@ -34,6 +34,7 @@ export const ImpactFigureSchema = z.object({
   label: z.string().min(2),
   description: z.string().min(5),
   order: z.number().int().nonnegative(),
+  isPlaceholder: z.boolean().default(false),
   provenance: ProvenanceSchema,
 });
 
@@ -41,4 +42,3 @@ export type HeroSlide = z.infer<typeof HeroSlideSchema>;
 export type HomeSectionItem = z.infer<typeof HomeSectionItemSchema>;
 export type HomeSections = z.infer<typeof HomeSectionsSchema>;
 export type ImpactFigure = z.infer<typeof ImpactFigureSchema>;
-
