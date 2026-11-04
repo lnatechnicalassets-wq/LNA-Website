@@ -1,6 +1,7 @@
 import React from "react";
 import { getBrandConfig } from "@/lib/content";
 import { DemoLogo } from "@/components/ui/demo-logo";
+import { PrimitivesPreview } from "@/components/ui/primitives-preview";
 
 export default function HomePage() {
   const brand = getBrandConfig();
@@ -281,6 +282,9 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Section 5: Base Accessible UI Primitives */}
+        <PrimitivesPreview />
 
         {/* Footer */}
         <footer className="text-center text-xs text-text-muted pt-6 border-t border-border-subtle space-y-1">

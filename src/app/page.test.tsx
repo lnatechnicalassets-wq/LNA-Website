@@ -38,5 +38,6 @@ describe("HomePage - Phase 2 Design System Showcase", () => {
     expect(screen.getByText(/2\. Semantic Status Indicators/i)).toBeDefined();
     expect(screen.getByText(/3\. Typography Scale & Surface Elevation/i)).toBeDefined();
     expect(screen.getByText(/4\. Responsive Breakpoint Adaptation/i)).toBeDefined();
+    expect(screen.getByText(/5\. Base Accessible UI Primitives/i)).toBeDefined();
   });
 });

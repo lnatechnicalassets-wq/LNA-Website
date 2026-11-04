@@ -103,4 +103,3 @@ export function getBrandConfig(): BrandConfig {
   cachedBrand = validated;
   return validated;
 }
-
