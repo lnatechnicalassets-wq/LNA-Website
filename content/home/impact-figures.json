@@ -1,10 +1,11 @@
 [
   {
     "id": "impact-alumni",
-    "metric": "500+",
-    "label": "Corporate Leaders Trained",
-    "description": "Executive alumni spanning banking, RMG, telecom, and technology sectors across Bangladesh.",
+    "metric": "500*",
+    "label": "Corporate Leaders (Demo)",
+    "description": "Demo placeholder figure — pending official institutional verification and audit by Lead Nation Academy.",
     "order": 1,
+    "isPlaceholder": true,
     "provenance": {
       "class": "B",
       "verified": false,
@@ -16,9 +17,10 @@
   {
     "id": "impact-courses",
     "metric": "100%",
-    "label": "In-Person Executive Delivery",
-    "description": "Exclusively offline immersive boardroom learning with peer networking in Dhanmondi, Dhaka.",
+    "label": "In-Person Executive Delivery (Demo)",
+    "description": "Demo placeholder figure — exclusively offline immersive learning in Dhanmondi, Dhaka (subject to official audit).",
     "order": 2,
+    "isPlaceholder": true,
     "provenance": {
       "class": "B",
       "verified": false,
@@ -29,10 +31,11 @@
   },
   {
     "id": "impact-faculty",
-    "metric": "15+",
-    "label": "Industry Veteran Faculty",
-    "description": "Masterclasses led by active managing directors, CFOs, and regulatory governance specialists.",
+    "metric": "15*",
+    "label": "Industry Veteran Faculty (Demo)",
+    "description": "Demo placeholder figure — pending official faculty roster verification by Lead Nation Academy.",
     "order": 3,
+    "isPlaceholder": true,
     "provenance": {
       "class": "B",
       "verified": false,
@@ -43,10 +46,11 @@
   },
   {
     "id": "impact-satisfaction",
-    "metric": "98%",
-    "label": "Leadership Net Promoter Score",
-    "description": "Consistently rated exceptional by corporate sponsor organizations and executive cohorts.",
+    "metric": "98%*",
+    "label": "Leadership Satisfaction (Demo)",
+    "description": "Demo placeholder figure — pending verified student outcome and satisfaction surveys.",
     "order": 4,
+    "isPlaceholder": true,
     "provenance": {
       "class": "B",
       "verified": false,
@@ -56,4 +60,3 @@
     }
   }
 ]
-

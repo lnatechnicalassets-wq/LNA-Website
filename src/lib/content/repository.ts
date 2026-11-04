@@ -29,7 +29,7 @@ export interface IBatchRepository {
 export interface IHomeRepository {
   getHeroSlides(): Promise<HeroSlide[]>;
   getSections(): Promise<HomeSectionItem[]>;
-  getImpactFigures(): Promise<ImpactFigure[]>;
+  getImpactFigures(options?: { verifiedOnly?: boolean }): Promise<ImpactFigure[]>;
 }
 
 /**
@@ -138,19 +138,30 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
     return sorted;
   }
 
-  async getImpactFigures(): Promise<ImpactFigure[]> {
-    if (this.cachedImpactFigures) return this.cachedImpactFigures;
+  async getImpactFigures(options?: { verifiedOnly?: boolean }): Promise<ImpactFigure[]> {
+    let figures = this.cachedImpactFigures;
 
-    const file = path.join(this.contentDir, "home", "impact-figures.json");
-    if (!fs.existsSync(file)) return [];
+    if (!figures) {
+      const file = path.join(this.contentDir, "home", "impact-figures.json");
+      if (!fs.existsSync(file)) return [];
 
-    const raw = fs.readFileSync(file, "utf-8");
-    const parsed = JSON.parse(raw);
-    const validated = z.array(ImpactFigureSchema).parse(parsed);
-    const sorted = validated.sort((a, b) => a.order - b.order);
+      const raw = fs.readFileSync(file, "utf-8");
+      const parsed = JSON.parse(raw);
+      const validated = z.array(ImpactFigureSchema).parse(parsed);
+      const sorted = validated.sort((a, b) => a.order - b.order);
 
-    this.cachedImpactFigures = sorted;
-    return sorted;
+      this.cachedImpactFigures = sorted;
+      figures = sorted;
+    }
+
+    // In production or when verifiedOnly is requested, strictly filter out unverified/placeholder figures (Rule R15 & ADR 0004)
+    if (options?.verifiedOnly || process.env.CONTENT_STRICT === "true") {
+      return figures.filter(
+        (fig) => fig.provenance.class === "A" && fig.provenance.verified && !fig.isPlaceholder
+      );
+    }
+
+    return figures;
   }
 }
 

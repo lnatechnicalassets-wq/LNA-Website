@@ -1,51 +1,52 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 4 November 2026  
-**Session Context:** Phase 3 Task P3-T1 (Content Architecture: Zod Schemas, JSON Repositories, Money Utilities, and Content Validation)  
+**Session Context:** Phase 3 Task P3-T1 (Content Architecture: Zod Schemas, JSON Repositories, Monetary Discount Engine, and Content Validation)  
 
 ---
 
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 3 (Content Architecture & Repositories)
-- **Current Task:** P3-T1 (Zod Schemas, JSON Content Repository Abstraction, Integer Poisha Engine, Seed Catalog & Content Validation)
+- **Current Task:** P3-T1 (Zod Schemas, JSON Content Repository Abstraction, Integer Poisha Engine with Round-Half-Up Discounts, Seed Catalog & Content Validation)
 - **Task Status:** Implemented & Verified; Pending Human Review, Commit & Merge by Refat
 - **Current Git Branch:** `task/p3-t1-content-schemas`
 - **Base Commit:** `dcc02e1` (`main`, containing merged `task/p2-t3-layout-shell` via PR #7)
 - **Remote:** `https://github.com/BlazeDashX/LNA-Website.git`
+- **Phase 3 Roadmap Note:** P3-T1 is the final active task in Phase 3 for Release v1.0. Task P3-T2 (Bilingual internationalization / `FR-OTH-007` and `BR-17`) was formally deferred to post-v1 under the Supervisor-Approved Scope Revision Addendum (`docs/SCOPE-REVISION-V1.md`). Completion of P3-T1 concludes Phase 3.
 
 ---
 
 ## 2. Completed Tasks
 
 ### Task P3-T1: Content Architecture, Repositories, Integer Poisha Engine & Content Validation
-- **SRS IDs Covered:** FR-PUB-005, NFR-MNT-01, NFR-SEC-02, BR-05
+- **SRS IDs Covered:** FR-PUB-005 (in_progress - technical architecture complete, institutional data audit pending Gate B0), NFR-MNT-01, NFR-SEC-02, BR-05
 - **Target Branch:** `task/p3-t1-content-schemas`
 - **Commit Status:** Pending (awaiting Refat review and commit)
 - **Deliverables Created / Modified:**
-  - `src/lib/money.ts`: Pure integer poisha monetary mathematics and BDT formatting (`formatPoishaToBDT`, `poishaToTakaString`, `takaStringToPoisha`, `calculateDiscountedPoisha`) strictly compliant with Rule R5 (zero floats, zero `Number()`, zero `.toFixed()`).
-  - `src/lib/money.test.ts`: Vitest test suite (4 tests) verifying financial formatting, bigint/integer conversions, decimal string parsing, and boundary error guards.
+  - `src/lib/money.ts`: Pure integer poisha monetary mathematics and BDT formatting (`formatPoishaToBDT`, `poishaToTakaString`, `takaStringToPoisha`, `percentToBasisPoints`, `calculateDiscountAmountPoisha`, `calculateDiscountedPoisha`) strictly compliant with Rule R5 (zero floats, zero `Number()`, zero `.toFixed()`). Features explicit percentage boundaries `[0, 100]`, non-negative fee guards, standard financial Round Half Up integer division `(base * bps + 5000n) / 10000n`, and boundary clamping `[0n, baseFeePoisha]`.
+  - `src/lib/money.test.ts`: Vitest test suite (9 tests) verifying financial formatting, bigint/integer conversions, decimal string parsing, discount boundaries, round-half-up fractional poisha transitions, and edge cases (0%, 100%, zero fee, negative guards).
   - `src/lib/content/provenance.ts`: `ProvenanceSchema` enforcing Rule R15 and metadata verification for Provenance Class A and Class B records.
   - `src/lib/content/courses.ts`: `CourseSchema` and `CourseModuleSchema` enforcing offline-only delivery mode (`deliveryMode: "offline"`, Module 1 invariant).
   - `src/lib/content/batches.ts`: `BatchSchema` enforcing 30-minute seat hold durations (`seatHoldDurationMinutes: 30`, Module 2 / BR-05 invariant), integer poisha pricing, and venue details.
-  - `src/lib/content/home.ts`: `HeroSlideSchema`, `HomeSectionsSchema`, and `ImpactFigureSchema` for homepage editorial content.
-  - `src/lib/content/repository.ts`: Repository interfaces (`ICourseRepository`, `IBatchRepository`, `IHomeRepository`, `ISiteRepository`) and `JsonContentRepository` implementation supporting future Supabase swap without modifying presentation components (Rule R4).
+  - `src/lib/content/home.ts`: `HeroSlideSchema`, `HomeSectionsSchema`, and `ImpactFigureSchema` (with explicit `isPlaceholder: z.boolean().default(false)`) for homepage editorial content.
+  - `src/lib/content/repository.ts`: Repository interfaces (`ICourseRepository`, `IBatchRepository`, `IHomeRepository`, `ISiteRepository`) and `JsonContentRepository` implementation supporting future Supabase swap without modifying presentation components (Rule R4). Includes strict `verifiedOnly` filtering preventing unverified Class B placeholder figures from leaking to production public views.
   - `src/lib/content/index.ts`: Centralized barrel export for all content types, schemas, and repository accessors (`getCourseRepository()`, `getBatchRepository()`, `getHomeRepository()`).
   - `content/catalog/courses.json`: 3 complete offline executive courses (`executive-leadership`, `corporate-finance`, `digital-transformation`) with Provenance Class B metadata.
   - `content/catalog/batches.json`: 3 dated offline batches with integer poisha fees (`3500000`, `2800000`, `2500000`), venues, and 30-min holds.
   - `content/home/hero-slides.json`: 3 hero slides with CTA links and Provenance Class B.
   - `content/home/sections.json`: Homepage section order and visibility toggle state (SRS 4.1).
-  - `content/home/impact-figures.json`: 4 verified statistics (`500+`, `100%`, `15+`, `98%`) satisfying FR-PUB-005.
+  - `content/home/impact-figures.json`: 4 demo placeholder statistics clearly identified as placeholders (`metric: "500*"`, `isPlaceholder: true`, `label: "... (Demo)"`, `class: "B"`, `verified: false`).
   - `scripts/validate-content.mjs`: Standalone content validation CLI verifying all 8 content JSON files against Zod schemas, checking referential integrity between batches and courses, and scanning for credentials.
   - `package.json`: Added `"content:validate"` script and integrated into `pnpm verify`.
-  - `src/lib/content/repository.test.ts`: Vitest test suite (10 tests) validating course, batch, and homepage content repository methods.
-  - `docs/traceability.csv`: Updated `FR-PUB-005` to `implemented` with test evidence.
+  - `src/lib/content/repository.test.ts`: Vitest test suite (11 tests) validating course, batch, and homepage content repository methods, including placeholder detection and `verifiedOnly` leakage prevention.
+  - `docs/traceability.csv`: Updated `FR-PUB-005` to `in_progress` distinguishing technical implementation from pending institutional content verification.
 - **Verification Evidence:**
   - `pnpm tokens:check`: PASSED (`node scripts/generate-tokens.mjs --check`, exit code 0).
   - `pnpm content:validate`: PASSED (`node scripts/validate-content.mjs`, exit code 0; all 8 content JSON files validated, referential integrity verified).
   - `pnpm typecheck`: PASSED (`tsc --noEmit`, exit code 0).
   - `pnpm lint`: PASSED (`eslint .`, exit code 0).
   - `pnpm format:check`: PASSED (`prettier --check .`, exit code 0).
-  - `pnpm test`: PASSED (`vitest run`, 17 test files, 66 passed).
+  - `pnpm test`: PASSED (`vitest run`, 17 test files, 72 passed).
   - `pnpm build`: PASSED (`next build`, Turbopack production build succeeded; static & dynamic routes compiled cleanly).
   - `node scripts/check-traceability.mjs`: PASSED (129/129 exact 1:1 match).
 
@@ -111,7 +112,7 @@
 | Decision / Gate | Description | Needed Before | Status | Owner |
 | :--- | :--- | :--- | :--- | :--- |
 | **ADR 0009** | Formal approval of Proposed ADR 0009 (Direct bKash Payment Gateway) | Phase 10 (Payments) | Proposed | Refat |
-| **B0** | Brand extraction: official palette, fonts, logos from live site | Pre-Launch | Deferred (Demo branding active) | Refat |
+| **B0** | Brand extraction: official palette, fonts, logos, and verified statistics from live site | Pre-Launch | Deferred (Demo branding & placeholder figures active) | Refat |
 
 ---
 
@@ -126,4 +127,4 @@
 
 ## 5. Exact Next Eligible Task
 - **Prerequisite:** Human review and merge of `task/p3-t1-content-schemas` pull request into `main`.
-- **Next Task:** **Phase 4 (Public Website & Course Presentation) — Task P4-T1: Public Homepage Hero, Impact Figures, and Course Catalog Search Interface** (on branch `task/p4-t1-homepage`).
+- **Next Task:** **Phase 4 (Public Website Core) — Task P4-T1: Public Homepage Hero Slider, Impact Section, and Course Catalog Search Interface** (on branch `task/p4-t1-homepage`).

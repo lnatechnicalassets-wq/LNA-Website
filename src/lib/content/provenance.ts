@@ -20,4 +20,3 @@ export const ProvenanceSchema = z
   );
 
 export type Provenance = z.infer<typeof ProvenanceSchema>;
-

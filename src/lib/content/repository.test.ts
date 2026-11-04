@@ -101,7 +101,7 @@ describe("Content Repository Abstraction (Phase 3)", () => {
       expect(sections.some((s) => s.id === "course-catalog")).toBe(true);
     });
 
-    it("retrieves verified institutional impact figures", async () => {
+    it("retrieves impact figures in development demo mode with placeholder indicators", async () => {
       const repo = getHomeRepository();
       const figures = await repo.getImpactFigures();
 
@@ -110,7 +110,16 @@ describe("Content Repository Abstraction (Phase 3)", () => {
         expect(figure.metric).toBeDefined();
         expect(figure.label).toBeDefined();
         expect(figure.provenance.class).toBe("B");
+        expect(figure.provenance.verified).toBe(false);
+        expect(figure.isPlaceholder).toBe(true);
       }
+    });
+
+    it("prevents unverified placeholder figures from leaking when verifiedOnly is requested", async () => {
+      const repo = getHomeRepository();
+      // When requesting verifiedOnly, unverified Class B placeholder figures must not appear
+      const verifiedFigures = await repo.getImpactFigures({ verifiedOnly: true });
+      expect(verifiedFigures).toEqual([]);
     });
   });
 });

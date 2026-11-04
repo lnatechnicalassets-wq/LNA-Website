@@ -3,7 +3,7 @@ FR-PUB-001,FR,"Primary navigation displaying Home, About, Courses, Contact, and 
 FR-PUB-002,FR,Homepage displaying mandatory sections (Hero, Open Batches, About/Impact, Contact) in approved order.,M,P4,"app/(public), components",AT-15,not_started,MODIFY,
 FR-PUB-003,FR,"Staff administration form to configure hero slides content, scheduling, and publish status.",M,P8,"app/(admin), components",AT-13,not_started,RETAIN,
 FR-PUB-004,FR,"Hero slider accessible controls supporting keyboard, swipe, indicators, and reduced motion.",M,P4,components/public,AT-15,not_started,RETAIN,
-FR-PUB-005,FR,About section restricted to verified institutional impact figures approved by LNA.,M,P3,"content/, lib/content",AT-13,implemented,RETAIN,src/lib/content/repository.test.ts;scripts/validate-content.mjs;content/home/impact-figures.json
+FR-PUB-005,FR,About section restricted to verified institutional impact figures approved by LNA.,M,P3,"content/, lib/content",AT-13,in_progress,RETAIN,"Technical schema & repository isolation implemented in src/lib/content/home.ts and src/lib/content/repository.ts; institutional data verification pending official LNA audit (content/home/impact-figures.json carries Class B unverified placeholders awaiting Gate B0)"
 FR-PUB-006,FR,Learner reviews carousel displaying only approved entries with manual control and no autoplay.,G,P4,components/public,AT-15,deferred,DEFER,
 FR-PUB-007,FR,"Public policy pages for Privacy, Terms, and Refund Policy linked across forms and footer.",M,P4,app/(public),AT-15,not_started,RETAIN,
 FR-CMS-001,FR,"Structured administrative management forms for site content, homepage sections, and courses.",M,P8,"app/(admin), content/schema",AT-13,not_started,MODIFY,
