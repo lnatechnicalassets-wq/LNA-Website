@@ -81,7 +81,7 @@ NFR-PER-02,NFR,"Architecture supporting 100,000 monthly visits and 500 concurren
 NFR-PER-03,NFR,Transaction write throughput tested against peak simultaneous enrollment submissions.,M,P13,"server/payments, server/enrollment",AT-01,not_started,RETAIN,
 NFR-AVL-01,NFR,Public site resilience maintaining content availability during external email or analytics outages.,M,P9,server/email,AT-01,not_started,RETAIN,
 NFR-SEC-01,NFR,"Server-side enforcement of account state, role permissions, and object ownership on all APIs.",M,P7,server/auth,AT-08,not_started,RETAIN,
-NFR-SEC-02,NFR,Environment isolation ensuring service keys and secrets never leak to browsers or bundles.,M,P1,src/env.ts,AT-08,not_started,RETAIN,
+NFR-SEC-02,NFR,Environment isolation ensuring service keys and secrets never leak to browsers or bundles.,M,P1,src/env.ts,AT-08,implemented,RETAIN,src/env.ts;src/env.test.ts;next.config.mjs;.env.example
 NFR-SEC-03,NFR,Automated abuse protection applying distributed rate limiting and Turnstile challenges.,M,P7,server/auth,AT-06,not_started,RETAIN,
 NFR-SEC-04,NFR,"Session security using secure cookies, reasonable expiry, and immediate server-side revocation.",M,P7,server/auth,AT-08,not_started,RETAIN,
 NFR-PRI-01,NFR,Data minimization collecting only necessary fields with explicit separation of consent types.,M,P12,"components, config",AT-14,not_started,RETAIN,
@@ -89,7 +89,7 @@ NFR-A11Y-01,NFR,"Compliance with WCAG 2.2 AA across keyboard access, color contr
 NFR-SEO-01,NFR,"Search engine optimization via semantic markup, XML sitemaps, OpenGraph metadata, and structured data.",M,P4,"app/(public), config",AT-15,not_started,RETAIN,
 NFR-CMP-01,NFR,"Cross-browser compatibility across Chrome, Safari, Edge, Firefox, and mobile widths from 320px.",M,P4,app/(public),AT-15,not_started,RETAIN,
 NFR-BCK-01,NFR,Automated daily database backups with documented restore verification drills.,M,P13,supabase/backup,AT-15,not_started,RETAIN,
-NFR-OBS-01,NFR,"Comprehensive error logging, health checks, and alerting with strict credential and PII scrubbing.",M,P5,"api/health, sentry",AT-15,not_started,RETAIN,
+NFR-OBS-01,NFR,"Comprehensive error logging, health checks, and alerting with strict credential and PII scrubbing.",M,P5,"api/health, sentry",AT-15,implemented,RETAIN,src/app/api/health/route.ts;src/app/api/health/route.test.ts
 NFR-MNT-01,NFR,"Maintainable engineering using strict migrations, pinned packages, automated tests, and runbooks.",M,P1,"root config, CI",AT-15,implemented,RETAIN,AGENTS.md;.agents/rules/;.agents/workflows/;package.json;pnpm-lock.yaml;.npmrc;.nvmrc;eslint.config.mjs;.prettierrc.json;vitest.config.mts
 BR-01,BR,Enrollment record confirmation occurs after successful bKash payment verification or free confirmation.,,P9,server/enrollment,AT-01,not_started,MODIFY,
 BR-02,BR,bKash gateway browser redirects cannot confirm payments without independent server validation.,,P10,server/payments,AT-01,not_started,MODIFY,

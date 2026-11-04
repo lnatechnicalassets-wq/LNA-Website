@@ -1,53 +1,65 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 4 November 2026  
-**Session Context:** Scope Revision & Development Workflow Optimization (Task `task/p0-scope-revision`)  
+**Session Context:** Phase 1 Task P1-T3 (Environment Configuration, Security Headers, Health Endpoint)  
 
 ---
 
 ## 1. Current Phase and Task
-- **Current Phase:** Phase 0 (Governance Baseline) & Phase 1 (Scaffold and CI)
-- **Current Task:** Scope Revision & Governance Alignment (`task/p0-scope-revision`)
-- **Task Status:** Implemented & Verified; Pending Human Review & Commit by Refat
-- **Current Git Branch:** `task/p0-scope-revision`
-- **Base Commit:** `cfc4dfe` (`main`)
+- **Current Phase:** Phase 1 (Scaffold and CI Tooling)
+- **Current Task:** P1-T3 (Environment Configuration, Server-Only Guards, Security Headers, Health Route)
+- **Task Status:** Implemented & Verified; Pending Human Review, Commit & Merge by Refat
+- **Current Git Branch:** `task/p1-t3-env-headers`
+- **Base Commit:** `e52fa70` (`main`)
 - **Remote:** `https://github.com/BlazeDashX/LNA-Website.git`
 
 ---
 
 ## 2. Completed Tasks
 
+### Task P1-T3: Environment Configuration, Server-Only Guards, Security Headers, Health Route
+- **SRS IDs Covered:** NFR-SEC-02, NFR-OBS-01
+- **Target Branch:** `task/p1-t3-env-headers`
+- **Commit Status:** Pending (awaiting Refat review and commit)
+- **Deliverables Created / Modified:**
+  - `src/server/env.ts`: Dedicated server-only environment module guarded by compile-time `import "server-only";` boundary and production Zod refinements preventing dummy credentials.
+  - `src/env.client.ts`: Dedicated client-safe schema restricted strictly to `NEXT_PUBLIC_*` properties, containing zero server secrets.
+  - `src/env.ts`: Unified safe entry point re-exporting client and server variables with proxy routing.
+  - `.env.example`: Complete environment variable template documenting runtime, database, bKash, Resend, Upstash, and Turnstile variables with safe dummy placeholders.
+  - `next.config.mjs`: Configured comprehensive HTTP security headers (CSP with documented trade-offs, HSTS without preload/subdomains to protect ExonHost cPanel migration, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy, X-XSS-Protection: 0).
+  - `src/app/api/health/route.ts`: Dedicated dynamic health endpoint returning status, uptime, timestamp, and environment assertions with zero secret or credential leakage (NFR-OBS-01).
+  - `src/env.test.ts`: Vitest test suite (11 tests) verifying client vs server schema parsing, secret length validation, compile-time/runtime guards, and production dummy prevention.
+  - `src/app/api/health/route.test.ts`: Vitest test suite (3 tests) verifying HTTP 200 telemetry, no-store cache headers, and complete absence of secrets in response payload.
+  - `vitest.config.mts`: Configured alias for `server-only` resolution in test environment.
+  - `.prettierrc.json`: Configured `"endOfLine": "auto"` to prevent Windows line-ending churn.
+  - `package.json` & `pnpm-lock.yaml`: Installed approved `zod: 3.24.2` and `server-only: 0.0.1` dependencies.
+  - `docs/DEPENDENCIES.md`: Recorded `zod: 3.24.2` and `server-only: 0.0.1` as installed packages.
+  - `docs/traceability.csv`: Updated NFR-SEC-02 and NFR-OBS-01 status to `implemented` with test and code evidence.
+  - `docs/STATE.md`: This file.
+- **Verification Evidence:**
+  - `pnpm typecheck`: PASSED (`tsc --noEmit`, exit code 0; strict typechecking compliant).
+  - `pnpm lint`: PASSED (`eslint .`, exit code 0; zero errors, zero warnings).
+  - `pnpm format:check`: PASSED (`prettier --check .`, exit code 0; all matched files use Prettier style).
+  - `pnpm test`: PASSED (`vitest run`, 3 test files, 15 passed).
+  - `pnpm build`: PASSED (`next build`, exit code 0; optimized production build succeeded).
+  - `node scripts/check-traceability.mjs`: PASSED (129/129 exact 1:1 match).
+
 ### Task P0-Scope-Revision: Seven-Module Scope Alignment & Efficiency Protocol
 - **SRS IDs Covered:** NFR-MNT-01
 - **Target Branch:** `task/p0-scope-revision`
-- **Commit Status:** Pending (awaiting Refat review and commit)
-- **Deliverables Created / Modified:**
-  - `docs/SCOPE-REVISION-V1.md`: Formal Scope Addendum establishing the 7 supervisor-approved modules and classifying all 129 requirements into 67 RETAIN, 24 MODIFY, and 38 DEFER.
-  - `docs/decisions/0009-direct-bkash-payment-gateway.md`: Proposed Architecture Decision Record for direct bKash Payment Gateway integration (Tokenized/PGW), delayed verification, passive 30-min seat holds, pure integer poisha math, and signed receipt security.
-  - `docs/decisions/0010-development-efficiency-and-risk-based-testing.md`: Formal ADR establishing the 4-tier Risk-Based Testing hierarchy (Levels 0–3), context-loading rules, and 2-attempt diagnostic limits.
-  - `docs/traceability.csv`: Updated with exact `scope_v1` classifications (67 RETAIN, 24 MODIFY, 38 DEFER) preserving all original IDs and P0–P14 phase mappings.
-  - `docs/architecture.md`: Updated architecture specification reflecting bKash payment gateway, CMS scope (banners, sections, images), Resend async outbox, and streamlined v1 surfaces.
-  - `AGENTS.md`: Updated agent rules with bKash payment flow, Risk-Based Testing protocol (ADR 0010), and efficiency guidelines.
-  - `.agents/rules/10-security-payments.md`: Codified direct bKash security rules, passive seat hold protections, and pure integer poisha math.
-  - `.agents/rules/20-content-json.md`: Explicitly added homepage banners/hero slides, section toggles, and image pipeline to CMS scope.
-  - `.agents/rules/40-testing.md`: Codified Level 0–3 testing tiers and operational diagnostics.
-  - `docs/STATE.md`: Updated project tracking state.
-- **Verification Evidence (Level 0 Documentation Checks):**
-  - `node scripts/check-traceability.mjs`: PASSED (129/129 exact 1:1 match).
-  - Scope classification totals: PASSED (67 RETAIN, 24 MODIFY, 38 DEFER = 129 total).
-  - `git status`: PASSED (only documentation and governance files modified).
+- **Commit Status:** Merged into `main` via PR #3 (`e52fa70`)
+- **Key Commit Hashes:** `e52bcfa`, `e52fa70`
 
 ### Task P1-T2: Setup ESLint, Prettier, TypeScript Strict, Vitest, and pnpm verify
 - **SRS IDs Covered:** NFR-MNT-01
 - **Target Branch:** `task/p1-t2-code-quality`
-- **Commit Status:** Merged into `main` via PR #3 (`cfc4dfe`)
+- **Commit Status:** Merged into `main` (`cfc4dfe`)
 - **Key Commit Hashes:** `cfc4dfe`
 
 ### Task P1-T1: Scaffold Next.js with Exact Pinned Versions
 - **SRS IDs Covered:** NFR-MNT-01
 - **Target Branch:** `task/p1-t1-scaffold`
 - **Commit Status:** Merged into `main` via PR #2 (`8ca4d4b`)
-- **Key Commit Hashes:** `ac27c11`, `b2bcadd`, `8ca4d4b`
 
 ### Task P0-T3: Agent Rules and Workflows
 - **SRS IDs Covered:** NFR-MNT-01
@@ -57,7 +69,7 @@
 ### Task P0-T2: Documentation Baseline
 - **SRS IDs Covered:** All (77 FR, 15 NFR, 18 BR, 15 AT, 4 UC)
 - **Target Branch:** `main`
-- **Commit Status:** Merged & Pushed to `origin/main` (`5a669fd` through `dd87afa`)
+- **Commit Status:** Merged & Pushed to `origin/main`
 
 ### Task P0-T1: Git Repository and Remote Setup
 - **Target Branch:** `main`
@@ -70,21 +82,19 @@
 | Decision / Gate | Description | Needed Before | Status | Owner |
 | :--- | :--- | :--- | :--- | :--- |
 | **ADR 0009** | Formal approval of Proposed ADR 0009 (Direct bKash Payment Gateway) | Phase 10 (Payments) | Proposed | Refat |
-| **Scope Addendum** | Approval of `docs/SCOPE-REVISION-V1.md` (7 approved modules, 38 deferred features) | Immediate | Approved in Principle | Refat |
 | **B0** | Brand extraction: palette, fonts, logo from live site | Phase 2 (P2-T0) | Open | Refat |
-| **D1** | Live bKash merchant account credentials & sandbox credentials | Phase 10 | Open | LNA & Refat |
 
 ---
 
 ## 4. Pending Actions Awaiting Human (Refat)
 
-1. **Review and Commit `task/p0-scope-revision`:**
+1. **Review and Commit `task/p1-t3-env-headers`:**
    - Review modified files.
-   - Stage, commit, push, and open PR for `task/p0-scope-revision`.
+   - Stage, commit, push, and open PR for `task/p1-t3-env-headers`.
    - Merge PR into `main`.
 
 ---
 
 ## 5. Exact Next Eligible Task
-- **Prerequisite:** Human review and merge of `task/p0-scope-revision` pull request into `main`.
-- **Next Task:** **Phase 1 (Scaffold and CI) — Task P1-T3: env.ts with client and server split, server-only guard, security headers, health route, mode assertions** (on branch `task/p1-t3-env-headers`).
+- **Prerequisite:** Human review and merge of `task/p1-t3-env-headers` pull request into `main`.
+- **Next Task:** **Phase 2 (Design Tokens & Accessible Primitives) — Task P2-T0 / P2-T1: Brand token extraction and Tailwind CSS 4 theme token configuration** (on branch `task/p2-tokens-nav`).
