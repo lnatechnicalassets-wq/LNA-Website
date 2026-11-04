@@ -27,6 +27,8 @@
 | `vitest` | `3.0.8` | Fast unit and integration test runner | Unit tests passing |
 | `@testing-library/react` | `16.2.0` | React DOM testing utilities | Component tests passing |
 | `jsdom` | `26.0.0` | DOM environment simulation for Vitest | Test environment |
+| `zod` | `3.24.2` | Runtime schema declaration and validation | Schema validation |
+| `server-only` | `0.0.1` | Next.js compile-time boundary for server-only modules | Security boundary |
 
 ---
 
@@ -37,7 +39,7 @@ These packages and versions were verified against the npm registry and approved 
 ### Data & Authentication (Phase 1 / Phase 2+)
 - `@supabase/supabase-js`: `2.49.1` — Supabase client for database operations and RPC functions.
 - `@supabase/ssr`: `0.5.2` — Server-side auth and cookie management for Next.js App Router.
-- `zod`: `3.24.2` — Runtime schema declaration and validation.
+
 
 ### UI Primitives & Accessibility (Phase 2+)
 - `@radix-ui/react-dialog`: `1.1.6` — Accessible modal dialog and sheet primitive.
