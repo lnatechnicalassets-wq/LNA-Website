@@ -29,6 +29,10 @@
 | `jsdom` | `26.0.0` | DOM environment simulation for Vitest | Test environment |
 | `zod` | `3.24.2` | Runtime schema declaration and validation | Schema validation |
 | `server-only` | `0.0.1` | Next.js compile-time boundary for server-only modules | Security boundary |
+| `@radix-ui/react-dialog` | `1.1.6` | Accessible modal dialog and sheet primitive | UI Primitives |
+| `clsx` | `2.1.1` | Conditional class name utility | UI Primitives |
+| `tailwind-merge` | `3.0.2` | Conflict-free utility class merging | UI Primitives |
+| `lucide-react` | `0.477.0` | Accessible SVG icon system | UI Primitives |
 
 ---
 
