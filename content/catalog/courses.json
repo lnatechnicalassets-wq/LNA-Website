@@ -1,0 +1,179 @@
+[
+  {
+    "id": "executive-leadership",
+    "title": "Executive Leadership & Strategic Governance",
+    "subtitle": "Master executive decision-making, strategic alignment, and board-level leadership.",
+    "category": "Leadership & Strategy",
+    "summary": "An intensive 8-week offline executive development program designed for directors, C-level leaders, and senior enterprise managers in Bangladesh.",
+    "description": "The Executive Leadership & Strategic Governance program provides senior executives with actionable frameworks to navigate complex institutional challenges, formulate corporate strategy, and establish high-accountability organizational governance.",
+    "learningOutcomes": [
+      "Formulate agile strategic corporate roadmaps under market volatility",
+      "Drive executive board communications and stakeholder alignment",
+      "Lead cross-functional organizational restructuring and change management",
+      "Cultivate high-performance ethical corporate culture"
+    ],
+    "targetAudience": [
+      "Managing Directors and Board Members",
+      "C-Suite Executives (CEO, COO, CFO, CTO)",
+      "Senior Vice Presidents and Business Unit Heads",
+      "Aspiring enterprise directors with 8+ years management experience"
+    ],
+    "prerequisites": [
+      "Minimum 5 years of senior managerial or executive leadership experience",
+      "Undergraduate degree from an accredited institution"
+    ],
+    "modules": [
+      {
+        "id": "mod-el-01",
+        "title": "Strategic Thinking & Corporate Vision",
+        "duration": "2 Weeks",
+        "topics": [
+          "Macroeconomic analysis for Bangladesh",
+          "Competitive positioning",
+          "Scenario planning"
+        ]
+      },
+      {
+        "id": "mod-el-02",
+        "title": "Corporate Governance, Ethics & Compliance",
+        "duration": "2 Weeks",
+        "topics": [
+          "Regulatory compliance frameworks",
+          "Boardroom dynamics",
+          "Audit and risk mitigation"
+        ]
+      },
+      {
+        "id": "mod-el-03",
+        "title": "Executive Influence & Team Orchestration",
+        "duration": "2 Weeks",
+        "topics": ["High-stakes negotiation", "Crisis leadership", "Talent management systems"]
+      },
+      {
+        "id": "mod-el-04",
+        "title": "Capstone Strategic Simulation",
+        "duration": "2 Weeks",
+        "topics": ["Enterprise simulation", "Board presentation pitch", "Peer strategic review"]
+      }
+    ],
+    "deliveryMode": "offline",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "status": "published",
+    "featured": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "corporate-finance",
+    "title": "Corporate Finance & Capital Structuring",
+    "subtitle": "Advanced financial modeling, capital budgeting, and enterprise valuation.",
+    "category": "Finance & Economics",
+    "summary": "Practical offline masterclass on financial strategy, capital allocation, debt syndication, and mergers & acquisitions for modern corporations.",
+    "description": "Designed for finance directors, investment analysts, and business owners, this masterclass dives into enterprise balance sheet optimization, risk hedging, and financial leadership in Bangladesh's evolving regulatory environment.",
+    "learningOutcomes": [
+      "Evaluate complex capital projects using DCF and real options",
+      "Structure optimal debt-equity ratios for capital efficiency",
+      "Execute corporate valuation for M&A and private equity funding",
+      "Manage working capital and foreign exchange volatility"
+    ],
+    "targetAudience": [
+      "Chief Financial Officers and Finance Controllers",
+      "Corporate Bankers and Investment Officers",
+      "Treasury Managers and Private Equity Associates"
+    ],
+    "prerequisites": ["Solid foundation in accounting principles or 3+ years in corporate finance"],
+    "modules": [
+      {
+        "id": "mod-cf-01",
+        "title": "Financial Statement Engineering & Analysis",
+        "duration": "2 Weeks",
+        "topics": ["Cash flow forensics", "Quality of earnings", "Capital expenditure audits"]
+      },
+      {
+        "id": "mod-cf-02",
+        "title": "Valuation Methodologies & M&A",
+        "duration": "2 Weeks",
+        "topics": ["Discounted cash flow modeling", "Trading comparables", "Deal structuring"]
+      },
+      {
+        "id": "mod-cf-03",
+        "title": "Capital Markets, Debt & Syndication",
+        "duration": "2 Weeks",
+        "topics": [
+          "Banking syndication in Bangladesh",
+          "Sukuk and bond instruments",
+          "Hedging instruments"
+        ]
+      }
+    ],
+    "deliveryMode": "offline",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "status": "published",
+    "featured": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "digital-transformation",
+    "title": "Digital Transformation & Enterprise AI",
+    "subtitle": "Accelerating legacy modernization, data architecture, and applied AI governance.",
+    "category": "Technology & Innovation",
+    "summary": "Executive roadmap for leading technological transformation, generative AI adoption, and secure digital workflows across traditional business operations.",
+    "description": "This program equips operational and technical leaders with the strategic vision required to deploy artificial intelligence safely, overhaul outdated legacy IT infrastructure, and create data-driven business models.",
+    "learningOutcomes": [
+      "Architect enterprise AI transformation roadmaps with measurable ROI",
+      "Overhaul legacy enterprise systems without operational disruption",
+      "Establish strict cybersecurity, data privacy, and governance policies",
+      "Lead cross-functional product and engineering squads"
+    ],
+    "targetAudience": [
+      "Chief Information Officers and Chief Technology Officers",
+      "Heads of Digital Strategy and Business Operations",
+      "Technical Founders and Product Leaders"
+    ],
+    "prerequisites": [
+      "Professional experience in business operations or technology project management"
+    ],
+    "modules": [
+      {
+        "id": "mod-dt-01",
+        "title": "Enterprise Modernization & Cloud Paradigms",
+        "duration": "2 Weeks",
+        "topics": ["Cloud migration strategy", "API economies", "Legacy modernization"]
+      },
+      {
+        "id": "mod-dt-02",
+        "title": "Applied AI & Machine Learning Strategy",
+        "duration": "2 Weeks",
+        "topics": ["Generative AI business cases", "LLM evaluation", "Process automation"]
+      },
+      {
+        "id": "mod-dt-03",
+        "title": "Cybersecurity, Compliance & Data Ethics",
+        "duration": "2 Weeks",
+        "topics": ["Data governance frameworks", "Threat modeling", "Regulatory compliance"]
+      }
+    ],
+    "deliveryMode": "offline",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "status": "published",
+    "featured": false,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]

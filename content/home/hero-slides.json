@@ -1,0 +1,61 @@
+[
+  {
+    "id": "slide-leadership",
+    "title": "Executive Leadership",
+    "headline": "Lead with Strategic Authority in Bangladesh's Corporate Landscape",
+    "description": "Rigorous offline executive programs designed for directors, founders, and industry leaders navigating institutional transformation.",
+    "ctaText": "Explore Executive Courses",
+    "ctaHref": "/courses",
+    "secondaryCtaText": "Check Application Status",
+    "secondaryCtaHref": "/status",
+    "badgeText": "Cohort 01 Applications Open",
+    "imagePlaceholder": "/images/hero-leadership-placeholder.jpg",
+    "order": 1,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo homepage hero content (Gate B0 deferred until official asset delivery)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "slide-finance",
+    "title": "Corporate Finance",
+    "headline": "Master Capital Allocation, Valuation & Enterprise Governance",
+    "description": "Equip yourself with boardroom-grade financial modeling, debt structuring, and risk hedging methodologies.",
+    "ctaText": "View Finance Masterclass",
+    "ctaHref": "/courses#corporate-finance",
+    "secondaryCtaText": "View Campus Venues",
+    "secondaryCtaHref": "/about",
+    "badgeText": "Weekend Offline Intensive",
+    "imagePlaceholder": "/images/hero-finance-placeholder.jpg",
+    "order": 2,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo homepage hero content (Gate B0 deferred until official asset delivery)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "slide-digital",
+    "title": "Digital Transformation",
+    "headline": "Accelerate Applied AI, Cloud Architecture & Technology Modernization",
+    "description": "Strategic roadmap masterclass for modern enterprise transformation and practical AI implementation.",
+    "ctaText": "Learn More",
+    "ctaHref": "/courses#digital-transformation",
+    "badgeText": "New 2026 Curriculum",
+    "imagePlaceholder": "/images/hero-digital-placeholder.jpg",
+    "order": 3,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo homepage hero content (Gate B0 deferred until official asset delivery)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]
+

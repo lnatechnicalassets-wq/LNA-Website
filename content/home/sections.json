@@ -1,0 +1,42 @@
+{
+  "provenance": {
+    "class": "B",
+    "verified": false,
+    "source": "Demo homepage sections layout (Gate B0 deferred until CMS configuration)",
+    "verifiedBy": null,
+    "verifiedOn": null
+  },
+  "sections": [
+    {
+      "id": "hero-carousel",
+      "name": "Hero Banner Carousel",
+      "enabled": true,
+      "order": 1
+    },
+    {
+      "id": "impact-statistics",
+      "name": "Institutional Impact Figures",
+      "enabled": true,
+      "order": 2
+    },
+    {
+      "id": "course-catalog",
+      "name": "Featured Course Catalog",
+      "enabled": true,
+      "order": 3
+    },
+    {
+      "id": "academy-mission",
+      "name": "Academy Leadership & Campus",
+      "enabled": true,
+      "order": 4
+    },
+    {
+      "id": "admissions-cta",
+      "name": "Admissions & Application Callout",
+      "enabled": true,
+      "order": 5
+    }
+  ]
+}
+

@@ -1,26 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-
-/**
- * Provenance schema per Rule R15 and Blueprint Part 5.
- */
-export const ProvenanceSchema = z
-  .object({
-    class: z.enum(["A", "B"]),
-    verified: z.boolean(),
-    source: z.string().min(5),
-    verifiedBy: z.string().nullable(),
-    verifiedOn: z.string().nullable(),
-  })
-  .refine(
-    (p) => p.class === "B" || (p.verified && p.verifiedBy !== null && p.verifiedOn !== null),
-    {
-      message: "Class A content must be verified with verifiedBy and verifiedOn populated.",
-    }
-  );
-
-export type Provenance = z.infer<typeof ProvenanceSchema>;
+import { ProvenanceSchema } from "./provenance";
 
 /**
  * Brand configuration schema.

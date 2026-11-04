@@ -27,4 +27,3 @@ describe("Navigation & Organization Content Repositories (P2-T3)", () => {
     expect(() => OrganizationSchema.parse(org)).not.toThrow();
   });
 });
-
