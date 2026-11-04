@@ -9,6 +9,7 @@
 1. **Separation of Presentation and Code:** No visible copy, headings, partner logos, statistics, or contact details may be hardcoded into React components. All text comes from `@/lib/content` repositories or `next-intl` message keys via `t()`.
 2. **Direct Imports Banned:** Components may never import files from `/content/` directly. All access must be routed through `@/lib/content` repository interfaces.
 3. **Operational Records Excluded:** Learner profiles, transaction records, seat holds, receipts, and certificates are **Class C (Operational)** data and must **never** exist in JSON.
+4. **CMS Administration Scope (Release v1.0):** In addition to courses and batches, the administrative CMS manages homepage banners/hero slides (`content/home/hero-slides.json`), public section ordering and visibility toggles (`content/home/sections.json`), verified institutional figures (`content/home/impact-figures.json`), and secure image asset pipelines.
 
 ---
 

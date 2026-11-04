@@ -1,45 +1,57 @@
 # 40. Testing Strategy & Quality Gates
 
-**Authority:** Blueprint Part 11; SRS Section 12, NFR-MNT-01  
+**Authority:** Blueprint Part 11; SRS Section 12, NFR-MNT-01; ADR 0006, ADR 0010  
 **Scope:** Applies to all automated tests, assertions, CI execution, and task verification.
 
 ---
 
-## 1. Testing Pyramid
-1. **Static Checks:** TypeScript strict typechecking (`tsc --noEmit`), ESLint with `jsx-a11y` accessibility rules, Prettier formatting checks, and Gitleaks secret scans.
+## 1. Four-Tier Risk-Based Testing Protocol (ADR 0010)
+
+To prevent excessive overhead on routine iterations while maintaining uncompromising production quality, verification must strictly match the task risk tier:
+
+```mermaid
+flowchart TD
+    Task[Task Execution] --> Tier{Task Risk Tier}
+    Tier -->|Documentation / Syntax| L0[Level 0: Syntax, Formatter, Secret Scan]
+    Tier -->|Isolated UI / CSS| L1[Level 1: ESLint, TypeScript, Affected Component Test]
+    Tier -->|Feature / Logic / Schemas| L2[Level 2: Unit Tests, Integration Tests, Failure Paths]
+    Tier -->|Payments / Auth / Merge Checkpoint| L3[Level 3: Full pnpm verify, Build, RLS pgTAP, E2E]
+
+    L0 --> Done[Fast Local Verification]
+    L1 --> Done
+    L2 --> Done
+    L3 --> Done
+```
+
+| Tier | Category | Required Verifications | What Is Explicitly Prohibited |
+| :--- | :--- | :--- | :--- |
+| **Level 0** | Documentation, Markdown, non-code configurations (`.prettierrc`, `.gitignore`). | 1. Targeted file review.<br>2. Configuration syntax check.<br>3. Secret scan (`gitleaks`). | **NO** `next build`.<br>**NO** Vitest suite.<br>**NO** Playwright E2E. |
+| **Level 1** | Pure UI components, layout styling, static JSON content edits. | 1. `pnpm lint` on modified files.<br>2. `pnpm typecheck` (`tsc --noEmit`).<br>3. Affected component test (`vitest run <file>`). | **NO** `next build`.<br>**NO** full integration suite. |
+| **Level 2** | Feature logic, Server Actions, Zod schemas, API route handlers, CSV exports. | 1. Relevant unit & integration tests.<br>2. Failure-path / edge-case tests.<br>3. `pnpm typecheck` & `pnpm lint`. | **NO** production build during routine intermediate iterations. |
+| **Level 3** | bKash payments, authentication, RLS SQL migrations, branch completion before PR merge. | 1. Complete `pnpm verify` (`tsc`, `eslint`, `prettier`, `vitest`, `next build`).<br>2. pgTAP RLS tests.<br>3. Security review workflow. | **Never skip or loosen an assertion.** |
+
+---
+
+## 2. Testing Pyramid & Core Verifications
+1. **Static Checks:** TypeScript strict typechecking (`tsc --noEmit`), ESLint 9 with `jsx-a11y` accessibility rules, Prettier formatting checks, and Gitleaks secret scans.
 2. **Unit Tests (Vitest):** Core pure business logic:
-   - Pricing functions, discount rules, fee calculation, integer poisha conversions.
+   - Pricing functions, discount rules, fee calculation, integer poisha conversions (`poishaToBdtString`, `bdtStringToPoisha`).
    - Reference generation (Crockford Base32 format and uniqueness).
    - Zod validation schemas with valid and invalid fixtures.
-   - Assessment scoring algorithms and label categorization.
 3. **Component Tests (Vitest + Testing Library):**
    - Form state transitions (default, submitting, validation error, success, failure).
-   - Modal focus trapping and accessible disclosures.
-   - Keyboard navigation on carousels, tabs, and filters.
+   - Accessible disclosures, dialogs, and keyboard navigation.
 4. **Database & Policy Tests (pgTAP):**
    - RLS isolation: prove `anon` cannot read unpublished data or write operational records.
-   - Prove `authenticated` learners cannot read or modify another learner's records.
    - Concurrency tests: verify row-locking prevents seat overselling under parallel calls.
 5. **End-to-End Tests (Playwright):**
-   - Validate full acceptance test journeys (AT-01 to AT-15) on Chromium, Firefox, and WebKit.
-   - Run at three explicit viewports: `320px`, `768px`, and `1280px`.
-   - Run automated `@axe-core/playwright` accessibility audits on every page.
+   - Validate full acceptance test journeys across mobile (`320px`), tablet (`768px`), and desktop (`1280px`).
+   - Automated `@axe-core/playwright` accessibility audits on all public pages.
 
 ---
 
-## 2. What Each Task Must Test
-- Every new behavior must have at least one test.
-- Every business rule must have at least one failure case test demonstrating that unauthorized or invalid actions are correctly rejected.
-- Any bug fix must include a regression test that fails before the fix and passes after.
-- Never weaken, skip, or delete tests to get CI green.
-
----
-
-## 3. Definition of Done & Quality Gates
-A task is eligible for completion only when all required checks pass:
-- `pnpm verify` passes cleanly (lint, typecheck, content:validate, unit tests, build).
-- Zero ESLint errors and zero warnings.
-- Code coverage targets: >= 90% line and branch coverage in `src/server/payments`, `src/server/auth`, and pricing logic; >= 70% elsewhere.
-- Zero high or critical vulnerability findings in `pnpm audit` or OSV scans.
-- Zero secret detection findings from `gitleaks`.
-- Task documentation updated in `docs/STATE.md` and `docs/traceability.csv`.
+## 3. Operational Rules & Diagnostics
+- **Context Loading:** Read `AGENTS.md` and `docs/STATE.md` once per session. Do not re-scan the entire directory tree repeatedly.
+- **Prohibition on PDF Extraction:** Never invoke scripts to extract raw PDF binaries (`docs/source/*.pdf`). Plain-text markdown is the textual authority.
+- **Two-Attempt Limit:** When a command or test fails, diagnose the underlying cause before retrying. If it fails a second time, stop immediately and report the blocker.
+- **Never Loosen Assertions:** Never weaken, skip, or delete tests to get CI green.
