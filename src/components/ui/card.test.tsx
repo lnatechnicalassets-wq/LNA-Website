@@ -33,4 +33,3 @@ describe("Card Primitive", () => {
     expect(cardEl.className).toContain("cursor-pointer");
   });
 });
-

@@ -53,4 +53,3 @@ describe("Dialog Primitive (Radix Accessible Dialog)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
-

@@ -1,53 +1,57 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 4 November 2026  
-**Session Context:** Phase 2 Task P2-T2 (Base Accessible UI Primitives)  
+**Session Context:** Phase 2 Task P2-T3 (Public Layout Shell: SiteHeader, SiteFooter, MobileNav, SkipLink, PublicShell)  
 
 ---
 
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 2 (Design System & Foundational UI)
-- **Current Task:** P2-T2 (Base Accessible UI Primitives: Button, Badge, Card, Input, Dialog)
+- **Current Task:** P2-T3 (Public Layout Shell: SiteHeader, SiteFooter, MobileNav, SkipLink, PublicShell)
 - **Task Status:** Implemented & Verified; Pending Human Review, Commit & Merge by Refat
-- **Current Git Branch:** `task/p2-t2-ui-primitives`
-- **Base Commit:** `d47192b` (`main`)
+- **Current Git Branch:** `task/p2-t3-layout-shell`
+- **Base Commit:** `de0b604` (`main`)
 - **Remote:** `https://github.com/BlazeDashX/LNA-Website.git`
 
 ---
 
 ## 2. Completed Tasks
 
-### Task P2-T2: Base Accessible UI Primitives (Button, Badge, Card, Input, Dialog)
+### Task P2-T3: Public Layout Shell (SiteHeader, SiteFooter, MobileNav, SkipLink, PublicShell)
 - **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
-- **Target Branch:** `task/p2-t2-ui-primitives`
+- **Target Branch:** `task/p2-t3-layout-shell`
 - **Commit Status:** Pending (awaiting Refat review and commit)
 - **Deliverables Created / Modified:**
-  - `src/lib/utils.ts`: Utility function `cn` combining `clsx` and `tailwind-merge` for conflict-free Tailwind CSS 4 utility class handling.
-  - `src/components/ui/button.tsx`: Fully accessible button primitive supporting 6 variants (`primary`, `secondary`, `accent`, `outline`, `ghost`, `danger`), 4 sizes (`sm`, `md`, `lg` with 44px+ touch targets, `icon`), `isLoading` spinner state with `aria-busy`, disabled state handling, and universal visible focus rings.
-  - `src/components/ui/badge.tsx`: Accessible status badge supporting 8 variants (`primary`, `accent`, `success`, `warning`, `danger`, `info`, `outline`, `default`), optional status dot, and explicit color + text pairing (SRS 11.1).
-  - `src/components/ui/card.tsx`: Modular card primitives (`Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`) with `default`, `interactive`, and `subtle` variants.
-  - `src/components/ui/input.tsx`: Form input primitive with semantic `<label>`, `aria-describedby` helper text, `aria-invalid` error states with `role="alert"`, and disabled state styling.
-  - `src/components/ui/dialog.tsx`: Accessible modal dialog wrapper built on `@radix-ui/react-dialog` (`Dialog`, `DialogTrigger`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter`, `DialogClose`) with focus trapping, backdrop blur, and keyboard dismissal.
-  - `src/components/ui/primitives-preview.tsx`: Interactive preview section embedded on `src/app/page.tsx` allowing local inspection of all variants, interactive dialogs, error states, and loading states.
-  - `src/components/ui/index.ts`: Central barrel export for all UI primitives.
-  - `src/components/ui/button.test.tsx`: Vitest suite (5 tests) verifying variants, sizes, click events, disabled state, and loading spinner.
-  - `src/components/ui/badge.test.tsx`: Vitest suite (3 tests) verifying variants, default styling, and dot indicator.
-  - `src/components/ui/card.test.tsx`: Vitest suite (2 tests) verifying composition and interactive styling.
-  - `src/components/ui/input.test.tsx`: Vitest suite (5 tests) verifying label association, helper text linkage, error alerts, user input handling, and disabled state.
-  - `src/components/ui/dialog.test.tsx`: Vitest suite (1 test) verifying Radix modal trigger, focus trapping, and close behavior.
-  - `src/app/page.test.tsx`: Updated Vitest suite verifying the design system primitives section.
-  - `package.json` & `pnpm-lock.yaml`: Installed pre-approved dependencies `@radix-ui/react-dialog@1.1.6`, `clsx@2.1.1`, `tailwind-merge@3.0.2`, `lucide-react@0.477.0`.
-  - `docs/DEPENDENCIES.md`: Recorded newly installed UI primitive dependencies in Section 1.
-  - `docs/traceability.csv`: Updated `NFR-A11Y-01` evidence to include UI primitives.
+  - `content/site/navigation.json`: Centralized configuration for header navigation links, courses CTA, multi-column footer sections, and legal notices with Provenance Class B.
+  - `content/site/organization.json`: Centralized repository configuration for academy address, telephone, email, domain, and operational business hours.
+  - `src/lib/content/navigation.ts`: Type-safe repository module with Zod validation enforcing Rule R4.
+  - `src/lib/content/organization.ts`: Type-safe organization details repository with Zod validation.
+  - `src/lib/content/index.ts`: Updated barrel export for navigation and organization content repositories.
+  - `src/components/public/skip-link.tsx`: Accessible landmark bypass link (`<a href="#main-content">`) complying with WCAG 2.2 AA (2.4.1 Bypass Blocks).
+  - `src/components/public/mobile-nav.tsx`: Accessible responsive drawer powered by Radix UI Dialog primitives with full screen-reader title/description, focus trapping, Escape key closing, and 44px+ touch targets (WCAG 2.5.8).
+  - `src/components/public/site-header.tsx`: Sticky corporate website header featuring demo branding banner, demo logo lockup, desktop navigation items, courses CTA button, and mobile hamburger trigger.
+  - `src/components/public/site-footer.tsx`: Semantic corporate footer (`<footer role="contentinfo">`) displaying academy address, contact details, multi-column dynamic navigation links, copyright, and demo notice.
+  - `src/components/public/public-shell.tsx`: Unified layout shell integrating `SkipLink`, `SiteHeader`, `<main id="main-content">`, and `SiteFooter`.
+  - `src/components/public/index.ts`: Barrel export for all public layout components.
+  - `src/app/layout.tsx`: Configured root layout to wrap application pages with `<PublicShell>{children}</PublicShell>`.
+  - `src/app/page.tsx`: Cleaned up to render the design system showcase inside `PublicShell` without duplicate headers, footers, or landmarks.
+  - Tests: `navigation.test.ts`, `skip-link.test.tsx`, `site-header.test.tsx`, `site-footer.test.tsx`, `mobile-nav.test.tsx`, and `public-shell.test.tsx` (52 total passing tests across 15 test suites).
+  - `docs/traceability.csv`: Updated `NFR-A11Y-01` evidence to include public layout components.
   - `docs/STATE.md`: This file.
 - **Verification Evidence:**
   - `pnpm tokens:check`: PASSED (`node scripts/generate-tokens.mjs --check`, exit code 0; tokens in sync).
   - `pnpm typecheck`: PASSED (`tsc --noEmit`, exit code 0; strict typechecking compliant).
   - `pnpm lint`: PASSED (`eslint .`, exit code 0; zero errors, zero warnings).
   - `pnpm format:check`: PASSED (`prettier --check .`, exit code 0; all matched files use Prettier style).
-  - `pnpm test`: PASSED (`vitest run`, 9 test files, 39 passed).
+  - `pnpm test`: PASSED (`vitest run`, 15 test files, 52 passed).
   - `pnpm build`: PASSED (`next build`, exit code 0; static & dynamic routes compiled cleanly in Turbopack).
   - `node scripts/check-traceability.mjs`: PASSED (129/129 exact 1:1 match).
+
+### Task P2-T2: Base Accessible UI Primitives (Button, Badge, Card, Input, Dialog)
+- **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
+- **Target Branch:** `task/p2-t2-ui-primitives`
+- **Commit Status:** Merged into `main` via PR #6 (`de0b604`)
+- **Key Commit Hashes:** `dab69ea`, `de0b604`
 
 ### Task P2-T0 & P2-T1: Brand Tokens Preparation & Tailwind CSS 4 Theme Configuration
 - **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
@@ -105,13 +109,13 @@
 
 ## 4. Pending Actions Awaiting Human (Refat)
 
-1. **Review and Commit `task/p2-t2-ui-primitives`:**
+1. **Review and Commit `task/p2-t3-layout-shell`:**
    - Review modified and created files.
-   - Stage, commit, push, and open PR for `task/p2-t2-ui-primitives`.
+   - Stage, commit, push, and open PR for `task/p2-t3-layout-shell`.
    - Merge PR into `main`.
 
 ---
 
 ## 5. Exact Next Eligible Task
-- **Prerequisite:** Human review and merge of `task/p2-t2-ui-primitives` pull request into `main`.
-- **Next Task:** **Phase 2 (Design System & Foundational UI) — Task P2-T3: Public Layout Shell (SiteHeader, SiteFooter, Navigation drawer, responsive skip-to-content link)** (on branch `task/p2-t3-layout-shell`).
+- **Prerequisite:** Human review and merge of `task/p2-t3-layout-shell` pull request into `main`.
+- **Next Task:** **Phase 4 (Public Website & Course Presentation) — Task P4-T1: Public Homepage Hero, Course Catalog & Search Interface** (on branch `task/p4-t1-homepage`).
