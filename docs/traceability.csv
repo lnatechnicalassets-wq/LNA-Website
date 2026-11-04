@@ -85,7 +85,7 @@ NFR-SEC-02,NFR,Environment isolation ensuring service keys and secrets never lea
 NFR-SEC-03,NFR,Automated abuse protection applying distributed rate limiting and Turnstile challenges.,M,P7,server/auth,AT-06,not_started,RETAIN,
 NFR-SEC-04,NFR,"Session security using secure cookies, reasonable expiry, and immediate server-side revocation.",M,P7,server/auth,AT-08,not_started,RETAIN,
 NFR-PRI-01,NFR,Data minimization collecting only necessary fields with explicit separation of consent types.,M,P12,"components, config",AT-14,not_started,RETAIN,
-NFR-A11Y-01,NFR,"Compliance with WCAG 2.2 AA across keyboard access, color contrast, focus, and error messaging.",M,P2,components/ui,AT-15,not_started,RETAIN,
+NFR-A11Y-01,NFR,"Compliance with WCAG 2.2 AA across keyboard access, color contrast, focus, and error messaging.",M,P2,components/ui,AT-15,in_progress,RETAIN,"src/styles/tokens.css, src/styles/globals.css, src/app/page.test.tsx"
 NFR-SEO-01,NFR,"Search engine optimization via semantic markup, XML sitemaps, OpenGraph metadata, and structured data.",M,P4,"app/(public), config",AT-15,not_started,RETAIN,
 NFR-CMP-01,NFR,"Cross-browser compatibility across Chrome, Safari, Edge, Firefox, and mobile widths from 320px.",M,P4,app/(public),AT-15,not_started,RETAIN,
 NFR-BCK-01,NFR,Automated daily database backups with documented restore verification drills.,M,P13,supabase/backup,AT-15,not_started,RETAIN,
