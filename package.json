@@ -14,7 +14,9 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "verify": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build"
+    "tokens": "node scripts/generate-tokens.mjs",
+    "tokens:check": "node scripts/generate-tokens.mjs --check",
+    "verify": "pnpm tokens:check && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build"
   },
   "dependencies": {
     "next": "16.4.4",
