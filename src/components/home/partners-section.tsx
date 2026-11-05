@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import type { Partner } from "@/lib/content";
-import { Pause, Play } from "lucide-react";
 
 export interface PartnersSectionProps {
   partners: Partner[];
@@ -182,13 +181,15 @@ function PartnerWordmark({ id }: { id: string }) {
 /**
  * PartnersSection Component
  * Implements continuous horizontal movement (Brain Station 23 concept) with Minimal Institutional design:
- * - Centered "Our Partners" heading in Dark Slate (#172E35).
+ * - Centered "Our Partners" heading in Dark Slate (#172E35) without any prominent visible pause icon.
  * - Continuous, smooth right-to-left linear movement (traversal ~40s).
  * - Seamless loop with identical duplicated tracks (Track 2 aria-hidden).
  * - Subtle left/right gradient edge boundary fades.
- * - Discreet, accessible Pause/Play button (WCAG 2.2.2).
- * - Pauses automatically on hover and keyboard focus.
- * - Respects prefers-reduced-motion with stationary fallback.
+ * - Accessible motion-stop functionality (WCAG 2.2.2 compliant):
+ *   1. Automatic pause on hover and focus-within.
+ *   2. Usable tap/click toggle on the track container for mobile and touch interactions.
+ *   3. Keyboard-discoverable stop button (sr-only, visible on keyboard focus).
+ *   4. prefers-reduced-motion stationary fallback.
  * - Open Pearl background, zero cards, zero capsule, zero page overflow.
  */
 export function PartnersSection({ partners }: PartnersSectionProps) {
@@ -198,38 +199,51 @@ export function PartnersSection({ partners }: PartnersSectionProps) {
     return null;
   }
 
+  const togglePause = () => {
+    setIsPaused((prev) => !prev);
+  };
+
   return (
     <section
       aria-label="Our Partners — Corporate Sector Alignments"
       className="relative w-full bg-surface-base pt-6 sm:pt-8 md:pt-10 pb-12 sm:pb-16 overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header Row: Centered Heading with Discreet Accessible Pause/Play Control */}
+        {/* Centered Heading (No prominent visible pause icon) */}
         <div className="relative flex items-center justify-center mb-8 sm:mb-10">
           <h2 className="text-center text-xs sm:text-sm font-bold tracking-[0.2em] uppercase text-[#172E35]">
             Our Partners
           </h2>
+
+          {/* Keyboard-discoverable Accessible Stop/Resume Button (WCAG 2.2.2 compliant, visible on focus only) */}
           <button
             type="button"
-            onClick={() => setIsPaused((prev) => !prev)}
-            aria-label={isPaused ? "Play partner logos movement" : "Pause partner logos movement"}
-            className="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-[#5A737D] hover:text-[#086477] hover:bg-[#EDF5F5] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
-            title={isPaused ? "Play animation" : "Pause animation"}
+            onClick={togglePause}
+            className="sr-only focus:not-sr-only focus:absolute focus:right-0 focus:top-1/2 focus:-translate-y-1/2 px-3 py-1 text-xs font-semibold rounded-md bg-white text-[#086477] shadow-sm border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#086477] cursor-pointer"
           >
-            {isPaused ? (
-              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-            ) : (
-              <Pause className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-            )}
+            {isPaused ? "Resume partner logos movement" : "Pause partner logos movement"}
           </button>
         </div>
 
-        {/* Continuous Logo Track Viewport */}
+        {/* Continuous Logo Track Viewport with Tap/Click Pause Support for Touch Users */}
         <div
-          className="relative w-full overflow-hidden"
+          className="relative w-full overflow-hidden cursor-pointer"
           role="region"
-          aria-label="Partner organizations"
+          aria-label="Partner organizations (tap or press enter to pause movement)"
+          tabIndex={0}
+          onClick={togglePause}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              togglePause();
+            }
+          }}
         >
+          {/* Status announcement for assistive technology */}
+          <span className="sr-only" aria-live="polite">
+            {isPaused ? "Partner logos animation paused" : "Partner logos animation playing"}
+          </span>
+
           {/* Subtle Left and Right Edge Boundary Fades */}
           <div
             className="absolute left-0 top-0 bottom-0 w-12 sm:w-20 md:w-28 bg-gradient-to-r from-[var(--surface-base,#F6FAFA)] to-transparent pointer-events-none z-10"

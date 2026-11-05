@@ -51,8 +51,8 @@ const mockPartners: Partner[] = [
   },
 ];
 
-describe("PartnersSection Component (Continuous Motion, FR-PUB-003, Rule R15, WCAG 2.2 AA)", () => {
-  it("renders centered 'Our Partners' heading and partner wordmarks", () => {
+describe("PartnersSection Component (Continuous Motion, Minimal Institutional, WCAG 2.2 AA)", () => {
+  it("renders centered 'Our Partners' heading and partner wordmarks without prominent visible icon", () => {
     render(<PartnersSection partners={mockPartners} />);
 
     expect(screen.getByRole("heading", { level: 2, name: /Our Partners/i })).toBeDefined();
@@ -61,23 +61,23 @@ describe("PartnersSection Component (Continuous Motion, FR-PUB-003, Rule R15, WC
     expect(screen.getAllByText(/TELENEX/i).length).toBeGreaterThan(0);
   });
 
-  it("toggles marquee animation with discreet accessible Pause/Play control (WCAG 2.2.2)", () => {
+  it("toggles marquee animation with accessible keyboard button and touch track click (WCAG 2.2.2)", () => {
     render(<PartnersSection partners={mockPartners} />);
 
-    const pauseButton = screen.getByRole("button", {
+    // 1. Keyboard-discoverable toggle button
+    const kbButton = screen.getByRole("button", {
       name: /Pause partner logos movement/i,
     });
-    expect(pauseButton).toBeDefined();
+    expect(kbButton).toBeDefined();
 
-    // Click to pause
-    fireEvent.click(pauseButton);
-    expect(screen.getByRole("button", { name: /Play partner logos movement/i })).toBeDefined();
+    fireEvent.click(kbButton);
+    expect(screen.getByRole("button", { name: /Resume partner logos movement/i })).toBeDefined();
 
-    // Click to resume
-    const playButton = screen.getByRole("button", {
-      name: /Play partner logos movement/i,
+    // 2. Track click toggle for touch users
+    const track = screen.getByRole("region", {
+      name: /Partner organizations/i,
     });
-    fireEvent.click(playButton);
+    fireEvent.click(track);
     expect(screen.getByRole("button", { name: /Pause partner logos movement/i })).toBeDefined();
   });
 

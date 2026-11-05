@@ -40,7 +40,7 @@ export function HeroSlide({
       aria-roledescription="slide"
       aria-label={`Slide ${slideIndex + 1} of ${totalSlides}: ${slide.title}`}
       aria-hidden={!isActive}
-      className={`w-full transition-opacity duration-700 ease-in-out ${
+      className={`w-full transition-opacity duration-600 ease-in-out ${
         isActive
           ? "opacity-100 relative z-10 pointer-events-auto"
           : "opacity-0 absolute inset-0 pointer-events-none z-0"

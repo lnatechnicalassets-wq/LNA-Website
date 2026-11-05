@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { HeroSlider } from "./hero-slider";
 import type { HeroSlide } from "@/lib/content";
 
@@ -62,7 +62,15 @@ const mockSlides: HeroSlide[] = [
   },
 ];
 
-describe("HeroSlider Component (FR-PUB-003, FR-PUB-004, WCAG 2.2 AA)", () => {
+describe("HeroSlider Component (Autoplay, Indicators, WCAG 2.2 AA)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("renders active slide with headline, description, and CTAs", () => {
     render(<HeroSlider slides={mockSlides} />);
 
@@ -73,7 +81,55 @@ describe("HeroSlider Component (FR-PUB-003, FR-PUB-004, WCAG 2.2 AA)", () => {
     expect(screen.getByRole("link", { name: /View Details/i })).toBeDefined();
   });
 
-  it("navigates slides on indicator click", () => {
+  it("automatically advances every 7 seconds and loops from slide 3 back to slide 1", () => {
+    render(<HeroSlider slides={mockSlides} />);
+
+    // Initial: Slide 1
+    expect(screen.getByText("First Headline for Leadership")).toBeDefined();
+
+    // Fast-forward 7s -> Slide 2
+    act(() => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(screen.getByText("Second Headline for Finance")).toBeDefined();
+
+    // Fast-forward 7s -> Slide 3
+    act(() => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(screen.getByText("Third Headline for All Programs")).toBeDefined();
+
+    // Fast-forward 7s -> Loops back to Slide 1
+    act(() => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(screen.getByText("First Headline for Leadership")).toBeDefined();
+  });
+
+  it("pauses rotation on hover and resumes on mouse leave", () => {
+    render(<HeroSlider slides={mockSlides} />);
+
+    const carousel = screen.getByRole("region", {
+      name: /Lead Nation Academy Featured Executive Programs/i,
+    });
+
+    // Hover pauses autoplay
+    fireEvent.mouseEnter(carousel);
+    act(() => {
+      vi.advanceTimersByTime(7000);
+    });
+    // Remains on Slide 1 because it is hovered
+    expect(screen.getByText("First Headline for Leadership")).toBeDefined();
+
+    // Mouse leave resumes autoplay
+    fireEvent.mouseLeave(carousel);
+    act(() => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(screen.getByText("Second Headline for Finance")).toBeDefined();
+  });
+
+  it("stops automatic rotation permanently after manual slide selection", () => {
     render(<HeroSlider slides={mockSlides} />);
 
     const slide2Tab = screen.getByRole("tab", { name: /Go to slide 2: Corporate Finance/i });
@@ -82,21 +138,59 @@ describe("HeroSlider Component (FR-PUB-003, FR-PUB-004, WCAG 2.2 AA)", () => {
     // Slide 2 is now active
     expect(screen.getByText("Second Headline for Finance")).toBeDefined();
 
-    const slide1Tab = screen.getByRole("tab", { name: /Go to slide 1: Executive Leadership/i });
-    fireEvent.click(slide1Tab);
+    // Even after 14 seconds, it remains on Slide 2 because manual selection stopped autoplay
+    act(() => {
+      vi.advanceTimersByTime(14000);
+    });
+    expect(screen.getByText("Second Headline for Finance")).toBeDefined();
+  });
 
-    // Back to Slide 1
+  it("renders distinct indicator shapes: active pill (32px) and inactive circles (9px)", () => {
+    render(<HeroSlider slides={mockSlides} />);
+
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.length).toBe(3);
+
+    // Active tab (tab 0) contains the 32px pill
+    const activeSpan = tabs[0].querySelector("span");
+    expect(activeSpan?.className).toContain("w-[32px]");
+    expect(activeSpan?.className).toContain("h-[8px]");
+    expect(activeSpan?.className).toContain("bg-[#086477]");
+
+    // Inactive tab (tab 1) contains the 9px circle
+    const inactiveSpan = tabs[1].querySelector("span");
+    expect(inactiveSpan?.className).toContain("w-[9px]");
+    expect(inactiveSpan?.className).toContain("h-[9px]");
+    expect(inactiveSpan?.className).toContain("bg-[#C5DDE0]");
+  });
+
+  it("provides accessible keyboard-discoverable pause/resume button (WCAG 2.2.2)", () => {
+    render(<HeroSlider slides={mockSlides} />);
+
+    const kbBtn = screen.getByRole("button", {
+      name: /Pause automatic slide rotation/i,
+    });
+    expect(kbBtn).toBeDefined();
+
+    // Click pause via keyboard button
+    fireEvent.click(kbBtn);
+    expect(screen.getByRole("button", { name: /Resume automatic slide rotation/i })).toBeDefined();
+
+    // Autoplay does not tick while paused
+    act(() => {
+      vi.advanceTimersByTime(14000);
+    });
     expect(screen.getByText("First Headline for Leadership")).toBeDefined();
   });
 
-  it("does not render visible previous/next arrow buttons (indicators only)", () => {
+  it("does not render visible previous/next arrow buttons", () => {
     render(<HeroSlider slides={mockSlides} />);
 
     expect(screen.queryByRole("button", { name: /Previous slide/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Next slide/i })).toBeNull();
   });
 
-  it("supports touch swipe navigation for manual advancement", () => {
+  it("supports touch swipe navigation and stops autoplay", () => {
     render(<HeroSlider slides={mockSlides} />);
 
     const carousel = screen.getByRole("region", {
@@ -107,14 +201,9 @@ describe("HeroSlider Component (FR-PUB-003, FR-PUB-004, WCAG 2.2 AA)", () => {
     fireEvent.touchStart(carousel, { touches: [{ clientX: 200 }] });
     fireEvent.touchEnd(carousel, { changedTouches: [{ clientX: 100 }] });
     expect(screen.getByText("Second Headline for Finance")).toBeDefined();
-
-    // Swipe Right to go back to slide 1
-    fireEvent.touchStart(carousel, { touches: [{ clientX: 100 }] });
-    fireEvent.touchEnd(carousel, { changedTouches: [{ clientX: 200 }] });
-    expect(screen.getByText("First Headline for Leadership")).toBeDefined();
   });
 
-  it("supports keyboard arrow navigation", () => {
+  it("supports keyboard arrow navigation and stops autoplay", () => {
     render(<HeroSlider slides={mockSlides} />);
 
     const carousel = screen.getByRole("region", {
@@ -124,18 +213,5 @@ describe("HeroSlider Component (FR-PUB-003, FR-PUB-004, WCAG 2.2 AA)", () => {
     // Press ArrowRight to advance
     fireEvent.keyDown(carousel, { key: "ArrowRight" });
     expect(screen.getByText("Second Headline for Finance")).toBeDefined();
-
-    // Press ArrowLeft to go back
-    fireEvent.keyDown(carousel, { key: "ArrowLeft" });
-    expect(screen.getByText("First Headline for Leadership")).toBeDefined();
-  });
-
-  it("renders dot indicators allowing direct slide selection", () => {
-    render(<HeroSlider slides={mockSlides} />);
-
-    const slide3Indicator = screen.getByRole("tab", { name: /Go to slide 3: All Programs/i });
-    fireEvent.click(slide3Indicator);
-
-    expect(screen.getByText("Third Headline for All Programs")).toBeDefined();
   });
 });

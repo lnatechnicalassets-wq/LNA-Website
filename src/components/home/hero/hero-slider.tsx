@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { HeroSlide as HeroSlideType } from "@/lib/content";
 import { HeroSlide } from "./hero-slide";
 
@@ -11,37 +11,94 @@ export interface HeroSliderProps {
 /**
  * HeroSlider Component
  * Fully accessible (WCAG 2.2 AA) executive carousel slider:
- * - 100% manually controlled rotation (no automatic advancement).
- * - Sighted controls: ONLY three clickable slide indicator dots.
- * - Generous invisible touch target area (32px) with small elegant visual indicator.
- * - Keyboard navigation (Left/Right arrow keys) and touch swipe gestures supported.
- * - Reduced motion respected (motion-reduce:transition-none).
+ * - 3 slides with 7-second automatic progression and 600ms smooth crossfade.
+ * - Pauses rotation on hover or focus within.
+ * - Stops automatic rotation permanently once a user manually selects a slide, swipes, or navigates via keyboard.
+ * - Disables automatic rotation for users with prefers-reduced-motion.
+ * - Sighted controls: ONLY three clickable indicators (Active: 32px x 8px Deep Teal pill; Inactive: 9px Soft Teal circles).
+ * - Keyboard-discoverable pause/resume button for accessibility without visual clutter in default layout.
+ * - Touch swipe gestures and Left/Right keyboard navigation supported.
  */
 export function HeroSlider({ slides }: HeroSliderProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocusedWithin, setIsFocusedWithin] = useState(false);
+  const [isStoppedManually, setIsStoppedManually] = useState(false);
+  const [isReducedMotion, setIsReducedMotion] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
   const totalSlides = slides.length;
 
-  const nextSlide = useCallback(() => {
-    setActiveIndex((prev) => (prev + 1) % totalSlides);
-  }, [totalSlides]);
+  // Detect prefers-reduced-motion preference on client mount
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setIsReducedMotion(mql.matches);
 
-  const prevSlide = useCallback(() => {
-    setActiveIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
-  }, [totalSlides]);
+    const handler = (e: MediaQueryListEvent) => {
+      setIsReducedMotion(e.matches);
+    };
 
-  const goToSlide = (index: number) => {
+    if (mql.addEventListener) {
+      mql.addEventListener("change", handler);
+      return () => mql.removeEventListener("change", handler);
+    }
+  }, []);
+
+  const nextSlide = useCallback(
+    (isManual = false) => {
+      if (isManual) {
+        setIsStoppedManually(true);
+      }
+      setActiveIndex((prev) => (prev + 1) % totalSlides);
+    },
+    [totalSlides]
+  );
+
+  const prevSlide = useCallback(
+    (isManual = false) => {
+      if (isManual) {
+        setIsStoppedManually(true);
+      }
+      setActiveIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
+    },
+    [totalSlides]
+  );
+
+  const goToSlide = useCallback((index: number, isManual = false) => {
+    if (isManual) {
+      setIsStoppedManually(true);
+    }
     setActiveIndex(index);
-  };
+  }, []);
+
+  // Determine if autoplay is currently eligible to tick
+  const isAutoplayActive = !isStoppedManually && !isReducedMotion && !isHovered && !isFocusedWithin;
+
+  // 7-second automatic progression
+  useEffect(() => {
+    if (!isAutoplayActive || totalSlides <= 1) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      nextSlide(false);
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, [isAutoplayActive, totalSlides, nextSlide]);
 
   // Keyboard navigation (ArrowLeft: previous, ArrowRight: next)
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      prevSlide();
+      prevSlide(true);
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
-      nextSlide();
+      nextSlide(true);
     }
   };
 
@@ -56,22 +113,27 @@ export function HeroSlider({ slides }: HeroSliderProps) {
     const deltaX = touchEndX - touchStartX;
 
     if (deltaX > 45) {
-      prevSlide();
+      prevSlide(true);
     } else if (deltaX < -45) {
-      nextSlide();
+      nextSlide(true);
     }
     setTouchStartX(null);
+  };
+
+  // Keyboard-accessible explicit pause/resume toggle
+  const toggleAutoplayByKeyboard = () => {
+    setIsStoppedManually((prev) => !prev);
   };
 
   if (!slides || slides.length === 0) {
     return null;
   }
 
-  // Hero Controls: ONLY Three Clickable Slide Indicators
+  // Refined Three Indicators: Active is 32px x 8px pill; Inactive are 9px circles
   const renderControls = (isCurrentActive: boolean) => (
     <div className="flex items-center pt-1 sm:pt-2">
       <div
-        className="flex items-center gap-1.5 sm:gap-2"
+        className="flex items-center gap-2 sm:gap-2.5"
         role="tablist"
         aria-label="Hero slider slide selectors"
       >
@@ -85,14 +147,14 @@ export function HeroSlider({ slides }: HeroSliderProps) {
               aria-selected={isSelected}
               aria-label={`Go to slide ${index + 1}: ${slide.title}`}
               tabIndex={isCurrentActive ? 0 : -1}
-              onClick={() => goToSlide(index)}
-              className="group p-2 min-w-[32px] min-h-[32px] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full cursor-pointer"
+              onClick={() => goToSlide(index, true)}
+              className="group min-w-[36px] min-h-[36px] p-2 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full cursor-pointer"
             >
               <span
-                className={`block transition-all duration-300 rounded-full ${
+                className={`block transition-all duration-300 ease-in-out rounded-full ${
                   isSelected
-                    ? "w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#086477] shadow-xs"
-                    : "w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#C5DDE0] group-hover:bg-[#8FB7BE]"
+                    ? "w-[32px] h-[8px] bg-[#086477] shadow-2xs"
+                    : "w-[9px] h-[9px] bg-[#C5DDE0] group-hover:bg-[#8FB7BE]"
                 }`}
               />
             </button>
@@ -104,6 +166,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   return (
     <div
+      ref={containerRef}
       role="region"
       aria-roledescription="carousel"
       aria-label="Lead Nation Academy Featured Executive Programs and Admissions"
@@ -111,8 +174,25 @@ export function HeroSlider({ slides }: HeroSliderProps) {
       onKeyDown={handleKeyDown}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsFocusedWithin(true)}
+      onBlur={(e) => {
+        if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+          setIsFocusedWithin(false);
+        }
+      }}
       className="relative w-full bg-surface-base overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
+      {/* Keyboard-discoverable Accessible Stop/Restart Control (WCAG 2.2.2 compliant, zero default visual clutter) */}
+      <button
+        type="button"
+        onClick={toggleAutoplayByKeyboard}
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-4 focus:z-30 focus:px-3.5 focus:py-1.5 focus:rounded-md focus:bg-white focus:text-[#086477] focus:font-semibold focus:text-xs focus:shadow-md focus:ring-2 focus:ring-[#086477] cursor-pointer"
+      >
+        {isStoppedManually ? "Resume automatic slide rotation" : "Pause automatic slide rotation"}
+      </button>
+
       {/* Slides Container */}
       <div className="relative w-full min-h-0 lg:min-h-[640px]">
         {slides.map((slide, index) => (
