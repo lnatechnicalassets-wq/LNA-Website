@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HeroSlide as HeroSlideType } from "@/lib/content";
 import { HeroSlide } from "./hero-slide";
 
@@ -13,8 +12,8 @@ export interface HeroSliderProps {
  * HeroSlider Component
  * Fully accessible (WCAG 2.2 AA) executive carousel slider:
  * - 100% manually controlled rotation (no automatic advancement).
- * - Sighted controls: 3 slide indicators, previous arrow, next arrow (no counter badge, no pause button).
- * - Clean UI with comfortable 32px-36px touch targets and generous spacing.
+ * - Sighted controls: ONLY three clickable slide indicator dots.
+ * - Generous invisible touch target area (32px) with small elegant visual indicator.
  * - Keyboard navigation (Left/Right arrow keys) and touch swipe gestures supported.
  * - Reduced motion respected (motion-reduce:transition-none).
  */
@@ -68,10 +67,9 @@ export function HeroSlider({ slides }: HeroSliderProps) {
     return null;
   }
 
-  // Refined Hero Controls: Indicators + Previous Arrow + Next Arrow (100% manual, uncluttered editorial design)
+  // Hero Controls: ONLY Three Clickable Slide Indicators
   const renderControls = (isCurrentActive: boolean) => (
-    <div className="flex items-center gap-3.5 sm:gap-5 pt-1 sm:pt-2">
-      {/* Three Slide Indicators */}
+    <div className="flex items-center pt-1 sm:pt-2">
       <div
         className="flex items-center gap-1.5 sm:gap-2"
         role="tablist"
@@ -88,40 +86,18 @@ export function HeroSlider({ slides }: HeroSliderProps) {
               aria-label={`Go to slide ${index + 1}: ${slide.title}`}
               tabIndex={isCurrentActive ? 0 : -1}
               onClick={() => goToSlide(index)}
-              className="group p-1 sm:p-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full cursor-pointer"
+              className="group p-2 min-w-[32px] min-h-[32px] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full cursor-pointer"
             >
               <span
                 className={`block transition-all duration-300 rounded-full ${
                   isSelected
-                    ? "w-7 sm:w-9 h-2.5 sm:h-3 bg-[#086477] shadow-xs"
-                    : "w-2.5 sm:w-3 h-2.5 sm:h-3 bg-[#C5DDE0] group-hover:bg-[#8FB7BE]"
+                    ? "w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#086477] shadow-xs"
+                    : "w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#C5DDE0] group-hover:bg-[#8FB7BE]"
                 }`}
               />
             </button>
           );
         })}
-      </div>
-
-      {/* Manual Navigation Arrows (Previous & Next) */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        <button
-          type="button"
-          tabIndex={isCurrentActive ? 0 : -1}
-          onClick={prevSlide}
-          aria-label="Previous slide"
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-border-default/80 bg-white/95 hover:bg-white text-text-primary hover:text-primary transition-colors flex items-center justify-center shadow-2xs focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
-        >
-          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          tabIndex={isCurrentActive ? 0 : -1}
-          onClick={nextSlide}
-          aria-label="Next slide"
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-border-default/80 bg-white/95 hover:bg-white text-text-primary hover:text-primary transition-colors flex items-center justify-center shadow-2xs focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
-        >
-          <ChevronRight className="h-4 w-4" aria-hidden="true" />
-        </button>
       </div>
     </div>
   );
@@ -146,7 +122,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             isActive={index === activeIndex}
             slideIndex={index}
             totalSlides={totalSlides}
-            controlsElement={renderControls(index === activeIndex)}
+            controlsElement={index === activeIndex ? renderControls(true) : null}
           />
         ))}
 
