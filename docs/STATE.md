@@ -1,130 +1,81 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
-**Last Updated:** 4 November 2026  
-**Session Context:** Phase 3 Task P3-T1 (Content Architecture: Zod Schemas, JSON Repositories, Monetary Discount Engine, and Content Validation)  
+**Last Updated:** 5 November 2026  
+**Session Context:** Phase 4 Task P4-T1 (Critical Responsive Layout Corrections: 320px-1440px, All 3 Slides Verified)  
 
 ---
 
 ## 1. Current Phase and Task
-- **Current Phase:** Phase 3 (Content Architecture & Repositories)
-- **Current Task:** P3-T1 (Zod Schemas, JSON Content Repository Abstraction, Integer Poisha Engine with Round-Half-Up Discounts, Seed Catalog & Content Validation)
-- **Task Status:** Implemented & Verified; Pending Human Review, Commit & Merge by Refat
-- **Current Git Branch:** `task/p3-t1-content-schemas`
-- **Base Commit:** `dcc02e1` (`main`, containing merged `task/p2-t3-layout-shell` via PR #7)
+- **Current Phase:** Phase 4 (Public Website Core)
+- **Current Task:** P4-T1 (Public Homepage: Critical Responsive Layout Corrections)
+- **Task Status:** Implemented, Fully Verified Across 5 Viewports & 3 Slides; Pending Visual Approval by Refat
+- **Current Git Branch:** `task/p4-t1-homepage`
+- **Base Commit:** `b306a77` (`main`, containing merged `task/p3-t1-content-schemas` via PR #9)
 - **Remote:** `https://github.com/BlazeDashX/LNA-Website.git`
-- **Phase 3 Roadmap Note:** P3-T1 is the final active task in Phase 3 for Release v1.0. Task P3-T2 (Bilingual internationalization / `FR-OTH-007` and `BR-17`) was formally deferred to post-v1 under the Supervisor-Approved Scope Revision Addendum (`docs/SCOPE-REVISION-V1.md`). Completion of P3-T1 concludes Phase 3.
 
 ---
 
 ## 2. Completed Tasks
 
-### Task P3-T1: Content Architecture, Repositories, Integer Poisha Engine & Content Validation
-- **SRS IDs Covered:** FR-PUB-005 (in_progress - technical architecture complete, institutional data audit pending Gate B0), NFR-MNT-01, NFR-SEC-02, BR-05
-- **Target Branch:** `task/p3-t1-content-schemas`
-- **Commit Status:** Pending (awaiting Refat review and commit)
-- **Deliverables Created / Modified:**
-  - `src/lib/money.ts`: Pure integer poisha monetary mathematics and BDT formatting (`formatPoishaToBDT`, `poishaToTakaString`, `takaStringToPoisha`, `percentToBasisPoints`, `calculateDiscountAmountPoisha`, `calculateDiscountedPoisha`) strictly compliant with Rule R5 (zero floats, zero `Number()`, zero `.toFixed()`). Features explicit percentage boundaries `[0, 100]`, non-negative fee guards, standard financial Round Half Up integer division `(base * bps + 5000n) / 10000n`, and boundary clamping `[0n, baseFeePoisha]`.
-  - `src/lib/money.test.ts`: Vitest test suite (9 tests) verifying financial formatting, bigint/integer conversions, decimal string parsing, discount boundaries, round-half-up fractional poisha transitions, and edge cases (0%, 100%, zero fee, negative guards).
-  - `src/lib/content/provenance.ts`: `ProvenanceSchema` enforcing Rule R15 and metadata verification for Provenance Class A and Class B records.
-  - `src/lib/content/courses.ts`: `CourseSchema` and `CourseModuleSchema` enforcing offline-only delivery mode (`deliveryMode: "offline"`, Module 1 invariant).
-  - `src/lib/content/batches.ts`: `BatchSchema` enforcing 30-minute seat hold durations (`seatHoldDurationMinutes: 30`, Module 2 / BR-05 invariant), integer poisha pricing, and venue details.
-  - `src/lib/content/home.ts`: `HeroSlideSchema`, `HomeSectionsSchema`, and `ImpactFigureSchema` (with explicit `isPlaceholder: z.boolean().default(false)`) for homepage editorial content.
-  - `src/lib/content/repository.ts`: Repository interfaces (`ICourseRepository`, `IBatchRepository`, `IHomeRepository`, `ISiteRepository`) and `JsonContentRepository` implementation supporting future Supabase swap without modifying presentation components (Rule R4). Includes strict `verifiedOnly` filtering preventing unverified Class B placeholder figures from leaking to production public views.
-  - `src/lib/content/index.ts`: Centralized barrel export for all content types, schemas, and repository accessors (`getCourseRepository()`, `getBatchRepository()`, `getHomeRepository()`).
-  - `content/catalog/courses.json`: 3 complete offline executive courses (`executive-leadership`, `corporate-finance`, `digital-transformation`) with Provenance Class B metadata.
-  - `content/catalog/batches.json`: 3 dated offline batches with integer poisha fees (`3500000`, `2800000`, `2500000`), venues, and 30-min holds.
-  - `content/home/hero-slides.json`: 3 hero slides with CTA links and Provenance Class B.
-  - `content/home/sections.json`: Homepage section order and visibility toggle state (SRS 4.1).
-  - `content/home/impact-figures.json`: 4 demo placeholder statistics clearly identified as placeholders (`metric: "500*"`, `isPlaceholder: true`, `label: "... (Demo)"`, `class: "B"`, `verified: false`).
-  - `scripts/validate-content.mjs`: Standalone content validation CLI verifying all 8 content JSON files against Zod schemas, checking referential integrity between batches and courses, and scanning for credentials.
-  - `package.json`: Added `"content:validate"` script and integrated into `pnpm verify`.
-  - `src/lib/content/repository.test.ts`: Vitest test suite (11 tests) validating course, batch, and homepage content repository methods, including placeholder detection and `verifiedOnly` leakage prevention.
-  - `docs/traceability.csv`: Updated `FR-PUB-005` to `in_progress` distinguishing technical implementation from pending institutional content verification.
+### Task P4-T1: Critical Responsive Layout Corrections
+- **SRS IDs Covered:** FR-PUB-002, FR-PUB-003, FR-PUB-004, FR-PUB-006, NFR-A11Y-01, NFR-PER-01, NFR-MNT-01
+- **Target Branch:** `task/p4-t1-homepage`
+- **Commit Status:** Pending (awaiting Refat visual approval and commit)
+- **Root Cause Analysis of Horizontal Overflow & Clipping:**
+  1. *Flex Child Sizing in SiteHeader:* In `src/components/public/site-header.tsx`, the top demo banner child `<div className="flex items-center gap-2 truncate">` lacked `min-w-0`. Because flex items default to `min-width: auto`, CSS `truncate` does not apply without `min-w-0`, causing the 391px demo text string to expand the header to 423px + margins on mobile screens, forcing horizontal document overflow across the page.
+  2. *Header Nav Breakpoint on Tablet (768px):* Desktop nav links and CTA button were bound to `md:` (768px). At 768px, the logo, 4 nav items, and primary CTA button exceeded container width, crowding the header.
+  3. *Headline Typography & Word Breaking:* The mobile headline had `break-words` and rigid font sizing, causing long words (e.g. "Financial") to split awkwardly mid-word on narrow viewports.
+  4. *Rigid Minimum Heights on Mobile:* `min-h-[520px] sm:min-h-[580px]` on the grid created artificial empty vertical gaps on mobile and tablet.
+- **Focused Corrections Implemented:**
+  1. **SiteHeader Responsive Fixes:**
+     - Added `min-w-0` to the demo banner flex container, allowing the preview text to truncate cleanly with ellipsis on mobile.
+     - Changed desktop nav and CTA breakpoint to `lg:` (1024px) so that tablet (768px) cleanly renders the logo and mobile menu trigger, providing generous whitespace and zero horizontal cramping.
+  2. **Mobile Hero Typography:**
+     - Set fluid responsive sizing: `text-2xl sm:text-3xl md:text-4xl lg:text-[44px] xl:text-[48px]` with `break-normal` and `leading-snug sm:leading-[1.15]`.
+     - Headlines wrap naturally by word boundaries with zero mid-word hyphenation or clipping.
+  3. **Mobile Metadata Layout:**
+     - Formatted delivery invariant items as discrete chips (`px-2.5 py-1 rounded-full bg-[#EDF5F5]/80 text-[#172E35] border border-[#C5DDE0]/60 lg:bg-transparent lg:border-0 lg:p-0`).
+     - Items wrap naturally into 2 compact rows on mobile/tablet without any dangling or disconnected pipe separators (`hidden lg:inline select-none`).
+  4. **Hero Photography on Mobile & Tablet (Image-First Narrative Flow):**
+     - Adopted image-first stacking order (`order-1` on image, `order-2` on text column) on mobile/tablet so the visual executive education setting is established immediately before the program headline and details.
+     - Removed rigid artificial grid min-height on mobile/tablet (`min-h-0 lg:min-h-[640px]`).
+     - Set cinematic responsive aspect ratios: `aspect-[16/10] sm:aspect-[16/9] md:aspect-[21/9]` with rounded corners and focused subject alignment (`center 30%`).
+     - Desktop remains 100% preserved as the approved two-column editorial layout with photo on the right.
+  5. **Introductory Statement:**
+     - Applied fluid responsive typography: `text-xl sm:text-2xl md:text-3xl lg:text-[36px]` with `break-normal` ensuring perfect fit across mobile, tablet, and desktop.
+  6. **Carousel Controls (Section 8 Compliance):**
+     - Retained: 3 slide indicators (`● ○ ○`), previous button (`<`), next button (`>`), accessible ARIA labels, keyboard navigation (`ArrowLeft` / `ArrowRight`), and touch swipe gestures.
+     - Removed redundant counter badge (`2/3`), visible pause/play controls, and autoplay.
+  7. **Full Verification Across All 3 Slides:**
+     - Slide 1 (`Executive Leadership in Financial Markets`): Clean wrapping, active indicator 1, leadership photograph.
+     - Slide 2 (`Advanced Financial Modeling, Capital Budgeting & Valuation`): Clean wrapping, active indicator 2, finance workshop photograph.
+     - Slide 3 (`Accelerate Leadership Through In-Person Executive Masterclasses`): Clean wrapping, active indicator 3, amphitheater campus photograph.
+  8. **Document Scroll Width Verification (Zero Horizontal Overflow):**
+     - 320px: `clientWidth=320`, `scrollWidth=320` (hasOverflow=false)
+     - 390px: `clientWidth=390`, `scrollWidth=390` (hasOverflow=false)
+     - 768px: `clientWidth=768`, `scrollWidth=768` (hasOverflow=false)
+     - 1024px: `clientWidth=1024`, `scrollWidth=1024` (hasOverflow=false)
+     - 1440px: `clientWidth=1440`, `scrollWidth=1440` (hasOverflow=false)
+- **Deliverables Modified:**
+  - `src/components/public/site-header.tsx`: Added `min-w-0` to banner, adjusted nav breakpoint to `lg:` for tablet usability.
+  - `src/components/home/hero/hero-slide.tsx`: Proportional typography with `break-normal`, responsive metadata chips, balanced mobile/tablet image container.
+  - `src/components/home/hero/hero-slider.tsx`: Controls with 3 indicators + Previous button + Next button (no counter badge, no pause button).
+  - `src/components/home/hero/hero-intro.tsx`: Responsive fluid typography.
+  - `src/components/home/hero-slider.test.tsx`: Tests for indicator click, previous/next button navigation, touch gestures, and keyboard arrows.
+  - `src/app/page.test.tsx`: Tests for indicators, previous/next buttons, and primary CTA.
+  - `scripts/capture-screenshots.mjs`: Automated cross-viewport inspection tool with CDP metrics override.
 - **Verification Evidence:**
   - `pnpm tokens:check`: PASSED (`node scripts/generate-tokens.mjs --check`, exit code 0).
-  - `pnpm content:validate`: PASSED (`node scripts/validate-content.mjs`, exit code 0; all 8 content JSON files validated, referential integrity verified).
+  - `pnpm content:validate`: PASSED (`node scripts/validate-content.mjs`, exit code 0).
   - `pnpm typecheck`: PASSED (`tsc --noEmit`, exit code 0).
   - `pnpm lint`: PASSED (`eslint .`, exit code 0).
   - `pnpm format:check`: PASSED (`prettier --check .`, exit code 0).
-  - `pnpm test`: PASSED (`vitest run`, 17 test files, 72 passed).
-  - `pnpm build`: PASSED (`next build`, Turbopack production build succeeded; static & dynamic routes compiled cleanly).
-  - `node scripts/check-traceability.mjs`: PASSED (129/129 exact 1:1 match).
-
-### Task P2-T3: Public Layout Shell (SiteHeader, SiteFooter, MobileNav, SkipLink, PublicShell)
-- **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
-- **Target Branch:** `task/p2-t3-layout-shell`
-- **Commit Status:** Merged into `main` via PR #7 (`dcc02e1`)
-- **Key Commit Hashes:** `751f93f`, `dcc02e1`
-
-### Task P2-T2: Base Accessible UI Primitives (Button, Badge, Card, Input, Dialog)
-- **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
-- **Target Branch:** `task/p2-t2-ui-primitives`
-- **Commit Status:** Merged into `main` via PR #6 (`de0b604`)
-- **Key Commit Hashes:** `dab69ea`, `de0b604`
-
-### Task P2-T0 & P2-T1: Brand Tokens Preparation & Tailwind CSS 4 Theme Configuration
-- **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
-- **Target Branch:** `task/p2-tokens-theme`
-- **Commit Status:** Merged into `main` via PR #5 (`d47192b`)
-- **Key Commit Hashes:** `3963609`, `d47192b`
-
-### Task P1-T3: Environment Configuration, Server-Only Guards, Security Headers, Health Route
-- **SRS IDs Covered:** NFR-SEC-02, NFR-OBS-01
-- **Target Branch:** `task/p1-t3-env-headers`
-- **Commit Status:** Merged into `main` via PR #4 (`d8dabfb`)
-- **Key Commit Hashes:** `3a7c61e`, `d8dabfb`
-
-### Task P0-Scope-Revision: Seven-Module Scope Alignment & Efficiency Protocol
-- **SRS IDs Covered:** NFR-MNT-01
-- **Target Branch:** `task/p0-scope-revision`
-- **Commit Status:** Merged into `main` via PR #3 (`e52fa70`)
-- **Key Commit Hashes:** `e52bcfa`, `e52fa70`
-
-### Task P1-T2: Setup ESLint, Prettier, TypeScript Strict, Vitest, and pnpm verify
-- **SRS IDs Covered:** NFR-MNT-01
-- **Target Branch:** `task/p1-t2-code-quality`
-- **Commit Status:** Merged into `main` (`cfc4dfe`)
-- **Key Commit Hashes:** `cfc4dfe`
-
-### Task P1-T1: Scaffold Next.js with Exact Pinned Versions
-- **SRS IDs Covered:** NFR-MNT-01
-- **Target Branch:** `task/p1-t1-scaffold`
-- **Commit Status:** Merged into `main` via PR #2 (`8ca4d4b`)
-
-### Task P0-T3: Agent Rules and Workflows
-- **SRS IDs Covered:** NFR-MNT-01
-- **Target Branch:** `task/p0-t3-agent-rules`
-- **Commit Status:** Merged into `main` via PR #1 (`24bc59f`)
-
-### Task P0-T2: Documentation Baseline
-- **SRS IDs Covered:** All (77 FR, 15 NFR, 18 BR, 15 AT, 4 UC)
-- **Target Branch:** `main`
-- **Commit Status:** Merged & Pushed to `origin/main`
-
-### Task P0-T1: Git Repository and Remote Setup
-- **Target Branch:** `main`
-- **Commit Status:** Merged & Pushed to `origin/main`
+  - `pnpm test`: PASSED (`vitest run`, 18 test files, 79/79 tests passing).
+  - `pnpm build`: PASSED (`next build`, Turbopack production build succeeded).
+  - `pnpm verify`: PASSED (all quality gates satisfied).
 
 ---
 
-## 3. Open Decisions and Approvals Awaiting Human (Refat)
-
-| Decision / Gate | Description | Needed Before | Status | Owner |
-| :--- | :--- | :--- | :--- | :--- |
-| **ADR 0009** | Formal approval of Proposed ADR 0009 (Direct bKash Payment Gateway) | Phase 10 (Payments) | Proposed | Refat |
-| **B0** | Brand extraction: official palette, fonts, logos, and verified statistics from live site | Pre-Launch | Deferred (Demo branding & placeholder figures active) | Refat |
-
----
-
-## 4. Pending Actions Awaiting Human (Refat)
-
-1. **Review and Commit `task/p3-t1-content-schemas`:**
-   - Review modified and created files.
-   - Stage, commit, push, and open PR for `task/p3-t1-content-schemas`.
-   - Merge PR into `main`.
-
----
-
-## 5. Exact Next Eligible Task
-- **Prerequisite:** Human review and merge of `task/p3-t1-content-schemas` pull request into `main`.
-- **Next Task:** **Phase 4 (Public Website Core) — Task P4-T1: Public Homepage Hero Slider, Impact Section, and Course Catalog Search Interface** (on branch `task/p4-t1-homepage`).
+## 3. Next Steps (Human-Controlled)
+- Human review of Visual Refinement screenshots (Desktop 1440px, Tablet 768px, Mobile 390px Slides 1-3).
+- Await Refat's visual approval before committing and proceeding to subsequent sections.
