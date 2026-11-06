@@ -1,0 +1,53 @@
+[
+  {
+    "id": "review-01",
+    "quote": "The offline boardroom case discussions provided actionable frameworks we immediately integrated into our executive strategic planning cycle.",
+    "author": "Mahmudul Alam",
+    "designation": "Director of Operations",
+    "company": "Leading Telecommunications Group",
+    "cohort": "Executive Leadership Cohort 01",
+    "order": 1,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo testimonial placeholder (Gate B0 deferred until official graduate consent audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "review-02",
+    "quote": "The financial statement engineering and M&A modeling modules offered practical depth tailored specifically to Bangladesh's banking and regulatory environment.",
+    "author": "Farzana Yasmin",
+    "designation": "Head of Corporate Treasury",
+    "company": "Tier-1 Commercial Bank",
+    "cohort": "Corporate Finance Cohort 01",
+    "order": 2,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo testimonial placeholder (Gate B0 deferred until official graduate consent audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "review-03",
+    "quote": "High-caliber peer networking and real-world executive dilemmas made this program distinctly more valuable than passive online certifications.",
+    "author": "Rezaul Karim",
+    "designation": "Executive Vice President",
+    "company": "National Manufacturing Conglomerate",
+    "cohort": "Executive Leadership Cohort 01",
+    "order": 3,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo testimonial placeholder (Gate B0 deferred until official graduate consent audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]

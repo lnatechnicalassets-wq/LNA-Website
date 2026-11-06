@@ -1,130 +1,71 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
-**Last Updated:** 4 November 2026  
-**Session Context:** Phase 3 Task P3-T1 (Content Architecture: Zod Schemas, JSON Repositories, Monetary Discount Engine, and Content Validation)  
+**Last Updated:** 6 November 2026  
+**Session Context:** Phase 4 Task P4-T1 (Pre-Merge Verification, Vercel Integration & Course Navigation Readiness)  
 
 ---
 
 ## 1. Current Phase and Task
-- **Current Phase:** Phase 3 (Content Architecture & Repositories)
-- **Current Task:** P3-T1 (Zod Schemas, JSON Content Repository Abstraction, Integer Poisha Engine with Round-Half-Up Discounts, Seed Catalog & Content Validation)
-- **Task Status:** Implemented & Verified; Pending Human Review, Commit & Merge by Refat
-- **Current Git Branch:** `task/p3-t1-content-schemas`
-- **Base Commit:** `dcc02e1` (`main`, containing merged `task/p2-t3-layout-shell` via PR #7)
-- **Remote:** `https://github.com/BlazeDashX/LNA-Website.git`
-- **Phase 3 Roadmap Note:** P3-T1 is the final active task in Phase 3 for Release v1.0. Task P3-T2 (Bilingual internationalization / `FR-OTH-007` and `BR-17`) was formally deferred to post-v1 under the Supervisor-Approved Scope Revision Addendum (`docs/SCOPE-REVISION-V1.md`). Completion of P3-T1 concludes Phase 3.
+- **Current Phase:** Phase 4 (Public Website Core)
+- **Current Task:** P4-T1 (Pre-Merge Verification, Vercel Analytics/Speed Insights Integration & Course Route Scope)
+- **Task Status:** Completed & Verified via Automated Tests, Lint, Typecheck, and Production Build; Awaiting Owner Review & Merge Approval
+- **Current Git Branch:** `task/p4-t1-homepage`
+- **Base Commit:** `b306a77` (`main`, containing merged `task/p3-t1-content-schemas` via PR #9)
+- **Remote Head:** `abae925` (Contains owner's uploaded temporary test image on GitHub; preserved without overwriting per Rule R14)
 
 ---
 
 ## 2. Completed Tasks
 
-### Task P3-T1: Content Architecture, Repositories, Integer Poisha Engine & Content Validation
-- **SRS IDs Covered:** FR-PUB-005 (in_progress - technical architecture complete, institutional data audit pending Gate B0), NFR-MNT-01, NFR-SEC-02, BR-05
-- **Target Branch:** `task/p3-t1-content-schemas`
-- **Commit Status:** Pending (awaiting Refat review and commit)
-- **Deliverables Created / Modified:**
-  - `src/lib/money.ts`: Pure integer poisha monetary mathematics and BDT formatting (`formatPoishaToBDT`, `poishaToTakaString`, `takaStringToPoisha`, `percentToBasisPoints`, `calculateDiscountAmountPoisha`, `calculateDiscountedPoisha`) strictly compliant with Rule R5 (zero floats, zero `Number()`, zero `.toFixed()`). Features explicit percentage boundaries `[0, 100]`, non-negative fee guards, standard financial Round Half Up integer division `(base * bps + 5000n) / 10000n`, and boundary clamping `[0n, baseFeePoisha]`.
-  - `src/lib/money.test.ts`: Vitest test suite (9 tests) verifying financial formatting, bigint/integer conversions, decimal string parsing, discount boundaries, round-half-up fractional poisha transitions, and edge cases (0%, 100%, zero fee, negative guards).
-  - `src/lib/content/provenance.ts`: `ProvenanceSchema` enforcing Rule R15 and metadata verification for Provenance Class A and Class B records.
-  - `src/lib/content/courses.ts`: `CourseSchema` and `CourseModuleSchema` enforcing offline-only delivery mode (`deliveryMode: "offline"`, Module 1 invariant).
-  - `src/lib/content/batches.ts`: `BatchSchema` enforcing 30-minute seat hold durations (`seatHoldDurationMinutes: 30`, Module 2 / BR-05 invariant), integer poisha pricing, and venue details.
-  - `src/lib/content/home.ts`: `HeroSlideSchema`, `HomeSectionsSchema`, and `ImpactFigureSchema` (with explicit `isPlaceholder: z.boolean().default(false)`) for homepage editorial content.
-  - `src/lib/content/repository.ts`: Repository interfaces (`ICourseRepository`, `IBatchRepository`, `IHomeRepository`, `ISiteRepository`) and `JsonContentRepository` implementation supporting future Supabase swap without modifying presentation components (Rule R4). Includes strict `verifiedOnly` filtering preventing unverified Class B placeholder figures from leaking to production public views.
-  - `src/lib/content/index.ts`: Centralized barrel export for all content types, schemas, and repository accessors (`getCourseRepository()`, `getBatchRepository()`, `getHomeRepository()`).
-  - `content/catalog/courses.json`: 3 complete offline executive courses (`executive-leadership`, `corporate-finance`, `digital-transformation`) with Provenance Class B metadata.
-  - `content/catalog/batches.json`: 3 dated offline batches with integer poisha fees (`3500000`, `2800000`, `2500000`), venues, and 30-min holds.
-  - `content/home/hero-slides.json`: 3 hero slides with CTA links and Provenance Class B.
-  - `content/home/sections.json`: Homepage section order and visibility toggle state (SRS 4.1).
-  - `content/home/impact-figures.json`: 4 demo placeholder statistics clearly identified as placeholders (`metric: "500*"`, `isPlaceholder: true`, `label: "... (Demo)"`, `class: "B"`, `verified: false`).
-  - `scripts/validate-content.mjs`: Standalone content validation CLI verifying all 8 content JSON files against Zod schemas, checking referential integrity between batches and courses, and scanning for credentials.
-  - `package.json`: Added `"content:validate"` script and integrated into `pnpm verify`.
-  - `src/lib/content/repository.test.ts`: Vitest test suite (11 tests) validating course, batch, and homepage content repository methods, including placeholder detection and `verifiedOnly` leakage prevention.
-  - `docs/traceability.csv`: Updated `FR-PUB-005` to `in_progress` distinguishing technical implementation from pending institutional content verification.
-- **Verification Evidence:**
-  - `pnpm tokens:check`: PASSED (`node scripts/generate-tokens.mjs --check`, exit code 0).
-  - `pnpm content:validate`: PASSED (`node scripts/validate-content.mjs`, exit code 0; all 8 content JSON files validated, referential integrity verified).
-  - `pnpm typecheck`: PASSED (`tsc --noEmit`, exit code 0).
-  - `pnpm lint`: PASSED (`eslint .`, exit code 0).
-  - `pnpm format:check`: PASSED (`prettier --check .`, exit code 0).
-  - `pnpm test`: PASSED (`vitest run`, 17 test files, 72 passed).
-  - `pnpm build`: PASSED (`next build`, Turbopack production build succeeded; static & dynamic routes compiled cleanly).
-  - `node scripts/check-traceability.mjs`: PASSED (129/129 exact 1:1 match).
-
-### Task P2-T3: Public Layout Shell (SiteHeader, SiteFooter, MobileNav, SkipLink, PublicShell)
-- **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
-- **Target Branch:** `task/p2-t3-layout-shell`
-- **Commit Status:** Merged into `main` via PR #7 (`dcc02e1`)
-- **Key Commit Hashes:** `751f93f`, `dcc02e1`
-
-### Task P2-T2: Base Accessible UI Primitives (Button, Badge, Card, Input, Dialog)
-- **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
-- **Target Branch:** `task/p2-t2-ui-primitives`
-- **Commit Status:** Merged into `main` via PR #6 (`de0b604`)
-- **Key Commit Hashes:** `dab69ea`, `de0b604`
-
-### Task P2-T0 & P2-T1: Brand Tokens Preparation & Tailwind CSS 4 Theme Configuration
-- **SRS IDs Covered:** NFR-A11Y-01, NFR-PER-01, NFR-MNT-01, FR-PUB-001
-- **Target Branch:** `task/p2-tokens-theme`
-- **Commit Status:** Merged into `main` via PR #5 (`d47192b`)
-- **Key Commit Hashes:** `3963609`, `d47192b`
-
-### Task P1-T3: Environment Configuration, Server-Only Guards, Security Headers, Health Route
-- **SRS IDs Covered:** NFR-SEC-02, NFR-OBS-01
-- **Target Branch:** `task/p1-t3-env-headers`
-- **Commit Status:** Merged into `main` via PR #4 (`d8dabfb`)
-- **Key Commit Hashes:** `3a7c61e`, `d8dabfb`
-
-### Task P0-Scope-Revision: Seven-Module Scope Alignment & Efficiency Protocol
-- **SRS IDs Covered:** NFR-MNT-01
-- **Target Branch:** `task/p0-scope-revision`
-- **Commit Status:** Merged into `main` via PR #3 (`e52fa70`)
-- **Key Commit Hashes:** `e52bcfa`, `e52fa70`
-
-### Task P1-T2: Setup ESLint, Prettier, TypeScript Strict, Vitest, and pnpm verify
-- **SRS IDs Covered:** NFR-MNT-01
-- **Target Branch:** `task/p1-t2-code-quality`
-- **Commit Status:** Merged into `main` (`cfc4dfe`)
-- **Key Commit Hashes:** `cfc4dfe`
-
-### Task P1-T1: Scaffold Next.js with Exact Pinned Versions
-- **SRS IDs Covered:** NFR-MNT-01
-- **Target Branch:** `task/p1-t1-scaffold`
-- **Commit Status:** Merged into `main` via PR #2 (`8ca4d4b`)
-
-### Task P0-T3: Agent Rules and Workflows
-- **SRS IDs Covered:** NFR-MNT-01
-- **Target Branch:** `task/p0-t3-agent-rules`
-- **Commit Status:** Merged into `main` via PR #1 (`24bc59f`)
-
-### Task P0-T2: Documentation Baseline
-- **SRS IDs Covered:** All (77 FR, 15 NFR, 18 BR, 15 AT, 4 UC)
-- **Target Branch:** `main`
-- **Commit Status:** Merged & Pushed to `origin/main`
-
-### Task P0-T1: Git Repository and Remote Setup
-- **Target Branch:** `main`
-- **Commit Status:** Merged & Pushed to `origin/main`
+### Task P4-T1: Pre-Merge Verification & Vercel Integration
+- **SRS IDs Covered:** FR-PUB-002, FR-PUB-004, FR-CRS-004, FR-CRS-005, Rule R1, Rule R3, Rule R4, Rule R5, Rule R8, Rule R14, Rule R15, WCAG 2.2 AA (2.1 Keyboard, 2.5.8 Target Size)
+- **Target Branch:** `task/p4-t1-homepage`
+- **Implemented Architecture:**
+  1. *Vercel Monitoring Integration:*
+     - Installed `@vercel/analytics` (`2.0.1`) and `@vercel/speed-insights` (`2.0.0`) pinned to exact versions.
+     - Added `<Analytics />` and `<SpeedInsights />` to `src/app/layout.tsx` within the App Router root layout, preserving SSR boundaries and PublicShell providers.
+     - Updated Content Security Policy (CSP) in `next.config.mjs` to authorize `https://va.vercel-scripts.com` in `script-src` and `https://*.vercel-insights.com https://va.vercel-scripts.com` in `connect-src`.
+  2. *Read-Only Course Details Page (`/courses/[slug]`):*
+     - Created `src/app/courses/[slug]/page.tsx` within approved course-management scope (FR-CRS-005).
+     - Full static pre-rendering via `generateStaticParams()` across all 6 published catalog courses.
+     - Dynamic metadata (`generateMetadata()`) and 404 handling via `notFound()`.
+     - Displays duration, Dhanmondi campus location, poisha-formatted fees with discount strike-through (Rule R5), full curriculum structure with modules, key learning outcomes, audience, prerequisites, and assigned mentors linking directly to `/mentors/[slug]`.
+     - Comprehensive unit tests in `src/app/courses/[slug]/page.test.tsx` (all passing).
+  3. *Navigation & Faculty Spotlight Verification:*
+     - Every course card links cleanly to `/courses/[slug]`.
+     - Every mentor portrait links independently to `/mentors/[slug]` via sibling `<Link>` at `z-30`.
+     - Full keyboard accessibility with `focus-visible:ring-4 focus-visible:ring-white`.
+     - Adaptive grid layout strictly capped at max 3 portraits per row:
+       - 2 mentors: 1 centered row of 2 (72px).
+       - 3 mentors: 1 centered row of 3 (66px).
+       - 4 mentors: 2 centered rows of 2 + 2 (66px).
+       - 5 mentors: 2 centered rows of 3 + 2 (62px).
+       - 6 mentors: 2 centered rows of 3 + 3 (62px).
+  4. *Quality Gates Evidence:*
+     - `pnpm content:validate`: PASSED (0 errors).
+     - `pnpm typecheck`: PASSED (`tsc --noEmit` exit code 0).
+     - `pnpm lint`: PASSED (`eslint .` exit code 0).
+     - `pnpm prettier --check .`: PASSED (all files formatted).
+     - `pnpm test`: 23/23 tests passing across 5 suites (`courses-section.test.tsx`, `page.test.tsx`, `courses/[slug]/page.test.tsx`, `mentors/[slug]/page.test.tsx`, `health/route.test.ts`).
+     - `pnpm build`: Next.js Turbopack build succeeded with exit code 0; all 32 static paths generated (including 6 `/courses/[slug]` and 23 `/mentors/[slug]` routes).
+     - Viewport overflow checks (320px, 390px, 768px, 1024px, 1440px): 100% `hasOverflow=false`.
 
 ---
 
-## 3. Open Decisions and Approvals Awaiting Human (Refat)
+## 3. Git Checkpoint (Rule R14)
 
-| Decision / Gate | Description | Needed Before | Status | Owner |
-| :--- | :--- | :--- | :--- | :--- |
-| **ADR 0009** | Formal approval of Proposed ADR 0009 (Direct bKash Payment Gateway) | Phase 10 (Payments) | Proposed | Refat |
-| **B0** | Brand extraction: official palette, fonts, logos, and verified statistics from live site | Pre-Launch | Deferred (Demo branding & placeholder figures active) | Refat |
+Per human-controlled Git protocol, no staging, commits, pushes, merges, or resets were performed.
 
----
+- **Current Branch:** `task/p4-t1-homepage`
+- **Recommended Conventional Commit:**
+  ```bash
+  feat(deploy): integrate vercel monitoring, add read-only course details page, and verify production gates [FR-PUB-002, FR-CRS-005]
+  ```
 
-## 4. Pending Actions Awaiting Human (Refat)
+Per human-controlled Git protocol, no staging, commits, pushes, merges, or resets were performed.
 
-1. **Review and Commit `task/p3-t1-content-schemas`:**
-   - Review modified and created files.
-   - Stage, commit, push, and open PR for `task/p3-t1-content-schemas`.
-   - Merge PR into `main`.
-
----
-
-## 5. Exact Next Eligible Task
-- **Prerequisite:** Human review and merge of `task/p3-t1-content-schemas` pull request into `main`.
-- **Next Task:** **Phase 4 (Public Website Core) — Task P4-T1: Public Homepage Hero Slider, Impact Section, and Course Catalog Search Interface** (on branch `task/p4-t1-homepage`).
+- **Current Branch:** `task/p4-t1-homepage`
+- **Recommended Conventional Commit:**
+  ```bash
+  feat(courses): adapt faculty spotlight to max 3 portraits per row [FR-PUB-002, FR-CRS-004]
+  ```

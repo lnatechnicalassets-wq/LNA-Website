@@ -130,6 +130,7 @@ const BatchSchema = z
 
 const HeroSlideSchema = z.object({
   id: z.string().min(1),
+  courseId: z.string().optional(),
   title: z.string().min(3),
   headline: z.string().min(5),
   description: z.string().min(10),
@@ -138,6 +139,10 @@ const HeroSlideSchema = z.object({
   secondaryCtaText: z.string().optional(),
   secondaryCtaHref: z.string().optional(),
   badgeText: z.string().optional(),
+  startDate: z.string().optional(),
+  duration: z.string().optional(),
+  venue: z.string().optional(),
+  imageObjectPosition: z.string().optional(),
   imagePlaceholder: z.string().min(1),
   order: z.number().int().nonnegative(),
   provenance: ProvenanceSchema,
@@ -160,6 +165,54 @@ const ImpactFigureSchema = z.object({
   metric: z.string().min(1),
   label: z.string().min(2),
   description: z.string().min(5),
+  order: z.number().int().nonnegative(),
+  isPlaceholder: z.boolean().optional(),
+  provenance: ProvenanceSchema,
+});
+
+const PartnerSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(2),
+  sector: z.string().min(2),
+  badgeText: z.string().optional(),
+  isPlaceholder: z.boolean().optional(),
+  order: z.number().int().nonnegative(),
+  provenance: ProvenanceSchema,
+});
+
+const EventSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(3),
+  subtitle: z.string().min(3),
+  date: z.string().min(4),
+  time: z.string().min(2),
+  venue: z.string().min(3),
+  deliveryMode: z.literal("offline"),
+  featured: z.boolean().optional(),
+  order: z.number().int().nonnegative(),
+  isPlaceholder: z.boolean().optional(),
+  provenance: ProvenanceSchema,
+});
+
+const MentorSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(2),
+  role: z.string().min(2),
+  organization: z.string().min(2),
+  bio: z.string().min(10),
+  courseId: z.string().optional(),
+  order: z.number().int().nonnegative(),
+  isPlaceholder: z.boolean().optional(),
+  provenance: ProvenanceSchema,
+});
+
+const ReviewSchema = z.object({
+  id: z.string().min(1),
+  quote: z.string().min(10),
+  author: z.string().min(2),
+  designation: z.string().min(2),
+  company: z.string().min(2),
+  cohort: z.string().min(3),
   order: z.number().int().nonnegative(),
   isPlaceholder: z.boolean().optional(),
   provenance: ProvenanceSchema,
@@ -192,7 +245,7 @@ function scanForSecrets(raw, fileName) {
 }
 
 export function validateAllContent() {
-  console.log("Starting Content Architecture Validation (Phase 3)...");
+  console.log("Starting Content Architecture Validation (Phase 4)...");
 
   // 1. Site configuration files
   console.log("  → Validating content/site/brand.json...");
@@ -235,7 +288,14 @@ export function validateAllContent() {
   console.log("  → Validating content/home/hero-slides.json...");
   const hero = readJson("home/hero-slides.json");
   scanForSecrets(hero.raw, "home/hero-slides.json");
-  z.array(HeroSlideSchema).parse(hero.data);
+  const parsedHero = z.array(HeroSlideSchema).parse(hero.data);
+  for (const slide of parsedHero) {
+    if (slide.courseId && !courseIds.has(slide.courseId)) {
+      throw new Error(
+        `Referential Integrity Error: Hero slide ${slide.id} references non-existent courseId "${slide.courseId}"`
+      );
+    }
+  }
 
   console.log("  → Validating content/home/sections.json...");
   const sections = readJson("home/sections.json");
@@ -246,6 +306,33 @@ export function validateAllContent() {
   const impact = readJson("home/impact-figures.json");
   scanForSecrets(impact.raw, "home/impact-figures.json");
   z.array(ImpactFigureSchema).parse(impact.data);
+
+  console.log("  → Validating content/home/partners.json...");
+  const partners = readJson("home/partners.json");
+  scanForSecrets(partners.raw, "home/partners.json");
+  z.array(PartnerSchema).parse(partners.data);
+
+  console.log("  → Validating content/home/events.json...");
+  const events = readJson("home/events.json");
+  scanForSecrets(events.raw, "home/events.json");
+  z.array(EventSchema).parse(events.data);
+
+  console.log("  → Validating content/home/mentors.json...");
+  const mentors = readJson("home/mentors.json");
+  scanForSecrets(mentors.raw, "home/mentors.json");
+  const parsedMentors = z.array(MentorSchema).parse(mentors.data);
+  for (const mentor of parsedMentors) {
+    if (mentor.courseId && !courseIds.has(mentor.courseId)) {
+      throw new Error(
+        `Referential Integrity Error: Mentor ${mentor.id} references non-existent courseId "${mentor.courseId}"`
+      );
+    }
+  }
+
+  console.log("  → Validating content/home/reviews.json...");
+  const reviews = readJson("home/reviews.json");
+  scanForSecrets(reviews.raw, "home/reviews.json");
+  z.array(ReviewSchema).parse(reviews.data);
 
   console.log(
     "✅ CONTENT VALIDATION SUCCESSFUL: All content schemas, referential integrity, and security checks passed!"

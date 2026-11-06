@@ -96,9 +96,13 @@ describe("Content Repository Abstraction (Phase 3)", () => {
       const repo = getHomeRepository();
       const sections = await repo.getSections();
 
-      expect(sections.length).toBeGreaterThanOrEqual(5);
-      expect(sections.some((s) => s.id === "hero-carousel")).toBe(true);
-      expect(sections.some((s) => s.id === "course-catalog")).toBe(true);
+      expect(sections.length).toBe(7);
+      expect(sections.some((s) => s.id === "hero-slider")).toBe(true);
+      expect(sections.some((s) => s.id === "courses")).toBe(true);
+      expect(sections.some((s) => s.id === "partners")).toBe(true);
+      expect(sections.some((s) => s.id === "events")).toBe(true);
+      expect(sections.some((s) => s.id === "mentors")).toBe(true);
+      expect(sections.some((s) => s.id === "reviews")).toBe(true);
     });
 
     it("retrieves impact figures in development demo mode with placeholder indicators", async () => {
@@ -120,6 +124,28 @@ describe("Content Repository Abstraction (Phase 3)", () => {
       // When requesting verifiedOnly, unverified Class B placeholder figures must not appear
       const verifiedFigures = await repo.getImpactFigures({ verifiedOnly: true });
       expect(verifiedFigures).toEqual([]);
+    });
+
+    it("retrieves corporate partners, events, mentors, and reviews from home repository", async () => {
+      const repo = getHomeRepository();
+
+      const partners = await repo.getPartners();
+      expect(partners.length).toBeGreaterThanOrEqual(4);
+      expect(partners[0].name).toBeDefined();
+      expect(partners[0].isPlaceholder).toBe(true);
+
+      const events = await repo.getEvents();
+      expect(events.length).toBeGreaterThanOrEqual(2);
+      expect(events[0].deliveryMode).toBe("offline");
+
+      const mentors = await repo.getMentors();
+      expect(mentors.length).toBeGreaterThanOrEqual(3);
+      expect(mentors[0].role).toBeDefined();
+
+      const reviews = await repo.getReviews();
+      expect(reviews.length).toBeGreaterThanOrEqual(3);
+      expect(reviews[0].quote).toBeDefined();
+      expect(reviews[0].author).toBeDefined();
     });
   });
 });

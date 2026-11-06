@@ -17,8 +17,8 @@ describe("Brand Content Repository and Design Tokens (P2-T0 & P2-T1)", () => {
   it("loads brand config through the safe @/lib/content repository abstraction (Rule R4)", () => {
     const brand = getBrandConfig();
     expect(brand).toBeDefined();
-    expect(brand.colors.primary["800"]).toBe("#1e3a8a");
-    expect(brand.colors.accent["600"]).toBe("#d97706");
+    expect(brand.colors.primary["800"]).toBe("#086477");
+    expect(brand.colors.accent["600"]).toBe("#5da7b0");
 
     // Validate Zod schema conforms
     expect(() => BrandConfigSchema.parse(brand)).not.toThrow();
@@ -30,8 +30,8 @@ describe("Brand Content Repository and Design Tokens (P2-T0 & P2-T1)", () => {
 
     expect(css).toContain(":root");
     expect(css).toContain("@theme");
-    expect(css).toContain("--primary-800: #1e3a8a;");
-    expect(css).toContain("--accent-600: #d97706;");
+    expect(css).toContain("--primary-800: #086477;");
+    expect(css).toContain("--accent-600: #5da7b0;");
     expect(css).toContain("--color-primary-800: var(--primary-800);");
     expect(css).toContain("--color-status-success-bg: var(--status-success-bg);");
     expect(css).toContain("--radius-md: 0.375rem;");

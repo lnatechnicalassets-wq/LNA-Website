@@ -2,40 +2,52 @@
   "provenance": {
     "class": "B",
     "verified": false,
-    "source": "Demo homepage sections layout (Gate B0 deferred until CMS configuration)",
+    "source": "Approved 7 homepage sections layout per ADR 0011 (Gate B0 deferred until CMS configuration)",
     "verifiedBy": null,
     "verifiedOn": null
   },
   "sections": [
     {
-      "id": "hero-carousel",
-      "name": "Hero Banner Carousel",
+      "id": "hero-slider",
+      "name": "Hero Slider",
       "enabled": true,
       "order": 1
     },
     {
-      "id": "impact-statistics",
-      "name": "Institutional Impact Figures",
+      "id": "partners",
+      "name": "Corporate Partners Strip",
       "enabled": true,
       "order": 2
     },
     {
-      "id": "course-catalog",
-      "name": "Featured Course Catalog",
+      "id": "courses",
+      "name": "Featured Executive Courses",
       "enabled": true,
       "order": 3
     },
     {
-      "id": "academy-mission",
-      "name": "Academy Leadership & Campus",
+      "id": "events",
+      "name": "Executive Masterclasses & Events",
       "enabled": true,
       "order": 4
     },
     {
-      "id": "admissions-cta",
-      "name": "Admissions & Application Callout",
+      "id": "mentors",
+      "name": "Executive Faculty & Mentors",
       "enabled": true,
       "order": 5
+    },
+    {
+      "id": "reviews",
+      "name": "Learner Testimonials",
+      "enabled": true,
+      "order": 6
+    },
+    {
+      "id": "footer",
+      "name": "Corporate Site Footer",
+      "enabled": true,
+      "order": 7
     }
   ]
 }

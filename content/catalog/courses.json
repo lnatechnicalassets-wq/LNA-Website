@@ -1,16 +1,59 @@
 [
   {
+    "id": "data-analytics",
+    "title": "Data Analytics & Business Intelligence",
+    "subtitle": "Turn complex data into actionable executive insights and automated reporting systems.",
+    "category": "Skill Development",
+    "summary": "Turn data into actionable business insights with executive dashboards.",
+    "description": "An intensive offline masterclass covering executive business intelligence, automated KPI dashboards, and data-driven decision frameworks for senior leaders.",
+    "learningOutcomes": [
+      "Work with real enterprise datasets",
+      "Build decision dashboards & reports",
+      "Apply modern analytical tools"
+    ],
+    "targetAudience": [
+      "Operations Managers and Business Analysts",
+      "Department Heads and Strategy Directors",
+      "Founders and Commercial Executives"
+    ],
+    "prerequisites": ["Familiarity with spreadsheets and basic business metrics"],
+    "modules": [
+      {
+        "id": "mod-da-01",
+        "title": "Data Engineering & Dashboard Architecture",
+        "duration": "4 Weeks",
+        "topics": ["Data pipelines", "Executive KPI visualization", "Power BI / Tableau"]
+      },
+      {
+        "id": "mod-da-02",
+        "title": "Predictive Analytics & Decision Modeling",
+        "duration": "4 Weeks",
+        "topics": ["Forecasting models", "Scenario analysis", "Executive presentation"]
+      }
+    ],
+    "deliveryMode": "offline",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "status": "published",
+    "featured": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
     "id": "executive-leadership",
     "title": "Executive Leadership & Strategic Governance",
     "subtitle": "Master executive decision-making, strategic alignment, and board-level leadership.",
     "category": "Leadership & Strategy",
-    "summary": "An intensive 8-week offline executive development program designed for directors, C-level leaders, and senior enterprise managers in Bangladesh.",
+    "summary": "Master strategic decision-making and board governance in an intensive executive program.",
     "description": "The Executive Leadership & Strategic Governance program provides senior executives with actionable frameworks to navigate complex institutional challenges, formulate corporate strategy, and establish high-accountability organizational governance.",
     "learningOutcomes": [
-      "Formulate agile strategic corporate roadmaps under market volatility",
-      "Drive executive board communications and stakeholder alignment",
-      "Lead cross-functional organizational restructuring and change management",
-      "Cultivate high-performance ethical corporate culture"
+      "Formulate agile strategic corporate roadmaps",
+      "Drive executive board communications",
+      "Lead cross-functional change management"
     ],
     "targetAudience": [
       "Managing Directors and Board Members",
@@ -73,13 +116,12 @@
     "title": "Corporate Finance & Capital Structuring",
     "subtitle": "Advanced financial modeling, capital budgeting, and enterprise valuation.",
     "category": "Finance & Economics",
-    "summary": "Practical offline masterclass on financial strategy, capital allocation, debt syndication, and mergers & acquisitions for modern corporations.",
+    "summary": "Master enterprise financial strategy, capital allocation, valuation, and debt syndication.",
     "description": "Designed for finance directors, investment analysts, and business owners, this masterclass dives into enterprise balance sheet optimization, risk hedging, and financial leadership in Bangladesh's evolving regulatory environment.",
     "learningOutcomes": [
-      "Evaluate complex capital projects using DCF and real options",
-      "Structure optimal debt-equity ratios for capital efficiency",
-      "Execute corporate valuation for M&A and private equity funding",
-      "Manage working capital and foreign exchange volatility"
+      "Evaluate complex capital projects via DCF",
+      "Structure optimal debt-equity ratios",
+      "Execute corporate valuation for M&A deals"
     ],
     "targetAudience": [
       "Chief Financial Officers and Finance Controllers",
@@ -128,13 +170,12 @@
     "title": "Digital Transformation & Enterprise AI",
     "subtitle": "Accelerating legacy modernization, data architecture, and applied AI governance.",
     "category": "Technology & Innovation",
-    "summary": "Executive roadmap for leading technological transformation, generative AI adoption, and secure digital workflows across traditional business operations.",
+    "summary": "Lead enterprise digital transformation, AI adoption, and modern technology workflows.",
     "description": "This program equips operational and technical leaders with the strategic vision required to deploy artificial intelligence safely, overhaul outdated legacy IT infrastructure, and create data-driven business models.",
     "learningOutcomes": [
-      "Architect enterprise AI transformation roadmaps with measurable ROI",
-      "Overhaul legacy enterprise systems without operational disruption",
-      "Establish strict cybersecurity, data privacy, and governance policies",
-      "Lead cross-functional product and engineering squads"
+      "Architect enterprise AI transformation roadmaps",
+      "Overhaul legacy enterprise workflows safely",
+      "Establish strict cybersecurity governance"
     ],
     "targetAudience": [
       "Chief Information Officers and Chief Technology Officers",
@@ -162,6 +203,94 @@
         "title": "Cybersecurity, Compliance & Data Ethics",
         "duration": "2 Weeks",
         "topics": ["Data governance frameworks", "Threat modeling", "Regulatory compliance"]
+      }
+    ],
+    "deliveryMode": "offline",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "status": "published",
+    "featured": false,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "strategic-operations",
+    "title": "Strategic Operations & Supply Chain Excellence",
+    "subtitle": "Resilient logistics, lean operations, and modern procurement strategies.",
+    "category": "Operations & Logistics",
+    "summary": "Build resilient supply chains, lean enterprise operations, and procurement agility.",
+    "description": "A comprehensive executive program focused on mitigating supply disruptions, building high-efficiency manufacturing workflows, and optimizing capital in inventory management.",
+    "learningOutcomes": [
+      "Build resilient supply chain networks",
+      "Implement lean operational excellence",
+      "Negotiate strategic enterprise supplier contracts"
+    ],
+    "targetAudience": [
+      "Chief Operating Officers and Operations Directors",
+      "Supply Chain Heads and Procurement Leads",
+      "General Managers in Manufacturing and Distribution"
+    ],
+    "prerequisites": ["3+ years in operational management or logistics"],
+    "modules": [
+      {
+        "id": "mod-so-01",
+        "title": "Supply Chain Architecture & Risk Modeling",
+        "duration": "4 Weeks",
+        "topics": ["Supplier networks", "Disruption hedging", "Logistics technology"]
+      },
+      {
+        "id": "mod-so-02",
+        "title": "Lean Operations & Process Engineering",
+        "duration": "4 Weeks",
+        "topics": ["Six Sigma principles", "Bottleneck reduction", "Quality management"]
+      }
+    ],
+    "deliveryMode": "offline",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "status": "published",
+    "featured": false,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "people-governance",
+    "title": "Executive Talent & Human Capital Governance",
+    "subtitle": "Board succession, performance alignment, and C-suite talent retention.",
+    "category": "Human Capital",
+    "summary": "Align executive compensation, talent retention, and board succession governance.",
+    "description": "Designed for CHROs, managing directors, and board compensation committee members to establish ethical leadership succession, talent governance, and institutional performance metrics.",
+    "learningOutcomes": [
+      "Design executive compensation structures",
+      "Implement board succession planning",
+      "Lead corporate cultural alignment"
+    ],
+    "targetAudience": [
+      "Chief Human Resources Officers and People Directors",
+      "Board Compensation Committee Members",
+      "Managing Directors and Executive Recruiters"
+    ],
+    "prerequisites": ["Senior HR or executive management experience"],
+    "modules": [
+      {
+        "id": "mod-pg-01",
+        "title": "Executive Compensation & Incentive Design",
+        "duration": "3 Weeks",
+        "topics": ["Equity schemes", "Performance KPIs", "Retention agreements"]
+      },
+      {
+        "id": "mod-pg-02",
+        "title": "Board Succession & Governance Protocols",
+        "duration": "3 Weeks",
+        "topics": ["Succession pipelines", "Leadership evaluation", "Culture audits"]
       }
     ],
     "deliveryMode": "offline",

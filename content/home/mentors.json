@@ -1,0 +1,393 @@
+[
+  {
+    "id": "mentor-leadership-lead",
+    "name": "Dr. Tariq Rahman",
+    "role": "Lead Faculty, Strategic Governance",
+    "organization": "Senior Advisor, Corporate Governance Institute",
+    "bio": "Over 22 years advising enterprise boards and financial institutions across South Asia on corporate governance, risk architecture, and board alignment.",
+    "courseId": "executive-leadership",
+    "order": 1,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty placeholder (Gate B0 deferred until official mentor roster approval)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-finance-lead",
+    "name": "Kamrul Hassan, FCA",
+    "role": "Lead Faculty, Corporate Finance",
+    "organization": "Former Managing Director, Investment Banking",
+    "bio": "Fellow Chartered Accountant with 20+ years of leadership in corporate debt syndication, valuation advisory, and M&A transactions in Bangladesh.",
+    "courseId": "corporate-finance",
+    "order": 2,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty placeholder (Gate B0 deferred until official mentor roster approval)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-digital-lead",
+    "name": "Anisur Chowdhury",
+    "role": "Lead Faculty, Digital Transformation",
+    "organization": "Partner & Chief Technology Strategist",
+    "bio": "Enterprise technology leader guiding cloud migration, data governance, and strategic technology modernization for national conglomerates.",
+    "courseId": "digital-transformation",
+    "order": 3,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty placeholder (Gate B0 deferred until official mentor roster approval)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-da-01",
+    "name": "Tahmid Ahmed",
+    "role": "Head of Data & Analytics",
+    "organization": "Apex Analytics Group",
+    "bio": "Specialist in enterprise BI architectures, executive KPI modeling, and automated data pipelines.",
+    "courseId": "data-analytics",
+    "order": 4,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-da-02",
+    "name": "Nusrat Jahan",
+    "role": "Director of Business Intelligence",
+    "organization": "Dhaka Data Labs",
+    "bio": "Experienced data strategist specializing in executive predictive dashboards and financial modeling.",
+    "courseId": "data-analytics",
+    "order": 5,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-el-02",
+    "name": "Farzana Chowdhury",
+    "role": "Managing Director & CEO",
+    "organization": "Green Delta Capital",
+    "bio": "Distinguished enterprise leader with deep expertise in executive corporate strategy and organizational alignment.",
+    "courseId": "executive-leadership",
+    "order": 6,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-el-03",
+    "name": "Syed M. Tanvir",
+    "role": "Senior Partner & Board Strategist",
+    "organization": "Apex Strategic Group",
+    "bio": "Advises national business groups on corporate restructuring, ethics compliance, and C-suite succession.",
+    "courseId": "executive-leadership",
+    "order": 7,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-cf-02",
+    "name": "Nazia Rahman, CFA",
+    "role": "Executive Director, Portfolio Management",
+    "organization": "Capital Investment Partners",
+    "bio": "Expert in corporate balance sheet engineering, debt structuring, and private equity valuations.",
+    "courseId": "corporate-finance",
+    "order": 8,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-cf-03",
+    "name": "Asif Iqbal",
+    "role": "Head of Structured Finance",
+    "organization": "Eastern Merchant Bank",
+    "bio": "Over 16 years leading capital allocation, syndication, and sovereign bond advisory in Bangladesh.",
+    "courseId": "corporate-finance",
+    "order": 9,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-cf-04",
+    "name": "Tanveer Ahmed, FCA",
+    "role": "Partner, Enterprise Valuation",
+    "organization": "Rahman & Partners",
+    "bio": "Chartered Accountant advising multinational corporate transactions, M&A due diligence, and capital risk management.",
+    "courseId": "corporate-finance",
+    "order": 10,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-dt-02",
+    "name": "Rubaba Dowla",
+    "role": "Chief Commercial Strategist",
+    "organization": "Tech Horizon Ventures",
+    "bio": "Pioneer in telecom and digital enterprise modernization across South Asian corporate markets.",
+    "courseId": "digital-transformation",
+    "order": 11,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-dt-03",
+    "name": "Mahmudul Hasan",
+    "role": "VP, Engineering & Applied AI",
+    "organization": "Neural Systems Ltd.",
+    "bio": "Architects enterprise artificial intelligence workflows, data governance, and legacy system overhauls.",
+    "courseId": "digital-transformation",
+    "order": 12,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-dt-04",
+    "name": "Zillur Rahman",
+    "role": "Enterprise Solutions Architect",
+    "organization": "CloudScale Enterprise",
+    "bio": "Guides large-scale financial institutions on cloud infrastructure migrations and microservice modernization.",
+    "courseId": "digital-transformation",
+    "order": 13,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-dt-05",
+    "name": "Shafiqul Islam",
+    "role": "Head of Cybersecurity & Risk",
+    "organization": "CyberShield Global",
+    "bio": "Advises corporate boards and CTOs on regulatory compliance, zero-trust architectures, and data privacy safeguards.",
+    "courseId": "digital-transformation",
+    "order": 14,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-so-01",
+    "name": "Brig. Gen. (Retd.) M. Ali",
+    "role": "Director of Operations Strategy",
+    "organization": "National Logistics Council",
+    "bio": "Expert in strategic operations command, emergency logistics management, and institutional efficiency.",
+    "courseId": "strategic-operations",
+    "order": 15,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-so-02",
+    "name": "Samira Karim",
+    "role": "Supply Chain Director",
+    "organization": "Bengal Global Trade",
+    "bio": "Directs international procurement networks, shipping syndication, and customs tariff management.",
+    "courseId": "strategic-operations",
+    "order": 16,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-so-03",
+    "name": "Kazi Monirul Alam",
+    "role": "VP of Lean Manufacturing",
+    "organization": "Apex Industrial Group",
+    "bio": "Master Black Belt in Lean Six Sigma with 18+ years optimizing production facilities and industrial floor workflows.",
+    "courseId": "strategic-operations",
+    "order": 17,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-so-04",
+    "name": "Rezwanul Haque",
+    "role": "Chief Logistics Officer",
+    "organization": "Transcom Logistics",
+    "bio": "Leads nationwide fleet distributions, cold chain warehousing, and third-party logistics integrations.",
+    "courseId": "strategic-operations",
+    "order": 18,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-so-05",
+    "name": "Nafisa Kamal",
+    "role": "Director of Procurement & Risk",
+    "organization": "Summit Industrial",
+    "bio": "Specializes in multi-tier supplier vulnerability audits and cross-border vendor contract negotiation.",
+    "courseId": "strategic-operations",
+    "order": 19,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-so-06",
+    "name": "Ariful Islam",
+    "role": "Operations Transformation Lead",
+    "organization": "Global Supply Solutions",
+    "bio": "Advises manufacturing executives on automated demand forecasting, ERP rollout, and inventory capital optimization.",
+    "courseId": "strategic-operations",
+    "order": 20,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-pg-01",
+    "name": "Dr. Shahedul Islam",
+    "role": "Head of Human Capital Advisory",
+    "organization": "Strategic HR Partners",
+    "bio": "Advises corporate boards on executive compensation structure, talent retention, and organizational governance.",
+    "courseId": "people-governance",
+    "order": 21,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-pg-02",
+    "name": "Nasreen Sattar",
+    "role": "Former Country Head of HR",
+    "organization": "Standard Chartered Bank",
+    "bio": "Over two decades directing executive talent assessment, leadership pipelines, and board succession strategies.",
+    "courseId": "people-governance",
+    "order": 22,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-pg-03",
+    "name": "Khandaker Kabir",
+    "role": "Director of Executive Succession",
+    "organization": "Talent Governance Corp",
+    "bio": "Specialist in C-suite leadership transitions, performance scorecards, and high-accountability organizational design.",
+    "courseId": "people-governance",
+    "order": 23,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]
