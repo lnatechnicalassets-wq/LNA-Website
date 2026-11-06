@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PublicShell } from "@/components/public";
 import "@/styles/globals.css";
 
@@ -12,6 +14,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <PublicShell>{children}</PublicShell>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

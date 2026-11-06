@@ -26,8 +26,8 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
     <header className={`w-full ${className}`} role="banner">
       {/* Top Demo Branding Bar */}
       <div className="bg-primary-950 text-text-inverse px-4 sm:px-6 py-1.5 text-xs border-b border-primary-900">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 truncate">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 truncate">
             <span
               className="inline-block w-2 h-2 rounded-full bg-accent-400 shrink-0"
               aria-hidden="true"
@@ -57,7 +57,7 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-1 lg:gap-2">
+          <nav aria-label="Main Navigation" className="hidden lg:flex items-center gap-1 lg:gap-2">
             {header.navItems.map((item) => (
               <Link
                 key={item.href}
@@ -70,7 +70,7 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
           </nav>
 
           {/* Desktop Right CTA Actions */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             <Link href={header.cta.href}>
               <Button variant="primary" size="md">
                 {header.cta.label}
@@ -79,7 +79,7 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
           </div>
 
           {/* Mobile Hamburger Trigger */}
-          <div className="flex md:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-2">
             <Button
               variant="ghost"
               size="icon"

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "partner-banking",
+    "name": "Apex Financial",
+    "sector": "Banking & Capital Markets",
+    "badgeText": "Demo Wordmark",
+    "isPlaceholder": true,
+    "order": 1,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "partner-rmg",
+    "name": "Crestline Enterprise",
+    "sector": "Industrial & Manufacturing",
+    "badgeText": "Demo Wordmark",
+    "isPlaceholder": true,
+    "order": 2,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "partner-telecom",
+    "name": "Telenex Global",
+    "sector": "Telecommunications & Infra",
+    "badgeText": "Demo Wordmark",
+    "isPlaceholder": true,
+    "order": 3,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "partner-tech",
+    "name": "Stratos Cloud",
+    "sector": "Enterprise Software & AI",
+    "badgeText": "Demo Wordmark",
+    "isPlaceholder": true,
+    "order": 4,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "partner-pharma",
+    "name": "Novavita Life Sciences",
+    "sector": "Healthcare & Pharmaceuticals",
+    "badgeText": "Demo Wordmark",
+    "isPlaceholder": true,
+    "order": 5,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "partner-logistics",
+    "name": "Horizon Global",
+    "sector": "Supply Chain & Trade",
+    "badgeText": "Demo Wordmark",
+    "isPlaceholder": true,
+    "order": 6,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]

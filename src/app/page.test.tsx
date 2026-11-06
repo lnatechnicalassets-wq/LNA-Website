@@ -20,7 +20,7 @@ describe("HomePage - Phase 4 Approved 7-Section Architecture", () => {
     // 3. Courses Section
     const coursesHeading = screen.getByRole("heading", {
       level: 2,
-      name: /Masterclasses & Executive Programs/i,
+      name: /Explore Our Courses/i,
     });
     expect(coursesHeading).toBeDefined();
 

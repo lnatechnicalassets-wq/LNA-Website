@@ -1,5 +1,27 @@
 [
   {
+    "id": "batch-da-2026-01",
+    "courseId": "data-analytics",
+    "batchNumber": 1,
+    "name": "Cohort 01 — Data Analytics & Business Intelligence",
+    "startDate": "2026-11-28",
+    "endDate": "2027-01-23",
+    "scheduleDescription": "Every Saturday, 10:00 AM – 4:00 PM (8 Weeks)",
+    "capacity": 25,
+    "enrolledCount": 8,
+    "seatHoldDurationMinutes": 30,
+    "feePoisha": 650000,
+    "status": "open_for_enrollment",
+    "venue": "LNA Executive Hall B, Dhanmondi, Dhaka",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo batch seed (Gate B0 deferred until official schedule release)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
     "id": "batch-el-2026-01",
     "courseId": "executive-leadership",
     "batchNumber": 1,
@@ -59,6 +81,50 @@
     "discountFeePoisha": 2200000,
     "status": "upcoming",
     "venue": "LNA Innovation Lab, Dhanmondi, Dhaka",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo batch seed (Gate B0 deferred until official schedule release)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "batch-so-2026-01",
+    "courseId": "strategic-operations",
+    "batchNumber": 1,
+    "name": "Cohort 01 — Strategic Operations & Supply Chain Excellence",
+    "startDate": "2027-01-08",
+    "endDate": "2027-03-05",
+    "scheduleDescription": "Every Friday, 2:00 PM – 8:00 PM (8 Weeks)",
+    "capacity": 25,
+    "enrolledCount": 5,
+    "seatHoldDurationMinutes": 30,
+    "feePoisha": 2400000,
+    "status": "upcoming",
+    "venue": "LNA Operations Suite, Dhanmondi, Dhaka",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo batch seed (Gate B0 deferred until official schedule release)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "batch-pg-2026-01",
+    "courseId": "people-governance",
+    "batchNumber": 1,
+    "name": "Cohort 01 — Executive Talent & Human Capital Governance",
+    "startDate": "2027-01-15",
+    "endDate": "2027-02-26",
+    "scheduleDescription": "Every Saturday, 9:00 AM – 3:00 PM (6 Weeks)",
+    "capacity": 20,
+    "enrolledCount": 2,
+    "seatHoldDurationMinutes": 30,
+    "feePoisha": 2000000,
+    "status": "upcoming",
+    "venue": "LNA Seminar Room 1, Dhanmondi, Dhaka",
     "provenance": {
       "class": "B",
       "verified": false,

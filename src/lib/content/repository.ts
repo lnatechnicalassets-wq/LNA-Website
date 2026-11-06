@@ -11,6 +11,14 @@ import {
   HomeSectionItem,
   ImpactFigure,
   ImpactFigureSchema,
+  Partner,
+  PartnerSchema,
+  Event,
+  EventSchema,
+  Mentor,
+  MentorSchema,
+  Review,
+  ReviewSchema,
 } from "./home";
 
 export interface ICourseRepository {
@@ -30,6 +38,11 @@ export interface IHomeRepository {
   getHeroSlides(): Promise<HeroSlide[]>;
   getSections(): Promise<HomeSectionItem[]>;
   getImpactFigures(options?: { verifiedOnly?: boolean }): Promise<ImpactFigure[]>;
+  getPartners(): Promise<Partner[]>;
+  getEvents(): Promise<Event[]>;
+  getMentors(): Promise<Mentor[]>;
+  getMentorById(id: string): Promise<Mentor | null>;
+  getReviews(): Promise<Review[]>;
 }
 
 /**
@@ -43,6 +56,10 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
   private cachedHeroSlides: HeroSlide[] | null = null;
   private cachedSections: HomeSections | null = null;
   private cachedImpactFigures: ImpactFigure[] | null = null;
+  private cachedPartners: Partner[] | null = null;
+  private cachedEvents: Event[] | null = null;
+  private cachedMentors: Mentor[] | null = null;
+  private cachedReviews: Review[] | null = null;
 
   constructor(contentDir = path.join(process.cwd(), "content")) {
     this.contentDir = contentDir;
@@ -53,9 +70,7 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
     if (this.cachedCourses) return this.cachedCourses;
 
     const coursesFile = path.join(this.contentDir, "catalog", "courses.json");
-    if (!fs.existsSync(coursesFile)) {
-      return [];
-    }
+    if (!fs.existsSync(coursesFile)) return [];
 
     const raw = fs.readFileSync(coursesFile, "utf-8");
     const parsed = JSON.parse(raw);
@@ -80,9 +95,7 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
     if (this.cachedBatches) return this.cachedBatches;
 
     const batchesFile = path.join(this.contentDir, "catalog", "batches.json");
-    if (!fs.existsSync(batchesFile)) {
-      return [];
-    }
+    if (!fs.existsSync(batchesFile)) return [];
 
     const raw = fs.readFileSync(batchesFile, "utf-8");
     const parsed = JSON.parse(raw);
@@ -163,6 +176,71 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
 
     return figures;
   }
+
+  async getPartners(): Promise<Partner[]> {
+    if (this.cachedPartners) return this.cachedPartners;
+
+    const file = path.join(this.contentDir, "home", "partners.json");
+    if (!fs.existsSync(file)) return [];
+
+    const raw = fs.readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = z.array(PartnerSchema).parse(parsed);
+    const sorted = validated.sort((a, b) => a.order - b.order);
+
+    this.cachedPartners = sorted;
+    return sorted;
+  }
+
+  async getEvents(): Promise<Event[]> {
+    if (this.cachedEvents) return this.cachedEvents;
+
+    const file = path.join(this.contentDir, "home", "events.json");
+    if (!fs.existsSync(file)) return [];
+
+    const raw = fs.readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = z.array(EventSchema).parse(parsed);
+    const sorted = validated.sort((a, b) => a.order - b.order);
+
+    this.cachedEvents = sorted;
+    return sorted;
+  }
+
+  async getMentors(): Promise<Mentor[]> {
+    if (this.cachedMentors) return this.cachedMentors;
+
+    const file = path.join(this.contentDir, "home", "mentors.json");
+    if (!fs.existsSync(file)) return [];
+
+    const raw = fs.readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = z.array(MentorSchema).parse(parsed);
+    const sorted = validated.sort((a, b) => a.order - b.order);
+
+    this.cachedMentors = sorted;
+    return sorted;
+  }
+
+  async getMentorById(id: string): Promise<Mentor | null> {
+    const mentors = await this.getMentors();
+    return mentors.find((m) => m.id === id) || null;
+  }
+
+  async getReviews(): Promise<Review[]> {
+    if (this.cachedReviews) return this.cachedReviews;
+
+    const file = path.join(this.contentDir, "home", "reviews.json");
+    if (!fs.existsSync(file)) return [];
+
+    const raw = fs.readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = z.array(ReviewSchema).parse(parsed);
+    const sorted = validated.sort((a, b) => a.order - b.order);
+
+    this.cachedReviews = sorted;
+    return sorted;
+  }
 }
 
 // Global singleton instance for JSON content repository
@@ -178,4 +256,8 @@ export function getBatchRepository(): IBatchRepository {
 
 export function getHomeRepository(): IHomeRepository {
   return defaultRepo;
+}
+
+export async function getMentorById(id: string): Promise<Mentor | null> {
+  return defaultRepo.getMentorById(id);
 }

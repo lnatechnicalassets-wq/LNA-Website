@@ -1,0 +1,59 @@
+[
+  {
+    "id": "event-boardroom-governance",
+    "title": "Corporate Boardroom Dynamics & Regulatory Compliance",
+    "subtitle": "Executive dialogue on corporate governance standards, board responsibilities, and financial reporting.",
+    "date": "2026-11-28",
+    "time": "4:00 PM – 7:00 PM",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "deliveryMode": "offline",
+    "featured": true,
+    "order": 1,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo event showcase placeholder (Gate B0 deferred until official events calendar)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "event-capital-markets",
+    "title": "Capital Markets & Private Equity Roundtable",
+    "subtitle": "In-depth forum on corporate debt structuring, private placements, and M&A opportunities.",
+    "date": "2026-12-12",
+    "time": "3:00 PM – 6:00 PM",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "deliveryMode": "offline",
+    "featured": false,
+    "order": 2,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo event showcase placeholder (Gate B0 deferred until official events calendar)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "event-ai-enterprise",
+    "title": "Enterprise AI Strategy: Moving Beyond Proof of Concept",
+    "subtitle": "Executive masterclass on enterprise architecture modernization and applied AI governance.",
+    "date": "2026-12-19",
+    "time": "4:00 PM – 7:00 PM",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "deliveryMode": "offline",
+    "featured": false,
+    "order": 3,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo event showcase placeholder (Gate B0 deferred until official events calendar)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]

@@ -1,7 +1,6 @@
 import React from "react";
 import type { HeroSlide } from "@/lib/content";
 import { HeroSlider } from "./hero-slider";
-import { HeroIntro } from "./hero-intro";
 
 export interface HeroSectionProps {
   slides: HeroSlide[];
@@ -9,7 +8,8 @@ export interface HeroSectionProps {
 
 /**
  * HeroSection Component
- * Composes the 3-slide HeroSlider and the centered Academy HeroIntro statement.
+ * Composes the 3-slide HeroSlider with approved photographic curves, flowing
+ * directly into the Partners section (Option A: Minimal Institutional).
  */
 export function HeroSection({ slides }: HeroSectionProps) {
   return (
@@ -18,7 +18,6 @@ export function HeroSection({ slides }: HeroSectionProps) {
       className="relative w-full bg-surface-base"
     >
       <HeroSlider slides={slides} />
-      <HeroIntro />
     </section>
   );
 }

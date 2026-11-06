@@ -1,66 +1,71 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
-**Last Updated:** 5 November 2026  
-**Session Context:** Phase 4 Task P4-T1 (Hero Autoplay Restored, Indicators Refined, Partners Control Cleaned)  
+**Last Updated:** 6 November 2026  
+**Session Context:** Phase 4 Task P4-T1 (Pre-Merge Verification, Vercel Integration & Course Navigation Readiness)  
 
 ---
 
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 4 (Public Website Core)
-- **Current Task:** P4-T1 (Hero Carousel Autoplay & Partners Control Refinement)
-- **Task Status:** Implemented, Fully Verified Across All Viewports; Pending Visual Approval by Refat
+- **Current Task:** P4-T1 (Pre-Merge Verification, Vercel Analytics/Speed Insights Integration & Course Route Scope)
+- **Task Status:** Completed & Verified via Automated Tests, Lint, Typecheck, and Production Build; Awaiting Owner Review & Merge Approval
 - **Current Git Branch:** `task/p4-t1-homepage`
 - **Base Commit:** `b306a77` (`main`, containing merged `task/p3-t1-content-schemas` via PR #9)
-- **Remote:** `https://github.com/BlazeDashX/LNA-Website.git`
+- **Remote Head:** `abae925` (Contains owner's uploaded temporary test image on GitHub; preserved without overwriting per Rule R14)
 
 ---
 
 ## 2. Completed Tasks
 
-### Task P4-T1: Carousel Autoplay & Partners Control Refinement
-- **SRS IDs Covered:** FR-PUB-003, FR-PUB-004, Rule R15, WCAG 2.2 AA (2.2.2 Pause/Stop/Hide, 2.5.8 Target Size)
+### Task P4-T1: Pre-Merge Verification & Vercel Integration
+- **SRS IDs Covered:** FR-PUB-002, FR-PUB-004, FR-CRS-004, FR-CRS-005, Rule R1, Rule R3, Rule R4, Rule R5, Rule R8, Rule R14, Rule R15, WCAG 2.2 AA (2.1 Keyboard, 2.5.8 Target Size)
 - **Target Branch:** `task/p4-t1-homepage`
-- **Implemented Corrections:**
-  1. *Hero Autoplay Restored (WCAG 2.2.2 Compliant):*
-     - Automatic slide progression every 7 seconds with smooth 600ms crossfade (`duration-600 ease-in-out`).
-     - Loops seamlessly from slide 3 back to slide 1.
-     - Automatically pauses rotation on hover (`onMouseEnter`/`onMouseLeave`) or keyboard focus-within (`onFocus`/`onBlur`).
-     - Permanently stops automatic rotation once a user manually selects a slide (click/tap), swipes, or navigates via keyboard.
-     - Disables automatic rotation for `prefers-reduced-motion: reduce` users.
-     - Provides a keyboard-discoverable pause/resume button (`sr-only focus:not-sr-only focus:absolute ...`) so keyboard users can stop/restart motion without cluttering default visual layout.
-  2. *Hero Indicators Final Design:*
-     - Exactly three indicators.
-     - Active indicator: Deep Teal `#086477`, elongated rounded pill (`w-[32px] h-[8px] rounded-full shadow-2xs`).
-     - Inactive indicators: Soft Teal `#C5DDE0`, circular shape (`w-[9px] h-[9px] rounded-full`).
-     - Smooth 300ms width and color transition (`transition-all duration-300 ease-in-out`).
-     - Generous invisible interaction area (`min-w-[36px] min-h-[36px] p-2 flex items-center justify-center cursor-pointer`) for effortless mobile tapping.
-     - Accessible labels on each tab (`aria-label={`Go to slide ${index + 1}: ${slide.title}`}`) and programmatic identification (`aria-selected`).
-  3. *Partners: Prominent Pause Icon Removed:*
-     - Removed the visible Pause/Play icon next to the "Our Partners" heading.
-     - Centered "Our Partners" heading in Dark Slate (`#172E35`, uppercase tracking-[0.2em]).
-     - Retained continuous right-to-left marquee motion (40s traversal, linear speed, seamless dual tracks).
-     - Retained accessible motion-stop functionality:
-       1. Automatic pause on hover and focus-within.
-       2. Touch/mobile users: Tapping/clicking the marquee track toggles pause/play.
-       3. Keyboard users: Keyboard-discoverable button (`sr-only focus:not-sr-only`) allows pausing via Space/Enter.
-       4. Assistive technology: Duplicated loop track is hidden (`aria-hidden="true"`).
-- **Verification Evidence:**
-  - `pnpm content:validate`: PASSED (exit code 0).
-  - `pnpm typecheck`: PASSED (exit code 0).
-  - `pnpm lint`: PASSED (exit code 0).
-  - `pnpm format:check`: PASSED (exit code 0).
-  - `pnpm test`: PASSED (19 test files, 86/86 unit and integration tests passing).
-  - `pnpm build`: PASSED (Turbopack production build succeeded in 4.3s).
-  - Live interactive Chrome CDP test:
-    - Autoplay advanced slide 1 -> slide 2 after 7 seconds.
-    - Manual slide selection permanently stopped autoplay.
-    - Active pill (`w-[32px] h-[8px]`) and inactive circle (`w-[9px] h-[9px]`) verified in DOM.
-    - Partners linear motion verified (delta: -548px -> -596px over 1.5s).
-    - Partners track tap toggle and keyboard button pause verified.
-  - Cross-viewport overflow verification: 320px, 390px, 768px, 1024px, 1440px all `hasOverflow=false`.
+- **Implemented Architecture:**
+  1. *Vercel Monitoring Integration:*
+     - Installed `@vercel/analytics` (`2.0.1`) and `@vercel/speed-insights` (`2.0.0`) pinned to exact versions.
+     - Added `<Analytics />` and `<SpeedInsights />` to `src/app/layout.tsx` within the App Router root layout, preserving SSR boundaries and PublicShell providers.
+     - Updated Content Security Policy (CSP) in `next.config.mjs` to authorize `https://va.vercel-scripts.com` in `script-src` and `https://*.vercel-insights.com https://va.vercel-scripts.com` in `connect-src`.
+  2. *Read-Only Course Details Page (`/courses/[slug]`):*
+     - Created `src/app/courses/[slug]/page.tsx` within approved course-management scope (FR-CRS-005).
+     - Full static pre-rendering via `generateStaticParams()` across all 6 published catalog courses.
+     - Dynamic metadata (`generateMetadata()`) and 404 handling via `notFound()`.
+     - Displays duration, Dhanmondi campus location, poisha-formatted fees with discount strike-through (Rule R5), full curriculum structure with modules, key learning outcomes, audience, prerequisites, and assigned mentors linking directly to `/mentors/[slug]`.
+     - Comprehensive unit tests in `src/app/courses/[slug]/page.test.tsx` (all passing).
+  3. *Navigation & Faculty Spotlight Verification:*
+     - Every course card links cleanly to `/courses/[slug]`.
+     - Every mentor portrait links independently to `/mentors/[slug]` via sibling `<Link>` at `z-30`.
+     - Full keyboard accessibility with `focus-visible:ring-4 focus-visible:ring-white`.
+     - Adaptive grid layout strictly capped at max 3 portraits per row:
+       - 2 mentors: 1 centered row of 2 (72px).
+       - 3 mentors: 1 centered row of 3 (66px).
+       - 4 mentors: 2 centered rows of 2 + 2 (66px).
+       - 5 mentors: 2 centered rows of 3 + 2 (62px).
+       - 6 mentors: 2 centered rows of 3 + 3 (62px).
+  4. *Quality Gates Evidence:*
+     - `pnpm content:validate`: PASSED (0 errors).
+     - `pnpm typecheck`: PASSED (`tsc --noEmit` exit code 0).
+     - `pnpm lint`: PASSED (`eslint .` exit code 0).
+     - `pnpm prettier --check .`: PASSED (all files formatted).
+     - `pnpm test`: 23/23 tests passing across 5 suites (`courses-section.test.tsx`, `page.test.tsx`, `courses/[slug]/page.test.tsx`, `mentors/[slug]/page.test.tsx`, `health/route.test.ts`).
+     - `pnpm build`: Next.js Turbopack build succeeded with exit code 0; all 32 static paths generated (including 6 `/courses/[slug]` and 23 `/mentors/[slug]` routes).
+     - Viewport overflow checks (320px, 390px, 768px, 1024px, 1440px): 100% `hasOverflow=false`.
 
 ---
 
-## 3. Next Steps (Human-Controlled)
-- Human review of Hero autoplay, indicators, and refined Partners presentation.
-- Await Refat's visual approval before committing and proceeding to Section 3: Courses.
+## 3. Git Checkpoint (Rule R14)
+
+Per human-controlled Git protocol, no staging, commits, pushes, merges, or resets were performed.
+
+- **Current Branch:** `task/p4-t1-homepage`
+- **Recommended Conventional Commit:**
+  ```bash
+  feat(deploy): integrate vercel monitoring, add read-only course details page, and verify production gates [FR-PUB-002, FR-CRS-005]
+  ```
+
+Per human-controlled Git protocol, no staging, commits, pushes, merges, or resets were performed.
+
+- **Current Branch:** `task/p4-t1-homepage`
+- **Recommended Conventional Commit:**
+  ```bash
+  feat(courses): adapt faculty spotlight to max 3 portraits per row [FR-PUB-002, FR-CRS-004]
+  ```

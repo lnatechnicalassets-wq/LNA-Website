@@ -33,6 +33,8 @@
 | `clsx` | `2.1.1` | Conditional class name utility | UI Primitives |
 | `tailwind-merge` | `3.0.2` | Conflict-free utility class merging | UI Primitives |
 | `lucide-react` | `0.477.0` | Accessible SVG icon system | UI Primitives |
+| `@vercel/analytics` | `2.0.1` | Privacy-focused web analytics without PII or tracking cookies | Monitoring & Telemetry |
+| `@vercel/speed-insights` | `2.0.0` | Real User Monitoring (RUM) Core Web Vitals telemetry | Monitoring & Telemetry |
 
 ---
 

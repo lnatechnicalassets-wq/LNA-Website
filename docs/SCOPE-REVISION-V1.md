@@ -66,6 +66,7 @@ flowchart TD
 * **Image Management Pipeline:** Secure image upload validating MIME magic bytes, dimensions, and mandatory accessible alternative text.
 * **Dual-Layer Architecture:** Swappable `@/lib/content` abstraction supporting static JSON seed files in early development and Supabase PostgreSQL in production.
 * **Proven Institutional Credibility:** Enforcement of provenance blocks (Class A Verified vs. Class B Demo) preventing unverified claims from reaching production.
+* **Homepage Composition & Editorial Showcases (ADR 0011):** Per owner clarification, the public homepage (`/`) displays exactly 7 sections in order: Hero Slider, Partners Strip, Courses, Events, Mentors, Learner Reviews, and Footer. Read-only presentation showcases for Partners, Events, Mentors, and Learner Reviews are approved for public trust and institutional credibility, while their interactive registration, submission, and administrative management backends remain strictly deferred to post-v1.
 
 ### Module 5: Reports and Data Extraction Features
 * **Operational Reporting:** Tabular views for course capacity, batch enrollments, applicant statuses, and revenue collections.

@@ -46,11 +46,11 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://va.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.supabase.co",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co https://*.upstash.io https://*.sentry.io https://challenges.cloudflare.com",
+      "connect-src 'self' https://*.supabase.co https://*.upstash.io https://*.sentry.io https://challenges.cloudflare.com https://*.vercel-insights.com https://va.vercel-scripts.com",
       "frame-src 'self' https://challenges.cloudflare.com",
       "frame-ancestors 'none'",
       "form-action 'self'",

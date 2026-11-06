@@ -112,22 +112,6 @@ async function capture() {
         return !v.overflow;
       }
 
-      async function clickTab(index) {
-        await send("Runtime.evaluate", {
-          expression: `
-            (() => {
-              const tabs = document.querySelectorAll('[role="tab"]');
-              if (tabs[${index}]) {
-                tabs[${index}].click();
-                return true;
-              }
-              return false;
-            })()
-          `,
-        });
-        await sleep(600);
-      }
-
       // 1. Verify Viewports for Overflow
       console.log("\n=== Verifying All Required Viewports ===");
       for (const w of [320, 390, 768, 1024, 1440]) {
@@ -135,42 +119,182 @@ async function capture() {
         await checkOverflow(w);
       }
 
-      // 2. Capture Desktop Hero (1440px)
+      // 2. Capture Desktop (1440px)
       console.log("\n=== Capturing Desktop Viewport (1440px) ===");
-      await setViewport(1440, 920, false);
-      await clickTab(0);
+      await setViewport(1440, 1050, false);
       await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-hero-1440.png"));
 
-      // 3. Capture Tablet Hero (768px)
+      // 3. Capture Tablet (768px)
       console.log("\n=== Capturing Tablet Viewport (768px) ===");
-      await setViewport(768, 1050, true);
-      await clickTab(0);
+      await setViewport(768, 1100, true);
       await takeScreenshot(path.join(ARTIFACT_DIR, "tablet-hero-768.png"));
 
-      // 4. Capture Mobile Hero (390px) - All 3 Slides
-      console.log("\n=== Capturing Mobile Viewport (390px) All 3 Slides ===");
-      await setViewport(390, 950, true);
-
-      // Slide 1
-      await clickTab(0);
+      // 4. Capture Mobile (390px)
+      console.log("\n=== Capturing Mobile Viewport (390px) ===");
+      await setViewport(390, 1000, true);
       await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-hero-390.png"));
-      await checkOverflow(390);
 
-      // Slide 2
-      await clickTab(1);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-hero-390-slide2.png"));
-      await checkOverflow(390);
+      // 5. Capture Targeted Partners Section view across viewports
+      console.log("\n=== Capturing Targeted Partners Section ===");
+      await setViewport(1440, 700, false);
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const sec = document.querySelector('section[aria-label*="Corporate Sector Alignments"]');
+            if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'center' });
+          })()
+        `,
+      });
+      await sleep(300);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-partners-1440.png"));
 
-      // Slide 3
-      await clickTab(2);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-hero-390-slide3.png"));
-      await checkOverflow(390);
+      // 6. Capture Targeted Courses Section View Across Viewports
+      console.log("\n=== Capturing Targeted Courses Section ===");
+      // Desktop Courses Grid
+      await setViewport(1440, 1200, false);
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const sec = document.querySelector('#courses');
+            if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
+          })()
+        `,
+      });
+      await sleep(400);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-courses-1440.png"));
 
-      // Reset to Slide 1
-      await clickTab(0);
+      // Tablet Courses Grid
+      await setViewport(768, 1400, true);
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const sec = document.querySelector('#courses');
+            if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
+          })()
+        `,
+      });
+      await sleep(400);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "tablet-courses-768.png"));
 
-      // 5. Capture Full Pages
-      console.log("\n=== Capturing Full Pages ===");
+      // Mobile Courses Grid
+      await setViewport(390, 1400, true);
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const sec = document.querySelector('#courses');
+            if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
+          })()
+        `,
+      });
+      await sleep(400);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-courses-390.png"));
+
+      // 7. Capture Individual Cards: Normal vs Hover for 2, 3, 4, 5, 6 Mentors
+      console.log("\n=== Capturing Normal & Hover States for 2, 3, 4, 5, 6 Mentors ===");
+      await setViewport(1440, 1000, false);
+
+      for (const count of [2, 3, 4, 5, 6]) {
+        // Move mouse away to reset any hover state
+        await send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: 0,
+          y: 0,
+        });
+        await sleep(300);
+
+        // Scroll card into view and get precise coordinates
+        const cardBox = await send("Runtime.evaluate", {
+          expression: `
+            (() => {
+              const card = document.querySelector('[data-mentor-count="${count}"]');
+              if (!card) return null;
+              card.scrollIntoView({ behavior: 'instant', block: 'center' });
+              const r = card.getBoundingClientRect();
+              return {
+                pageX: window.scrollX + r.left,
+                pageY: window.scrollY + r.top,
+                width: r.width,
+                height: r.height,
+                vpX: r.left + r.width / 2,
+                vpY: r.top + r.height / 2
+              };
+            })()
+          `,
+          returnByValue: true,
+        });
+
+        if (!cardBox.result.value) {
+          console.warn(`Card with ${count} mentors not found!`);
+          continue;
+        }
+
+        const box = cardBox.result.value;
+        await sleep(400);
+
+        // 7a. Normal State Screenshot (with 4px margin around card border)
+        await takeScreenshot(path.join(ARTIFACT_DIR, `courses-card-${count}mentors-normal.png`), {
+          x: Math.max(0, Math.round(box.pageX - 4)),
+          y: Math.max(0, Math.round(box.pageY - 4)),
+          width: Math.round(box.width + 8),
+          height: Math.round(box.height + 8),
+          scale: 1,
+        });
+
+        // 7b. Hover State: dispatch mouse event to card center
+        await send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: Math.round(box.vpX),
+          y: Math.round(box.vpY),
+        });
+
+        // Wait 700ms for the 500ms transition to fully complete
+        await sleep(700);
+
+        // Re-query precise card position to account for any micro-scroll
+        const hoverCardBox = await send("Runtime.evaluate", {
+          expression: `
+            (() => {
+              const card = document.querySelector('[data-mentor-count="${count}"]');
+              if (!card) return null;
+              const r = card.getBoundingClientRect();
+              return {
+                pageX: window.scrollX + r.left,
+                pageY: window.scrollY + r.top,
+                width: r.width,
+                height: r.height
+              };
+            })()
+          `,
+          returnByValue: true,
+        });
+        const hBox = hoverCardBox.result?.value || box;
+
+        // Capture Hover State Screenshot (with 4px margin around card border)
+        await takeScreenshot(path.join(ARTIFACT_DIR, `courses-card-${count}mentors-hover.png`), {
+          x: Math.max(0, Math.round(hBox.pageX - 4)),
+          y: Math.max(0, Math.round(hBox.pageY - 4)),
+          width: Math.round(hBox.width + 8),
+          height: Math.round(hBox.height + 8),
+          scale: 1,
+        });
+
+        console.log(
+          `✓ Successfully verified and captured ${count}-mentor normal and hover states.`
+        );
+      }
+
+      // Move mouse away
+      await send("Input.dispatchMouseEvent", {
+        type: "mouseMoved",
+        x: 0,
+        y: 0,
+      });
+
+      // 8. Capture Full Page Screenshots
+      console.log("\n=== Capturing Full Page Screenshots ===");
+      await send("Runtime.evaluate", {
+        expression: `window.scrollTo(0, 0);`,
+      });
       await setViewport(1440, 5600, false);
       await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-1440.png"));
 
