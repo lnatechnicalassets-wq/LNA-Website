@@ -1,0 +1,187 @@
+{
+  "story": {
+    "id": "irgp-story",
+    "badge": "FEATURED SUCCESS STORY",
+    "status": "Completed Program",
+    "title": "Industry Readiness Graduate Program (IRGP)",
+    "cohort": "Cohort 1",
+    "period": "Jan – Mar 2025",
+    "description": "A focused, hands-on program that helps early-career talent build practical skills, professional confidence, and workplace readiness.",
+    "ctaText": "Explore the IRGP Story",
+    "modalOverview": "The Industry Readiness Graduate Program (IRGP) was developed by Lead Nation Academy as an immersive, industry-guided transition bridge for ambitious university graduates and early-career talent in Bangladesh. Over an intensive multi-week cohort curriculum, participants engaged in real-world business challenges, executive mentorship dialogues, and rigorous professional communication training designed to replicate corporate boardroom expectations.",
+    "objectives": [
+      "Bridge the gap between academic foundation and modern enterprise workplace readiness",
+      "Develop high-impact analytical problem-solving and structured business communication skills",
+      "Build corporate confidence through direct mentor feedback from executive leaders",
+      "Foster team collaboration on live business case simulations and strategic presentations"
+    ],
+    "activities": [
+      {
+        "id": "act-1",
+        "title": "Skill Development Workshops",
+        "description": "Intensive hands-on masterclasses covering workplace productivity tools, financial literacy, structured business writing, and executive presence.",
+        "icon": "Monitor"
+      },
+      {
+        "id": "act-2",
+        "title": "Collaborative Team Projects",
+        "description": "Small cohort syndicates tackling enterprise business case studies, developing strategy decks, and presenting findings under simulated deadlines.",
+        "icon": "Users"
+      },
+      {
+        "id": "act-3",
+        "title": "Executive Mentorship Dialogues",
+        "description": "One-on-one advisory roundtables with senior corporate leaders sharing organizational navigation insights and career roadmaps.",
+        "icon": "UserCheck"
+      },
+      {
+        "id": "act-4",
+        "title": "Capstone & Program Milestone",
+        "description": "Final project presentations evaluated by industry juries, culminating in formal cohort completion and verified graduation credentials.",
+        "icon": "Award"
+      }
+    ],
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "LNA Academic Registry (Inaugural Program Record)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  "gallery": [
+    {
+      "id": "irgp-gallery-01",
+      "src": "/images/irgp-gallery-skills.jpg",
+      "category": "Skill Development Session",
+      "icon": "Monitor",
+      "title": "Executive Skill Development",
+      "caption": "Interactive classroom workshops focused on practical workplace frameworks, digital tools, and analytical problem solving. (Representative executive training visual)",
+      "alt": "Representative executive workshop photograph: Bangladeshi learners collaborating with laptops in a training session",
+      "order": 1,
+      "provenance": {
+        "class": "B",
+        "verified": false,
+        "source": "Representative Executive Training Visual (Class B Development Placeholder - Official event photo archive pending LNA release)",
+        "verifiedBy": null,
+        "verifiedOn": null
+      }
+    },
+    {
+      "id": "irgp-gallery-02",
+      "src": "/images/irgp-gallery-teamwork.jpg",
+      "category": "Team Project & Practice",
+      "icon": "Users",
+      "title": "Collaborative Team Projects",
+      "caption": "Participants collaborating closely on business presentation decks, market research models, and cross-functional case studies. (Representative executive training visual)",
+      "alt": "Representative executive workshop photograph: Young professionals gathered around a laptop collaborating on a business presentation",
+      "order": 2,
+      "provenance": {
+        "class": "B",
+        "verified": false,
+        "source": "Representative Executive Training Visual (Class B Development Placeholder - Official event photo archive pending LNA release)",
+        "verifiedBy": null,
+        "verifiedOn": null
+      }
+    },
+    {
+      "id": "irgp-gallery-03",
+      "src": "/images/irgp-gallery-discussion.jpg",
+      "category": "Mentor-Led Discussion",
+      "icon": "UserCheck",
+      "title": "Executive Mentorship Sessions",
+      "caption": "Senior corporate directors advising learners on organizational culture, communication etiquette, and strategic leadership thinking. (Representative executive training visual)",
+      "alt": "Representative executive workshop photograph: Senior corporate mentor actively mentoring an early-career learner across a meeting table",
+      "order": 3,
+      "provenance": {
+        "class": "B",
+        "verified": false,
+        "source": "Representative Executive Training Visual (Class B Development Placeholder - Official event photo archive pending LNA release)",
+        "verifiedBy": null,
+        "verifiedOn": null
+      }
+    },
+    {
+      "id": "irgp-gallery-04",
+      "src": "/images/irgp-gallery-completion.jpg",
+      "category": "Program Completion",
+      "icon": "Award",
+      "title": "Cohort Graduation & Milestones",
+      "caption": "Cohort milestone celebration with certificates presented in front of the LNA executive backdrop banner. (Representative executive milestone visual)",
+      "alt": "Representative executive milestone photograph: Graduates in executive attire holding completion folders in front of an LNA backdrop banner",
+      "order": 4,
+      "provenance": {
+        "class": "B",
+        "verified": false,
+        "source": "Representative Executive Training Visual (Class B Development Placeholder - Official event photo archive pending LNA release)",
+        "verifiedBy": null,
+        "verifiedOn": null
+      }
+    }
+  ],
+  "outcomes": {
+    "heading": "IRGP PROGRAM OUTCOMES",
+    "subheading": "Verified status from our completed IRGP (Cohort 1)",
+    "disclaimer": "Program documentation verified • Quantitative career placement audit in progress by Lead Nation Academy.",
+    "metrics": [
+      {
+        "id": "outcome-cohort",
+        "label": "Cohort Status",
+        "statusText": "Inaugural Cohort",
+        "statusType": "informational",
+        "tooltip": "Inaugural graduate cohort completed under executive curriculum guidelines. Official participant registry count is undergoing formal audit.",
+        "icon": "GraduationCap",
+        "isVerified": false,
+        "published": true,
+        "provenance": {
+          "class": "B",
+          "verified": false,
+          "source": "LNA Academic Registry (Inaugural Cohort Status)",
+          "verifiedBy": null,
+          "verifiedOn": null
+        }
+      },
+      {
+        "id": "outcome-progress",
+        "label": "Career Tracking",
+        "statusText": "Audit in Progress",
+        "statusType": "pending_audit",
+        "tooltip": "Post-program graduate employment transitions and workplace readiness are currently tracked through formal alumni surveys.",
+        "icon": "Briefcase",
+        "isVerified": false,
+        "published": true,
+        "provenance": {
+          "class": "B",
+          "verified": false,
+          "source": "LNA Career Services (Alumni Survey in Progress)",
+          "verifiedBy": null,
+          "verifiedOn": null
+        }
+      },
+      {
+        "id": "outcome-rating",
+        "label": "Program Evaluation",
+        "statusText": "Evaluation Pending",
+        "statusType": "pending_audit",
+        "tooltip": "Comprehensive qualitative and quantitative evaluation data undergoing formal review before public publication.",
+        "icon": "Star",
+        "isVerified": false,
+        "published": true,
+        "provenance": {
+          "class": "B",
+          "verified": false,
+          "source": "LNA Academic Evaluation Framework",
+          "verifiedBy": null,
+          "verifiedOn": null
+        }
+      }
+    ],
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "LNA Academic Operations Documentation",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+}

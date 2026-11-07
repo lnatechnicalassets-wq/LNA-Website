@@ -31,6 +31,7 @@ export const serverEnvSchema = z
     // Resend Transactional Email (Phase 10+)
     RESEND_API_KEY: z.string().optional(),
     RESEND_FROM_EMAIL: z.string().email().default("admissions@mail.lnabd.org"),
+    RESEND_TO_EMAIL: z.string().email().default("info@lnabd.org"),
 
     // Upstash Redis (Phase 6+ Rate Limiting)
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),

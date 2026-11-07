@@ -5,4 +5,7 @@ export * from "./organization";
 export * from "./courses";
 export * from "./batches";
 export * from "./home";
+export * from "./faq";
+export * from "./contact";
+export * from "./irgp";
 export * from "./repository";

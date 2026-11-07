@@ -45,6 +45,20 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
       name: /Real Learning/i,
     });
     expect(reviewsHeading).toBeDefined();
+
+    // 6. FAQ Section (Approved Section 6: Frequently Asked Questions)
+    const faqHeading = screen.getByRole("heading", {
+      level: 2,
+      name: /Frequently Asked Questions/i,
+    });
+    expect(faqHeading).toBeDefined();
+
+    // 7. Contact Us Section (Approved Section 7: Get in Touch)
+    const contactHeading = screen.getByRole("heading", {
+      level: 2,
+      name: /Get in Touch/i,
+    });
+    expect(contactHeading).toBeDefined();
   });
 
   it("renders the hero slider with manual controls and WCAG 2.2 AA accessibility", async () => {
@@ -96,7 +110,9 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
     expect(nextTestimonial).toBeDefined();
 
     // Check attribution of active review
-    expect(screen.getAllByText(/Nusrat Jahan/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/MTO Readiness Program/i)).toBeDefined();
+    expect(screen.getAllByText(/Farzana Yasmin/i).length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText(/Industry Readiness Graduate Program/i).length
+    ).toBeGreaterThanOrEqual(1);
   });
 });

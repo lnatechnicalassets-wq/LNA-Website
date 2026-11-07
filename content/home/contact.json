@@ -1,0 +1,77 @@
+{
+  "eyebrow": "CONTACT US",
+  "title": "Get in Touch",
+  "description": "Send questions about registration, class schedule, program details, fees, and general support. Our team will be happy to assist you.",
+  "email": "info@lnabd.org",
+  "phone": "+8801700000000",
+  "phoneDisplay": "+880 1700-000000",
+  "officeAddress": {
+    "line1": "Road 27, Dhanmondi",
+    "line2": "Dhaka-1209",
+    "city": "Dhaka",
+    "country": "Bangladesh"
+  },
+  "officeHours": "Saturday – Thursday: 9:00 AM – 6:00 PM",
+  "shortcuts": [
+    {
+      "id": "shortcut-register",
+      "title": "How to Register",
+      "icon": "register",
+      "categoryValue": "registration"
+    },
+    {
+      "id": "shortcut-schedule",
+      "title": "Class Schedule",
+      "icon": "schedule",
+      "categoryValue": "schedule"
+    },
+    {
+      "id": "shortcut-fee",
+      "title": "Program Fee",
+      "icon": "fee",
+      "categoryValue": "fees"
+    },
+    {
+      "id": "shortcut-support",
+      "title": "General Support",
+      "icon": "support",
+      "categoryValue": "support"
+    }
+  ],
+  "categories": [
+    {
+      "value": "registration",
+      "label": "How to Register / Application"
+    },
+    {
+      "value": "schedule",
+      "label": "Class Schedule & Batches"
+    },
+    {
+      "value": "fees",
+      "label": "Program Fee & Payment"
+    },
+    {
+      "value": "support",
+      "label": "General Support & Advisory"
+    },
+    {
+      "value": "other",
+      "label": "Other Enquiry"
+    }
+  ],
+  "visibility": {
+    "showEmail": true,
+    "showPhone": false,
+    "showAddress": true,
+    "showHours": true,
+    "showOfficeVisual": true
+  },
+  "provenance": {
+    "class": "B",
+    "verified": false,
+    "source": "LNA site contact coordinates",
+    "verifiedBy": null,
+    "verifiedOn": null
+  }
+}
