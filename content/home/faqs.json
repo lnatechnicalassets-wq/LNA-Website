@@ -1,0 +1,132 @@
+[
+  {
+    "id": "faq-01",
+    "question": "What will be covered in the MTO Readiness Program?",
+    "answer": "The MTO Readiness Program focuses on foundational corporate and recruitment-readiness competencies, covering business communication, structured problem solving, analytical thinking, leadership fundamentals, teamwork, corporate etiquette, office productivity tools, and interview preparation across 16 intensive sessions (1.5 hours per session).",
+    "category": "program",
+    "icon": "book",
+    "order": 1,
+    "published": true,
+    "courseId": "mto-readiness",
+    "courseHref": "/courses/executive-leadership",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved MTO Readiness curriculum outline",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "faq-02",
+    "question": "Who can apply for LNA programs and masterclasses?",
+    "answer": "Eligibility depends on the specific course track. Career readiness programs are designed for university seniors and early-career jobseekers, while our executive development masterclasses are tailored for department managers, team leads, and enterprise leaders. Detailed prerequisites for each course are published on its respective course page.",
+    "category": "eligibility",
+    "icon": "users",
+    "order": 2,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "LNA admissions guidelines",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "faq-03",
+    "question": "How are classes conducted, and what is the schedule?",
+    "answer": "All programs are conducted through in-person, offline masterclasses in Dhaka. For the MTO Readiness Program, the curriculum is delivered across 16 sessions of 1.5 hours each. Cohort schedules, including weekend or evening timing options, are published on each course page upon batch announcement.",
+    "category": "schedule",
+    "icon": "calendar",
+    "order": 3,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved delivery structure",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "faq-04",
+    "question": "Where will the classes be held?",
+    "answer": "Masterclasses are held in executive learning spaces in Dhaka. Specific campus venue details and classroom directions are communicated to admitted learners prior to the batch start date, or can be confirmed by reaching out via our Contact Us section.",
+    "category": "venue",
+    "icon": "map-pin",
+    "order": 4,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Campus venue policy",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "faq-05",
+    "question": "How do I register or apply for a course?",
+    "answer": "Select your desired program from our Courses catalog, review the curriculum and batch details, and submit the online application form. Following profile review and acceptance, our admissions team provides instructions to complete your enrollment confirmation.",
+    "category": "registration",
+    "icon": "pointer",
+    "order": 5,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Admissions workflow specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "faq-06",
+    "question": "What are the program fees, and how can I make the payment?",
+    "answer": "Tuition fees are published transparently on each course page. For the MTO Readiness Program, the published fee is BDT 7,500. Secure digital payment via bKash and approved banking channels are available upon application acceptance.",
+    "category": "fees",
+    "icon": "credit-card",
+    "order": 6,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved fee schedule",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "faq-07",
+    "question": "Will I receive a certificate after completing a program?",
+    "answer": "Yes. Enrolled learners who satisfy the program's required attendance threshold and successfully complete all practical assessments and capstone requirements are awarded an official Certificate of Completion from Lead Nation Academy.",
+    "category": "certification",
+    "icon": "award",
+    "order": 7,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Academic certification standard",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "faq-08",
+    "question": "Can I contact LNA before registering or choosing a course?",
+    "answer": "Yes. Prospective learners and enterprise sponsors can consult our academic advisors regarding course selection, syllabus details, and batch schedules. Please use the form in the Contact Us section below to get in touch with our team.",
+    "category": "support",
+    "icon": "help",
+    "order": 8,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Advising policy",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]

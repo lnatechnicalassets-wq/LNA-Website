@@ -6,6 +6,8 @@ import {
   CoursesSection,
   MentorsSection,
   ReviewsSection,
+  FaqSection,
+  ContactSection,
   MentorQuickViewProvider,
 } from "@/components/home";
 
@@ -21,14 +23,18 @@ export default async function HomePage() {
   const batchRepo = getBatchRepository();
 
   // Load all homepage data in parallel via clean repository interfaces (Rule R4)
-  const [heroSlides, partners, courses, batches, mentors, reviews] = await Promise.all([
-    homeRepo.getHeroSlides(),
-    homeRepo.getPartners(),
-    courseRepo.getAllCourses(),
-    batchRepo.getAllBatches(),
-    homeRepo.getMentors(),
-    homeRepo.getReviews(),
-  ]);
+  const [heroSlides, partners, courses, batches, mentors, reviews, irgpData, faqs, contactConfig] =
+    await Promise.all([
+      homeRepo.getHeroSlides(),
+      homeRepo.getPartners(),
+      courseRepo.getAllCourses(),
+      batchRepo.getAllBatches(),
+      homeRepo.getMentors(),
+      homeRepo.getReviews(),
+      homeRepo.getIrgpData(),
+      homeRepo.getFaqs(),
+      homeRepo.getContactConfig(),
+    ]);
 
   return (
     <MentorQuickViewProvider>
@@ -45,10 +51,16 @@ export default async function HomePage() {
         {/* 4. Mentors Section (Pixel-Faithful Layered Editorial Showcase) */}
         <MentorsSection mentors={mentors} />
 
-        {/* 5. Learner Reviews (FR-PUB-006: Manual Navigation, No Autoplay) */}
-        <ReviewsSection reviews={reviews} />
+        {/* 5. Section 5: Real Learning. Real Impact. (IRGP Success Story, Gallery, Reviews & Outcomes) */}
+        <ReviewsSection reviews={reviews} irgpData={irgpData} />
 
-        {/* 6. Footer: Rendered automatically by PublicShell wrapper */}
+        {/* 6. Frequently Asked Questions (Standalone 2-Column Academic FAQ) */}
+        <FaqSection faqs={faqs} />
+
+        {/* 7. Contact Us (Standalone 3-Zone Interactive Contact & Inquiry) */}
+        <ContactSection config={contactConfig} />
+
+        {/* 8. Footer: Rendered automatically by PublicShell wrapper */}
       </div>
     </MentorQuickViewProvider>
   );

@@ -20,6 +20,9 @@ import {
   Review,
   ReviewSchema,
 } from "./home";
+import { FaqItem, FaqItemSchema } from "./faq";
+import { ContactConfig, ContactConfigSchema } from "./contact";
+import { IrgpData, IrgpDataSchema } from "./irgp";
 
 export interface ICourseRepository {
   getAllCourses(): Promise<Course[]>;
@@ -43,6 +46,9 @@ export interface IHomeRepository {
   getMentors(): Promise<Mentor[]>;
   getMentorById(id: string): Promise<Mentor | null>;
   getReviews(): Promise<Review[]>;
+  getIrgpData(): Promise<IrgpData>;
+  getFaqs(): Promise<FaqItem[]>;
+  getContactConfig(): Promise<ContactConfig>;
 }
 
 /**
@@ -60,6 +66,9 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
   private cachedEvents: Event[] | null = null;
   private cachedMentors: Mentor[] | null = null;
   private cachedReviews: Review[] | null = null;
+  private cachedIrgpData: IrgpData | null = null;
+  private cachedFaqs: FaqItem[] | null = null;
+  private cachedContactConfig: ContactConfig | null = null;
 
   constructor(contentDir = path.join(process.cwd(), "content")) {
     this.contentDir = contentDir;
@@ -240,6 +249,53 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
 
     this.cachedReviews = sorted;
     return sorted;
+  }
+
+  async getIrgpData(): Promise<IrgpData> {
+    if (this.cachedIrgpData) return this.cachedIrgpData;
+
+    const file = path.join(this.contentDir, "home", "irgp.json");
+    if (!fs.existsSync(file)) {
+      throw new Error(`IRGP content file not found at ${file}`);
+    }
+
+    const raw = fs.readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = IrgpDataSchema.parse(parsed);
+
+    this.cachedIrgpData = validated;
+    return validated;
+  }
+
+  async getFaqs(): Promise<FaqItem[]> {
+    if (this.cachedFaqs) return this.cachedFaqs;
+
+    const file = path.join(this.contentDir, "home", "faqs.json");
+    if (!fs.existsSync(file)) return [];
+
+    const raw = fs.readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = z.array(FaqItemSchema).parse(parsed);
+    const sorted = validated.filter((item) => item.published).sort((a, b) => a.order - b.order);
+
+    this.cachedFaqs = sorted;
+    return sorted;
+  }
+
+  async getContactConfig(): Promise<ContactConfig> {
+    if (this.cachedContactConfig) return this.cachedContactConfig;
+
+    const file = path.join(this.contentDir, "home", "contact.json");
+    if (!fs.existsSync(file)) {
+      throw new Error(`Contact config file not found at ${file}`);
+    }
+
+    const raw = fs.readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = ContactConfigSchema.parse(parsed);
+
+    this.cachedContactConfig = validated;
+    return validated;
   }
 }
 

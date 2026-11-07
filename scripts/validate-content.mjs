@@ -239,6 +239,127 @@ const ReviewSchema = z.object({
   provenance: ProvenanceSchema,
 });
 
+const FaqItemSchema = z.object({
+  id: z.string().min(1),
+  question: z.string().min(5),
+  answer: z.string().min(10),
+  category: z.string().min(2),
+  icon: z
+    .enum([
+      "book",
+      "users",
+      "calendar",
+      "map-pin",
+      "pointer",
+      "credit-card",
+      "award",
+      "layers",
+      "help",
+    ])
+    .default("help"),
+  order: z.number().int().nonnegative(),
+  published: z.boolean().default(true),
+  courseId: z.string().optional(),
+  courseHref: z.string().optional(),
+  provenance: ProvenanceSchema,
+});
+
+const ContactShortcutSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(2),
+  icon: z.enum(["register", "schedule", "fee", "support"]),
+  categoryValue: z.string().min(1),
+});
+
+const ContactConfigSchema = z.object({
+  eyebrow: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(5),
+  email: z.string().email(),
+  phone: z.string().min(1),
+  phoneDisplay: z.string().min(1),
+  whatsapp: z.string().optional(),
+  officeAddress: z.object({
+    line1: z.string().min(1),
+    line2: z.string().min(1),
+    city: z.string().min(1),
+    country: z.string().min(1),
+  }),
+  officeHours: z.string().min(1),
+  mapUrl: z.string().url().optional(),
+  shortcuts: z.array(ContactShortcutSchema),
+  categories: z.array(z.object({ value: z.string().min(1), label: z.string().min(1) })),
+  visibility: z.object({
+    showEmail: z.boolean(),
+    showPhone: z.boolean(),
+    showAddress: z.boolean(),
+    showHours: z.boolean(),
+    showOfficeVisual: z.boolean(),
+  }),
+  provenance: ProvenanceSchema,
+});
+
+const IrgpActivitySchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(2),
+  description: z.string().min(5),
+  icon: z.string().optional(),
+});
+
+const IrgpStorySchema = z.object({
+  id: z.string().min(1),
+  badge: z.string().min(1),
+  status: z.string().min(1),
+  title: z.string().min(3),
+  cohort: z.string().min(1),
+  period: z.string().min(1),
+  description: z.string().min(10),
+  ctaText: z.string().min(2),
+  modalOverview: z.string().min(20),
+  objectives: z.array(z.string()).min(1),
+  activities: z.array(IrgpActivitySchema).min(1),
+  provenance: ProvenanceSchema,
+});
+
+const IrgpGalleryItemSchema = z.object({
+  id: z.string().min(1),
+  src: z.string().min(1),
+  category: z.string().min(2),
+  icon: z.string().min(1),
+  title: z.string().min(2),
+  caption: z.string().min(5),
+  alt: z.string().min(5),
+  order: z.number().int().nonnegative(),
+  provenance: ProvenanceSchema,
+});
+
+const IrgpOutcomeMetricSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(2),
+  metric: z.string().optional(),
+  statusText: z.string().optional(),
+  statusType: z.enum(["verified", "pending_audit", "informational"]).default("pending_audit"),
+  tooltip: z.string().min(5),
+  icon: z.string().min(1),
+  isVerified: z.boolean().default(false),
+  published: z.boolean().default(true),
+  provenance: ProvenanceSchema,
+});
+
+const IrgpOutcomesSchema = z.object({
+  heading: z.string().min(2),
+  subheading: z.string().min(2),
+  disclaimer: z.string().optional(),
+  metrics: z.array(IrgpOutcomeMetricSchema).min(1),
+  provenance: ProvenanceSchema,
+});
+
+const IrgpDataSchema = z.object({
+  story: IrgpStorySchema,
+  gallery: z.array(IrgpGalleryItemSchema).min(4),
+  outcomes: IrgpOutcomesSchema,
+});
+
 function readJson(relPath) {
   const fullPath = path.join(contentDir, relPath);
   if (!fs.existsSync(fullPath)) {
@@ -354,6 +475,21 @@ export function validateAllContent() {
   const reviews = readJson("home/reviews.json");
   scanForSecrets(reviews.raw, "home/reviews.json");
   z.array(ReviewSchema).parse(reviews.data);
+
+  console.log("  → Validating content/home/irgp.json...");
+  const irgp = readJson("home/irgp.json");
+  scanForSecrets(irgp.raw, "home/irgp.json");
+  IrgpDataSchema.parse(irgp.data);
+
+  console.log("  → Validating content/home/faqs.json...");
+  const faqs = readJson("home/faqs.json");
+  scanForSecrets(faqs.raw, "home/faqs.json");
+  z.array(FaqItemSchema).parse(faqs.data);
+
+  console.log("  → Validating content/home/contact.json...");
+  const contact = readJson("home/contact.json");
+  scanForSecrets(contact.raw, "home/contact.json");
+  ContactConfigSchema.parse(contact.data);
 
   console.log(
     "✅ CONTENT VALIDATION SUCCESSFUL: All content schemas, referential integrity, and security checks passed!"

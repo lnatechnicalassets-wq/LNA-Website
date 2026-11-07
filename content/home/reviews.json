@@ -1,6 +1,26 @@
 [
   {
     "id": "review-01",
+    "quote": "The IRGP gave me hands-on learning, real industry exposure, and the confidence to apply my skills in a professional environment.",
+    "author": "Farzana Yasmin",
+    "designation": "IRGP Participant",
+    "company": "Apex Footwear",
+    "program": "Industry Readiness Graduate Program (IRGP)",
+    "cohort": "Cohort 1",
+    "portraitSrc": "/images/learner-farzana.jpg",
+    "rating": 4.8,
+    "order": 1,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 5 IRGP Reference Specification (media_1794084075006_79b97a06.jpg)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "review-02",
     "quote": "LNA's practical, job-focused training gave me the confidence and skills to land my first full-time role.",
     "author": "Nusrat Jahan",
     "designation": "Management Trainee",
@@ -8,26 +28,6 @@
     "program": "MTO Readiness Program",
     "cohort": "MTO Cohort 04",
     "portraitSrc": "/images/learner-nusrat.jpg",
-    "rating": 5,
-    "order": 1,
-    "isPlaceholder": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Approved Section 5 Reference Testimonial Spec",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "review-02",
-    "quote": "The hands-on frameworks and case studies completely shifted how I approach product discovery and stakeholder alignment.",
-    "author": "Tanvir Ahmed",
-    "designation": "Product Operations Analyst",
-    "company": "Pathao",
-    "program": "Product & Growth Masterclass",
-    "cohort": "Product Cohort 02",
-    "portraitSrc": "/images/learner-tanvir.jpg",
     "rating": 5,
     "order": 2,
     "isPlaceholder": true,
@@ -41,14 +41,14 @@
   },
   {
     "id": "review-03",
-    "quote": "Learning directly from senior marketing directors who navigate the Bangladesh market daily made every session invaluable.",
-    "author": "Sadia Afrin",
-    "designation": "Associate Brand Strategist",
-    "company": "Apex Footwear",
-    "program": "Strategic Brand Marketing",
-    "cohort": "Marketing Cohort 03",
-    "portraitSrc": "/images/learner-sadia.jpg",
-    "rating": 5,
+    "quote": "The hands-on frameworks and case studies completely shifted how I approach product discovery and stakeholder alignment.",
+    "author": "Tanvir Ahmed",
+    "designation": "Product Operations Analyst",
+    "company": "Pathao",
+    "program": "Product & Growth Masterclass",
+    "cohort": "Product Cohort 02",
+    "portraitSrc": "/images/learner-tanvir.jpg",
+    "rating": 4.9,
     "order": 3,
     "isPlaceholder": true,
     "provenance": {
@@ -61,6 +61,26 @@
   },
   {
     "id": "review-04",
+    "quote": "Learning directly from senior marketing directors who navigate the Bangladesh market daily made every session invaluable.",
+    "author": "Sadia Afrin",
+    "designation": "Associate Brand Strategist",
+    "company": "Apex Footwear",
+    "program": "Strategic Brand Marketing",
+    "cohort": "Marketing Cohort 03",
+    "portraitSrc": "/images/learner-sadia.jpg",
+    "rating": 4.8,
+    "order": 4,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 5 Reference Testimonial Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "review-05",
     "quote": "The offline boardroom case discussions provided actionable frameworks we immediately integrated into our executive strategic planning cycle.",
     "author": "Mahmudul Alam",
     "designation": "Director of Operations",
@@ -68,26 +88,6 @@
     "program": "Executive Leadership & Governance",
     "cohort": "Executive Leadership Cohort 01",
     "portraitSrc": "/images/learner-mahmudul.jpg",
-    "rating": 5,
-    "order": 4,
-    "isPlaceholder": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo testimonial placeholder (Gate B0 deferred until official graduate consent audit)",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "review-05",
-    "quote": "The financial statement engineering and M&A modeling modules offered practical depth tailored specifically to Bangladesh's banking and regulatory environment.",
-    "author": "Farzana Yasmin",
-    "designation": "Head of Corporate Treasury",
-    "company": "Tier-1 Commercial Bank",
-    "program": "Corporate Finance & Capital Structuring",
-    "cohort": "Corporate Finance Cohort 01",
-    "portraitSrc": "/images/learner-farzana.jpg",
     "rating": 5,
     "order": 5,
     "isPlaceholder": true,
