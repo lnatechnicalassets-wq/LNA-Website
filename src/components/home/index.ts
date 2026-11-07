@@ -13,3 +13,6 @@ export * from "./mentor-quick-view-modal";
 export * from "./mentor-quick-view-panel";
 export * from "./company-logo";
 export * from "./reviews-section";
+export * from "./reviews-carousel";
+export * from "./community-banner";
+export * from "./reviews-modal";

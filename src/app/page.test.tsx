@@ -39,10 +39,10 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
       })
     ).toBeNull();
 
-    // 5. Learner Reviews (FR-PUB-006: Manual, No Autoplay)
+    // 5. Learner Reviews (Approved Section 5: Real Learning Real Impact)
     const reviewsHeading = screen.getByRole("heading", {
       level: 2,
-      name: /Voices from the Cohort/i,
+      name: /Real Learning/i,
     });
     expect(reviewsHeading).toBeDefined();
   });
@@ -81,22 +81,22 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
     expect(offlineBadges.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("renders learner testimonials with manual pagination and no autoplay (FR-PUB-006)", async () => {
+  it("renders learner testimonials with accessible navigation controls", async () => {
     const Component = await HomePage();
     render(Component);
 
     // Manual navigation buttons present
     const prevTestimonial = screen.getByRole("button", {
-      name: /Previous testimonial/i,
+      name: /^Previous testimonial$/i,
     });
     const nextTestimonial = screen.getByRole("button", {
-      name: /Next testimonial/i,
+      name: /^Next testimonial$/i,
     });
     expect(prevTestimonial).toBeDefined();
     expect(nextTestimonial).toBeDefined();
 
-    // Check attribution
-    expect(screen.getByText(/Mahmudul Alam/i)).toBeDefined();
-    expect(screen.getByText(/Executive Leadership Cohort 01/i)).toBeDefined();
+    // Check attribution of active review
+    expect(screen.getAllByText(/Nusrat Jahan/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/MTO Readiness Program/i)).toBeDefined();
   });
 });
