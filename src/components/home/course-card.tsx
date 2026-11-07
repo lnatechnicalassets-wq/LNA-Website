@@ -1,11 +1,14 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Calendar, MapPin } from "lucide-react";
 import type { Course, Batch, Mentor } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
-import { getMentorAvatar } from "@/lib/content";
+import { getMentorAvatar } from "@/lib/mentors";
 import { CourseArtwork } from "./course-artwork";
+import { useMentorQuickView } from "./mentor-quick-view-context";
 
 export interface CourseCardProps {
   course: Course;
@@ -15,6 +18,8 @@ export interface CourseCardProps {
 }
 
 export function CourseCard({ course, batch, mentors = [] }: CourseCardProps) {
+  const { openQuickView } = useMentorQuickView();
+
   // Financial calculation via integer poisha (Rule R5)
   const feePoisha = batch?.feePoisha ?? 3000000;
   const discountFeePoisha = batch?.discountFeePoisha;
@@ -157,7 +162,7 @@ export function CourseCard({ course, batch, mentors = [] }: CourseCardProps) {
           </div>
         </div>
 
-        {/* Normal State Mentor Portraits: Lifted higher to balance vertical space, each linking to mentor profile */}
+        {/* Normal State Mentor Portraits: Lifted higher to balance vertical space, each triggering quick-view popup */}
         <div
           className="flex items-center gap-2 mt-auto mb-16 sm:mb-20"
           aria-label={`Assigned faculty: ${courseMentors.map((m) => m.name).join(", ")}`}
@@ -165,11 +170,16 @@ export function CourseCard({ course, batch, mentors = [] }: CourseCardProps) {
           {normalVisibleMentors.map((mentor, idx) => {
             const avatarSrc = getMentorAvatar(mentor, idx);
             return (
-              <Link
+              <button
                 key={mentor.id}
-                href={`/mentors/${mentor.id}`}
-                className="relative z-30 block rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#086477] focus-visible:ring-offset-2 transition-transform duration-200 hover:scale-105"
-                aria-label={`View ${mentor.name}'s profile`}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openQuickView(mentor);
+                }}
+                className="relative z-30 block rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#086477] focus-visible:ring-offset-2 transition-transform duration-200 hover:scale-105 cursor-pointer"
+                aria-label={`View ${mentor.name}'s details`}
                 title={`${mentor.name} — ${mentor.role}`}
               >
                 <div className="relative w-10 h-10 sm:w-[42px] sm:h-[42px] rounded-full overflow-hidden bg-[#E8F3F5] ring-2 ring-white shadow-xs shrink-0">
@@ -181,7 +191,7 @@ export function CourseCard({ course, batch, mentors = [] }: CourseCardProps) {
                     className="object-cover object-top"
                   />
                 </div>
-              </Link>
+              </button>
             );
           })}
 
@@ -220,11 +230,16 @@ export function CourseCard({ course, batch, mentors = [] }: CourseCardProps) {
                 const avatarSrc = getMentorAvatar(mentor, originalIdx >= 0 ? originalIdx : 0);
                 const sizeClass = getHoverMentorSizeClass(mentorCount);
                 return (
-                  <Link
+                  <button
                     key={mentor.id}
-                    href={`/mentors/${mentor.id}`}
-                    className="relative z-30 block rounded-full focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#086477] transition-all duration-300 hover:scale-108 shrink-0"
-                    aria-label={`View ${mentor.name}'s profile`}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openQuickView(mentor);
+                    }}
+                    className="relative z-30 block rounded-full focus-visible:outline-hidden focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#086477] transition-all duration-300 hover:scale-108 shrink-0 cursor-pointer"
+                    aria-label={`View ${mentor.name}'s details`}
                     title={`${mentor.name} — ${mentor.role}`}
                   >
                     <div
@@ -238,7 +253,7 @@ export function CourseCard({ course, batch, mentors = [] }: CourseCardProps) {
                         className="object-cover object-top"
                       />
                     </div>
-                  </Link>
+                  </button>
                 );
               })}
             </div>

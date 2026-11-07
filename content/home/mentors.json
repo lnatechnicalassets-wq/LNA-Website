@@ -1,17 +1,185 @@
 [
   {
-    "id": "mentor-leadership-lead",
-    "name": "Dr. Tariq Rahman",
-    "role": "Lead Faculty, Strategic Governance",
-    "organization": "Senior Advisor, Corporate Governance Institute",
-    "bio": "Over 22 years advising enterprise boards and financial institutions across South Asia on corporate governance, risk architecture, and board alignment.",
-    "courseId": "executive-leadership",
+    "id": "mentor-nadia-islam",
+    "name": "Nadia Islam",
+    "role": "Head of People",
+    "organization": "Airbnb",
+    "bio": "People operations leader specializing in organizational design, executive talent development, and high-performance cultures across hypergrowth tech environments.",
+    "portraitSrc": "/images/mentor-nadia.jpg",
+    "linkedInUrl": "https://linkedin.com/in/nadia-islam-demo",
+    "categories": ["HR & Operations"],
+    "expertise": [
+      "People Strategy",
+      "Culture & Scaling",
+      "Talent Leadership",
+      "Organizational Design"
+    ],
+    "careerHistory": [
+      {
+        "company": "airbnb",
+        "logoIcon": "airbnb",
+        "role": "Head of People"
+      }
+    ],
     "order": 1,
     "isPlaceholder": true,
+    "published": true,
     "provenance": {
       "class": "B",
       "verified": false,
-      "source": "Demo faculty placeholder (Gate B0 deferred until official mentor roster approval)",
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-ethan-park",
+    "name": "Ethan Park",
+    "role": "Former Chief Product Officer",
+    "organization": "Microsoft & Nexora",
+    "bio": "Product visionary with extensive experience architecting enterprise SaaS platforms and leading high-velocity engineering and product teams globally.",
+    "portraitSrc": "/images/mentor-ethan.jpg",
+    "linkedInUrl": "https://linkedin.com/in/ethan-park-demo",
+    "categories": ["Technology & AI"],
+    "expertise": ["Product Strategy", "Platform Architecture", "AI Integration", "Enterprise SaaS"],
+    "careerHistory": [
+      {
+        "company": "Microsoft",
+        "logoIcon": "microsoft"
+      }
+    ],
+    "order": 2,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-riya-sharma",
+    "name": "Riya Sharma",
+    "role": "Former Chief Growth Officer",
+    "organization": "Vellum & StrideWorks",
+    "bio": "Growth leader with 15+ years of experience scaling consumer and enterprise businesses across global markets.",
+    "portraitSrc": "/images/mentor-riya.jpg",
+    "linkedInUrl": "https://linkedin.com/in/riya-sharma-demo",
+    "categories": ["Marketing & Growth"],
+    "expertise": ["Growth Strategy", "Go-to-Market", "Scaling Teams", "Business Growth"],
+    "careerHistory": [
+      {
+        "company": "Vellum",
+        "logoIcon": "vellum"
+      },
+      {
+        "company": "StrideWorks",
+        "logoIcon": "strideworks"
+      },
+      {
+        "company": "Microsoft",
+        "logoIcon": "microsoft"
+      },
+      {
+        "company": "Google",
+        "logoIcon": "google"
+      }
+    ],
+    "order": 3,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-marcus-reed",
+    "name": "Marcus Reed",
+    "role": "Former CEO & Board Advisor",
+    "organization": "Crestline & Pivona",
+    "bio": "Senior executive and board advisor who has led multinational turnarounds, IPO preparations, and enterprise governance transformations.",
+    "portraitSrc": "/images/mentor-marcus.jpg",
+    "linkedInUrl": "https://linkedin.com/in/marcus-reed-demo",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Executive Leadership", "Board Governance", "M&A Strategy", "Enterprise Scale"],
+    "careerHistory": [
+      {
+        "company": "Crestline",
+        "logoIcon": "crestline"
+      }
+    ],
+    "order": 4,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-lena-chen",
+    "name": "Lena Chen",
+    "role": "Head of Strategy",
+    "organization": "Novaris & Arcview",
+    "bio": "Corporate strategy director advising Fortune 500 leadership on international expansion, market entry, and portfolio optimization.",
+    "portraitSrc": "/images/mentor-lena.jpg",
+    "linkedInUrl": "https://linkedin.com/in/lena-chen-demo",
+    "categories": ["Business & Leadership"],
+    "expertise": [
+      "Corporate Strategy",
+      "Market Expansion",
+      "Strategic Planning",
+      "Portfolio Optimization"
+    ],
+    "careerHistory": [
+      {
+        "company": "Novaris",
+        "logoIcon": "novaris"
+      }
+    ],
+    "order": 5,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-leadership-lead",
+    "name": "Dr. Tariq Rahman",
+    "role": "Lead Faculty, Strategic Governance",
+    "organization": "Corporate Governance Institute",
+    "bio": "Over 22 years advising enterprise boards and financial institutions across South Asia and global markets on governance, risk, and growth strategy.",
+    "portraitSrc": "/images/mentor-tariq.jpg",
+    "linkedInUrl": "https://linkedin.com/in/tariq-rahman-demo",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Growth Strategy", "Go-to-Market", "Scaling Teams", "Corporate Governance"],
+    "careerHistory": [
+      { "company": "Microsoft", "logoIcon": "microsoft" },
+      { "company": "BCG", "logoIcon": "bcg" },
+      { "company": "HSBC", "logoIcon": "hsbc" }
+    ],
+    "courseId": "executive-leadership",
+    "order": 6,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
       "verifiedBy": null,
       "verifiedOn": null
     }
@@ -20,32 +188,54 @@
     "id": "mentor-finance-lead",
     "name": "Kamrul Hassan, FCA",
     "role": "Lead Faculty, Corporate Finance",
-    "organization": "Former Managing Director, Investment Banking",
+    "organization": "Investment Banking & Corporate Finance",
     "bio": "Fellow Chartered Accountant with 20+ years of leadership in corporate debt syndication, valuation advisory, and M&A transactions in Bangladesh.",
+    "portraitSrc": "/images/mentor-kamrul.jpg",
+    "linkedInUrl": "https://linkedin.com/in/kamrul-hassan-demo",
+    "categories": ["Finance & Banking"],
+    "expertise": [
+      "Corporate Finance",
+      "Debt Syndication",
+      "Valuation Advisory",
+      "M&A Transactions"
+    ],
+    "careerHistory": [{ "company": "HSBC", "logoIcon": "hsbc" }],
     "courseId": "corporate-finance",
-    "order": 2,
+    "order": 7,
     "isPlaceholder": true,
+    "published": true,
     "provenance": {
       "class": "B",
       "verified": false,
-      "source": "Demo faculty placeholder (Gate B0 deferred until official mentor roster approval)",
+      "source": "Approved Section 4 Reference Mentor Spec",
       "verifiedBy": null,
       "verifiedOn": null
     }
   },
   {
     "id": "mentor-digital-lead",
-    "name": "Anisur Chowdhury",
+    "name": "Farah Chowdhury",
     "role": "Lead Faculty, Digital Transformation",
-    "organization": "Partner & Chief Technology Strategist",
-    "bio": "Enterprise technology leader guiding cloud migration, data governance, and strategic technology modernization for national conglomerates.",
+    "organization": "Digital Transformation & Technology Strategy",
+    "bio": "Enterprise technology leader guiding cloud migration, data governance, and strategic technology modernization for national and multinational conglomerates.",
+    "portraitSrc": "/images/mentor-farah.jpg",
+    "linkedInUrl": "https://linkedin.com/in/farah-chowdhury-demo",
+    "categories": ["Technology & AI"],
+    "expertise": [
+      "Digital Strategy",
+      "Cloud Modernization",
+      "Data Governance",
+      "Enterprise Architecture"
+    ],
+    "careerHistory": [{ "company": "Google", "logoIcon": "google" }],
     "courseId": "digital-transformation",
-    "order": 3,
+    "order": 8,
     "isPlaceholder": true,
+    "published": true,
     "provenance": {
       "class": "B",
       "verified": false,
-      "source": "Demo faculty placeholder (Gate B0 deferred until official mentor roster approval)",
+      "source": "Approved Section 4 Reference Mentor Spec",
       "verifiedBy": null,
       "verifiedOn": null
     }
@@ -57,91 +247,6 @@
     "organization": "Apex Analytics Group",
     "bio": "Specialist in enterprise BI architectures, executive KPI modeling, and automated data pipelines.",
     "courseId": "data-analytics",
-    "order": 4,
-    "isPlaceholder": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo faculty roster seed",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "mentor-da-02",
-    "name": "Nusrat Jahan",
-    "role": "Director of Business Intelligence",
-    "organization": "Dhaka Data Labs",
-    "bio": "Experienced data strategist specializing in executive predictive dashboards and financial modeling.",
-    "courseId": "data-analytics",
-    "order": 5,
-    "isPlaceholder": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo faculty roster seed",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "mentor-el-02",
-    "name": "Farzana Chowdhury",
-    "role": "Managing Director & CEO",
-    "organization": "Green Delta Capital",
-    "bio": "Distinguished enterprise leader with deep expertise in executive corporate strategy and organizational alignment.",
-    "courseId": "executive-leadership",
-    "order": 6,
-    "isPlaceholder": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo faculty roster seed",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "mentor-el-03",
-    "name": "Syed M. Tanvir",
-    "role": "Senior Partner & Board Strategist",
-    "organization": "Apex Strategic Group",
-    "bio": "Advises national business groups on corporate restructuring, ethics compliance, and C-suite succession.",
-    "courseId": "executive-leadership",
-    "order": 7,
-    "isPlaceholder": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo faculty roster seed",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "mentor-cf-02",
-    "name": "Nazia Rahman, CFA",
-    "role": "Executive Director, Portfolio Management",
-    "organization": "Capital Investment Partners",
-    "bio": "Expert in corporate balance sheet engineering, debt structuring, and private equity valuations.",
-    "courseId": "corporate-finance",
-    "order": 8,
-    "isPlaceholder": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo faculty roster seed",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "mentor-cf-03",
-    "name": "Asif Iqbal",
-    "role": "Head of Structured Finance",
-    "organization": "Eastern Merchant Bank",
-    "bio": "Over 16 years leading capital allocation, syndication, and sovereign bond advisory in Bangladesh.",
-    "courseId": "corporate-finance",
     "order": 9,
     "isPlaceholder": true,
     "provenance": {
@@ -150,15 +255,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Technology & AI"],
+    "published": true
   },
   {
-    "id": "mentor-cf-04",
-    "name": "Tanveer Ahmed, FCA",
-    "role": "Partner, Enterprise Valuation",
-    "organization": "Rahman & Partners",
-    "bio": "Chartered Accountant advising multinational corporate transactions, M&A due diligence, and capital risk management.",
-    "courseId": "corporate-finance",
+    "id": "mentor-da-02",
+    "name": "Nusrat Jahan",
+    "role": "Director of Business Intelligence",
+    "organization": "Dhaka Data Labs",
+    "bio": "Experienced data strategist specializing in executive predictive dashboards and financial modeling.",
+    "courseId": "data-analytics",
     "order": 10,
     "isPlaceholder": true,
     "provenance": {
@@ -167,15 +274,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Technology & AI"],
+    "published": true
   },
   {
-    "id": "mentor-dt-02",
-    "name": "Rubaba Dowla",
-    "role": "Chief Commercial Strategist",
-    "organization": "Tech Horizon Ventures",
-    "bio": "Pioneer in telecom and digital enterprise modernization across South Asian corporate markets.",
-    "courseId": "digital-transformation",
+    "id": "mentor-el-02",
+    "name": "Farzana Chowdhury",
+    "role": "Managing Director & CEO",
+    "organization": "Green Delta Capital",
+    "bio": "Distinguished enterprise leader with deep expertise in executive corporate strategy and organizational alignment.",
+    "courseId": "executive-leadership",
     "order": 11,
     "isPlaceholder": true,
     "provenance": {
@@ -184,15 +293,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Business & Leadership"],
+    "published": true
   },
   {
-    "id": "mentor-dt-03",
-    "name": "Mahmudul Hasan",
-    "role": "VP, Engineering & Applied AI",
-    "organization": "Neural Systems Ltd.",
-    "bio": "Architects enterprise artificial intelligence workflows, data governance, and legacy system overhauls.",
-    "courseId": "digital-transformation",
+    "id": "mentor-el-03",
+    "name": "Syed M. Tanvir",
+    "role": "Senior Partner & Board Strategist",
+    "organization": "Apex Strategic Group",
+    "bio": "Advises national business groups on corporate restructuring, ethics compliance, and C-suite succession.",
+    "courseId": "executive-leadership",
     "order": 12,
     "isPlaceholder": true,
     "provenance": {
@@ -201,15 +312,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Business & Leadership"],
+    "published": true
   },
   {
-    "id": "mentor-dt-04",
-    "name": "Zillur Rahman",
-    "role": "Enterprise Solutions Architect",
-    "organization": "CloudScale Enterprise",
-    "bio": "Guides large-scale financial institutions on cloud infrastructure migrations and microservice modernization.",
-    "courseId": "digital-transformation",
+    "id": "mentor-cf-02",
+    "name": "Nazia Rahman, CFA",
+    "role": "Executive Director, Portfolio Management",
+    "organization": "Capital Investment Partners",
+    "bio": "Expert in corporate balance sheet engineering, debt structuring, and private equity valuations.",
+    "courseId": "corporate-finance",
     "order": 13,
     "isPlaceholder": true,
     "provenance": {
@@ -218,15 +331,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Finance & Banking"],
+    "published": true
   },
   {
-    "id": "mentor-dt-05",
-    "name": "Shafiqul Islam",
-    "role": "Head of Cybersecurity & Risk",
-    "organization": "CyberShield Global",
-    "bio": "Advises corporate boards and CTOs on regulatory compliance, zero-trust architectures, and data privacy safeguards.",
-    "courseId": "digital-transformation",
+    "id": "mentor-cf-03",
+    "name": "Asif Iqbal",
+    "role": "Head of Structured Finance",
+    "organization": "Eastern Merchant Bank",
+    "bio": "Over 16 years leading capital allocation, syndication, and sovereign bond advisory in Bangladesh.",
+    "courseId": "corporate-finance",
     "order": 14,
     "isPlaceholder": true,
     "provenance": {
@@ -235,15 +350,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Finance & Banking"],
+    "published": true
   },
   {
-    "id": "mentor-so-01",
-    "name": "Brig. Gen. (Retd.) M. Ali",
-    "role": "Director of Operations Strategy",
-    "organization": "National Logistics Council",
-    "bio": "Expert in strategic operations command, emergency logistics management, and institutional efficiency.",
-    "courseId": "strategic-operations",
+    "id": "mentor-cf-04",
+    "name": "Tanveer Ahmed, FCA",
+    "role": "Partner, Enterprise Valuation",
+    "organization": "Rahman & Partners",
+    "bio": "Chartered Accountant advising multinational corporate transactions, M&A due diligence, and capital risk management.",
+    "courseId": "corporate-finance",
     "order": 15,
     "isPlaceholder": true,
     "provenance": {
@@ -252,15 +369,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Finance & Banking"],
+    "published": true
   },
   {
-    "id": "mentor-so-02",
-    "name": "Samira Karim",
-    "role": "Supply Chain Director",
-    "organization": "Bengal Global Trade",
-    "bio": "Directs international procurement networks, shipping syndication, and customs tariff management.",
-    "courseId": "strategic-operations",
+    "id": "mentor-dt-02",
+    "name": "Rubaba Dowla",
+    "role": "Chief Commercial Strategist",
+    "organization": "Tech Horizon Ventures",
+    "bio": "Pioneer in telecom and digital enterprise modernization across South Asian corporate markets.",
+    "courseId": "digital-transformation",
     "order": 16,
     "isPlaceholder": true,
     "provenance": {
@@ -269,15 +388,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Technology & AI"],
+    "published": true
   },
   {
-    "id": "mentor-so-03",
-    "name": "Kazi Monirul Alam",
-    "role": "VP of Lean Manufacturing",
-    "organization": "Apex Industrial Group",
-    "bio": "Master Black Belt in Lean Six Sigma with 18+ years optimizing production facilities and industrial floor workflows.",
-    "courseId": "strategic-operations",
+    "id": "mentor-dt-03",
+    "name": "Mahmudul Hasan",
+    "role": "VP, Engineering & Applied AI",
+    "organization": "Neural Systems Ltd.",
+    "bio": "Architects enterprise artificial intelligence workflows, data governance, and legacy system overhauls.",
+    "courseId": "digital-transformation",
     "order": 17,
     "isPlaceholder": true,
     "provenance": {
@@ -286,15 +407,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Technology & AI"],
+    "published": true
   },
   {
-    "id": "mentor-so-04",
-    "name": "Rezwanul Haque",
-    "role": "Chief Logistics Officer",
-    "organization": "Transcom Logistics",
-    "bio": "Leads nationwide fleet distributions, cold chain warehousing, and third-party logistics integrations.",
-    "courseId": "strategic-operations",
+    "id": "mentor-dt-04",
+    "name": "Zillur Rahman",
+    "role": "Enterprise Solutions Architect",
+    "organization": "CloudScale Enterprise",
+    "bio": "Guides large-scale financial institutions on cloud infrastructure migrations and microservice modernization.",
+    "courseId": "digital-transformation",
     "order": 18,
     "isPlaceholder": true,
     "provenance": {
@@ -303,15 +426,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Technology & AI"],
+    "published": true
   },
   {
-    "id": "mentor-so-05",
-    "name": "Nafisa Kamal",
-    "role": "Director of Procurement & Risk",
-    "organization": "Summit Industrial",
-    "bio": "Specializes in multi-tier supplier vulnerability audits and cross-border vendor contract negotiation.",
-    "courseId": "strategic-operations",
+    "id": "mentor-dt-05",
+    "name": "Shafiqul Islam",
+    "role": "Head of Cybersecurity & Risk",
+    "organization": "CyberShield Global",
+    "bio": "Advises corporate boards and CTOs on regulatory compliance, zero-trust architectures, and data privacy safeguards.",
+    "courseId": "digital-transformation",
     "order": 19,
     "isPlaceholder": true,
     "provenance": {
@@ -320,14 +445,16 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["Technology & AI"],
+    "published": true
   },
   {
-    "id": "mentor-so-06",
-    "name": "Ariful Islam",
-    "role": "Operations Transformation Lead",
-    "organization": "Global Supply Solutions",
-    "bio": "Advises manufacturing executives on automated demand forecasting, ERP rollout, and inventory capital optimization.",
+    "id": "mentor-so-01",
+    "name": "Brig. Gen. (Retd.) M. Ali",
+    "role": "Director of Operations Strategy",
+    "organization": "National Logistics Council",
+    "bio": "Expert in strategic operations command, emergency logistics management, and institutional efficiency.",
     "courseId": "strategic-operations",
     "order": 20,
     "isPlaceholder": true,
@@ -337,15 +464,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["HR & Operations"],
+    "published": true
   },
   {
-    "id": "mentor-pg-01",
-    "name": "Dr. Shahedul Islam",
-    "role": "Head of Human Capital Advisory",
-    "organization": "Strategic HR Partners",
-    "bio": "Advises corporate boards on executive compensation structure, talent retention, and organizational governance.",
-    "courseId": "people-governance",
+    "id": "mentor-so-02",
+    "name": "Samira Karim",
+    "role": "Supply Chain Director",
+    "organization": "Bengal Global Trade",
+    "bio": "Directs international procurement networks, shipping syndication, and customs tariff management.",
+    "courseId": "strategic-operations",
     "order": 21,
     "isPlaceholder": true,
     "provenance": {
@@ -354,15 +483,17 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["HR & Operations"],
+    "published": true
   },
   {
-    "id": "mentor-pg-02",
-    "name": "Nasreen Sattar",
-    "role": "Former Country Head of HR",
-    "organization": "Standard Chartered Bank",
-    "bio": "Over two decades directing executive talent assessment, leadership pipelines, and board succession strategies.",
-    "courseId": "people-governance",
+    "id": "mentor-so-03",
+    "name": "Kazi Monirul Alam",
+    "role": "VP of Lean Manufacturing",
+    "organization": "Apex Industrial Group",
+    "bio": "Master Black Belt in Lean Six Sigma with 18+ years optimizing production facilities and industrial floor workflows.",
+    "courseId": "strategic-operations",
     "order": 22,
     "isPlaceholder": true,
     "provenance": {
@@ -371,7 +502,104 @@
       "source": "Demo faculty roster seed",
       "verifiedBy": null,
       "verifiedOn": null
-    }
+    },
+    "categories": ["HR & Operations"],
+    "published": true
+  },
+  {
+    "id": "mentor-so-04",
+    "name": "Rezwanul Haque",
+    "role": "Chief Logistics Officer",
+    "organization": "Transcom Logistics",
+    "bio": "Leads nationwide fleet distributions, cold chain warehousing, and third-party logistics integrations.",
+    "courseId": "strategic-operations",
+    "order": 23,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "categories": ["HR & Operations"],
+    "published": true
+  },
+  {
+    "id": "mentor-so-05",
+    "name": "Nafisa Kamal",
+    "role": "Director of Procurement & Risk",
+    "organization": "Summit Industrial",
+    "bio": "Specializes in multi-tier supplier vulnerability audits and cross-border vendor contract negotiation.",
+    "courseId": "strategic-operations",
+    "order": 24,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "categories": ["HR & Operations"],
+    "published": true
+  },
+  {
+    "id": "mentor-so-06",
+    "name": "Ariful Islam",
+    "role": "Operations Transformation Lead",
+    "organization": "Global Supply Solutions",
+    "bio": "Advises manufacturing executives on automated demand forecasting, ERP rollout, and inventory capital optimization.",
+    "courseId": "strategic-operations",
+    "order": 25,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "categories": ["HR & Operations"],
+    "published": true
+  },
+  {
+    "id": "mentor-pg-01",
+    "name": "Dr. Shahedul Islam",
+    "role": "Head of Human Capital Advisory",
+    "organization": "Strategic HR Partners",
+    "bio": "Advises corporate boards on executive compensation structure, talent retention, and organizational governance.",
+    "courseId": "people-governance",
+    "order": 26,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "categories": ["Marketing & Growth"],
+    "published": true
+  },
+  {
+    "id": "mentor-pg-02",
+    "name": "Nasreen Sattar",
+    "role": "Former Country Head of HR",
+    "organization": "Standard Chartered Bank",
+    "bio": "Over two decades directing executive talent assessment, leadership pipelines, and board succession strategies.",
+    "courseId": "people-governance",
+    "order": 27,
+    "isPlaceholder": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "categories": ["Marketing & Growth"],
+    "published": true
   },
   {
     "id": "mentor-pg-03",
@@ -380,12 +608,1314 @@
     "organization": "Talent Governance Corp",
     "bio": "Specialist in C-suite leadership transitions, performance scorecards, and high-accountability organizational design.",
     "courseId": "people-governance",
-    "order": 23,
+    "order": 28,
     "isPlaceholder": true,
     "provenance": {
       "class": "B",
       "verified": false,
       "source": "Demo faculty roster seed",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "categories": ["Marketing & Growth"],
+    "published": true
+  },
+  {
+    "id": "mentor-faculty-sophia-martinez-100",
+    "name": "Sophia Martinez",
+    "role": "VP of Product Design",
+    "organization": "Figma",
+    "bio": "VP of Product Design at Figma with proven expertise in Design Systems, UX Research, Product Design across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Design Systems", "UX Research", "Product Design"],
+    "careerHistory": [
+      {
+        "company": "Figma",
+        "logoIcon": "brightcore"
+      }
+    ],
+    "order": 29,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-julian-thorne-101",
+    "name": "Julian Thorne",
+    "role": "Design Director",
+    "organization": "Vellum Studios",
+    "bio": "Design Director at Vellum Studios with proven expertise in Design Strategy, Brand Architecture, User Testing across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Design Strategy", "Brand Architecture", "User Testing"],
+    "careerHistory": [
+      {
+        "company": "Vellum",
+        "logoIcon": "vellum"
+      }
+    ],
+    "order": 30,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-aria-tanaka-102",
+    "name": "Aria Tanaka",
+    "role": "Head of Experience Design",
+    "organization": "Nexora",
+    "bio": "Head of Experience Design at Nexora with proven expertise in Interaction Design, Design Ops, Accessibility across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Interaction Design", "Design Ops", "Accessibility"],
+    "careerHistory": [
+      {
+        "company": "Nexora",
+        "logoIcon": "nexora"
+      }
+    ],
+    "order": 31,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-liam-o-connor-103",
+    "name": "Liam O'Connor",
+    "role": "Principal UX Architect",
+    "organization": "Google",
+    "bio": "Principal UX Architect at Google with proven expertise in Enterprise UX, Data Visualization, User Journeys across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Enterprise UX", "Data Visualization", "User Journeys"],
+    "careerHistory": [
+      {
+        "company": "Google",
+        "logoIcon": "google"
+      }
+    ],
+    "order": 32,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-zara-chowdhury-104",
+    "name": "Zara Chowdhury",
+    "role": "Creative Strategy Lead",
+    "organization": "Pivona",
+    "bio": "Creative Strategy Lead at Pivona with proven expertise in Creative Direction, Visual Identity, Consumer Insights across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Creative Direction", "Visual Identity", "Consumer Insights"],
+    "careerHistory": [
+      {
+        "company": "Pivona",
+        "logoIcon": "pivona"
+      }
+    ],
+    "order": 33,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-oliver-sterling-105",
+    "name": "Oliver Sterling",
+    "role": "Product Design Lead",
+    "organization": "Airbnb",
+    "bio": "Product Design Lead at Airbnb with proven expertise in Mobile Design, Service Design, Design Thinking across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Mobile Design", "Service Design", "Design Thinking"],
+    "careerHistory": [
+      {
+        "company": "airbnb",
+        "logoIcon": "airbnb"
+      }
+    ],
+    "order": 34,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-maya-patel-106",
+    "name": "Maya Patel",
+    "role": "Lead UX Researcher",
+    "organization": "Microsoft",
+    "bio": "Lead UX Researcher at Microsoft with proven expertise in Generative Research, Usability Benchmarking, Mixed Methods across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Generative Research", "Usability Benchmarking", "Mixed Methods"],
+    "careerHistory": [
+      {
+        "company": "Microsoft",
+        "logoIcon": "microsoft"
+      }
+    ],
+    "order": 35,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-david-kim-107",
+    "name": "David Kim",
+    "role": "VP of Brand Experience",
+    "organization": "StrideWorks",
+    "bio": "VP of Brand Experience at StrideWorks with proven expertise in Omnichannel Design, Experience Strategy, Customer Delight across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Omnichannel Design", "Experience Strategy", "Customer Delight"],
+    "careerHistory": [
+      {
+        "company": "StrideWorks",
+        "logoIcon": "strideworks"
+      }
+    ],
+    "order": 36,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-camilla-rossi-108",
+    "name": "Camilla Rossi",
+    "role": "Head of Design Systems",
+    "organization": "Novaris",
+    "bio": "Head of Design Systems at Novaris with proven expertise in Component Architecture, Design Tokens, Design Governance across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Component Architecture", "Design Tokens", "Design Governance"],
+    "careerHistory": [
+      {
+        "company": "Novaris",
+        "logoIcon": "novaris"
+      }
+    ],
+    "order": 37,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-arjun-verma-109",
+    "name": "Arjun Verma",
+    "role": "Principal UI/UX Designer",
+    "organization": "Arcview",
+    "bio": "Principal UI/UX Designer at Arcview with proven expertise in Interface Architecture, Rapid Prototyping, Design Ops across hypergrowth and scaled enterprise environments.",
+    "categories": ["Design & UX"],
+    "expertise": ["Interface Architecture", "Rapid Prototyping", "Design Ops"],
+    "careerHistory": [
+      {
+        "company": "Arcview",
+        "logoIcon": "arcview"
+      }
+    ],
+    "order": 38,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-robert-vanderbilt-110",
+    "name": "Robert Vanderbilt",
+    "role": "Managing Director, Global Markets",
+    "organization": "Morgan Stanley",
+    "bio": "Managing Director, Global Markets at Morgan Stanley with proven expertise in Capital Markets, Treasury Ops, Risk Strategy across hypergrowth and scaled enterprise environments.",
+    "categories": ["Finance & Banking"],
+    "expertise": ["Capital Markets", "Treasury Ops", "Risk Strategy"],
+    "careerHistory": [
+      {
+        "company": "Crestline",
+        "logoIcon": "crestline"
+      }
+    ],
+    "order": 39,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-farhana-ahmed-111",
+    "name": "Farhana Ahmed",
+    "role": "Chief Investment Officer",
+    "organization": "Apex Capital",
+    "bio": "Chief Investment Officer at Apex Capital with proven expertise in Portfolio Management, Private Equity, Valuation across hypergrowth and scaled enterprise environments.",
+    "categories": ["Finance & Banking"],
+    "expertise": ["Portfolio Management", "Private Equity", "Valuation"],
+    "careerHistory": [
+      {
+        "company": "BrightCore",
+        "logoIcon": "brightcore"
+      }
+    ],
+    "order": 40,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-william-vance-112",
+    "name": "William Vance",
+    "role": "Head of Financial Planning",
+    "organization": "Nexora",
+    "bio": "Head of Financial Planning at Nexora with proven expertise in Corporate FP&A, Capital Allocation, Financial Modeling across hypergrowth and scaled enterprise environments.",
+    "categories": ["Finance & Banking"],
+    "expertise": ["Corporate FP&A", "Capital Allocation", "Financial Modeling"],
+    "careerHistory": [
+      {
+        "company": "Nexora",
+        "logoIcon": "nexora"
+      }
+    ],
+    "order": 41,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-priya-nair-113",
+    "name": "Priya Nair",
+    "role": "Partner, Venture Growth",
+    "organization": "StrideWorks Ventures",
+    "bio": "Partner, Venture Growth at StrideWorks Ventures with proven expertise in Early-Stage Financing, Deal Structuring, Due Diligence across hypergrowth and scaled enterprise environments.",
+    "categories": ["Finance & Banking"],
+    "expertise": ["Early-Stage Financing", "Deal Structuring", "Due Diligence"],
+    "careerHistory": [
+      {
+        "company": "StrideWorks",
+        "logoIcon": "strideworks"
+      }
+    ],
+    "order": 42,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-alexander-wright-114",
+    "name": "Alexander Wright",
+    "role": "VP of Enterprise Treasury",
+    "organization": "Novaris",
+    "bio": "VP of Enterprise Treasury at Novaris with proven expertise in Liquidity Management, FX Strategy, Debt Financing across hypergrowth and scaled enterprise environments.",
+    "categories": ["Finance & Banking"],
+    "expertise": ["Liquidity Management", "FX Strategy", "Debt Financing"],
+    "careerHistory": [
+      {
+        "company": "Novaris",
+        "logoIcon": "novaris"
+      }
+    ],
+    "order": 43,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-zubair-hossain-115",
+    "name": "Zubair Hossain",
+    "role": "Head of Structured Finance",
+    "organization": "Crestline Partners",
+    "bio": "Head of Structured Finance at Crestline Partners with proven expertise in Credit Syndication, Project Finance, Refinancing across hypergrowth and scaled enterprise environments.",
+    "categories": ["Finance & Banking"],
+    "expertise": ["Credit Syndication", "Project Finance", "Refinancing"],
+    "careerHistory": [
+      {
+        "company": "Crestline",
+        "logoIcon": "crestline"
+      }
+    ],
+    "order": 44,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-mahmudul-hasan-116",
+    "name": "Mahmudul Hasan",
+    "role": "Director of Corporate Credit",
+    "organization": "BrightCore Finance",
+    "bio": "Director of Corporate Credit at BrightCore Finance with proven expertise in Credit Risk, Syndicated Lending, Asset Restructuring across hypergrowth and scaled enterprise environments.",
+    "categories": ["Finance & Banking"],
+    "expertise": ["Credit Risk", "Syndicated Lending", "Asset Restructuring"],
+    "careerHistory": [
+      {
+        "company": "BrightCore",
+        "logoIcon": "brightcore"
+      }
+    ],
+    "order": 45,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-sadia-parveen-117",
+    "name": "Sadia Parveen",
+    "role": "Head of Capital Allocation & FP&A",
+    "organization": "Arcview Capital",
+    "bio": "Head of Capital Allocation & FP&A at Arcview Capital with proven expertise in Capital Modeling, Debt Structuring, Treasury Oversight across hypergrowth and scaled enterprise environments.",
+    "categories": ["Finance & Banking"],
+    "expertise": ["Capital Modeling", "Debt Structuring", "Treasury Oversight"],
+    "careerHistory": [
+      {
+        "company": "Arcview",
+        "logoIcon": "arcview"
+      }
+    ],
+    "order": 46,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-eleanor-vance-118",
+    "name": "Eleanor Vance",
+    "role": "Former President & COO",
+    "organization": "OmniCorp",
+    "bio": "Former President & COO at OmniCorp with proven expertise in Executive Leadership, Global Scaling, Operational Excellence across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Executive Leadership", "Global Scaling", "Operational Excellence"],
+    "careerHistory": [
+      {
+        "company": "Crestline",
+        "logoIcon": "crestline"
+      }
+    ],
+    "order": 47,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-siddique-farooq-119",
+    "name": "Siddique Farooq",
+    "role": "Senior Advisor, Corporate Governance",
+    "organization": "Lead Advisory",
+    "bio": "Senior Advisor, Corporate Governance at Lead Advisory with proven expertise in Board Advisory, Succession Planning, Turnaround across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Board Advisory", "Succession Planning", "Turnaround"],
+    "careerHistory": [
+      {
+        "company": "Novaris",
+        "logoIcon": "novaris"
+      }
+    ],
+    "order": 48,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-isabella-morales-120",
+    "name": "Isabella Morales",
+    "role": "EVP of Enterprise Transformation",
+    "organization": "BrightCore",
+    "bio": "EVP of Enterprise Transformation at BrightCore with proven expertise in Organizational Restructuring, Culture Change, Leadership Dev across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Organizational Restructuring", "Culture Change", "Leadership Dev"],
+    "careerHistory": [
+      {
+        "company": "BrightCore",
+        "logoIcon": "brightcore"
+      }
+    ],
+    "order": 49,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-kareem-al-mansoor-121",
+    "name": "Kareem Al-Mansoor",
+    "role": "Managing Director, Regional Operations",
+    "organization": "Arcview Global",
+    "bio": "Managing Director, Regional Operations at Arcview Global with proven expertise in Regional Expansion, Strategic Partnerships, P&L Ownership across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Regional Expansion", "Strategic Partnerships", "P&L Ownership"],
+    "careerHistory": [
+      {
+        "company": "Arcview",
+        "logoIcon": "arcview"
+      }
+    ],
+    "order": 50,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-helena-lindqvist-122",
+    "name": "Helena Lindqvist",
+    "role": "Senior Partner, Strategy",
+    "organization": "Vellum Strategic",
+    "bio": "Senior Partner, Strategy at Vellum Strategic with proven expertise in Growth Diagnostics, Competitive Strategy, Corporate M&A across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Growth Diagnostics", "Competitive Strategy", "Corporate M&A"],
+    "careerHistory": [
+      {
+        "company": "Vellum",
+        "logoIcon": "vellum"
+      }
+    ],
+    "order": 51,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-ashrafuzzaman-khan-123",
+    "name": "Ashrafuzzaman Khan",
+    "role": "Group Managing Director",
+    "organization": "Apex Conglomerate",
+    "bio": "Group Managing Director at Apex Conglomerate with proven expertise in Enterprise Restructuring, Joint Ventures, Executive Alignment across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Enterprise Restructuring", "Joint Ventures", "Executive Alignment"],
+    "careerHistory": [
+      {
+        "company": "Crestline",
+        "logoIcon": "crestline"
+      }
+    ],
+    "order": 52,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-nadia-farzana-124",
+    "name": "Nadia Farzana",
+    "role": "Chief Transformation Officer",
+    "organization": "Novaris Global",
+    "bio": "Chief Transformation Officer at Novaris Global with proven expertise in Digital Agility, Operating Model Design, Leadership Coaching across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Digital Agility", "Operating Model Design", "Leadership Coaching"],
+    "careerHistory": [
+      {
+        "company": "Novaris",
+        "logoIcon": "novaris"
+      }
+    ],
+    "order": 53,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-timothy-sterling-125",
+    "name": "Timothy Sterling",
+    "role": "Executive Chairman",
+    "organization": "StrideWorks Group",
+    "bio": "Executive Chairman at StrideWorks Group with proven expertise in Capital Allocation, Stakeholder Governance, Public Board Leadership across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Capital Allocation", "Stakeholder Governance", "Public Board Leadership"],
+    "careerHistory": [
+      {
+        "company": "StrideWorks",
+        "logoIcon": "strideworks"
+      }
+    ],
+    "order": 54,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-monira-sultana-126",
+    "name": "Monira Sultana",
+    "role": "Director of Corporate Affairs",
+    "organization": "Arcview Corp",
+    "bio": "Director of Corporate Affairs at Arcview Corp with proven expertise in Regulatory Affairs, Strategic Influence, Corporate Diplomacy across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Regulatory Affairs", "Strategic Influence", "Corporate Diplomacy"],
+    "careerHistory": [
+      {
+        "company": "Arcview",
+        "logoIcon": "arcview"
+      }
+    ],
+    "order": 55,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-patrick-dempsey-127",
+    "name": "Patrick Dempsey",
+    "role": "VP of Enterprise Innovation",
+    "organization": "Nexora Ventures",
+    "bio": "VP of Enterprise Innovation at Nexora Ventures with proven expertise in Corporate Venture, Incubation, Strategic Growth across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Corporate Venture", "Incubation", "Strategic Growth"],
+    "careerHistory": [
+      {
+        "company": "Nexora",
+        "logoIcon": "nexora"
+      }
+    ],
+    "order": 56,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-shireen-akhter-128",
+    "name": "Shireen Akhter",
+    "role": "Senior Director, Strategic Planning",
+    "organization": "BrightCore Group",
+    "bio": "Senior Director, Strategic Planning at BrightCore Group with proven expertise in Corporate Strategy, Enterprise KPI Frameworks, Organizational Scaling across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Corporate Strategy", "Enterprise KPI Frameworks", "Organizational Scaling"],
+    "careerHistory": [
+      {
+        "company": "BrightCore",
+        "logoIcon": "brightcore"
+      }
+    ],
+    "order": 57,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-tanzeem-choudhury-129",
+    "name": "Tanzeem Choudhury",
+    "role": "EVP of Enterprise Partnerships",
+    "organization": "Vellum Strategic",
+    "bio": "EVP of Enterprise Partnerships at Vellum Strategic with proven expertise in Alliance Strategy, Cross-Border Ventures, Executive Alignment across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Alliance Strategy", "Cross-Border Ventures", "Executive Alignment"],
+    "careerHistory": [
+      {
+        "company": "Vellum",
+        "logoIcon": "vellum"
+      }
+    ],
+    "order": 58,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-faisal-mahmud-130",
+    "name": "Faisal Mahmud",
+    "role": "Senior Advisor, Growth Initiatives",
+    "organization": "Pivona Group",
+    "bio": "Senior Advisor, Growth Initiatives at Pivona Group with proven expertise in Corporate Advisory, P&L Optimization, Strategic Value Creation across hypergrowth and scaled enterprise environments.",
+    "categories": ["Business & Leadership"],
+    "expertise": ["Corporate Advisory", "P&L Optimization", "Strategic Value Creation"],
+    "careerHistory": [
+      {
+        "company": "Pivona",
+        "logoIcon": "pivona"
+      }
+    ],
+    "order": 59,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-dr--chen-wei-131",
+    "name": "Dr. Chen Wei",
+    "role": "Head of AI Research",
+    "organization": "Google DeepMind",
+    "bio": "Head of AI Research at Google DeepMind with proven expertise in Machine Learning, Large Language Models, AI Ethics across hypergrowth and scaled enterprise environments.",
+    "categories": ["Technology & AI"],
+    "expertise": ["Machine Learning", "Large Language Models", "AI Ethics"],
+    "careerHistory": [
+      {
+        "company": "Google",
+        "logoIcon": "google"
+      }
+    ],
+    "order": 60,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-tanvir-rahman-132",
+    "name": "Tanvir Rahman",
+    "role": "VP of Cloud Architecture",
+    "organization": "Microsoft Azure",
+    "bio": "VP of Cloud Architecture at Microsoft Azure with proven expertise in Distributed Systems, Cloud Migration, Kubernetes across hypergrowth and scaled enterprise environments.",
+    "categories": ["Technology & AI"],
+    "expertise": ["Distributed Systems", "Cloud Migration", "Kubernetes"],
+    "careerHistory": [
+      {
+        "company": "Microsoft",
+        "logoIcon": "microsoft"
+      }
+    ],
+    "order": 61,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-samantha-brooks-133",
+    "name": "Samantha Brooks",
+    "role": "Principal Machine Learning Engineer",
+    "organization": "Nexora AI",
+    "bio": "Principal Machine Learning Engineer at Nexora AI with proven expertise in Deep Learning, MLOps, Computer Vision across hypergrowth and scaled enterprise environments.",
+    "categories": ["Technology & AI"],
+    "expertise": ["Deep Learning", "MLOps", "Computer Vision"],
+    "careerHistory": [
+      {
+        "company": "Nexora",
+        "logoIcon": "nexora"
+      }
+    ],
+    "order": 62,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-vikram-sen-134",
+    "name": "Vikram Sen",
+    "role": "Chief Technology Officer",
+    "organization": "Pivona Labs",
+    "bio": "Chief Technology Officer at Pivona Labs with proven expertise in Tech Modernization, API Strategy, Engineering Leadership across hypergrowth and scaled enterprise environments.",
+    "categories": ["Technology & AI"],
+    "expertise": ["Tech Modernization", "API Strategy", "Engineering Leadership"],
+    "careerHistory": [
+      {
+        "company": "Pivona",
+        "logoIcon": "pivona"
+      }
+    ],
+    "order": 63,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-aisha-begum-135",
+    "name": "Aisha Begum",
+    "role": "Director of Data Engineering",
+    "organization": "StrideWorks",
+    "bio": "Director of Data Engineering at StrideWorks with proven expertise in Data Lakes, Real-Time Streaming, Analytics Infra across hypergrowth and scaled enterprise environments.",
+    "categories": ["Technology & AI"],
+    "expertise": ["Data Lakes", "Real-Time Streaming", "Analytics Infra"],
+    "careerHistory": [
+      {
+        "company": "StrideWorks",
+        "logoIcon": "strideworks"
+      }
+    ],
+    "order": 64,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-lucas-moreau-136",
+    "name": "Lucas Moreau",
+    "role": "Head of Cybersecurity",
+    "organization": "Novaris Tech",
+    "bio": "Head of Cybersecurity at Novaris Tech with proven expertise in Zero Trust, Threat Modeling, Cloud Security across hypergrowth and scaled enterprise environments.",
+    "categories": ["Technology & AI"],
+    "expertise": ["Zero Trust", "Threat Modeling", "Cloud Security"],
+    "careerHistory": [
+      {
+        "company": "Novaris",
+        "logoIcon": "novaris"
+      }
+    ],
+    "order": 65,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-enamul-huq-137",
+    "name": "Enamul Huq",
+    "role": "VP of Enterprise Engineering",
+    "organization": "Microsoft",
+    "bio": "VP of Enterprise Engineering at Microsoft with proven expertise in Systems Architecture, High-Scale APIs, DevOps Strategy across hypergrowth and scaled enterprise environments.",
+    "categories": ["Technology & AI"],
+    "expertise": ["Systems Architecture", "High-Scale APIs", "DevOps Strategy"],
+    "careerHistory": [
+      {
+        "company": "Microsoft",
+        "logoIcon": "microsoft"
+      }
+    ],
+    "order": 66,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-sarah-jenkins-138",
+    "name": "Sarah Jenkins",
+    "role": "Director of Product Analytics",
+    "organization": "Google",
+    "bio": "Director of Product Analytics at Google with proven expertise in Statistical Inference, Experimentation Platforms, Behavioral Modeling across hypergrowth and scaled enterprise environments.",
+    "categories": ["Technology & AI"],
+    "expertise": ["Statistical Inference", "Experimentation Platforms", "Behavioral Modeling"],
+    "careerHistory": [
+      {
+        "company": "Google",
+        "logoIcon": "google"
+      }
+    ],
+    "order": 67,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-chloe-dupont-139",
+    "name": "Chloe Dupont",
+    "role": "VP of Growth Marketing",
+    "organization": "Airbnb",
+    "bio": "VP of Growth Marketing at Airbnb with proven expertise in Performance Marketing, Paid Acquisition, Funnel Optimization across hypergrowth and scaled enterprise environments.",
+    "categories": ["Marketing & Growth"],
+    "expertise": ["Performance Marketing", "Paid Acquisition", "Funnel Optimization"],
+    "careerHistory": [
+      {
+        "company": "airbnb",
+        "logoIcon": "airbnb"
+      }
+    ],
+    "order": 68,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-rahim-chowdhury-140",
+    "name": "Rahim Chowdhury",
+    "role": "Head of Brand Strategy",
+    "organization": "Google",
+    "bio": "Head of Brand Strategy at Google with proven expertise in Brand Architecture, Integrated Campaigns, Consumer Insights across hypergrowth and scaled enterprise environments.",
+    "categories": ["Marketing & Growth"],
+    "expertise": ["Brand Architecture", "Integrated Campaigns", "Consumer Insights"],
+    "careerHistory": [
+      {
+        "company": "Google",
+        "logoIcon": "google"
+      }
+    ],
+    "order": 69,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-natasha-romanoff-141",
+    "name": "Natasha Romanoff",
+    "role": "Director of Product Marketing",
+    "organization": "Microsoft",
+    "bio": "Director of Product Marketing at Microsoft with proven expertise in GTM Launches, Sales Enablement, Positioning & Messaging across hypergrowth and scaled enterprise environments.",
+    "categories": ["Marketing & Growth"],
+    "expertise": ["GTM Launches", "Sales Enablement", "Positioning & Messaging"],
+    "careerHistory": [
+      {
+        "company": "Microsoft",
+        "logoIcon": "microsoft"
+      }
+    ],
+    "order": 70,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-farhan-saeed-142",
+    "name": "Farhan Saeed",
+    "role": "Head of Customer Acquisition",
+    "organization": "StrideWorks",
+    "bio": "Head of Customer Acquisition at StrideWorks with proven expertise in Growth Loops, Retention Marketing, Viral Coefficient across hypergrowth and scaled enterprise environments.",
+    "categories": ["Marketing & Growth"],
+    "expertise": ["Growth Loops", "Retention Marketing", "Viral Coefficient"],
+    "careerHistory": [
+      {
+        "company": "StrideWorks",
+        "logoIcon": "strideworks"
+      }
+    ],
+    "order": 71,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-jessica-alvarez-143",
+    "name": "Jessica Alvarez",
+    "role": "VP of Content & Demand Gen",
+    "organization": "Vellum Media",
+    "bio": "VP of Content & Demand Gen at Vellum Media with proven expertise in Content Strategy, SEO Architecture, Inbound Flywheels across hypergrowth and scaled enterprise environments.",
+    "categories": ["Marketing & Growth"],
+    "expertise": ["Content Strategy", "SEO Architecture", "Inbound Flywheels"],
+    "careerHistory": [
+      {
+        "company": "Vellum",
+        "logoIcon": "vellum"
+      }
+    ],
+    "order": 72,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-tariq-anam-144",
+    "name": "Tariq Anam",
+    "role": "Director of Lifecycle Growth",
+    "organization": "Nexora",
+    "bio": "Director of Lifecycle Growth at Nexora with proven expertise in Retention Funnels, CRM Strategy, Monetization across hypergrowth and scaled enterprise environments.",
+    "categories": ["Marketing & Growth"],
+    "expertise": ["Retention Funnels", "CRM Strategy", "Monetization"],
+    "careerHistory": [
+      {
+        "company": "Nexora",
+        "logoIcon": "nexora"
+      }
+    ],
+    "order": 73,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-marcus-brody-145",
+    "name": "Marcus Brody",
+    "role": "Chief Human Resources Officer",
+    "organization": "Crestline Global",
+    "bio": "Chief Human Resources Officer at Crestline Global with proven expertise in Global HR Strategy, Executive Compensation, Labor Relations across hypergrowth and scaled enterprise environments.",
+    "categories": ["HR & Operations"],
+    "expertise": ["Global HR Strategy", "Executive Compensation", "Labor Relations"],
+    "careerHistory": [
+      {
+        "company": "Crestline",
+        "logoIcon": "crestline"
+      }
+    ],
+    "order": 74,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-nusrat-jahan-146",
+    "name": "Nusrat Jahan",
+    "role": "VP of People Operations",
+    "organization": "BrightCore",
+    "bio": "VP of People Operations at BrightCore with proven expertise in People Analytics, Talent Acquisition, Employee Engagement across hypergrowth and scaled enterprise environments.",
+    "categories": ["HR & Operations"],
+    "expertise": ["People Analytics", "Talent Acquisition", "Employee Engagement"],
+    "careerHistory": [
+      {
+        "company": "BrightCore",
+        "logoIcon": "brightcore"
+      }
+    ],
+    "order": 75,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-derek-reynolds-147",
+    "name": "Derek Reynolds",
+    "role": "Head of Operational Excellence",
+    "organization": "Novaris",
+    "bio": "Head of Operational Excellence at Novaris with proven expertise in Six Sigma, Process Automation, Lean Operations across hypergrowth and scaled enterprise environments.",
+    "categories": ["HR & Operations"],
+    "expertise": ["Six Sigma", "Process Automation", "Lean Operations"],
+    "careerHistory": [
+      {
+        "company": "Novaris",
+        "logoIcon": "novaris"
+      }
+    ],
+    "order": 76,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-ananya-roy-148",
+    "name": "Ananya Roy",
+    "role": "Director of Organizational Culture",
+    "organization": "Airbnb",
+    "bio": "Director of Organizational Culture at Airbnb with proven expertise in DE&I Leadership, Remote Team Dynamics, Employee Retention across hypergrowth and scaled enterprise environments.",
+    "categories": ["HR & Operations"],
+    "expertise": ["DE&I Leadership", "Remote Team Dynamics", "Employee Retention"],
+    "careerHistory": [
+      {
+        "company": "airbnb",
+        "logoIcon": "airbnb"
+      }
+    ],
+    "order": 77,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-shahidul-karim-149",
+    "name": "Shahidul Karim",
+    "role": "VP of Supply Chain & Ops",
+    "organization": "Arcview",
+    "bio": "VP of Supply Chain & Ops at Arcview with proven expertise in Procurement, Vendor Management, Logistics Strategy across hypergrowth and scaled enterprise environments.",
+    "categories": ["HR & Operations"],
+    "expertise": ["Procurement", "Vendor Management", "Logistics Strategy"],
+    "careerHistory": [
+      {
+        "company": "Arcview",
+        "logoIcon": "arcview"
+      }
+    ],
+    "order": 78,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-mei-ling-zhou-150",
+    "name": "Mei Ling Zhou",
+    "role": "Head of Learning & Development",
+    "organization": "Google",
+    "bio": "Head of Learning & Development at Google with proven expertise in Leadership Academies, Executive Coaching, Skills Transformation across hypergrowth and scaled enterprise environments.",
+    "categories": ["HR & Operations"],
+    "expertise": ["Leadership Academies", "Executive Coaching", "Skills Transformation"],
+    "careerHistory": [
+      {
+        "company": "Google",
+        "logoIcon": "google"
+      }
+    ],
+    "order": 79,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-faculty-gavin-macleod-151",
+    "name": "Gavin MacLeod",
+    "role": "Director of Enterprise People Tech",
+    "organization": "Microsoft",
+    "bio": "Director of Enterprise People Tech at Microsoft with proven expertise in HRIS Architecture, Workday Systems, People Tech Stack across hypergrowth and scaled enterprise environments.",
+    "categories": ["HR & Operations"],
+    "expertise": ["HRIS Architecture", "Workday Systems", "People Tech Stack"],
+    "careerHistory": [
+      {
+        "company": "Microsoft",
+        "logoIcon": "microsoft"
+      }
+    ],
+    "order": 80,
+    "isPlaceholder": true,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Section 4 Reference Mentor Spec",
       "verifiedBy": null,
       "verifiedOn": null
     }

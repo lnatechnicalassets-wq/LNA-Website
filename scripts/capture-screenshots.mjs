@@ -1,11 +1,12 @@
 import { spawn, execSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
 const ARTIFACT_DIR =
   "C:/Users/refat/.gemini/antigravity/brain/c0a9f902-1d07-4d4e-8d3a-e34931387069";
 const CHROME_PATH = "C:/Program Files/Google/Chrome/Application/chrome.exe";
-const PORT = 3060;
+const PORT = 3075;
 
 async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -13,32 +14,54 @@ async function sleep(ms) {
 
 async function waitForServer(url, timeoutMs = 25000) {
   const start = Date.now();
+  let lastErr = null;
   while (Date.now() - start < timeoutMs) {
     try {
       const res = await fetch(url);
       if (res.ok) return true;
-    } catch {}
+    } catch (e) {
+      lastErr = e;
+    }
     await sleep(350);
   }
-  throw new Error(`Server at ${url} failed to respond within ${timeoutMs}ms`);
+  throw new Error(
+    `Server at ${url} failed to respond within ${timeoutMs}ms. Last err: ${lastErr?.message}, cause: ${lastErr?.cause}`
+  );
 }
 
 async function capture() {
+  try {
+    execSync(
+      `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT}') do taskkill /f /pid %a`,
+      { stdio: "ignore" }
+    );
+  } catch {}
+
   console.log(`Starting Next.js server on port ${PORT}...`);
-  const server = spawn("cmd.exe", ["/c", "pnpm", "start", "-p", String(PORT)], {
-    stdio: "ignore",
-    env: { ...process.env, PORT: String(PORT) },
+  const server = spawn(
+    "cmd.exe",
+    ["/c", "npx", "next", "start", "-H", "127.0.0.1", "-p", String(PORT)],
+    {
+      stdio: "inherit",
+      env: { ...process.env, PORT: String(PORT) },
+    }
+  );
+
+  server.on("exit", (code, signal) => {
+    console.log(`Next.js process exited with code ${code}, signal ${signal}`);
   });
 
   try {
     await waitForServer(`http://127.0.0.1:${PORT}`);
     console.log("Server ready!");
 
+    const tempProfile = path.join(os.tmpdir(), "chrome-headless-" + Date.now());
     const chrome = spawn(
       CHROME_PATH,
       [
         "--headless=new",
         "--remote-debugging-port=9222",
+        `--user-data-dir=${tempProfile}`,
         "--no-sandbox",
         "--disable-gpu",
         "--hide-scrollbars",
@@ -114,195 +137,174 @@ async function capture() {
 
       // 1. Verify Viewports for Overflow
       console.log("\n=== Verifying All Required Viewports ===");
-      for (const w of [320, 390, 768, 1024, 1440]) {
+      for (const w of [320, 390, 768, 1024, 1440, 1920]) {
         await setViewport(w, 900, w < 1024);
         await checkOverflow(w);
       }
 
-      // 2. Capture Desktop (1440px)
-      console.log("\n=== Capturing Desktop Viewport (1440px) ===");
-      await setViewport(1440, 1050, false);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-hero-1440.png"));
+      // 2. Capture Targeted Mentors Showcase Section Across Viewports
+      console.log("\n=== Capturing Targeted Mentors Showcase Section ===");
 
-      // 3. Capture Tablet (768px)
-      console.log("\n=== Capturing Tablet Viewport (768px) ===");
-      await setViewport(768, 1100, true);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "tablet-hero-768.png"));
-
-      // 4. Capture Mobile (390px)
-      console.log("\n=== Capturing Mobile Viewport (390px) ===");
-      await setViewport(390, 1000, true);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-hero-390.png"));
-
-      // 5. Capture Targeted Partners Section view across viewports
-      console.log("\n=== Capturing Targeted Partners Section ===");
-      await setViewport(1440, 700, false);
+      // Scenario 1: Standard Desktop 1440px Settled (5-card deck centered, zero overlap with left intro)
+      await setViewport(1440, 950, false);
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const sec = document.querySelector('section[aria-label*="Corporate Sector Alignments"]');
-            if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'center' });
-          })()
-        `,
-      });
-      await sleep(300);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-partners-1440.png"));
-
-      // 6. Capture Targeted Courses Section View Across Viewports
-      console.log("\n=== Capturing Targeted Courses Section ===");
-      // Desktop Courses Grid
-      await setViewport(1440, 1200, false);
-      await send("Runtime.evaluate", {
-        expression: `
-          (() => {
-            const sec = document.querySelector('#courses');
+            const sec = document.querySelector('#mentors');
             if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
           })()
         `,
       });
-      await sleep(400);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-courses-1440.png"));
+      await sleep(1500);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-1440-settled.png"));
 
-      // Tablet Courses Grid
-      await setViewport(768, 1400, true);
+      // Scenario 2: Standard Desktop 1440px with Centered Modal (Complete biography, subtle backdrop)
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const sec = document.querySelector('#courses');
+            const plusBtn = document.querySelector('button[aria-label*="quick view" i]');
+            if (plusBtn) plusBtn.click();
+          })()
+        `,
+      });
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-1440-modal.png"));
+
+      // Close modal
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const closeBtn = document.querySelector('button[aria-label*="close mentor details" i]');
+            if (closeBtn) closeBtn.click();
+          })()
+        `,
+      });
+      await sleep(500);
+
+      // Scenario 3: Live Autoplay Verification (4-second interval)
+      console.log("\n=== Verifying Automatic Carousel Rotation in Real Browser ===");
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-before-rotation.png"));
+
+      // Read current mentor counter text
+      const beforeEval = await send("Runtime.evaluate", {
+        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
+        returnByValue: true,
+      });
+      console.log("Mentor position before auto rotation:", beforeEval.result.value);
+
+      // Wait 4.8 seconds for first automatic rotation (4000ms idle display + 750ms transition)
+      console.log("Waiting 4.8s for automatic advance 1...");
+      await sleep(4800);
+
+      const after1Eval = await send("Runtime.evaluate", {
+        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
+        returnByValue: true,
+      });
+      console.log("Mentor position after auto advance 1:", after1Eval.result.value);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-after-rotation.png"));
+
+      // Wait another 4.8 seconds for second automatic rotation
+      console.log("Waiting 4.8s for automatic advance 2...");
+      await sleep(4800);
+
+      const after2Eval = await send("Runtime.evaluate", {
+        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
+        returnByValue: true,
+      });
+      console.log("Mentor position after auto advance 2:", after2Eval.result.value);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-after-rotation-2.png"));
+
+      // Scenario 4: Manual Click Reset & Resume Verification
+      console.log("\n=== Verifying Manual Click Timer Reset and Autoplay Recovery ===");
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const nextBtn = document.querySelector('button[aria-label="Next mentor"]');
+            if (nextBtn) nextBtn.click();
+          })()
+        `,
+      });
+      const manualEval = await send("Runtime.evaluate", {
+        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
+        returnByValue: true,
+      });
+      console.log("Mentor position immediately after manual click:", manualEval.result.value);
+
+      // Wait 4.8s to verify autoplay resumes automatically after manual navigation
+      console.log("Waiting 4.8s to verify autoplay resumes after manual navigation...");
+      await sleep(4800);
+
+      const resumedEval = await send("Runtime.evaluate", {
+        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
+        returnByValue: true,
+      });
+      console.log("Mentor position after autoplay resumed:", resumedEval.result.value);
+
+      // Scenario 5: Ultra-Wide Desktop 1920px Settled State
+      await setViewport(1920, 950, false);
+      await sleep(500);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-1920-settled.png"));
+
+      // Scenario 6: Ultra-Wide Desktop 1920px Centered Modal (Consistent with 1440px / Mobile)
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const plusBtn = document.querySelector('button[aria-label*="quick view" i]');
+            if (plusBtn) plusBtn.click();
+          })()
+        `,
+      });
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-1920-modal.png"));
+
+      // Close modal
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const closeBtn = document.querySelector('button[aria-label*="close mentor details" i]') || document.querySelector('[data-close-btn]');
+            if (closeBtn) closeBtn.click();
+          })()
+        `,
+      });
+      await sleep(500);
+
+      // Scenario 7: Tablet 768px (Rebalanced 3-card stack)
+      await setViewport(768, 950, true);
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const sec = document.querySelector('#mentors');
             if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
           })()
         `,
       });
-      await sleep(400);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "tablet-courses-768.png"));
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "tablet-mentors-768.png"));
 
-      // Mobile Courses Grid
-      await setViewport(390, 1400, true);
+      // Scenario 8: Mobile 390px (1 prominent active card, scrollable chips, search)
+      await setViewport(390, 1050, true);
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const sec = document.querySelector('#courses');
+            const sec = document.querySelector('#mentors');
             if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
           })()
         `,
       });
-      await sleep(400);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-courses-390.png"));
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-mentors-390.png"));
 
-      // 7. Capture Individual Cards: Normal vs Hover for 2, 3, 4, 5, 6 Mentors
-      console.log("\n=== Capturing Normal & Hover States for 2, 3, 4, 5, 6 Mentors ===");
-      await setViewport(1440, 1000, false);
-
-      for (const count of [2, 3, 4, 5, 6]) {
-        // Move mouse away to reset any hover state
-        await send("Input.dispatchMouseEvent", {
-          type: "mouseMoved",
-          x: 0,
-          y: 0,
-        });
-        await sleep(300);
-
-        // Scroll card into view and get precise coordinates
-        const cardBox = await send("Runtime.evaluate", {
-          expression: `
-            (() => {
-              const card = document.querySelector('[data-mentor-count="${count}"]');
-              if (!card) return null;
-              card.scrollIntoView({ behavior: 'instant', block: 'center' });
-              const r = card.getBoundingClientRect();
-              return {
-                pageX: window.scrollX + r.left,
-                pageY: window.scrollY + r.top,
-                width: r.width,
-                height: r.height,
-                vpX: r.left + r.width / 2,
-                vpY: r.top + r.height / 2
-              };
-            })()
-          `,
-          returnByValue: true,
-        });
-
-        if (!cardBox.result.value) {
-          console.warn(`Card with ${count} mentors not found!`);
-          continue;
-        }
-
-        const box = cardBox.result.value;
-        await sleep(400);
-
-        // 7a. Normal State Screenshot (with 4px margin around card border)
-        await takeScreenshot(path.join(ARTIFACT_DIR, `courses-card-${count}mentors-normal.png`), {
-          x: Math.max(0, Math.round(box.pageX - 4)),
-          y: Math.max(0, Math.round(box.pageY - 4)),
-          width: Math.round(box.width + 8),
-          height: Math.round(box.height + 8),
-          scale: 1,
-        });
-
-        // 7b. Hover State: dispatch mouse event to card center
-        await send("Input.dispatchMouseEvent", {
-          type: "mouseMoved",
-          x: Math.round(box.vpX),
-          y: Math.round(box.vpY),
-        });
-
-        // Wait 700ms for the 500ms transition to fully complete
-        await sleep(700);
-
-        // Re-query precise card position to account for any micro-scroll
-        const hoverCardBox = await send("Runtime.evaluate", {
-          expression: `
-            (() => {
-              const card = document.querySelector('[data-mentor-count="${count}"]');
-              if (!card) return null;
-              const r = card.getBoundingClientRect();
-              return {
-                pageX: window.scrollX + r.left,
-                pageY: window.scrollY + r.top,
-                width: r.width,
-                height: r.height
-              };
-            })()
-          `,
-          returnByValue: true,
-        });
-        const hBox = hoverCardBox.result?.value || box;
-
-        // Capture Hover State Screenshot (with 4px margin around card border)
-        await takeScreenshot(path.join(ARTIFACT_DIR, `courses-card-${count}mentors-hover.png`), {
-          x: Math.max(0, Math.round(hBox.pageX - 4)),
-          y: Math.max(0, Math.round(hBox.pageY - 4)),
-          width: Math.round(hBox.width + 8),
-          height: Math.round(hBox.height + 8),
-          scale: 1,
-        });
-
-        console.log(
-          `✓ Successfully verified and captured ${count}-mentor normal and hover states.`
-        );
-      }
-
-      // Move mouse away
-      await send("Input.dispatchMouseEvent", {
-        type: "mouseMoved",
-        x: 0,
-        y: 0,
-      });
-
-      // 8. Capture Full Page Screenshots
-      console.log("\n=== Capturing Full Page Screenshots ===");
+      // Mobile Modal Dialog (Complete biography, centered, full view)
       await send("Runtime.evaluate", {
-        expression: `window.scrollTo(0, 0);`,
+        expression: `
+          (() => {
+            const plusBtn = document.querySelector('button[aria-label*="quick view" i]');
+            if (plusBtn) plusBtn.click();
+          })()
+        `,
       });
-      await setViewport(1440, 5600, false);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-1440.png"));
-
-      await setViewport(768, 6200, true);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "tablet-768.png"));
-
-      await setViewport(390, 7400, true);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-390.png"));
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-mentors-modal-390.png"));
 
       ws.close();
     } finally {

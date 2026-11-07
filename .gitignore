@@ -15,3 +15,5 @@ Thumbs.db
 # Exclude SRS PDF everywhere per owner directive
 *SRS*.pdf
 *LNA_Website_SRS.pdf
+.vercel
+.env*
