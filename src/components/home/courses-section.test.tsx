@@ -132,18 +132,17 @@ describe("CourseCard - Normal & Hover Architecture", () => {
     expect(screen.getByText("+3")).toBeDefined();
   });
 
-  it("renders Faculty Spotlight heading and independent profile links for each mentor", () => {
+  it("renders Faculty Spotlight heading and independent quick-view triggers for each mentor", () => {
     const mentors = makeMockMentors(3);
     render(<CourseCard course={mockCourse} batch={mockBatch} mentors={mentors} />);
 
     expect(screen.getByText(/meet your mentors/i)).toBeDefined();
 
-    // Verify independent mentor profile links without nested anchor elements
-    const mentorLinks = screen.getAllByRole("link", {
-      name: /view faculty member 1's profile/i,
+    // Verify independent mentor quick-view triggers without nested anchor elements
+    const mentorButtons = screen.getAllByRole("button", {
+      name: /view faculty member 1's details/i,
     });
-    expect(mentorLinks.length).toBeGreaterThanOrEqual(1);
-    expect(mentorLinks[0].getAttribute("href")).toBe("/mentors/mentor-1");
+    expect(mentorButtons.length).toBeGreaterThanOrEqual(1);
 
     // Visible designation labels should not be present on cards
     expect(screen.queryByText("Lead Specialist 1")).toBeNull();
@@ -156,25 +155,25 @@ describe("CourseCard - Normal & Hover Architecture", () => {
     );
     const spotlight4 = c4.querySelector(".top-\\[120px\\]");
     expect(spotlight4).toBeDefined();
-    // Verify 4 mentor links exist within spotlight
-    const links4 = spotlight4?.querySelectorAll("a[href^='/mentors/']");
-    expect(links4?.length).toBe(4);
+    // Verify 4 mentor buttons exist within spotlight
+    const buttons4 = spotlight4?.querySelectorAll("button[aria-label*='details']");
+    expect(buttons4?.length).toBe(4);
 
     // 5 mentors: 3 + 2
     const { container: c5 } = render(
       <CourseCard course={mockCourse} batch={mockBatch} mentors={makeMockMentors(5)} />
     );
     const spotlight5 = c5.querySelector(".top-\\[120px\\]");
-    const links5 = spotlight5?.querySelectorAll("a[href^='/mentors/']");
-    expect(links5?.length).toBe(5);
+    const buttons5 = spotlight5?.querySelectorAll("button[aria-label*='details']");
+    expect(buttons5?.length).toBe(5);
 
     // 6 mentors: 3 + 3
     const { container: c6 } = render(
       <CourseCard course={mockCourse} batch={mockBatch} mentors={makeMockMentors(6)} />
     );
     const spotlight6 = c6.querySelector(".top-\\[120px\\]");
-    const links6 = spotlight6?.querySelectorAll("a[href^='/mentors/']");
-    expect(links6?.length).toBe(6);
+    const buttons6 = spotlight6?.querySelectorAll("button[aria-label*='details']");
+    expect(buttons6?.length).toBe(6);
   });
 
   it("contains accessible link to course details", () => {

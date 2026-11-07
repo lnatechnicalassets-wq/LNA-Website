@@ -67,6 +67,13 @@ export const EventSchema = z.object({
   provenance: ProvenanceSchema,
 });
 
+export const CareerHistoryItemSchema = z.object({
+  company: z.string().min(1),
+  role: z.string().optional(),
+  logoIcon: z.string().optional(),
+  logoSrc: z.string().optional(),
+});
+
 export const MentorSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(2),
@@ -74,8 +81,15 @@ export const MentorSchema = z.object({
   organization: z.string().min(2),
   bio: z.string().min(10),
   courseId: z.string().optional(),
+  courseIds: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(),
   order: z.number().int().nonnegative(),
   isPlaceholder: z.boolean().default(false),
+  published: z.boolean().optional(),
+  linkedInUrl: z.string().url().optional(),
+  portraitSrc: z.string().optional(),
+  expertise: z.array(z.string()).optional(),
+  careerHistory: z.array(CareerHistoryItemSchema).optional(),
   provenance: ProvenanceSchema,
 });
 
@@ -97,42 +111,8 @@ export type HomeSections = z.infer<typeof HomeSectionsSchema>;
 export type ImpactFigure = z.infer<typeof ImpactFigureSchema>;
 export type Partner = z.infer<typeof PartnerSchema>;
 export type Event = z.infer<typeof EventSchema>;
+export type CareerHistoryItem = z.infer<typeof CareerHistoryItemSchema>;
 export type Mentor = z.infer<typeof MentorSchema>;
 export type Review = z.infer<typeof ReviewSchema>;
 
-const mentorAvatars: Record<string, string> = {
-  "mentor-leadership-lead": "/images/mentor-tariq.jpg",
-  "mentor-finance-lead": "/images/mentor-kamrul.jpg",
-  "mentor-digital-lead": "/images/mentor-anisur.jpg",
-  "mentor-da-01": "/images/mentor-kamrul.jpg",
-  "mentor-da-02": "/images/mentor-anisur.jpg",
-  "mentor-el-02": "/images/mentor-anisur.jpg",
-  "mentor-el-03": "/images/mentor-tariq.jpg",
-  "mentor-cf-02": "/images/mentor-tariq.jpg",
-  "mentor-cf-03": "/images/mentor-anisur.jpg",
-  "mentor-cf-04": "/images/mentor-kamrul.jpg",
-  "mentor-dt-02": "/images/mentor-tariq.jpg",
-  "mentor-dt-03": "/images/mentor-kamrul.jpg",
-  "mentor-dt-04": "/images/mentor-anisur.jpg",
-  "mentor-dt-05": "/images/mentor-tariq.jpg",
-  "mentor-so-01": "/images/mentor-tariq.jpg",
-  "mentor-so-02": "/images/mentor-anisur.jpg",
-  "mentor-so-03": "/images/mentor-kamrul.jpg",
-  "mentor-so-04": "/images/mentor-tariq.jpg",
-  "mentor-so-05": "/images/mentor-anisur.jpg",
-  "mentor-so-06": "/images/mentor-kamrul.jpg",
-  "mentor-pg-01": "/images/mentor-kamrul.jpg",
-  "mentor-pg-02": "/images/mentor-anisur.jpg",
-  "mentor-pg-03": "/images/mentor-tariq.jpg",
-};
-
-const defaultAvatars = [
-  "/images/mentor-tariq.jpg",
-  "/images/mentor-kamrul.jpg",
-  "/images/mentor-anisur.jpg",
-];
-
-export function getMentorAvatar(mentor: { id: string }, index: number = 0): string {
-  if (mentorAvatars[mentor.id]) return mentorAvatars[mentor.id];
-  return defaultAvatars[index % defaultAvatars.length];
-}
+export { getMentorAvatar } from "@/lib/mentors";

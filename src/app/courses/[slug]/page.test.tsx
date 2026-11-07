@@ -36,12 +36,12 @@ describe("CourseDetailPage", () => {
     // Learning outcomes
     expect(screen.getByText(/Work with real enterprise datasets/i)).toBeDefined();
 
-    // Assigned mentors link to mentor profile
+    // Assigned mentors link to mentors section
     const mentorLink = screen.getByRole("link", {
-      name: /view faculty profile of tahmid ahmed/i,
+      name: /view faculty details of tahmid ahmed/i,
     });
     expect(mentorLink).toBeDefined();
-    expect(mentorLink.getAttribute("href")).toBe("/mentors/mentor-da-01");
+    expect(mentorLink.getAttribute("href")).toBe("/#mentors");
   });
 
   it("generates correct metadata for valid course", async () => {

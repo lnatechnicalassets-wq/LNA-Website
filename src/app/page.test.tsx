@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import HomePage from "./page";
 
-describe("HomePage - Phase 4 Approved 7-Section Architecture", () => {
+describe("HomePage - Phase 4 Approved Architecture", () => {
   it("renders the primary homepage sections in correct sequence", async () => {
     const Component = await HomePage();
     render(Component);
@@ -24,21 +24,22 @@ describe("HomePage - Phase 4 Approved 7-Section Architecture", () => {
     });
     expect(coursesHeading).toBeDefined();
 
-    // 4. Events Section (Read-Only)
-    const eventsHeading = screen.getByRole("heading", {
-      level: 2,
-      name: /Executive Masterclasses & Roundtables/i,
-    });
-    expect(eventsHeading).toBeDefined();
-
-    // 5. Mentors Section
+    // 4. Mentors Section (Approved Section 4: Meet Our Mentors)
     const mentorsHeading = screen.getByRole("heading", {
       level: 2,
-      name: /Led by Industry Veterans & Practitioners/i,
+      name: /Meet Our Mentors/i,
     });
     expect(mentorsHeading).toBeDefined();
 
-    // 6. Learner Reviews (FR-PUB-006: Manual, No Autoplay)
+    // Events Section removed from homepage rendering per owner instruction
+    expect(
+      screen.queryByRole("heading", {
+        level: 2,
+        name: /Executive Masterclasses & Roundtables/i,
+      })
+    ).toBeNull();
+
+    // 5. Learner Reviews (FR-PUB-006: Manual, No Autoplay)
     const reviewsHeading = screen.getByRole("heading", {
       level: 2,
       name: /Voices from the Cohort/i,

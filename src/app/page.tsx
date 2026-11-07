@@ -4,9 +4,9 @@ import {
   HeroSection,
   PartnersSection,
   CoursesSection,
-  EventsSection,
   MentorsSection,
   ReviewsSection,
+  MentorQuickViewProvider,
 } from "@/components/home";
 
 export const metadata = {
@@ -21,37 +21,35 @@ export default async function HomePage() {
   const batchRepo = getBatchRepository();
 
   // Load all homepage data in parallel via clean repository interfaces (Rule R4)
-  const [heroSlides, partners, courses, batches, events, mentors, reviews] = await Promise.all([
+  const [heroSlides, partners, courses, batches, mentors, reviews] = await Promise.all([
     homeRepo.getHeroSlides(),
     homeRepo.getPartners(),
     courseRepo.getAllCourses(),
     batchRepo.getAllBatches(),
-    homeRepo.getEvents(),
     homeRepo.getMentors(),
     homeRepo.getReviews(),
   ]);
 
   return (
-    <div className="flex flex-col bg-surface-base">
-      {/* 1. Hero Section (HeroSlider + Smooth Curved Transition + Centered Academy Intro) */}
-      <HeroSection slides={heroSlides} />
+    <MentorQuickViewProvider>
+      <div className="flex flex-col bg-surface-base">
+        {/* 1. Hero Section (HeroSlider + Smooth Curved Transition + Centered Academy Intro) */}
+        <HeroSection slides={heroSlides} />
 
-      {/* 2. Partners Section (Corporate Sector Alignments) */}
-      <PartnersSection partners={partners} />
+        {/* 2. Partners Section (Corporate Sector Alignments) */}
+        <PartnersSection partners={partners} />
 
-      {/* 3. Courses Section (Offline Masterclasses & Open Batches) */}
-      <CoursesSection courses={courses} batches={batches} mentors={mentors} />
+        {/* 3. Courses Section (Offline Masterclasses & Open Batches) */}
+        <CoursesSection courses={courses} batches={batches} mentors={mentors} />
 
-      {/* 4. Events Section (Read-Only Executive Showcase) */}
-      <EventsSection events={events} />
+        {/* 4. Mentors Section (Pixel-Faithful Layered Editorial Showcase) */}
+        <MentorsSection mentors={mentors} />
 
-      {/* 5. Mentors Section (Curated Lead Faculty) */}
-      <MentorsSection mentors={mentors.slice(0, 3)} />
+        {/* 5. Learner Reviews (FR-PUB-006: Manual Navigation, No Autoplay) */}
+        <ReviewsSection reviews={reviews} />
 
-      {/* 6. Learner Reviews (FR-PUB-006: Manual Navigation, No Autoplay) */}
-      <ReviewsSection reviews={reviews} />
-
-      {/* 7. Footer: Rendered automatically by PublicShell wrapper */}
-    </div>
+        {/* 6. Footer: Rendered automatically by PublicShell wrapper */}
+      </div>
+    </MentorQuickViewProvider>
   );
 }

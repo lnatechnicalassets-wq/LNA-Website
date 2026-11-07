@@ -275,9 +275,9 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
                   return (
                     <Link
                       key={mentor.id}
-                      href={`/mentors/${mentor.id}`}
+                      href="/#mentors"
                       className="group block p-3.5 rounded-2xl bg-[#F6FAFA] border border-[#E5ECEE] hover:border-[#086477] hover:bg-white transition-all shadow-2xs"
-                      aria-label={`View faculty profile of ${mentor.name}`}
+                      aria-label={`View faculty details of ${mentor.name}`}
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative w-12 h-12 rounded-full overflow-hidden bg-[#E8F3F5] ring-2 ring-[#086477]/20 shrink-0">

@@ -194,6 +194,13 @@ const EventSchema = z.object({
   provenance: ProvenanceSchema,
 });
 
+const CareerHistoryItemSchema = z.object({
+  company: z.string().min(1),
+  role: z.string().optional(),
+  logoIcon: z.string().optional(),
+  logoSrc: z.string().optional(),
+});
+
 const MentorSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(2),
@@ -201,8 +208,15 @@ const MentorSchema = z.object({
   organization: z.string().min(2),
   bio: z.string().min(10),
   courseId: z.string().optional(),
+  courseIds: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(),
   order: z.number().int().nonnegative(),
   isPlaceholder: z.boolean().optional(),
+  published: z.boolean().optional(),
+  linkedInUrl: z.string().url().optional(),
+  portraitSrc: z.string().optional(),
+  expertise: z.array(z.string()).optional(),
+  careerHistory: z.array(CareerHistoryItemSchema).optional(),
   provenance: ProvenanceSchema,
 });
 

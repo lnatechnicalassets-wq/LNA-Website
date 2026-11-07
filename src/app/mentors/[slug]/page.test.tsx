@@ -1,38 +1,20 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import MentorProfilePage, { generateMetadata } from "./page";
+import MentorProfilePage, { generateStaticParams } from "./page";
+import { redirect } from "next/navigation";
 
-// Mock next/navigation notFound
 vi.mock("next/navigation", () => ({
+  redirect: vi.fn(),
   notFound: vi.fn(),
 }));
 
-describe("MentorProfilePage", () => {
-  it("renders mentor profile with approved CMS data", async () => {
-    const Component = await MentorProfilePage({
-      params: Promise.resolve({ slug: "mentor-leadership-lead" }),
-    });
-    render(Component);
-
-    // Mentor name
-    expect(screen.getByRole("heading", { level: 1, name: /Dr\. Tariq Rahman/i })).toBeDefined();
-
-    // Designation and organization
-    expect(screen.getByText(/Lead Faculty, Strategic Governance/i)).toBeDefined();
-    expect(screen.getByText(/Corporate Governance Institute/i)).toBeDefined();
-
-    // Back navigation link
-    expect(screen.getByRole("link", { name: /return to course catalogue/i })).toBeDefined();
-
-    // Associated course link
-    expect(screen.getByText(/Executive Leadership & Strategic Governance/i)).toBeDefined();
+describe("MentorProfilePage - Retired Route Redirection", () => {
+  it("redirects legacy mentor profile URLs to homepage mentors section", async () => {
+    await MentorProfilePage();
+    expect(redirect).toHaveBeenCalledWith("/#mentors");
   });
 
-  it("generates correct metadata for valid mentor", async () => {
-    const metadata = await generateMetadata({
-      params: Promise.resolve({ slug: "mentor-leadership-lead" }),
-    });
-
-    expect(metadata.title).toContain("Dr. Tariq Rahman");
+  it("generates static params for all mentors to preserve routing integrity", async () => {
+    const params = await generateStaticParams();
+    expect(params.length).toBeGreaterThan(0);
   });
 });
