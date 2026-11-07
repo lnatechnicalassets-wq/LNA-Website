@@ -6,7 +6,7 @@ import os from "os";
 const ARTIFACT_DIR =
   "C:/Users/refat/.gemini/antigravity/brain/c0a9f902-1d07-4d4e-8d3a-e34931387069";
 const CHROME_PATH = "C:/Program Files/Google/Chrome/Application/chrome.exe";
-const PORT = 3075;
+const PORT = 3005;
 
 async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -137,174 +137,181 @@ async function capture() {
 
       // 1. Verify Viewports for Overflow
       console.log("\n=== Verifying All Required Viewports ===");
-      for (const w of [320, 390, 768, 1024, 1440, 1920]) {
+      for (const w of [320, 390, 768, 1024, 1280, 1440, 1920]) {
         await setViewport(w, 900, w < 1024);
         await checkOverflow(w);
       }
 
-      // 2. Capture Targeted Mentors Showcase Section Across Viewports
-      console.log("\n=== Capturing Targeted Mentors Showcase Section ===");
+      // 2. Capture Targeted Section 5: Learner Reviews Across Viewports
+      console.log("\n=== Capturing Targeted Section 5: Learner Reviews ===");
 
-      // Scenario 1: Standard Desktop 1440px Settled (5-card deck centered, zero overlap with left intro)
+      // Scenario 1: Standard Desktop 1440px Settled State
       await setViewport(1440, 950, false);
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const sec = document.querySelector('#mentors');
+            const sec = document.querySelector('#reviews');
             if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
           })()
         `,
       });
       await sleep(1500);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-1440-settled.png"));
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-reviews-1440-settled.png"));
 
-      // Scenario 2: Standard Desktop 1440px with Centered Modal (Complete biography, subtle backdrop)
+      // Scenario 2: Desktop 1280px Settled State
+      await setViewport(1280, 950, false);
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const plusBtn = document.querySelector('button[aria-label*="quick view" i]');
-            if (plusBtn) plusBtn.click();
+            const sec = document.querySelector('#reviews');
+            if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
           })()
         `,
       });
       await sleep(600);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-1440-modal.png"));
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-reviews-1280-settled.png"));
 
-      // Close modal
+      // Scenario 3: Identity Verification (Position 1: Nusrat Jahan)
+      await setViewport(1440, 950, false);
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const closeBtn = document.querySelector('button[aria-label*="close mentor details" i]');
-            if (closeBtn) closeBtn.click();
+            const tab1 = document.querySelector('button[aria-label*="Go to testimonial 1: Nusrat Jahan"]');
+            if (tab1) tab1.click();
           })()
         `,
       });
-      await sleep(500);
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-reviews-identity-position-1.png"));
 
-      // Scenario 3: Live Autoplay Verification (4-second interval)
-      console.log("\n=== Verifying Automatic Carousel Rotation in Real Browser ===");
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-before-rotation.png"));
-
-      // Read current mentor counter text
-      const beforeEval = await send("Runtime.evaluate", {
-        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
-        returnByValue: true,
-      });
-      console.log("Mentor position before auto rotation:", beforeEval.result.value);
-
-      // Wait 4.8 seconds for first automatic rotation (4000ms idle display + 750ms transition)
-      console.log("Waiting 4.8s for automatic advance 1...");
-      await sleep(4800);
-
-      const after1Eval = await send("Runtime.evaluate", {
-        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
-        returnByValue: true,
-      });
-      console.log("Mentor position after auto advance 1:", after1Eval.result.value);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-after-rotation.png"));
-
-      // Wait another 4.8 seconds for second automatic rotation
-      console.log("Waiting 4.8s for automatic advance 2...");
-      await sleep(4800);
-
-      const after2Eval = await send("Runtime.evaluate", {
-        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
-        returnByValue: true,
-      });
-      console.log("Mentor position after auto advance 2:", after2Eval.result.value);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-after-rotation-2.png"));
-
-      // Scenario 4: Manual Click Reset & Resume Verification
-      console.log("\n=== Verifying Manual Click Timer Reset and Autoplay Recovery ===");
+      // Scenario 4: Identity Verification (Position 4: Mahmudul Alam)
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const nextBtn = document.querySelector('button[aria-label="Next mentor"]');
-            if (nextBtn) nextBtn.click();
+            const tab4 = document.querySelector('button[aria-label*="Go to testimonial 4: Mahmudul Alam"]');
+            if (tab4) tab4.click();
           })()
         `,
       });
-      const manualEval = await send("Runtime.evaluate", {
-        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
-        returnByValue: true,
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-reviews-identity-position-4.png"));
+
+      // Scenario 5: Identity Verification (Position 5: Farzana Yasmin)
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const tab5 = document.querySelector('button[aria-label*="Go to testimonial 5: Farzana Yasmin"]');
+            if (tab5) tab5.click();
+          })()
+        `,
       });
-      console.log("Mentor position immediately after manual click:", manualEval.result.value);
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-reviews-identity-position-5.png"));
 
-      // Wait 4.8s to verify autoplay resumes automatically after manual navigation
-      console.log("Waiting 4.8s to verify autoplay resumes after manual navigation...");
-      await sleep(4800);
-
-      const resumedEval = await send("Runtime.evaluate", {
-        expression: `document.querySelector('#mentors').innerText.match(/\\d{2} \\/ \\d{2} Mentors/)?.[0] || 'Unknown'`,
-        returnByValue: true,
-      });
-      console.log("Mentor position after autoplay resumed:", resumedEval.result.value);
-
-      // Scenario 5: Ultra-Wide Desktop 1920px Settled State
+      // Scenario 6: Ultra-Wide Desktop 1920px Settled View
       await setViewport(1920, 950, false);
-      await sleep(500);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-1920-settled.png"));
-
-      // Scenario 6: Ultra-Wide Desktop 1920px Centered Modal (Consistent with 1440px / Mobile)
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const plusBtn = document.querySelector('button[aria-label*="quick view" i]');
-            if (plusBtn) plusBtn.click();
+            const tab1 = document.querySelector('button[aria-label*="Go to testimonial 1: Nusrat Jahan"]');
+            if (tab1) tab1.click();
+            const sec = document.querySelector('#reviews');
+            if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
           })()
         `,
       });
       await sleep(600);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-mentors-1920-modal.png"));
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-reviews-1920-settled.png"));
 
-      // Close modal
+      // Scenario 7: Small Desktop 1024px Layout
+      await setViewport(1024, 950, false);
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const closeBtn = document.querySelector('button[aria-label*="close mentor details" i]') || document.querySelector('[data-close-btn]');
-            if (closeBtn) closeBtn.click();
+            const sec = document.querySelector('#reviews');
+            if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
           })()
         `,
       });
-      await sleep(500);
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-reviews-1024.png"));
 
-      // Scenario 7: Tablet 768px (Rebalanced 3-card stack)
+      // Scenario 8: Tablet 768px Layout
       await setViewport(768, 950, true);
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const sec = document.querySelector('#mentors');
+            const sec = document.querySelector('#reviews');
             if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
           })()
         `,
       });
       await sleep(600);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "tablet-mentors-768.png"));
+      await takeScreenshot(path.join(ARTIFACT_DIR, "tablet-reviews-768.png"));
 
-      // Scenario 8: Mobile 390px (1 prominent active card, scrollable chips, search)
+      // Scenario 9: Mobile 390px Viewport (Default review)
       await setViewport(390, 1050, true);
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const sec = document.querySelector('#mentors');
+            const sec = document.querySelector('#reviews');
             if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
           })()
         `,
       });
       await sleep(600);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-mentors-390.png"));
+      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-reviews-390.png"));
 
-      // Mobile Modal Dialog (Complete biography, centered, full view)
+      // Scenario 10: Mobile 390px Viewport with Longer Testimonial (Mahmudul Alam)
       await send("Runtime.evaluate", {
         expression: `
           (() => {
-            const plusBtn = document.querySelector('button[aria-label*="quick view" i]');
-            if (plusBtn) plusBtn.click();
+            const tab4 = document.querySelector('button[aria-label*="Go to testimonial 4 (mobile): Mahmudul Alam"]');
+            if (tab4) tab4.click();
           })()
         `,
       });
       await sleep(600);
-      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-mentors-modal-390.png"));
+      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-reviews-390-long.png"));
+
+      // Scenario 11: Compact Mobile 320px Viewport
+      await setViewport(320, 1050, true);
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const tab1 = document.querySelector('button[aria-label*="Go to testimonial 1 (mobile): Nusrat Jahan"]');
+            if (tab1) tab1.click();
+            const sec = document.querySelector('#reviews');
+            if (sec) sec.scrollIntoView({ behavior: 'instant', block: 'start' });
+          })()
+        `,
+      });
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "mobile-reviews-320.png"));
+
+      // Scenario 12: Standard Desktop 1440px with Success Stories Modal Dialog
+      await setViewport(1440, 950, false);
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const ctaBtn = document.querySelector('button[aria-label*="See more learner success stories" i]');
+            if (ctaBtn) ctaBtn.click();
+          })()
+        `,
+      });
+      await sleep(600);
+      await takeScreenshot(path.join(ARTIFACT_DIR, "desktop-reviews-1440-modal.png"));
+
+      // Close modal
+      await send("Runtime.evaluate", {
+        expression: `
+          (() => {
+            const closeBtn = document.querySelector('button[aria-label*="close" i]');
+            if (closeBtn) closeBtn.click();
+          })()
+        `,
+      });
+      await sleep(500);
 
       ws.close();
     } finally {
