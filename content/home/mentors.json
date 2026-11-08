@@ -2673,7 +2673,8 @@
       "verifiedOn": null
     },
     "courseIds": [
-      "mto"
+      "mto",
+      "mto-readiness"
     ]
   },
   {
@@ -2712,7 +2713,8 @@
       "verifiedOn": null
     },
     "courseIds": [
-      "mto"
+      "mto",
+      "mto-readiness"
     ]
   },
   {
@@ -2751,7 +2753,8 @@
       "verifiedOn": null
     },
     "courseIds": [
-      "mto"
+      "mto",
+      "mto-readiness"
     ],
     "featured": true
   },
@@ -2791,7 +2794,8 @@
       "verifiedOn": null
     },
     "courseIds": [
-      "mto"
+      "mto",
+      "mto-readiness"
     ]
   },
   {
@@ -2830,7 +2834,8 @@
       "verifiedOn": null
     },
     "courseIds": [
-      "mto"
+      "mto",
+      "mto-readiness"
     ]
   }
 ]
