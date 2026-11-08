@@ -8,4 +8,5 @@ export * from "./home";
 export * from "./faq";
 export * from "./contact";
 export * from "./irgp";
+export * from "./internship";
 export * from "./repository";

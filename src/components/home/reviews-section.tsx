@@ -21,7 +21,7 @@ export function ReviewsSection({ reviews, irgpData }: ReviewsSectionProps) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const [hasEntered, setHasEntered] = useState(false);
+  const [hasEntered, setHasEntered] = useState(true);
   const [isInView, setIsInView] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -97,7 +97,7 @@ export function ReviewsSection({ reviews, irgpData }: ReviewsSectionProps) {
       ref={sectionRef}
       id="reviews"
       aria-labelledby="reviews-heading"
-      className="relative py-16 sm:py-24 lg:py-28 bg-[#F6FAFA] overflow-hidden"
+      className="relative py-14 sm:py-16 lg:py-20 bg-[#F6FAFA] overflow-hidden scroll-mt-20 sm:scroll-mt-24"
     >
       {/* Background Ambience: Subtle Soft Teal Gradients matching approved design */}
       <div
@@ -109,10 +109,10 @@ export function ReviewsSection({ reviews, irgpData }: ReviewsSectionProps) {
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto max-w-7xl xl:max-w-[1360px] 2xl:max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header: Eyebrow + Serif Heading with Curved Underline + Description */}
         <div
-          className={`mb-8 sm:mb-12 transition-all duration-700 ease-out ${
+          className={`mb-8 sm:mb-10 transition-all duration-700 ease-out ${
             hasEntered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
@@ -125,7 +125,7 @@ export function ReviewsSection({ reviews, irgpData }: ReviewsSectionProps) {
           {/* Main Heading with Aqua Curved Underline */}
           <h2
             id="reviews-heading"
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold font-serif text-[#172E35] leading-[1.15] tracking-tight mb-3"
+            className="text-3xl sm:text-4xl lg:text-[42px] font-bold font-serif text-[#172E35] leading-[1.15] tracking-tight mb-3"
           >
             Real Learning.{" "}
             <span className="relative inline-block text-[#086477]">
@@ -148,33 +148,25 @@ export function ReviewsSection({ reviews, irgpData }: ReviewsSectionProps) {
           </h2>
 
           {/* Supporting Copy */}
-          <p className="text-sm sm:text-base lg:text-lg text-text-secondary leading-relaxed max-w-2xl font-sans">
+          <p className="text-sm sm:text-base text-text-secondary leading-relaxed max-w-2xl font-sans">
             Explore the Industry Readiness Graduate Program (IRGP) and hear directly from the
             learners who experienced it.
           </p>
         </div>
 
-        {/* 3-Column Feature Composition */}
-        {/* Desktop (>= 1280px): 3 adjacent columns (approx 29% | 36% | 35%) */}
-        {/* Tablet (768px - 1023px): Row 1 (Overview + Gallery), Row 2 (Testimonials) */}
-        {/* Mobile (< 768px): Vertically stacked */}
+        {/* Rebalanced 2-Column Feature Composition: IRGP Story Overview + Learner Testimonials */}
         <div
-          className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-5 xl:gap-6 items-stretch mb-6 sm:mb-8 transition-all duration-900 delay-150 ease-out ${
-            hasEntered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          className={`grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch mb-6 sm:mb-8 transition-all duration-700 ease-out ${
+            hasEntered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
-          {/* Zone 1: IRGP Overview Card (~29% / xl:col-span-4 or 3.5 cols) */}
-          <div className="w-full xl:col-span-4 flex flex-col min-h-[360px] sm:min-h-[400px]">
+          {/* Zone 1: IRGP Overview Card (5 cols on lg/xl) */}
+          <div className="w-full lg:col-span-5 flex flex-col min-h-[380px] sm:min-h-[420px]">
             <IrgpOverviewCard story={data.story} onExploreClick={() => setIsStoryModalOpen(true)} />
           </div>
 
-          {/* Zone 2: IRGP Photo Gallery (2x2 mosaic) (~36% / xl:col-span-4) */}
-          <div className="w-full xl:col-span-4 flex flex-col min-h-[360px] sm:min-h-[400px]">
-            <IrgpGallery items={data.gallery} onPhotoClick={handleOpenPhoto} />
-          </div>
-
-          {/* Zone 3: Learner Testimonial Carousel Card (~35% / xl:col-span-4) */}
-          <div className="w-full md:col-span-2 xl:col-span-4 flex flex-col min-h-[360px] sm:min-h-[400px]">
+          {/* Zone 2: Learner Testimonial Carousel Card (7 cols on lg/xl) */}
+          <div className="w-full lg:col-span-7 flex flex-col min-h-[380px] sm:min-h-[420px]">
             <ReviewsCarousel
               reviews={reviews}
               isModalOpen={isStoryModalOpen}

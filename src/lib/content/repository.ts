@@ -23,6 +23,7 @@ import {
 import { FaqItem, FaqItemSchema } from "./faq";
 import { ContactConfig, ContactConfigSchema } from "./contact";
 import { IrgpData, IrgpDataSchema } from "./irgp";
+import { Internship, InternshipSchema } from "./internship";
 
 export interface ICourseRepository {
   getAllCourses(): Promise<Course[]>;
@@ -49,6 +50,7 @@ export interface IHomeRepository {
   getIrgpData(): Promise<IrgpData>;
   getFaqs(): Promise<FaqItem[]>;
   getContactConfig(): Promise<ContactConfig>;
+  getInternships(): Promise<Internship[]>;
 }
 
 /**
@@ -69,6 +71,7 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
   private cachedIrgpData: IrgpData | null = null;
   private cachedFaqs: FaqItem[] | null = null;
   private cachedContactConfig: ContactConfig | null = null;
+  private cachedInternships: Internship[] | null = null;
 
   constructor(contentDir = path.join(process.cwd(), "content")) {
     this.contentDir = contentDir;
@@ -296,6 +299,21 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
 
     this.cachedContactConfig = validated;
     return validated;
+  }
+
+  async getInternships(): Promise<Internship[]> {
+    if (this.cachedInternships) return this.cachedInternships;
+
+    const file = path.join(this.contentDir, "home", "internships.json");
+    if (!fs.existsSync(file)) return [];
+
+    const raw = fs.readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = z.array(InternshipSchema).parse(parsed);
+    const sorted = validated.filter((item) => item.published).sort((a, b) => a.order - b.order);
+
+    this.cachedInternships = sorted;
+    return sorted;
   }
 }
 

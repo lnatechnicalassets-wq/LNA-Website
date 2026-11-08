@@ -1,17 +1,14 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
   Briefcase,
   Calendar,
-  GraduationCap,
   Layers,
   TrendingUp,
   Users,
-  Play,
 } from "lucide-react";
 import type { HeroSlide as HeroSlideType, Mentor } from "@/lib/content";
 import { Button } from "@/components/ui";
@@ -23,7 +20,6 @@ export interface HeroSlideProps {
   isActive: boolean;
   slideIndex: number;
   totalSlides: number;
-  onOpenStoryModal?: () => void;
   onMentorClick: (mentor: Mentor) => void;
 }
 
@@ -33,7 +29,6 @@ export function HeroSlide({
   isActive,
   slideIndex,
   totalSlides,
-  onOpenStoryModal,
   onMentorClick,
 }: HeroSlideProps) {
   const isMto = slide.programType === "mto" || slide.id.includes("mto");
@@ -59,35 +54,21 @@ export function HeroSlide({
           .map((id) => mentors.find((m) => m.id === id))
           .filter((m): m is Mentor => Boolean(m));
 
-  const eyebrowLabel = slide.eyebrow || (isIrgp ? "COMPLETED PROGRAM" : "FEATURED PROGRAM");
-
-  const handlePrimaryCtaClick = (e: React.MouseEvent) => {
-    if (isIrgp && onOpenStoryModal) {
+  const handleSecondaryCtaClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (slide.secondaryCtaHref?.startsWith("#")) {
       e.preventDefault();
-      onOpenStoryModal();
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("lna:open-irgp-story"));
+      const targetId = slide.secondaryCtaHref.substring(1);
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        const headerOffset = typeof window !== "undefined" && window.innerWidth >= 640 ? 84 : 72;
+        const elementPosition = targetEl.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+        window.history.pushState(null, "", slide.secondaryCtaHref);
       }
-    }
-  };
-
-  const renderHighlightIcon = (iconName?: string) => {
-    switch (iconName) {
-      case "sessions":
-      case "areas":
-      case "layers":
-        return <Layers className="h-5 w-5 text-[#086477]" aria-hidden="true" />;
-      case "skills":
-      case "analytics":
-        return <TrendingUp className="h-5 w-5 text-[#086477]" aria-hidden="true" />;
-      case "mentors":
-      case "users":
-        return <Users className="h-5 w-5 text-[#086477]" aria-hidden="true" />;
-      case "career":
-      case "briefcase":
-        return <Briefcase className="h-5 w-5 text-[#086477]" aria-hidden="true" />;
-      default:
-        return <Layers className="h-5 w-5 text-[#086477]" aria-hidden="true" />;
     }
   };
 
@@ -97,240 +78,344 @@ export function HeroSlide({
       aria-roledescription="slide"
       aria-label={`Slide ${slideIndex + 1} of ${totalSlides}: ${slide.title}`}
       aria-hidden={!isActive}
-      className={`w-full transition-opacity duration-500 ease-in-out ${
+      className={`w-full h-full flex flex-col justify-center transition-opacity duration-500 ease-in-out ${
         isActive
           ? "opacity-100 relative z-10 pointer-events-auto"
           : "opacity-0 absolute inset-0 pointer-events-none z-0"
       }`}
     >
-      {/* ============================================================= */}
-      {/* MTO FULL BACKGROUND: Pearl-to-teal academy interior           */}
-      {/* ============================================================= */}
-      {isMto && (
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-          <Image
-            src="/images/hero-mto-interior-bg.jpg"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-          {/* Subtle overlay only where needed for high contrast and readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#F6FAFA]/75 via-[#F6FAFA]/35 to-transparent pointer-events-none lg:w-[48%]" />
-          <div className="lg:hidden absolute inset-0 bg-[#F6FAFA]/80 pointer-events-none" />
-        </div>
-      )}
-
-      {/* Main Slide Content Container */}
-      <div className="relative z-10 mx-auto max-w-[1650px] px-6 sm:px-10 lg:px-16">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-10 xl:gap-14 py-8 sm:py-10 lg:py-12 min-h-[660px] lg:min-h-[700px]">
+      {/* Main Slide Content Container filling the allocated height */}
+      <div className="relative z-10 mx-auto max-w-7xl xl:max-w-[1360px] 2xl:max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 w-full h-full flex flex-col justify-center">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 xl:gap-10 py-3 sm:py-4 lg:py-4 h-full">
           {/* ========================================================= */}
-          {/* LEFT EDITORIAL COLUMN (~40% of desktop width)             */}
+          {/* LEFT EDITORIAL COLUMN (~35% Desktop, Inside Pearl Area)   */}
           {/* ========================================================= */}
-          <div className="w-full lg:w-[40%] xl:w-[39%] flex flex-col items-start z-10 shrink-0">
-            {/* 1. Small Eyebrow Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-[#DDF1F3]/90 text-[#086477] border border-[#BCE1E5] shadow-2xs mb-4 sm:mb-5">
-              {isIrgp ? (
-                <GraduationCap className="h-3.5 w-3.5 text-[#086477]" aria-hidden="true" />
-              ) : (
-                <Briefcase className="h-3.5 w-3.5 text-[#086477]" aria-hidden="true" />
-              )}
-              <span>{eyebrowLabel}</span>
-            </div>
+          {isMto ? (
+            <div className="w-full lg:w-[36%] xl:w-[35%] flex flex-col items-start z-10 shrink-0 relative">
+              {/* 1. Eyebrow Badge: FEATURED PROGRAM */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] sm:text-xs font-bold tracking-wider uppercase bg-white/85 text-[#086477] border border-[#086477]/25 shadow-2xs mb-2 sm:mb-2.5 backdrop-blur-xs">
+                <Briefcase className="h-3 w-3 text-[#086477]" aria-hidden="true" />
+                <span>FEATURED PROGRAM</span>
+              </div>
 
-            {/* 2. Large Editorial Heading (60–72px) */}
-            {isMto ? (
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[60px] xl:text-[68px] 2xl:text-[72px] font-bold font-serif tracking-tight text-[#172E35] leading-[1.04] mb-3 sm:mb-4">
-                <span className="block">MTO Readiness</span>
-                <span className="block italic font-serif font-medium text-[#086477] mt-1 sm:mt-1.5">
-                  Program
-                </span>
+              {/* 2. Large Serif Heading: MTO Readiness Program */}
+              <h1 className="text-3xl sm:text-4xl lg:text-[38px] xl:text-[42px] font-serif font-bold tracking-tight text-[#172E35] leading-[1.04] mb-1 sm:mb-1.5">
+                <span className="block">MTO</span>
+                <span className="block">Readiness</span>
+                <span className="block italic font-serif font-normal text-[#086477]">Program</span>
               </h1>
-            ) : (
-              <div className="mb-3 sm:mb-4">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[60px] xl:text-[66px] 2xl:text-[70px] font-bold font-serif tracking-tight text-[#172E35] leading-[1.04]">
-                  IRGP
-                </h1>
-                <p className="text-xl sm:text-2xl md:text-[28px] lg:text-[30px] font-serif font-bold text-[#172E35] tracking-tight mt-1">
-                  Industry Readiness Graduate Program
-                </p>
-              </div>
-            )}
 
-            {/* 3. Subtitle (20–22px, for MTO) */}
-            {isMto && slide.subtitle && (
-              <h2 className="text-lg sm:text-xl lg:text-[21px] xl:text-[22px] font-bold text-[#172E35] tracking-tight leading-snug mb-3 sm:mb-4">
-                {slide.subtitle}
+              {/* 3. Deep Teal Accent Bar */}
+              <div className="w-10 h-0.5 bg-[#086477] rounded-full my-2 sm:my-2.5" aria-hidden="true" />
+
+              {/* 4. Subtitle */}
+              <h2 className="text-[14px] sm:text-[15px] lg:text-base font-bold text-[#172E35] tracking-tight leading-snug mb-1 font-sans">
+                Graduate Career &amp; Leadership Accelerator
               </h2>
-            )}
 
-            {/* 4. Description (17–18px, ~1.6 line-height) */}
-            <p className="text-base lg:text-[17px] xl:text-[18px] text-[#426169] leading-[1.6] font-normal mb-6 sm:mb-7 max-w-[500px]">
-              {slide.description}
-            </p>
+              {/* 5. Description */}
+              <p className="text-xs sm:text-[13px] lg:text-[13.5px] text-[#426169] leading-relaxed max-w-[400px] mb-3 sm:mb-3.5 font-normal">
+                Practical preparation for Management Trainee Officer opportunities.
+              </p>
 
-            {/* 5. Compact Statistics Row */}
-            {slide.highlights && slide.highlights.length > 0 && (
-              <div className="w-full flex items-center justify-between sm:justify-start gap-4 sm:gap-6 xl:gap-8 py-2 mb-6 sm:mb-8">
-                {slide.highlights.map((h, i) => (
-                  <React.Fragment key={i}>
-                    {i > 0 && (
-                      <div className="h-10 w-px bg-teal-200/80 shrink-0" aria-hidden="true" />
-                    )}
-                    <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-                      <div className="w-10 h-10 rounded-xl bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
-                        {renderHighlightIcon(h.icon)}
-                      </div>
-                      <div className="flex flex-col shrink-0">
-                        <span className="text-sm sm:text-[15px] xl:text-base font-bold text-[#172E35] leading-tight whitespace-nowrap">
-                          {h.label}
-                        </span>
-                        <span className="text-xs sm:text-[13px] text-[#5B7E87] leading-tight whitespace-nowrap mt-0.5">
-                          {h.sublabel}
-                        </span>
-                      </div>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
-            )}
-
-            {/* 6. Primary Button & 7. Compact Start-Date Detail */}
-            <div className="flex flex-col items-start gap-3.5 mb-2">
-              <Link
-                href={slide.ctaHref}
-                tabIndex={isActive ? 0 : -1}
-                onClick={handlePrimaryCtaClick}
-              >
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="group rounded-full px-8 sm:px-9 py-3.5 sm:py-4 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-base shadow-sm hover:shadow-md transition-all duration-200 inline-flex items-center gap-3 cursor-pointer"
-                >
-                  <span>{slide.ctaText}</span>
-                  <ArrowRight
-                    className="h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
-                    aria-hidden="true"
-                  />
-                </Button>
-              </Link>
-
-              {/* Compact start-date detail beneath the button (Classes begin December 1) */}
-              {isMto && (slide.classStartDate || slide.startDate) && (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5F5F6]/90 border border-[#BCE1E5] shadow-2xs">
-                  <Calendar className="h-3.5 w-3.5 text-[#086477]" aria-hidden="true" />
-                  <span className="text-xs sm:text-[13px] font-semibold text-[#086477]">
-                    {slide.classStartLabel || "Classes begin"}{" "}
-                    {slide.classStartDate || "December 1"}
-                  </span>
+              {/* 6. Three Statistics: 16 sessions / 1.5h each, 8 essential skills, 5 industry mentors */}
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 xl:gap-4 py-1 mb-3.5 sm:mb-4">
+                {/* 16 sessions */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
+                    <Layers className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight whitespace-nowrap">
+                      16 sessions
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight whitespace-nowrap">
+                      1.5h each
+                    </span>
+                  </div>
                 </div>
-              )}
 
-              {/* Secondary CTA for non-MTO slides (e.g. IRGP) */}
-              {!isMto && slide.secondaryCtaText && (
-                <Link href={slide.secondaryCtaHref || "#"} tabIndex={isActive ? 0 : -1}>
+                <div className="h-6 w-px bg-teal-200/80 shrink-0" aria-hidden="true" />
+
+                {/* 8 essential skills */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
+                    <TrendingUp className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight whitespace-nowrap">
+                      8 essential
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight whitespace-nowrap">
+                      skills
+                    </span>
+                  </div>
+                </div>
+
+                <div className="h-6 w-px bg-teal-200/80 shrink-0" aria-hidden="true" />
+
+                {/* 5 industry mentors */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
+                    <Users className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight whitespace-nowrap">
+                      5 industry
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight whitespace-nowrap">
+                      mentors
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 7. Primary Button & Compact Start Date */}
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <Link
+                  href={slide.ctaHref}
+                  tabIndex={isActive ? 0 : -1}
+                >
                   <Button
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full px-6 py-3.5 bg-white/80 hover:bg-white text-[#086477] border border-[#086477]/30 hover:border-[#086477] font-semibold text-sm transition-all duration-200 inline-flex items-center gap-2 cursor-pointer shadow-2xs"
+                    variant="primary"
+                    size="md"
+                    className="group rounded-full px-6 sm:px-7 py-2.5 sm:py-3 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-xs sm:text-[13.5px] shadow-sm hover:shadow-md transition-all duration-200 inline-flex items-center gap-2 cursor-pointer"
                   >
-                    <Play
-                      className="h-4 w-4 fill-[#086477] text-[#086477]"
+                    <span>Explore the Program</span>
+                    <ArrowRight
+                      className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
                       aria-hidden="true"
                     />
-                    <span>{slide.secondaryCtaText}</span>
                   </Button>
                 </Link>
-              )}
-            </div>
-          </div>
 
-          {/* ========================================================= */}
-          {/* RIGHT SHOWCASE COLUMN (~60% of desktop width)            */}
-          {/* ========================================================= */}
-          <div className="w-full lg:w-[60%] xl:w-[61%] flex flex-col justify-center items-center relative z-10 shrink-0">
-            {/* ------------------------------------------------------- */}
-            {/* SLIDE 1 (MTO): Upright Cards with Pearl Captions         */}
-            {/* ------------------------------------------------------- */}
-            {isMto && (
-              <div className="w-full flex flex-col items-center justify-center">
-                {/* Faculty Header: Eyebrow + Heading */}
-                <div className="flex flex-col items-center justify-center text-center mb-5 sm:mb-6">
-                  <div className="flex items-center justify-center gap-3 mb-1.5 sm:mb-2">
-                    <span className="w-8 sm:w-12 h-px bg-[#086477]/30 lg:bg-[#C5E2E5]/60" aria-hidden="true" />
-                    <span className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#086477] lg:text-[#C5E2E5] uppercase font-sans">
-                      {slide.mentorEyebrow || "MTO PROGRAM FACULTY"}
-                    </span>
-                    <span className="w-8 sm:w-12 h-px bg-[#086477]/30 lg:bg-[#C5E2E5]/60" aria-hidden="true" />
-                  </div>
-                  <h3 className="text-2xl sm:text-3xl lg:text-[32px] xl:text-[36px] font-serif text-[#172E35] lg:text-white font-medium tracking-wide drop-shadow-sm">
-                    {slide.mentorHeading || "Learn From Industry Leaders"}
-                  </h3>
-                </div>
-
-                {/* 5 Individual Mentor Cards (Fit 1 row on wide desktop, wrap before cramped) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4 xl:gap-3 2xl:gap-3.5 w-full">
-                  {displayMentors.slice(0, 5).map((mentor, index) => (
-                    <HeroMentorCard
-                      key={mentor.id}
-                      mentor={mentor}
-                      variant="mto"
-                      isFeatured={mentor.featured === true || index === 2}
-                      onClick={onMentorClick}
-                      priority={isActive}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ------------------------------------------------------- */}
-            {/* SLIDE 2 (IRGP): 8 Mentors in Balanced 4x2 Grid          */}
-            {/* ------------------------------------------------------- */}
-            {isIrgp && (
-              <div className="w-full flex flex-col items-center justify-center">
-                {/* Header: Users icon + Italic Serif Title */}
-                <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
-                  <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 text-teal-200 shrink-0">
-                    <Users className="h-4.5 w-4.5" aria-hidden="true" />
-                  </div>
-                  <h3 className="text-xl sm:text-2xl md:text-[26px] font-serif italic text-white font-normal tracking-tight">
-                    {slide.mentorHeading || "Meet Our IRGP Mentors"}
-                  </h3>
-                  <span className="text-teal-300 text-sm hidden sm:inline" aria-hidden="true">
-                    ✦
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 border border-[#BCE1E5] shadow-2xs">
+                  <Calendar className="h-3.5 w-3.5 text-[#086477]" aria-hidden="true" />
+                  <span className="text-[11px] sm:text-xs font-semibold text-[#086477]">
+                    Classes begin December 1
                   </span>
                 </div>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full lg:w-[36%] xl:w-[35%] flex flex-col items-start z-10 shrink-0 relative">
+              {/* 1. Small Eyebrow Badge: COMPLETED PROGRAM · IRGP */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] sm:text-xs font-bold tracking-wider uppercase bg-white/85 text-[#086477] border border-[#086477]/25 shadow-2xs mb-2 sm:mb-2.5 backdrop-blur-xs">
+                <span>COMPLETED PROGRAM · IRGP</span>
+              </div>
 
-                {/* Desktop & Tablet 4x2 Grid */}
-                <div className="hidden sm:grid grid-cols-4 gap-3 lg:gap-3.5 xl:gap-4 w-full">
-                  {displayMentors.slice(0, 8).map((mentor, index) => (
-                    <HeroMentorCard
-                      key={mentor.id}
-                      mentor={mentor}
-                      variant="irgp"
-                      onClick={onMentorClick}
-                      priority={isActive && index === 0}
-                    />
-                  ))}
+              {/* 2. Large Serif Heading: Industry Readiness Graduate Program */}
+              <h1 className="text-3xl sm:text-4xl lg:text-[36px] xl:text-[40px] font-serif font-bold tracking-tight text-[#172E35] leading-[1.04] mb-1 sm:mb-1.5">
+                <span className="block">Industry</span>
+                <span className="block">Readiness</span>
+                <span className="block">Graduate</span>
+                <span className="block italic font-serif font-normal text-[#086477]">Program</span>
+              </h1>
+
+              {/* 3. Deep Teal Accent Bar */}
+              <div className="w-10 h-0.5 bg-[#086477] rounded-full my-2 sm:my-2.5" aria-hidden="true" />
+
+              {/* 4. Supporting Text */}
+              <p className="text-xs sm:text-[13px] lg:text-[13.5px] text-[#426169] leading-relaxed max-w-[390px] mb-3 sm:mb-3.5 font-normal">
+                Practical learning guided by industry professionals.
+              </p>
+
+              {/* 5. Two Statistics: 10 focus areas, 8 industry mentors */}
+              <div className="flex items-center gap-3 sm:gap-4 py-1 mb-3.5 sm:mb-4">
+                {/* 10 focus areas */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
+                    <Layers className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight">
+                      10 focus
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight">
+                      areas
+                    </span>
+                  </div>
                 </div>
 
-                {/* Mobile 2x4 Grid */}
-                <div className="sm:hidden grid grid-cols-2 gap-2.5 w-full">
-                  {displayMentors.slice(0, 8).map((mentor, index) => (
-                    <HeroMentorCard
-                      key={mentor.id}
-                      mentor={mentor}
-                      variant="irgp"
-                      onClick={onMentorClick}
-                      priority={isActive && index === 0}
-                    />
-                  ))}
+                <div className="h-6 w-px bg-teal-200/80 shrink-0" aria-hidden="true" />
+
+                {/* 8 industry mentors */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
+                    <Users className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight">
+                      8 industry
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight">
+                      mentors
+                    </span>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* 6. Primary Button & Underlined Secondary Action */}
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href={slide.ctaHref}
+                  tabIndex={isActive ? 0 : -1}
+                >
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="group rounded-full px-6 sm:px-7 py-2.5 sm:py-3 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-xs sm:text-[13.5px] shadow-sm hover:shadow-md transition-all duration-200 inline-flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>Explore the IRGP Story</span>
+                    <ArrowRight
+                      className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                </Link>
+
+                <a
+                  href="#reviews"
+                  tabIndex={isActive ? 0 : -1}
+                  onClick={handleSecondaryCtaClick}
+                  className="text-xs sm:text-[13px] font-semibold text-[#086477] hover:text-[#064654] underline underline-offset-4 transition-colors cursor-pointer inline-block"
+                >
+                  View Learner Experiences
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* RIGHT SHOWCASE COLUMN (~65% Desktop, Floating over Lounge) */}
+          {/* ========================================================= */}
+          {isMto ? (
+            <div className="w-full lg:w-[64%] xl:w-[65%] flex flex-col justify-center items-center lg:items-end relative z-10 shrink-0">
+              {/* Desktop: TWO–ONE–TWO Grid in 3 Rows */}
+              <div className="hidden lg:grid grid-cols-4 gap-x-3.5 xl:gap-x-4 gap-y-2 lg:gap-y-2.5 xl:gap-y-3 w-full max-w-[480px] xl:max-w-[530px]">
+                {/* Row 1: Arif Rahman & Tanvir Hossain */}
+                <div className="col-span-2 col-start-1">
+                  <HeroMentorCard
+                    mentor={displayMentors[0]}
+                    variant="mto"
+                    onClick={onMentorClick}
+                    priority={isActive}
+                  />
+                </div>
+                <div className="col-span-2 col-start-3">
+                  <HeroMentorCard
+                    mentor={displayMentors[1]}
+                    variant="mto"
+                    onClick={onMentorClick}
+                    priority={isActive}
+                  />
+                </div>
+
+                {/* Row 2: Mir Hasib Mahmud (Centered) */}
+                <div className="col-span-2 col-start-2">
+                  <HeroMentorCard
+                    mentor={displayMentors[2]}
+                    variant="mto"
+                    isFeatured={true}
+                    onClick={onMentorClick}
+                    priority={isActive}
+                  />
+                </div>
+
+                {/* Row 3: Fahim Ahmed & Sayem Chowdhury */}
+                <div className="col-span-2 col-start-1">
+                  <HeroMentorCard
+                    mentor={displayMentors[3]}
+                    variant="mto"
+                    onClick={onMentorClick}
+                    priority={isActive}
+                  />
+                </div>
+                <div className="col-span-2 col-start-3">
+                  <HeroMentorCard
+                    mentor={displayMentors[4]}
+                    variant="mto"
+                    onClick={onMentorClick}
+                    priority={isActive}
+                  />
+                </div>
+              </div>
+
+              {/* Mobile / Tablet: Contained Manually Swipeable Faculty Area */}
+              <div
+                className="lg:hidden w-full overflow-x-auto touch-pan-x snap-x snap-mandatory flex gap-2.5 pb-2 pt-1 no-scrollbar"
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchMove={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+              >
+                {displayMentors.slice(0, 5).map((mentor, index) => (
+                  <div key={mentor.id} className="w-[145px] shrink-0 snap-center">
+                    <HeroMentorCard
+                      mentor={mentor}
+                      variant="mto"
+                      isFeatured={index === 2}
+                      onClick={onMentorClick}
+                      priority={isActive && index === 0}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="w-full lg:w-[64%] xl:w-[65%] flex flex-col justify-center items-center lg:items-end relative z-10 shrink-0">
+              {/* Desktop: THREE–TWO–THREE Grid in 3 Rows */}
+              <div className="hidden lg:grid grid-cols-6 gap-x-2.5 xl:gap-x-3.5 gap-y-2 lg:gap-y-2.5 xl:gap-y-3 w-full max-w-[640px] xl:max-w-[700px]">
+                {/* Row 1 (Top: 3 cards) */}
+                <div className="col-span-2 col-start-1">
+                  <HeroMentorCard mentor={displayMentors[0]} variant="irgp" onClick={onMentorClick} priority={isActive} />
+                </div>
+                <div className="col-span-2 col-start-3">
+                  <HeroMentorCard mentor={displayMentors[1]} variant="irgp" onClick={onMentorClick} priority={isActive} />
+                </div>
+                <div className="col-span-2 col-start-5">
+                  <HeroMentorCard mentor={displayMentors[2]} variant="irgp" onClick={onMentorClick} priority={isActive} />
+                </div>
+
+                {/* Row 2 (Middle: 2 cards centered) */}
+                <div className="col-span-2 col-start-2">
+                  <HeroMentorCard mentor={displayMentors[3]} variant="irgp" onClick={onMentorClick} priority={isActive} />
+                </div>
+                <div className="col-span-2 col-start-4">
+                  <HeroMentorCard mentor={displayMentors[4]} variant="irgp" onClick={onMentorClick} priority={isActive} />
+                </div>
+
+                {/* Row 3 (Bottom: 3 cards) */}
+                <div className="col-span-2 col-start-1">
+                  <HeroMentorCard mentor={displayMentors[5]} variant="irgp" onClick={onMentorClick} priority={isActive} />
+                </div>
+                <div className="col-span-2 col-start-3">
+                  <HeroMentorCard mentor={displayMentors[6]} variant="irgp" onClick={onMentorClick} priority={isActive} />
+                </div>
+                <div className="col-span-2 col-start-5">
+                  <HeroMentorCard mentor={displayMentors[7]} variant="irgp" onClick={onMentorClick} priority={isActive} />
+                </div>
+              </div>
+
+              {/* Mobile / Tablet: Contained Manually Swipeable Faculty Area */}
+              <div
+                className="lg:hidden w-full overflow-x-auto touch-pan-x snap-x snap-mandatory flex gap-2.5 pb-2 pt-1 no-scrollbar"
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchMove={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+              >
+                {displayMentors.slice(0, 8).map((mentor, index) => (
+                  <div key={mentor.id} className="w-[140px] shrink-0 snap-center">
+                    <HeroMentorCard
+                      mentor={mentor}
+                      variant="irgp"
+                      onClick={onMentorClick}
+                      priority={isActive && index === 0}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

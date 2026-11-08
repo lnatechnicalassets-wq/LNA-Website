@@ -34,7 +34,7 @@
       "mentor-sayem-chowdhury"
     ],
     "ctaText": "Explore the Program",
-    "ctaHref": "#courses",
+    "ctaHref": "/courses/mto-readiness",
     "classStartLabel": "Classes begin",
     "classStartDate": "December 1",
     "startDate": "2026-12-01",
@@ -74,6 +74,7 @@
         "icon": "career"
       }
     ],
+    "mentorEyebrow": "IRGP PROGRAM FACULTY",
     "mentorHeading": "Meet Our IRGP Mentors",
     "mentorIds": [
       "mentor-shahnawaj-chowdhury",
@@ -86,7 +87,7 @@
       "mentor-sayeda-salma"
     ],
     "ctaText": "Explore the IRGP Story",
-    "ctaHref": "#reviews",
+    "ctaHref": "/courses/irgp",
     "secondaryCtaText": "View Learner Experiences",
     "secondaryCtaHref": "#reviews",
     "badgeText": "COMPLETED PROGRAM",

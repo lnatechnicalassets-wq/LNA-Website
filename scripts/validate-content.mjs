@@ -375,6 +375,30 @@ const IrgpDataSchema = z.object({
   outcomes: IrgpOutcomesSchema,
 });
 
+const InternshipAllowanceSchema = z.object({
+  minPoisha: z.number().int().nonnegative().optional(),
+  maxPoisha: z.number().int().nonnegative().optional(),
+  period: z.enum(["month", "session", "fixed"]).default("month"),
+  displayText: z.string().min(1),
+});
+
+const InternshipSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/),
+  roleTitle: z.string().min(2),
+  companyName: z.string().min(2),
+  companyLogo: z.string().optional(),
+  workplace: z.string().min(2),
+  schedule: z.string().min(2),
+  duration: z.string().min(2),
+  shortDescription: z.string().min(5),
+  fullDescription: z.string().min(10),
+  allowance: InternshipAllowanceSchema.optional(),
+  applicationUrl: z.string().url().optional(),
+  published: z.boolean().default(true),
+  order: z.number().int().nonnegative().default(1),
+  provenance: ProvenanceSchema,
+});
+
 function readJson(relPath) {
   const fullPath = path.join(contentDir, relPath);
   if (!fs.existsSync(fullPath)) {
@@ -505,6 +529,11 @@ export function validateAllContent() {
   const contact = readJson("home/contact.json");
   scanForSecrets(contact.raw, "home/contact.json");
   ContactConfigSchema.parse(contact.data);
+
+  console.log("  → Validating content/home/internships.json...");
+  const internships = readJson("home/internships.json");
+  scanForSecrets(internships.raw, "home/internships.json");
+  z.array(InternshipSchema).parse(internships.data);
 
   console.log(
     "✅ CONTENT VALIDATION SUCCESSFUL: All content schemas, referential integrity, and security checks passed!"
