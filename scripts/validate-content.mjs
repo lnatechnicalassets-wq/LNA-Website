@@ -399,6 +399,60 @@ const InternshipSchema = z.object({
   provenance: ProvenanceSchema,
 });
 
+const ArticleBlockSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("paragraph"),
+    text: z.string(),
+  }),
+  z.object({
+    type: z.literal("heading"),
+    level: z.union([z.literal(2), z.literal(3)]).default(2),
+    text: z.string(),
+    id: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("list"),
+    ordered: z.boolean().default(false),
+    items: z.array(z.string()),
+  }),
+  z.object({
+    type: z.literal("image"),
+    src: z.string(),
+    alt: z.string(),
+    caption: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("quote"),
+    text: z.string(),
+    author: z.string().optional(),
+  }),
+]);
+
+const NewsArticleSchema = z.object({
+  id: z.string().min(1),
+  slug: z.string().min(1),
+  title: z.string().min(1),
+  excerpt: z.string().min(1),
+  category: z.enum(["Partnerships", "Invitations", "Program updates", "Community"]),
+  publishedAt: z.string(),
+  updatedAt: z.string().optional(),
+  author: z.string().default("LNA Team"),
+  readTime: z.string().optional(),
+  coverImage: z.string().min(1),
+  coverImageAlt: z.string().min(1),
+  featured: z.boolean().default(false),
+  status: z.enum(["published", "draft"]).default("published"),
+  blocks: z.array(ArticleBlockSchema),
+  seo: z
+    .object({
+      title: z.string().optional(),
+      description: z.string().optional(),
+      ogImage: z.string().optional(),
+    })
+    .optional(),
+  provenance: ProvenanceSchema,
+});
+
 function readJson(relPath) {
   const fullPath = path.join(contentDir, relPath);
   if (!fs.existsSync(fullPath)) {
@@ -534,6 +588,15 @@ export function validateAllContent() {
   const internships = readJson("home/internships.json");
   scanForSecrets(internships.raw, "home/internships.json");
   z.array(InternshipSchema).parse(internships.data);
+
+  // 4. News files
+  const newsPath = path.join(contentDir, "news", "articles.json");
+  if (fs.existsSync(newsPath)) {
+    console.log("  → Validating content/news/articles.json...");
+    const news = readJson("news/articles.json");
+    scanForSecrets(news.raw, "news/articles.json");
+    z.array(NewsArticleSchema).parse(news.data);
+  }
 
   console.log(
     "✅ CONTENT VALIDATION SUCCESSFUL: All content schemas, referential integrity, and security checks passed!"

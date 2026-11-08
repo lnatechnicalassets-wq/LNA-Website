@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { DemoLogo } from "@/components/ui/demo-logo";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "./mobile-nav";
+import { cn } from "@/lib/utils";
 import type { NavigationConfig, Organization } from "@/lib/content";
 
 export interface SiteHeaderProps {
@@ -20,6 +22,7 @@ export interface SiteHeaderProps {
  */
 export function SiteHeader({ navigation, organization, className = "" }: SiteHeaderProps) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const pathname = usePathname();
   const { header } = navigation;
 
   const handleNavClick = (href: string) => (e: React.MouseEvent) => {
@@ -70,16 +73,33 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
 
           {/* Desktop Navigation Links */}
           <nav aria-label="Main Navigation" className="hidden lg:flex items-center gap-1 lg:gap-2">
-            {header.navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={handleNavClick(item.href)}
-                className="px-3 py-2 rounded-lg text-sm font-semibold text-text-secondary hover:text-primary-900 hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 cursor-pointer"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {header.navItems.map((item) => {
+              const isNews = item.href === "/news";
+              const isActive = isNews && (pathname === "/news" || pathname.startsWith("/news/"));
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={handleNavClick(item.href)}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "relative px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 cursor-pointer",
+                    isActive
+                      ? "text-[#086477] font-bold"
+                      : "text-text-secondary hover:text-primary-900 hover:bg-surface-muted rounded-lg"
+                  )}
+                >
+                  {item.label}
+                  {isActive && (
+                    <span
+                      className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#086477] rounded-full"
+                      aria-hidden="true"
+                    />
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Desktop Right CTA Actions */}

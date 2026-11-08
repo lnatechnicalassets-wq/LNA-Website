@@ -27,6 +27,11 @@
         "label": "Internships",
         "href": "/#internships",
         "description": "Explore internship opportunities through our partner network"
+      },
+      {
+        "label": "News & Updates",
+        "href": "/news",
+        "description": "Invitations, partnerships, and moments from LNA"
       }
     ],
     "cta": {
@@ -49,7 +54,8 @@
         "links": [
           { "label": "Internship Opportunities", "href": "/#internships" },
           { "label": "Meet Our Mentors", "href": "/#mentors" },
-          { "label": "Learner Reviews", "href": "/#reviews" }
+          { "label": "Learner Reviews", "href": "/#reviews" },
+          { "label": "News & Updates", "href": "/news" }
         ]
       },
       {
