@@ -1,23 +1,24 @@
 import React from "react";
-import type { HeroSlide } from "@/lib/content";
+import type { HeroSlide, Mentor } from "@/lib/content";
 import { HeroSlider } from "./hero-slider";
 
 export interface HeroSectionProps {
   slides: HeroSlide[];
+  mentors?: Mentor[];
 }
 
 /**
  * HeroSection Component
- * Composes the 3-slide HeroSlider with approved photographic curves, flowing
- * directly into the Partners section (Option A: Minimal Institutional).
+ * Composes the 2-slide HeroSlider featuring MTO Readiness Program (5 mentors)
+ * and Industry Readiness Graduate Program (IRGP, 8 mentors).
  */
-export function HeroSection({ slides }: HeroSectionProps) {
+export function HeroSection({ slides, mentors = [] }: HeroSectionProps) {
   return (
     <section
       aria-label="Lead Nation Academy Hero Showcase"
       className="relative w-full bg-surface-base"
     >
-      <HeroSlider slides={slides} />
+      <HeroSlider slides={slides} mentors={mentors} />
     </section>
   );
 }

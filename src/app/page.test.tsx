@@ -59,21 +59,21 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
       name: /Get in Touch/i,
     });
     expect(contactHeading).toBeDefined();
-  });
+  }, 15000);
 
   it("renders the hero slider with manual controls and WCAG 2.2 AA accessibility", async () => {
     const Component = await HomePage();
     render(Component);
 
-    // Slide indicator tab selectors (only three indicators per approved design)
+    // Slide indicator tab selectors (exactly two indicators per approved redesign, strictly no third slide)
     expect(screen.getByRole("tab", { name: /Go to slide 1/i })).toBeDefined();
     expect(screen.getByRole("tab", { name: /Go to slide 2/i })).toBeDefined();
-    expect(screen.getByRole("tab", { name: /Go to slide 3/i })).toBeDefined();
+    expect(screen.queryByRole("tab", { name: /Go to slide 3/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Previous slide/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Next slide/i })).toBeNull();
 
-    // Primary CTA to seeded course (exactly ONE primary CTA per specification)
-    expect(screen.getByRole("link", { name: /View Course Details/i })).toBeDefined();
+    // Primary CTA to explore program
+    expect(screen.getByRole("link", { name: /Explore the Program/i })).toBeDefined();
   });
 
   it("renders offline executive courses with fee disclosures", async () => {

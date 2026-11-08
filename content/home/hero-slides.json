@@ -1,67 +1,101 @@
 [
   {
-    "id": "slide-course-executive-leadership",
-    "courseId": "executive-leadership",
-    "title": "Executive Leadership & Strategic Governance",
-    "headline": "Executive Leadership in Financial Markets",
-    "description": "A focused executive program for professionals who want to lead with deeper market insight, strategic thinking and confidence.",
-    "ctaText": "View Course Details",
-    "ctaHref": "/courses/executive-leadership",
-    "badgeText": "APPLICATIONS OPEN",
-    "startDate": "20 Nov 2026",
-    "duration": "8 Weeks (Weekend)",
-    "venue": "Dhanmondi, Dhaka",
-    "imagePlaceholder": "/images/hero-leadership.jpg",
-    "imageObjectPosition": "30% center",
+    "id": "slide-mto-readiness",
+    "programType": "mto",
+    "eyebrow": "FEATURED PROGRAM",
+    "title": "MTO Readiness Program",
+    "subtitle": "Graduate Career & Leadership Accelerator",
+    "headline": "MTO Readiness Program",
+    "description": "A practical, industry-focused program to prepare recent graduates for Management Trainee Officer (MTO) opportunities in leading organizations.",
+    "highlights": [
+      {
+        "label": "16 Sessions",
+        "sublabel": "(1.5h each)",
+        "icon": "sessions"
+      },
+      {
+        "label": "8 Essential",
+        "sublabel": "Skills",
+        "icon": "skills"
+      },
+      {
+        "label": "5 Industry",
+        "sublabel": "Mentors",
+        "icon": "mentors"
+      }
+    ],
+    "mentorEyebrow": "MTO PROGRAM FACULTY",
+    "mentorHeading": "Learn From Industry Leaders",
+    "mentorIds": [
+      "mentor-arif-rahman",
+      "mentor-tanvir-hossain",
+      "mentor-mir-hasib",
+      "mentor-fahim-ahmed",
+      "mentor-sayem-chowdhury"
+    ],
+    "ctaText": "Explore the Program",
+    "ctaHref": "#courses",
+    "classStartLabel": "Classes begin",
+    "classStartDate": "December 1",
+    "startDate": "2026-12-01",
+    "badgeText": "FEATURED PROGRAM",
+    "imagePlaceholder": "/images/hero-campus.jpg",
     "order": 1,
     "provenance": {
       "class": "B",
       "verified": false,
-      "source": "Seeded from content/catalog/batches.json batch-el-2026-01 (Gate B0 deferred until official curriculum review)",
+      "source": "Approved MTO Readiness Program Reference Specification",
       "verifiedBy": null,
       "verifiedOn": null
     }
   },
   {
-    "id": "slide-course-corporate-finance",
-    "courseId": "corporate-finance",
-    "title": "Corporate Finance & Capital Structuring",
-    "headline": "Advanced Financial Modeling, Capital Budgeting & Valuation",
-    "description": "Practical offline masterclass on financial strategy, capital allocation, debt syndication, and M&A for modern corporate directors.",
-    "ctaText": "View Course Details",
-    "ctaHref": "/courses/corporate-finance",
-    "badgeText": "APPLICATIONS OPEN",
-    "startDate": "04 Dec 2026",
-    "duration": "6 Weeks (Weekend)",
-    "venue": "Dhanmondi, Dhaka",
-    "imagePlaceholder": "/images/hero-finance.jpg",
-    "imageObjectPosition": "35% center",
+    "id": "slide-irgp",
+    "programType": "irgp",
+    "eyebrow": "COMPLETED PROGRAM",
+    "title": "IRGP",
+    "subtitle": "Industry Readiness Graduate Program",
+    "headline": "Industry Readiness Graduate Program (IRGP)",
+    "description": "A comprehensive, industry-focused program to build real-world skills, professional readiness, and career confidence for university students.",
+    "highlights": [
+      {
+        "label": "10 Focus",
+        "sublabel": "Areas",
+        "icon": "areas"
+      },
+      {
+        "label": "8 Industry",
+        "sublabel": "Mentors",
+        "icon": "mentors"
+      },
+      {
+        "label": "Internship &",
+        "sublabel": "Job Support",
+        "icon": "career"
+      }
+    ],
+    "mentorHeading": "Meet Our IRGP Mentors",
+    "mentorIds": [
+      "mentor-shahnawaj-chowdhury",
+      "mentor-gm-kamrul",
+      "mentor-istiaque-bhuiyan",
+      "mentor-munaf-chowdhury",
+      "mentor-ilmul-sajib",
+      "mentor-biplob-rahul",
+      "mentor-zia-ashraf",
+      "mentor-sayeda-salma"
+    ],
+    "ctaText": "Explore the IRGP Story",
+    "ctaHref": "#reviews",
+    "secondaryCtaText": "View Learner Experiences",
+    "secondaryCtaHref": "#reviews",
+    "badgeText": "COMPLETED PROGRAM",
+    "imagePlaceholder": "/images/hero-campus.jpg",
     "order": 2,
     "provenance": {
       "class": "B",
       "verified": false,
-      "source": "Seeded from content/catalog/batches.json batch-cf-2026-01 (Gate B0 deferred until official curriculum review)",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "slide-explore-all-courses",
-    "title": "Lead Nation Academy Executive Education",
-    "headline": "Accelerate Leadership Through In-Person Executive Masterclasses",
-    "description": "Explore our portfolio of offline executive programs delivered at our Dhanmondi Campus in Dhaka. Designed for senior decision-makers.",
-    "ctaText": "Explore All Courses",
-    "ctaHref": "/courses",
-    "badgeText": "EXECUTIVE PORTFOLIO",
-    "duration": "Weekend Cohorts",
-    "venue": "Dhanmondi, Dhaka",
-    "imagePlaceholder": "/images/hero-campus.jpg",
-    "imageObjectPosition": "65% center",
-    "order": 3,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Homepage catalog CTA slide (Gate B0 deferred until official launch)",
+      "source": "Approved IRGP Reference Promotional Specification",
       "verifiedBy": null,
       "verifiedOn": null
     }

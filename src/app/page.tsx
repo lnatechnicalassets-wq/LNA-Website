@@ -39,8 +39,8 @@ export default async function HomePage() {
   return (
     <MentorQuickViewProvider>
       <div className="flex flex-col bg-surface-base">
-        {/* 1. Hero Section (HeroSlider + Smooth Curved Transition + Centered Academy Intro) */}
-        <HeroSection slides={heroSlides} />
+        {/* 1. Hero Section (HeroSlider + Two-Slide Mentor Showcase) */}
+        <HeroSection slides={heroSlides} mentors={mentors} />
 
         {/* 2. Partners Section (Corporate Sector Alignments) */}
         <PartnersSection partners={partners} />

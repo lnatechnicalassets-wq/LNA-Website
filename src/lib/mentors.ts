@@ -27,6 +27,19 @@ const mentorAvatars: Record<string, string> = {
   "mentor-pg-01": "/images/mentor-kamrul.jpg",
   "mentor-pg-02": "/images/mentor-anisur.jpg",
   "mentor-pg-03": "/images/mentor-tariq.jpg",
+  "mentor-arif-rahman": "/images/mentor-arif-rahman.jpg",
+  "mentor-tanvir-hossain": "/images/mentor-tanvir-hossain.jpg",
+  "mentor-mir-hasib": "/images/mentor-mir-hasib.jpg",
+  "mentor-fahim-ahmed": "/images/mentor-fahim-ahmed.jpg",
+  "mentor-sayem-chowdhury": "/images/mentor-sayem-chowdhury.jpg",
+  "mentor-shahnawaj-chowdhury": "/images/mentor-shahnawaj-chowdhury.jpg",
+  "mentor-gm-kamrul": "/images/mentor-gm-kamrul.jpg",
+  "mentor-istiaque-bhuiyan": "/images/mentor-istiaque-bhuiyan.jpg",
+  "mentor-munaf-chowdhury": "/images/mentor-munaf-chowdhury.jpg",
+  "mentor-ilmul-sajib": "/images/mentor-ilmul-sajib.jpg",
+  "mentor-biplob-rahul": "/images/mentor-biplob-rahul.jpg",
+  "mentor-zia-ashraf": "/images/mentor-zia-ashraf.jpg",
+  "mentor-sayeda-salma": "/images/mentor-sayeda-salma.jpg",
 };
 
 const defaultAvatars = [
