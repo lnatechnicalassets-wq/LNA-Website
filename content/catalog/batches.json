@@ -132,5 +132,49 @@
       "verifiedBy": null,
       "verifiedOn": null
     }
+  },
+  {
+    "id": "batch-mto-2026-01",
+    "courseId": "mto-readiness",
+    "batchNumber": 1,
+    "name": "MTO Readiness Cohort 1",
+    "startDate": "2026-12-01",
+    "endDate": "2027-01-31",
+    "scheduleDescription": "16 Sessions (1.5h each)",
+    "capacity": 30,
+    "enrolledCount": 18,
+    "seatHoldDurationMinutes": 30,
+    "feePoisha": 750000,
+    "status": "open_for_enrollment",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved MTO batch schedule",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "batch-irgp-cohort-1",
+    "courseId": "irgp",
+    "batchNumber": 1,
+    "name": "IRGP Cohort 1",
+    "startDate": "2025-09-01",
+    "endDate": "2025-11-30",
+    "scheduleDescription": "10 focus areas (8 industry mentors)",
+    "capacity": 40,
+    "enrolledCount": 40,
+    "seatHoldDurationMinutes": 30,
+    "feePoisha": 0,
+    "status": "completed",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Completed IRGP cohort record",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
   }
 ]

@@ -3,6 +3,7 @@ export * from "./partners-section";
 export * from "./partners-strip";
 export * from "./courses-section";
 export * from "./course-card";
+export * from "./course-details-modal";
 export * from "./course-artwork";
 export * from "./featured-courses-section";
 export * from "./events-section";

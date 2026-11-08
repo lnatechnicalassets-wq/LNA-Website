@@ -2,9 +2,9 @@
   {
     "id": "data-analytics",
     "title": "Data Analytics & Business Intelligence",
-    "subtitle": "Turn complex data into actionable executive insights and automated reporting systems.",
+    "subtitle": "Turn data into actionable business insights.",
     "category": "Skill Development",
-    "summary": "Turn data into actionable business insights with executive dashboards.",
+    "summary": "Turn data into actionable business insights.",
     "description": "An intensive offline masterclass covering executive business intelligence, automated KPI dashboards, and data-driven decision frameworks for senior leaders.",
     "learningOutcomes": [
       "Work with real enterprise datasets",
@@ -16,19 +16,29 @@
       "Department Heads and Strategy Directors",
       "Founders and Commercial Executives"
     ],
-    "prerequisites": ["Familiarity with spreadsheets and basic business metrics"],
+    "prerequisites": [
+      "Familiarity with spreadsheets and basic business metrics"
+    ],
     "modules": [
       {
         "id": "mod-da-01",
         "title": "Data Engineering & Dashboard Architecture",
         "duration": "4 Weeks",
-        "topics": ["Data pipelines", "Executive KPI visualization", "Power BI / Tableau"]
+        "topics": [
+          "Data pipelines",
+          "Executive KPI visualization",
+          "Power BI / Tableau"
+        ]
       },
       {
         "id": "mod-da-02",
         "title": "Predictive Analytics & Decision Modeling",
         "duration": "4 Weeks",
-        "topics": ["Forecasting models", "Scenario analysis", "Executive presentation"]
+        "topics": [
+          "Forecasting models",
+          "Scenario analysis",
+          "Executive presentation"
+        ]
       }
     ],
     "deliveryMode": "offline",
@@ -48,7 +58,7 @@
     "title": "Executive Leadership & Strategic Governance",
     "subtitle": "Master executive decision-making, strategic alignment, and board-level leadership.",
     "category": "Leadership & Strategy",
-    "summary": "Master strategic decision-making and board governance in an intensive executive program.",
+    "summary": "Master strategic decision-making and board governance.",
     "description": "The Executive Leadership & Strategic Governance program provides senior executives with actionable frameworks to navigate complex institutional challenges, formulate corporate strategy, and establish high-accountability organizational governance.",
     "learningOutcomes": [
       "Formulate agile strategic corporate roadmaps",
@@ -90,13 +100,21 @@
         "id": "mod-el-03",
         "title": "Executive Influence & Team Orchestration",
         "duration": "2 Weeks",
-        "topics": ["High-stakes negotiation", "Crisis leadership", "Talent management systems"]
+        "topics": [
+          "High-stakes negotiation",
+          "Crisis leadership",
+          "Talent management systems"
+        ]
       },
       {
         "id": "mod-el-04",
         "title": "Capstone Strategic Simulation",
         "duration": "2 Weeks",
-        "topics": ["Enterprise simulation", "Board presentation pitch", "Peer strategic review"]
+        "topics": [
+          "Enterprise simulation",
+          "Board presentation pitch",
+          "Peer strategic review"
+        ]
       }
     ],
     "deliveryMode": "offline",
@@ -107,6 +125,136 @@
       "class": "B",
       "verified": false,
       "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mto-readiness",
+    "title": "MTO Readiness Program",
+    "subtitle": "Graduate Career & Leadership Accelerator",
+    "category": "Career Readiness",
+    "summary": "Graduate Career & Leadership Accelerator",
+    "description": "An intensive leadership and career readiness accelerator designed to prepare high-potential university graduates for Management Trainee Officer (MTO) recruitment in leading multinational and national corporations.",
+    "learningOutcomes": [
+      "Aptitude test mastery and analytical problem solving",
+      "Comprehensive business case interview simulations",
+      "Assessment center team dynamics and presentation skills",
+      "Executive personal branding and leadership presence"
+    ],
+    "targetAudience": [
+      "Final-year undergraduate and graduate students",
+      "Recent university graduates targeting corporate MTO tracks",
+      "Early-career professionals aiming for fast-track leadership roles"
+    ],
+    "prerequisites": [
+      "Graduating within 12 months or graduated within the last 2 years",
+      "Commitment to intensive offline weekend sessions"
+    ],
+    "modules": [
+      {
+        "id": "mod-mto-01",
+        "title": "Corporate Aptitude & Analytical Problem Solving",
+        "duration": "4 Sessions",
+        "topics": [
+          "Analytical reasoning",
+          "Numerical problem solving",
+          "Critical comprehension"
+        ]
+      },
+      {
+        "id": "mod-mto-02",
+        "title": "Business Case Analysis & Strategic Frameworks",
+        "duration": "4 Sessions",
+        "topics": [
+          "Market entry cases",
+          "Profitability diagnosis",
+          "Executive synthesis"
+        ]
+      },
+      {
+        "id": "mod-mto-03",
+        "title": "Assessment Center Dynamics & Group Exercises",
+        "duration": "4 Sessions",
+        "topics": [
+          "Leaderless group discussions",
+          "In-tray simulations",
+          "Team consensus"
+        ]
+      },
+      {
+        "id": "mod-mto-04",
+        "title": "Boardroom Presentations & Leadership Communication",
+        "duration": "4 Sessions",
+        "topics": [
+          "Executive storytelling",
+          "Stress interviews",
+          "Personal leadership branding"
+        ]
+      }
+    ],
+    "deliveryMode": "offline",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "status": "published",
+    "featured": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved MTO program curriculum",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "irgp",
+    "title": "Industry Readiness Graduate Program",
+    "subtitle": "Industry-focused learning and career preparation.",
+    "category": "Industry Readiness",
+    "summary": "Industry-focused learning and career preparation.",
+    "description": "A comprehensive industry-readiness initiative empowering graduates with real-world skills, direct executive mentorship, and career placement support across leading corporate institutions.",
+    "learningOutcomes": [
+      "Cross-sector functional business literacy",
+      "Corporate governance, compliance, and workplace culture",
+      "Hands-on project work under senior corporate mentors",
+      "Guaranteed interview and placement support"
+    ],
+    "targetAudience": [
+      "University graduates seeking transition to formal corporate careers",
+      "Young professionals seeking cross-industry mobility"
+    ],
+    "prerequisites": [
+      "Undergraduate degree or equivalent"
+    ],
+    "modules": [
+      {
+        "id": "mod-irgp-01",
+        "title": "Industry Foundations & Functional Excellence",
+        "duration": "5 Weeks",
+        "topics": [
+          "Banking & Telecom",
+          "Supply Chain & Retail",
+          "Digital Commerce"
+        ]
+      },
+      {
+        "id": "mod-irgp-02",
+        "title": "Corporate Practice & Executive Mentorship",
+        "duration": "5 Weeks",
+        "topics": [
+          "Cross-functional projects",
+          "Workplace ethics",
+          "Leadership communication"
+        ]
+      }
+    ],
+    "deliveryMode": "offline",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "status": "published",
+    "featured": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "LNA IRGP cohort 1 records",
       "verifiedBy": null,
       "verifiedOn": null
     }
@@ -128,19 +276,29 @@
       "Corporate Bankers and Investment Officers",
       "Treasury Managers and Private Equity Associates"
     ],
-    "prerequisites": ["Solid foundation in accounting principles or 3+ years in corporate finance"],
+    "prerequisites": [
+      "Solid foundation in accounting principles or 3+ years in corporate finance"
+    ],
     "modules": [
       {
         "id": "mod-cf-01",
         "title": "Financial Statement Engineering & Analysis",
         "duration": "2 Weeks",
-        "topics": ["Cash flow forensics", "Quality of earnings", "Capital expenditure audits"]
+        "topics": [
+          "Cash flow forensics",
+          "Quality of earnings",
+          "Capital expenditure audits"
+        ]
       },
       {
         "id": "mod-cf-02",
         "title": "Valuation Methodologies & M&A",
         "duration": "2 Weeks",
-        "topics": ["Discounted cash flow modeling", "Trading comparables", "Deal structuring"]
+        "topics": [
+          "Discounted cash flow modeling",
+          "Trading comparables",
+          "Deal structuring"
+        ]
       },
       {
         "id": "mod-cf-03",
@@ -190,19 +348,31 @@
         "id": "mod-dt-01",
         "title": "Enterprise Modernization & Cloud Paradigms",
         "duration": "2 Weeks",
-        "topics": ["Cloud migration strategy", "API economies", "Legacy modernization"]
+        "topics": [
+          "Cloud migration strategy",
+          "API economies",
+          "Legacy modernization"
+        ]
       },
       {
         "id": "mod-dt-02",
         "title": "Applied AI & Machine Learning Strategy",
         "duration": "2 Weeks",
-        "topics": ["Generative AI business cases", "LLM evaluation", "Process automation"]
+        "topics": [
+          "Generative AI business cases",
+          "LLM evaluation",
+          "Process automation"
+        ]
       },
       {
         "id": "mod-dt-03",
         "title": "Cybersecurity, Compliance & Data Ethics",
         "duration": "2 Weeks",
-        "topics": ["Data governance frameworks", "Threat modeling", "Regulatory compliance"]
+        "topics": [
+          "Data governance frameworks",
+          "Threat modeling",
+          "Regulatory compliance"
+        ]
       }
     ],
     "deliveryMode": "offline",
@@ -234,19 +404,29 @@
       "Supply Chain Heads and Procurement Leads",
       "General Managers in Manufacturing and Distribution"
     ],
-    "prerequisites": ["3+ years in operational management or logistics"],
+    "prerequisites": [
+      "3+ years in operational management or logistics"
+    ],
     "modules": [
       {
         "id": "mod-so-01",
         "title": "Supply Chain Architecture & Risk Modeling",
         "duration": "4 Weeks",
-        "topics": ["Supplier networks", "Disruption hedging", "Logistics technology"]
+        "topics": [
+          "Supplier networks",
+          "Disruption hedging",
+          "Logistics technology"
+        ]
       },
       {
         "id": "mod-so-02",
         "title": "Lean Operations & Process Engineering",
         "duration": "4 Weeks",
-        "topics": ["Six Sigma principles", "Bottleneck reduction", "Quality management"]
+        "topics": [
+          "Six Sigma principles",
+          "Bottleneck reduction",
+          "Quality management"
+        ]
       }
     ],
     "deliveryMode": "offline",
@@ -278,19 +458,29 @@
       "Board Compensation Committee Members",
       "Managing Directors and Executive Recruiters"
     ],
-    "prerequisites": ["Senior HR or executive management experience"],
+    "prerequisites": [
+      "Senior HR or executive management experience"
+    ],
     "modules": [
       {
         "id": "mod-pg-01",
         "title": "Executive Compensation & Incentive Design",
         "duration": "3 Weeks",
-        "topics": ["Equity schemes", "Performance KPIs", "Retention agreements"]
+        "topics": [
+          "Equity schemes",
+          "Performance KPIs",
+          "Retention agreements"
+        ]
       },
       {
         "id": "mod-pg-02",
         "title": "Board Succession & Governance Protocols",
         "duration": "3 Weeks",
-        "topics": ["Succession pipelines", "Leadership evaluation", "Culture audits"]
+        "topics": [
+          "Succession pipelines",
+          "Leadership evaluation",
+          "Culture audits"
+        ]
       }
     ],
     "deliveryMode": "offline",

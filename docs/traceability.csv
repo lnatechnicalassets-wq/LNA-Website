@@ -14,7 +14,7 @@ FR-CMS-005,FR,"Secure image upload pipeline validating format, dimensions, file 
 FR-CRS-001,FR,"Course creation interface storing syllabus, mentors, eligibility, outcomes, FAQs, and refund terms.",M,P8,"app/(admin), server",AT-13,not_started,RETAIN,
 FR-CRS-002,FR,"Course batch scheduling managing dates, capacity, venue, pricing, and enrollment deadlines.",M,P8,"app/(admin), server",AT-13,not_started,RETAIN,
 FR-CRS-003,FR,"Course catalogue grouping batches by Open, Upcoming, and Closed without text search.",M,P4,app/(public)/courses,AT-15,not_started,RETAIN,
-FR-CRS-004,FR,"Homepage displaying open course batches, falling back to upcoming batches when none are open.",M,P4,app/(public),AT-15,implemented,RETAIN,"src/components/home/courses-section.tsx, src/components/home/course-card.tsx, src/components/home/courses-section.test.tsx"
+FR-CRS-004,FR,"Homepage displaying open course batches, falling back to upcoming batches when none are open.",M,P4,app/(public),AT-15,implemented,RETAIN,"src/components/home/courses-section.tsx, src/components/home/course-card.tsx, src/components/home/course-details-modal.tsx"
 FR-CRS-005,FR,"Course details page presenting batch logistics, available seats, and final payable fees upfront.",M,P4,app/(public)/courses,AT-15,implemented,RETAIN,"src/app/courses/[slug]/page.tsx, src/app/courses/[slug]/page.test.tsx"
 FR-CRS-006,FR,Seat reservation engine maintaining holds during checkout and preventing overselling beyond capacity.,M,P9,"supabase, server",AT-04,not_started,RETAIN,
 FR-CRS-007,FR,"Batch archiving preserving complete historical schedule, pricing, enrollment, and certification records.",M,P8,"app/(admin), server",AT-13,not_started,RETAIN,
