@@ -9,4 +9,5 @@ export * from "./faq";
 export * from "./contact";
 export * from "./irgp";
 export * from "./internship";
+export * from "./news";
 export * from "./repository";

@@ -1,20 +1,57 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 9 November 2026  
-**Session Context:** Phase 4 Course Experience — Implemented dedicated, accessible course details pages for MTO Readiness Program (`/courses/mto-readiness`) and Industry Readiness Graduate Program (`/courses/irgp`), replacing the course-details popup flow. Converted homepage course cards and hero CTAs to direct accessible navigation links. Verified via Next.js production build (`next build` 104/104 static routes generated with 0 errors).
+**Session Context:** Phase 4 News & Updates — Implemented dedicated News & Updates archive (`/news`) and dynamic article pages (`/news/[slug]`) adhering strictly to approved visual designs. Added "News & Updates" with active state to global desktop and mobile navigation and footer Explore links. Fully data-driven through typed `NewsArticle` schema and JSON repository. Verified via Next.js production build (`next build` 112/112 static routes generated with 0 errors).
 
 ---
 
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 4 (Public Website Core)
-- **Current Task:** Dedicated Course Details Pages for MTO & IRGP (`/courses/[slug]`)
-- **Task Status:** Fully Completed & Verified via Production Build (`next build` 104/104 static routes generated with 0 errors).
+- **Current Task:** Dedicated News & Updates Archive (`/news`) and Dynamic Article Pages (`/news/[slug]`)
+- **Task Status:** Fully Completed & Verified via Production Build (`next build` 112/112 static routes generated with 0 errors).
 - **Current Git Branch:** `task/p4-t5-hero-slides`
 - **Base Commit:** `b306a77` (`main`, containing merged `task/p3-t1-content-schemas` via PR #9)
 
 ---
 
 ## 2. Completed Tasks
+
+### Task P4-T17 / Dedicated News & Updates Archive & Article Pages
+- **SRS IDs Covered:** FR-PUB-001, FR-PUB-002, Rule R1, Rule R2, Rule R3, Rule R4, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R16, Rule R19
+- **Architecture & Deliverables:**
+  1. *News Content Architecture & Schema:*
+     - Created `src/lib/content/news.ts` defining `NewsArticleSchema` (id, slug, title, excerpt, category, publishedAt, updatedAt, author, readTime, coverImage, coverImageAlt, featured, status, blocks, seo, provenance).
+     - Defined `ArticleBlockSchema` supporting structured types: paragraphs, headings (levels 2/3 with stable IDs), lists (ordered/unordered), images (with optional captions), and quotes.
+     - Implemented `INewsRepository` and extended `JsonContentRepository` in `src/lib/content/repository.ts` with methods: `getAllArticles()`, `getPublishedArticles()`, `getArticleBySlug()`, `getFeaturedArticles()`, and `getRelatedArticles()`.
+     - Seeded 7 high-fidelity development demo articles (`content/news/articles.json`) with Class B provenance matching the approved reference layouts and real project photography.
+     - Updated `scripts/validate-content.mjs` to validate news schema and scan for secrets.
+  2. *News Archive (`/news`):*
+     - Server Component `src/app/news/page.tsx` pre-rendering published articles wrapped in `<Suspense>`.
+     - Client Component `src/app/news/news-archive-view.tsx` with:
+       - Header: Exact page title "News & Updates", supporting copy "Invitations, partnerships, and moments from LNA." (no mastheads or invented branding).
+       - Category Filters: All updates, Partnerships, Invitations, Program updates, Community.
+       - Labeled Search: Live text search matching title, excerpt, and body content with clear button.
+       - URL synchronization: search, category, and page state synced to query parameters (`?category=...&search=...&page=...`).
+       - Featured Composition: Asymmetric layout on unfiltered view with large lead story on left (`NewsLeadCard`) and two stacked side stories on right (`NewsCard` compact).
+       - Latest Updates: 3-column story grid beneath centered accent heading "LATEST UPDATES".
+       - Filtered/Searched View: Automatically switches to clean results grid with result count and clear filters action.
+       - Pagination: Derived from actual filtered count with numeric buttons and Prev/Next controls (hidden when total pages <= 1).
+  3. *Dynamic Article Details (`/news/[slug]`):*
+     - Server Component `src/app/news/[slug]/page.tsx` with `generateStaticParams()` pre-rendering all 7 articles, static metadata generation, and 404 handling.
+     - Client Component `src/app/news/[slug]/news-article-view.tsx`:
+       - Breadcrumbs (`News & Updates / [Category]`) and `← Back to news` navigation.
+       - Split introduction: Category, Demo article badge, large serif headline, excerpt, metadata row (`Date · Author · Reading time`), and `ArticleShare` on the left; cover image on the right.
+       - Social Sharing (`ArticleShare`): Copy link (with accessible "Copied!" feedback), LinkedIn, WhatsApp, and Email sharing with proper URL encoding.
+       - Table of Contents (`TableOfContents`): Auto-generated from actual article headings with stable IDs, smooth scroll with sticky header offset (`scroll-mt-28`), active heading highlighting via scroll observer, and mobile collapsible accordion.
+       - Safe Content Rendering: Formatted paragraphs, serif section headings, lists, captioned figures, and blockquotes without unsanitized HTML.
+       - Related Updates: 3-column grid featuring up to 3 published articles (preferring same category, excluding current).
+  4. *Global Navigation & Footer Integration:*
+     - Added "News & Updates" (`/news`) to `content/site/navigation.json`.
+     - Updated `SiteHeader` and `MobileNav` to display active state (deep teal `#086477` and underline indicator) on both `/news` and `/news/[slug]`.
+     - Added "News & Updates" under the Explore column in `SiteFooter`.
+  5. *Quality & Verification:*
+     - Next.js production build (`pnpm build`): 112/112 static routes generated cleanly with zero errors.
+     - Content validation script (`node scripts/validate-content.mjs`): All content schemas and referential integrity passed.
 
 ### Task P4-T16 / Dedicated Course Details Pages (MTO Readiness & IRGP)
 - **SRS IDs Covered:** FR-PUB-001, FR-PUB-002, FR-PUB-003, Rule R1, Rule R2, Rule R3, Rule R4, Rule R5, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R16, Rule R19

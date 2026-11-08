@@ -24,6 +24,7 @@ import { FaqItem, FaqItemSchema } from "./faq";
 import { ContactConfig, ContactConfigSchema } from "./contact";
 import { IrgpData, IrgpDataSchema } from "./irgp";
 import { Internship, InternshipSchema } from "./internship";
+import { NewsArticle, NewsArticleSchema } from "./news";
 
 export interface ICourseRepository {
   getAllCourses(): Promise<Course[]>;
@@ -53,11 +54,19 @@ export interface IHomeRepository {
   getInternships(): Promise<Internship[]>;
 }
 
+export interface INewsRepository {
+  getAllArticles(): Promise<NewsArticle[]>;
+  getPublishedArticles(): Promise<NewsArticle[]>;
+  getArticleBySlug(slug: string): Promise<NewsArticle | null>;
+  getFeaturedArticles(limit?: number): Promise<NewsArticle[]>;
+  getRelatedArticles(currentSlug: string, category: string, limit?: number): Promise<NewsArticle[]>;
+}
+
 /**
  * JsonContentRepository: Loads and validates JSON content files.
  * Provides early development and static seed capabilities before Supabase DB migrations.
  */
-export class JsonContentRepository implements ICourseRepository, IBatchRepository, IHomeRepository {
+export class JsonContentRepository implements ICourseRepository, IBatchRepository, IHomeRepository, INewsRepository {
   private contentDir: string;
   private cachedCourses: Course[] | null = null;
   private cachedBatches: Batch[] | null = null;
@@ -72,6 +81,7 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
   private cachedFaqs: FaqItem[] | null = null;
   private cachedContactConfig: ContactConfig | null = null;
   private cachedInternships: Internship[] | null = null;
+  private cachedArticles: NewsArticle[] | null = null;
 
   constructor(contentDir = path.join(process.cwd(), "content")) {
     this.contentDir = contentDir;
@@ -315,6 +325,48 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
     this.cachedInternships = sorted;
     return sorted;
   }
+
+  // --- News & Updates ---
+  async getAllArticles(): Promise<NewsArticle[]> {
+    if (this.cachedArticles) return this.cachedArticles;
+
+    const file = path.join(this.contentDir, "news", "articles.json");
+    if (!fs.existsSync(file)) return [];
+
+    const raw = fs.readFileSync(file, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = z.array(NewsArticleSchema).parse(parsed);
+
+    this.cachedArticles = validated;
+    return validated;
+  }
+
+  async getPublishedArticles(): Promise<NewsArticle[]> {
+    const articles = await this.getAllArticles();
+    return articles
+      .filter((a) => a.status === "published")
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  }
+
+  async getArticleBySlug(slug: string): Promise<NewsArticle | null> {
+    const articles = await this.getAllArticles();
+    return articles.find((a) => a.slug === slug && a.status === "published") || null;
+  }
+
+  async getFeaturedArticles(limit = 3): Promise<NewsArticle[]> {
+    const published = await this.getPublishedArticles();
+    const explicitFeatured = published.filter((a) => a.featured);
+    const nonFeatured = published.filter((a) => !a.featured);
+    return [...explicitFeatured, ...nonFeatured].slice(0, limit);
+  }
+
+  async getRelatedArticles(currentSlug: string, category: string, limit = 3): Promise<NewsArticle[]> {
+    const published = await this.getPublishedArticles();
+    const candidates = published.filter((a) => a.slug !== currentSlug);
+    const sameCategory = candidates.filter((a) => a.category === category);
+    const differentCategory = candidates.filter((a) => a.category !== category);
+    return [...sameCategory, ...differentCategory].slice(0, limit);
+  }
 }
 
 // Global singleton instance for JSON content repository
@@ -329,6 +381,10 @@ export function getBatchRepository(): IBatchRepository {
 }
 
 export function getHomeRepository(): IHomeRepository {
+  return defaultRepo;
+}
+
+export function getNewsRepository(): INewsRepository {
   return defaultRepo;
 }
 

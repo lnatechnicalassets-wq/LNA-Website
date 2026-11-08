@@ -146,6 +146,14 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
                   Learner Experiences
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/news"
+                  className="hover:text-[#086477] transition-colors"
+                >
+                  News &amp; Updates
+                </Link>
+              </li>
             </ul>
           </div>
 

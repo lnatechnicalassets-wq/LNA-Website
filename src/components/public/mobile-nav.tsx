@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, Phone, Mail, MapPin } from "lucide-react";
 import { DemoLogo } from "@/components/ui/demo-logo";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { NavItem, Organization } from "@/lib/content";
 
 export interface MobileNavProps {
@@ -21,6 +23,7 @@ export interface MobileNavProps {
  * Features focus trapping, Escape key dismissal, and generous touch targets.
  */
 export function MobileNav({ open, onOpenChange, navItems, cta, organization }: MobileNavProps) {
+  const pathname = usePathname();
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -53,17 +56,28 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
             {/* Navigation Links List */}
             <nav aria-label="Mobile Navigation Links">
               <ul className="space-y-1">
-                {navItems.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => onOpenChange(false)}
-                      className="flex items-center min-h-[44px] px-3 py-2.5 rounded-lg text-base font-semibold text-primary-900 hover:bg-surface-muted hover:text-primary-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
+                {navItems.map((item) => {
+                  const isNews = item.href === "/news";
+                  const isActive = isNews && (pathname === "/news" || pathname.startsWith("/news/"));
+
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={() => onOpenChange(false)}
+                        aria-current={isActive ? "page" : undefined}
+                        className={cn(
+                          "flex items-center min-h-[44px] px-3 py-2.5 rounded-lg text-base font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600",
+                          isActive
+                            ? "text-[#086477] bg-[#E0F3F5] font-bold border-l-4 border-[#086477]"
+                            : "text-primary-900 hover:bg-surface-muted hover:text-primary-700"
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </nav>
 
