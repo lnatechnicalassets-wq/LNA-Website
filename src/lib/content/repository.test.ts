@@ -84,7 +84,7 @@ describe("Content Repository Abstraction (Phase 3)", () => {
       const repo = getHomeRepository();
       const slides = await repo.getHeroSlides();
 
-      expect(slides.length).toBeGreaterThanOrEqual(3);
+      expect(slides.length).toBe(2);
       expect(slides[0].order).toBeLessThanOrEqual(slides[1].order);
       for (const slide of slides) {
         expect(slide.ctaHref).toBeDefined();

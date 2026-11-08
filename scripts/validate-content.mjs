@@ -128,22 +128,37 @@ const BatchSchema = z
     message: "discountFeePoisha cannot exceed feePoisha",
   });
 
+const ProgramHighlightSchema = z.object({
+  label: z.string().min(1),
+  sublabel: z.string().min(1),
+  icon: z.string().optional(),
+});
+
 const HeroSlideSchema = z.object({
   id: z.string().min(1),
+  programType: z.enum(["mto", "irgp"]).optional(),
   courseId: z.string().optional(),
-  title: z.string().min(3),
-  headline: z.string().min(5),
+  title: z.string().min(2),
+  subtitle: z.string().optional(),
+  headline: z.string().min(2).optional(),
   description: z.string().min(10),
+  eyebrow: z.string().optional(),
+  highlights: z.array(ProgramHighlightSchema).optional(),
+  mentorHeading: z.string().optional(),
+  mentorEyebrow: z.string().optional(),
+  mentorIds: z.array(z.string()).optional(),
   ctaText: z.string().min(2),
   ctaHref: z.string().min(1),
   secondaryCtaText: z.string().optional(),
   secondaryCtaHref: z.string().optional(),
   badgeText: z.string().optional(),
   startDate: z.string().optional(),
+  classStartLabel: z.string().optional(),
+  classStartDate: z.string().optional(),
   duration: z.string().optional(),
   venue: z.string().optional(),
   imageObjectPosition: z.string().optional(),
-  imagePlaceholder: z.string().min(1),
+  imagePlaceholder: z.string().optional(),
   order: z.number().int().nonnegative(),
   provenance: ProvenanceSchema,
 });

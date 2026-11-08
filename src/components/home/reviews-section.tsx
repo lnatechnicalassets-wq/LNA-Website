@@ -27,6 +27,20 @@ export function ReviewsSection({ reviews, irgpData }: ReviewsSectionProps) {
 
   const data = irgpData;
 
+  // Global listener to open IRGP Story Modal from Hero or external CTAs
+  useEffect(() => {
+    const handleOpen = () => setIsStoryModalOpen(true);
+    window.addEventListener("lna:open-irgp-story", handleOpen);
+    return () => window.removeEventListener("lna:open-irgp-story", handleOpen);
+  }, []);
+
+  const handleStoryModalChange = (open: boolean) => {
+    setIsStoryModalOpen(open);
+    if (!open && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("lna:close-irgp-story"));
+    }
+  };
+
   // One-time entrance animation trigger via IntersectionObserver
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -201,7 +215,7 @@ export function ReviewsSection({ reviews, irgpData }: ReviewsSectionProps) {
       {/* IRGP Success Story Modal */}
       <IrgpStoryModal
         isOpen={isStoryModalOpen}
-        onOpenChange={setIsStoryModalOpen}
+        onOpenChange={handleStoryModalChange}
         story={data.story}
         gallery={data.gallery}
         reviews={reviews}

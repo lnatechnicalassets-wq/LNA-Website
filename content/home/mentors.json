@@ -7,7 +7,9 @@
     "bio": "People operations leader specializing in organizational design, executive talent development, and high-performance cultures across hypergrowth tech environments.",
     "portraitSrc": "/images/mentor-nadia.jpg",
     "linkedInUrl": "https://linkedin.com/in/nadia-islam-demo",
-    "categories": ["HR & Operations"],
+    "categories": [
+      "HR & Operations"
+    ],
     "expertise": [
       "People Strategy",
       "Culture & Scaling",
@@ -40,8 +42,15 @@
     "bio": "Product visionary with extensive experience architecting enterprise SaaS platforms and leading high-velocity engineering and product teams globally.",
     "portraitSrc": "/images/mentor-ethan.jpg",
     "linkedInUrl": "https://linkedin.com/in/ethan-park-demo",
-    "categories": ["Technology & AI"],
-    "expertise": ["Product Strategy", "Platform Architecture", "AI Integration", "Enterprise SaaS"],
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Product Strategy",
+      "Platform Architecture",
+      "AI Integration",
+      "Enterprise SaaS"
+    ],
     "careerHistory": [
       {
         "company": "Microsoft",
@@ -67,8 +76,15 @@
     "bio": "Growth leader with 15+ years of experience scaling consumer and enterprise businesses across global markets.",
     "portraitSrc": "/images/mentor-riya.jpg",
     "linkedInUrl": "https://linkedin.com/in/riya-sharma-demo",
-    "categories": ["Marketing & Growth"],
-    "expertise": ["Growth Strategy", "Go-to-Market", "Scaling Teams", "Business Growth"],
+    "categories": [
+      "Marketing & Growth"
+    ],
+    "expertise": [
+      "Growth Strategy",
+      "Go-to-Market",
+      "Scaling Teams",
+      "Business Growth"
+    ],
     "careerHistory": [
       {
         "company": "Vellum",
@@ -106,8 +122,15 @@
     "bio": "Senior executive and board advisor who has led multinational turnarounds, IPO preparations, and enterprise governance transformations.",
     "portraitSrc": "/images/mentor-marcus.jpg",
     "linkedInUrl": "https://linkedin.com/in/marcus-reed-demo",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Executive Leadership", "Board Governance", "M&A Strategy", "Enterprise Scale"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Executive Leadership",
+      "Board Governance",
+      "M&A Strategy",
+      "Enterprise Scale"
+    ],
     "careerHistory": [
       {
         "company": "Crestline",
@@ -133,7 +156,9 @@
     "bio": "Corporate strategy director advising Fortune 500 leadership on international expansion, market entry, and portfolio optimization.",
     "portraitSrc": "/images/mentor-lena.jpg",
     "linkedInUrl": "https://linkedin.com/in/lena-chen-demo",
-    "categories": ["Business & Leadership"],
+    "categories": [
+      "Business & Leadership"
+    ],
     "expertise": [
       "Corporate Strategy",
       "Market Expansion",
@@ -165,12 +190,28 @@
     "bio": "Over 22 years advising enterprise boards and financial institutions across South Asia and global markets on governance, risk, and growth strategy.",
     "portraitSrc": "/images/mentor-tariq.jpg",
     "linkedInUrl": "https://linkedin.com/in/tariq-rahman-demo",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Growth Strategy", "Go-to-Market", "Scaling Teams", "Corporate Governance"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Growth Strategy",
+      "Go-to-Market",
+      "Scaling Teams",
+      "Corporate Governance"
+    ],
     "careerHistory": [
-      { "company": "Microsoft", "logoIcon": "microsoft" },
-      { "company": "BCG", "logoIcon": "bcg" },
-      { "company": "HSBC", "logoIcon": "hsbc" }
+      {
+        "company": "Microsoft",
+        "logoIcon": "microsoft"
+      },
+      {
+        "company": "BCG",
+        "logoIcon": "bcg"
+      },
+      {
+        "company": "HSBC",
+        "logoIcon": "hsbc"
+      }
     ],
     "courseId": "executive-leadership",
     "order": 6,
@@ -192,14 +233,21 @@
     "bio": "Fellow Chartered Accountant with 20+ years of leadership in corporate debt syndication, valuation advisory, and M&A transactions in Bangladesh.",
     "portraitSrc": "/images/mentor-kamrul.jpg",
     "linkedInUrl": "https://linkedin.com/in/kamrul-hassan-demo",
-    "categories": ["Finance & Banking"],
+    "categories": [
+      "Finance & Banking"
+    ],
     "expertise": [
       "Corporate Finance",
       "Debt Syndication",
       "Valuation Advisory",
       "M&A Transactions"
     ],
-    "careerHistory": [{ "company": "HSBC", "logoIcon": "hsbc" }],
+    "careerHistory": [
+      {
+        "company": "HSBC",
+        "logoIcon": "hsbc"
+      }
+    ],
     "courseId": "corporate-finance",
     "order": 7,
     "isPlaceholder": true,
@@ -220,14 +268,21 @@
     "bio": "Enterprise technology leader guiding cloud migration, data governance, and strategic technology modernization for national and multinational conglomerates.",
     "portraitSrc": "/images/mentor-farah.jpg",
     "linkedInUrl": "https://linkedin.com/in/farah-chowdhury-demo",
-    "categories": ["Technology & AI"],
+    "categories": [
+      "Technology & AI"
+    ],
     "expertise": [
       "Digital Strategy",
       "Cloud Modernization",
       "Data Governance",
       "Enterprise Architecture"
     ],
-    "careerHistory": [{ "company": "Google", "logoIcon": "google" }],
+    "careerHistory": [
+      {
+        "company": "Google",
+        "logoIcon": "google"
+      }
+    ],
     "courseId": "digital-transformation",
     "order": 8,
     "isPlaceholder": true,
@@ -256,7 +311,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Technology & AI"],
+    "categories": [
+      "Technology & AI"
+    ],
     "published": true
   },
   {
@@ -275,7 +332,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Technology & AI"],
+    "categories": [
+      "Technology & AI"
+    ],
     "published": true
   },
   {
@@ -294,7 +353,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Business & Leadership"],
+    "categories": [
+      "Business & Leadership"
+    ],
     "published": true
   },
   {
@@ -313,7 +374,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Business & Leadership"],
+    "categories": [
+      "Business & Leadership"
+    ],
     "published": true
   },
   {
@@ -332,7 +395,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Finance & Banking"],
+    "categories": [
+      "Finance & Banking"
+    ],
     "published": true
   },
   {
@@ -351,7 +416,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Finance & Banking"],
+    "categories": [
+      "Finance & Banking"
+    ],
     "published": true
   },
   {
@@ -370,7 +437,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Finance & Banking"],
+    "categories": [
+      "Finance & Banking"
+    ],
     "published": true
   },
   {
@@ -389,7 +458,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Technology & AI"],
+    "categories": [
+      "Technology & AI"
+    ],
     "published": true
   },
   {
@@ -408,7 +479,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Technology & AI"],
+    "categories": [
+      "Technology & AI"
+    ],
     "published": true
   },
   {
@@ -427,7 +500,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Technology & AI"],
+    "categories": [
+      "Technology & AI"
+    ],
     "published": true
   },
   {
@@ -446,7 +521,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Technology & AI"],
+    "categories": [
+      "Technology & AI"
+    ],
     "published": true
   },
   {
@@ -465,7 +542,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["HR & Operations"],
+    "categories": [
+      "HR & Operations"
+    ],
     "published": true
   },
   {
@@ -484,7 +563,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["HR & Operations"],
+    "categories": [
+      "HR & Operations"
+    ],
     "published": true
   },
   {
@@ -503,7 +584,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["HR & Operations"],
+    "categories": [
+      "HR & Operations"
+    ],
     "published": true
   },
   {
@@ -522,7 +605,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["HR & Operations"],
+    "categories": [
+      "HR & Operations"
+    ],
     "published": true
   },
   {
@@ -541,7 +626,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["HR & Operations"],
+    "categories": [
+      "HR & Operations"
+    ],
     "published": true
   },
   {
@@ -560,7 +647,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["HR & Operations"],
+    "categories": [
+      "HR & Operations"
+    ],
     "published": true
   },
   {
@@ -579,7 +668,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Marketing & Growth"],
+    "categories": [
+      "Marketing & Growth"
+    ],
     "published": true
   },
   {
@@ -598,7 +689,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Marketing & Growth"],
+    "categories": [
+      "Marketing & Growth"
+    ],
     "published": true
   },
   {
@@ -617,7 +710,9 @@
       "verifiedBy": null,
       "verifiedOn": null
     },
-    "categories": ["Marketing & Growth"],
+    "categories": [
+      "Marketing & Growth"
+    ],
     "published": true
   },
   {
@@ -626,8 +721,14 @@
     "role": "VP of Product Design",
     "organization": "Figma",
     "bio": "VP of Product Design at Figma with proven expertise in Design Systems, UX Research, Product Design across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Design Systems", "UX Research", "Product Design"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Design Systems",
+      "UX Research",
+      "Product Design"
+    ],
     "careerHistory": [
       {
         "company": "Figma",
@@ -651,8 +752,14 @@
     "role": "Design Director",
     "organization": "Vellum Studios",
     "bio": "Design Director at Vellum Studios with proven expertise in Design Strategy, Brand Architecture, User Testing across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Design Strategy", "Brand Architecture", "User Testing"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Design Strategy",
+      "Brand Architecture",
+      "User Testing"
+    ],
     "careerHistory": [
       {
         "company": "Vellum",
@@ -676,8 +783,14 @@
     "role": "Head of Experience Design",
     "organization": "Nexora",
     "bio": "Head of Experience Design at Nexora with proven expertise in Interaction Design, Design Ops, Accessibility across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Interaction Design", "Design Ops", "Accessibility"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Interaction Design",
+      "Design Ops",
+      "Accessibility"
+    ],
     "careerHistory": [
       {
         "company": "Nexora",
@@ -701,8 +814,14 @@
     "role": "Principal UX Architect",
     "organization": "Google",
     "bio": "Principal UX Architect at Google with proven expertise in Enterprise UX, Data Visualization, User Journeys across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Enterprise UX", "Data Visualization", "User Journeys"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Enterprise UX",
+      "Data Visualization",
+      "User Journeys"
+    ],
     "careerHistory": [
       {
         "company": "Google",
@@ -726,8 +845,14 @@
     "role": "Creative Strategy Lead",
     "organization": "Pivona",
     "bio": "Creative Strategy Lead at Pivona with proven expertise in Creative Direction, Visual Identity, Consumer Insights across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Creative Direction", "Visual Identity", "Consumer Insights"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Creative Direction",
+      "Visual Identity",
+      "Consumer Insights"
+    ],
     "careerHistory": [
       {
         "company": "Pivona",
@@ -751,8 +876,14 @@
     "role": "Product Design Lead",
     "organization": "Airbnb",
     "bio": "Product Design Lead at Airbnb with proven expertise in Mobile Design, Service Design, Design Thinking across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Mobile Design", "Service Design", "Design Thinking"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Mobile Design",
+      "Service Design",
+      "Design Thinking"
+    ],
     "careerHistory": [
       {
         "company": "airbnb",
@@ -776,8 +907,14 @@
     "role": "Lead UX Researcher",
     "organization": "Microsoft",
     "bio": "Lead UX Researcher at Microsoft with proven expertise in Generative Research, Usability Benchmarking, Mixed Methods across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Generative Research", "Usability Benchmarking", "Mixed Methods"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Generative Research",
+      "Usability Benchmarking",
+      "Mixed Methods"
+    ],
     "careerHistory": [
       {
         "company": "Microsoft",
@@ -801,8 +938,14 @@
     "role": "VP of Brand Experience",
     "organization": "StrideWorks",
     "bio": "VP of Brand Experience at StrideWorks with proven expertise in Omnichannel Design, Experience Strategy, Customer Delight across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Omnichannel Design", "Experience Strategy", "Customer Delight"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Omnichannel Design",
+      "Experience Strategy",
+      "Customer Delight"
+    ],
     "careerHistory": [
       {
         "company": "StrideWorks",
@@ -826,8 +969,14 @@
     "role": "Head of Design Systems",
     "organization": "Novaris",
     "bio": "Head of Design Systems at Novaris with proven expertise in Component Architecture, Design Tokens, Design Governance across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Component Architecture", "Design Tokens", "Design Governance"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Component Architecture",
+      "Design Tokens",
+      "Design Governance"
+    ],
     "careerHistory": [
       {
         "company": "Novaris",
@@ -851,8 +1000,14 @@
     "role": "Principal UI/UX Designer",
     "organization": "Arcview",
     "bio": "Principal UI/UX Designer at Arcview with proven expertise in Interface Architecture, Rapid Prototyping, Design Ops across hypergrowth and scaled enterprise environments.",
-    "categories": ["Design & UX"],
-    "expertise": ["Interface Architecture", "Rapid Prototyping", "Design Ops"],
+    "categories": [
+      "Design & UX"
+    ],
+    "expertise": [
+      "Interface Architecture",
+      "Rapid Prototyping",
+      "Design Ops"
+    ],
     "careerHistory": [
       {
         "company": "Arcview",
@@ -876,8 +1031,14 @@
     "role": "Managing Director, Global Markets",
     "organization": "Morgan Stanley",
     "bio": "Managing Director, Global Markets at Morgan Stanley with proven expertise in Capital Markets, Treasury Ops, Risk Strategy across hypergrowth and scaled enterprise environments.",
-    "categories": ["Finance & Banking"],
-    "expertise": ["Capital Markets", "Treasury Ops", "Risk Strategy"],
+    "categories": [
+      "Finance & Banking"
+    ],
+    "expertise": [
+      "Capital Markets",
+      "Treasury Ops",
+      "Risk Strategy"
+    ],
     "careerHistory": [
       {
         "company": "Crestline",
@@ -901,8 +1062,14 @@
     "role": "Chief Investment Officer",
     "organization": "Apex Capital",
     "bio": "Chief Investment Officer at Apex Capital with proven expertise in Portfolio Management, Private Equity, Valuation across hypergrowth and scaled enterprise environments.",
-    "categories": ["Finance & Banking"],
-    "expertise": ["Portfolio Management", "Private Equity", "Valuation"],
+    "categories": [
+      "Finance & Banking"
+    ],
+    "expertise": [
+      "Portfolio Management",
+      "Private Equity",
+      "Valuation"
+    ],
     "careerHistory": [
       {
         "company": "BrightCore",
@@ -926,8 +1093,14 @@
     "role": "Head of Financial Planning",
     "organization": "Nexora",
     "bio": "Head of Financial Planning at Nexora with proven expertise in Corporate FP&A, Capital Allocation, Financial Modeling across hypergrowth and scaled enterprise environments.",
-    "categories": ["Finance & Banking"],
-    "expertise": ["Corporate FP&A", "Capital Allocation", "Financial Modeling"],
+    "categories": [
+      "Finance & Banking"
+    ],
+    "expertise": [
+      "Corporate FP&A",
+      "Capital Allocation",
+      "Financial Modeling"
+    ],
     "careerHistory": [
       {
         "company": "Nexora",
@@ -951,8 +1124,14 @@
     "role": "Partner, Venture Growth",
     "organization": "StrideWorks Ventures",
     "bio": "Partner, Venture Growth at StrideWorks Ventures with proven expertise in Early-Stage Financing, Deal Structuring, Due Diligence across hypergrowth and scaled enterprise environments.",
-    "categories": ["Finance & Banking"],
-    "expertise": ["Early-Stage Financing", "Deal Structuring", "Due Diligence"],
+    "categories": [
+      "Finance & Banking"
+    ],
+    "expertise": [
+      "Early-Stage Financing",
+      "Deal Structuring",
+      "Due Diligence"
+    ],
     "careerHistory": [
       {
         "company": "StrideWorks",
@@ -976,8 +1155,14 @@
     "role": "VP of Enterprise Treasury",
     "organization": "Novaris",
     "bio": "VP of Enterprise Treasury at Novaris with proven expertise in Liquidity Management, FX Strategy, Debt Financing across hypergrowth and scaled enterprise environments.",
-    "categories": ["Finance & Banking"],
-    "expertise": ["Liquidity Management", "FX Strategy", "Debt Financing"],
+    "categories": [
+      "Finance & Banking"
+    ],
+    "expertise": [
+      "Liquidity Management",
+      "FX Strategy",
+      "Debt Financing"
+    ],
     "careerHistory": [
       {
         "company": "Novaris",
@@ -1001,8 +1186,14 @@
     "role": "Head of Structured Finance",
     "organization": "Crestline Partners",
     "bio": "Head of Structured Finance at Crestline Partners with proven expertise in Credit Syndication, Project Finance, Refinancing across hypergrowth and scaled enterprise environments.",
-    "categories": ["Finance & Banking"],
-    "expertise": ["Credit Syndication", "Project Finance", "Refinancing"],
+    "categories": [
+      "Finance & Banking"
+    ],
+    "expertise": [
+      "Credit Syndication",
+      "Project Finance",
+      "Refinancing"
+    ],
     "careerHistory": [
       {
         "company": "Crestline",
@@ -1026,8 +1217,14 @@
     "role": "Director of Corporate Credit",
     "organization": "BrightCore Finance",
     "bio": "Director of Corporate Credit at BrightCore Finance with proven expertise in Credit Risk, Syndicated Lending, Asset Restructuring across hypergrowth and scaled enterprise environments.",
-    "categories": ["Finance & Banking"],
-    "expertise": ["Credit Risk", "Syndicated Lending", "Asset Restructuring"],
+    "categories": [
+      "Finance & Banking"
+    ],
+    "expertise": [
+      "Credit Risk",
+      "Syndicated Lending",
+      "Asset Restructuring"
+    ],
     "careerHistory": [
       {
         "company": "BrightCore",
@@ -1051,8 +1248,14 @@
     "role": "Head of Capital Allocation & FP&A",
     "organization": "Arcview Capital",
     "bio": "Head of Capital Allocation & FP&A at Arcview Capital with proven expertise in Capital Modeling, Debt Structuring, Treasury Oversight across hypergrowth and scaled enterprise environments.",
-    "categories": ["Finance & Banking"],
-    "expertise": ["Capital Modeling", "Debt Structuring", "Treasury Oversight"],
+    "categories": [
+      "Finance & Banking"
+    ],
+    "expertise": [
+      "Capital Modeling",
+      "Debt Structuring",
+      "Treasury Oversight"
+    ],
     "careerHistory": [
       {
         "company": "Arcview",
@@ -1076,8 +1279,14 @@
     "role": "Former President & COO",
     "organization": "OmniCorp",
     "bio": "Former President & COO at OmniCorp with proven expertise in Executive Leadership, Global Scaling, Operational Excellence across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Executive Leadership", "Global Scaling", "Operational Excellence"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Executive Leadership",
+      "Global Scaling",
+      "Operational Excellence"
+    ],
     "careerHistory": [
       {
         "company": "Crestline",
@@ -1101,8 +1310,14 @@
     "role": "Senior Advisor, Corporate Governance",
     "organization": "Lead Advisory",
     "bio": "Senior Advisor, Corporate Governance at Lead Advisory with proven expertise in Board Advisory, Succession Planning, Turnaround across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Board Advisory", "Succession Planning", "Turnaround"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Board Advisory",
+      "Succession Planning",
+      "Turnaround"
+    ],
     "careerHistory": [
       {
         "company": "Novaris",
@@ -1126,8 +1341,14 @@
     "role": "EVP of Enterprise Transformation",
     "organization": "BrightCore",
     "bio": "EVP of Enterprise Transformation at BrightCore with proven expertise in Organizational Restructuring, Culture Change, Leadership Dev across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Organizational Restructuring", "Culture Change", "Leadership Dev"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Organizational Restructuring",
+      "Culture Change",
+      "Leadership Dev"
+    ],
     "careerHistory": [
       {
         "company": "BrightCore",
@@ -1151,8 +1372,14 @@
     "role": "Managing Director, Regional Operations",
     "organization": "Arcview Global",
     "bio": "Managing Director, Regional Operations at Arcview Global with proven expertise in Regional Expansion, Strategic Partnerships, P&L Ownership across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Regional Expansion", "Strategic Partnerships", "P&L Ownership"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Regional Expansion",
+      "Strategic Partnerships",
+      "P&L Ownership"
+    ],
     "careerHistory": [
       {
         "company": "Arcview",
@@ -1176,8 +1403,14 @@
     "role": "Senior Partner, Strategy",
     "organization": "Vellum Strategic",
     "bio": "Senior Partner, Strategy at Vellum Strategic with proven expertise in Growth Diagnostics, Competitive Strategy, Corporate M&A across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Growth Diagnostics", "Competitive Strategy", "Corporate M&A"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Growth Diagnostics",
+      "Competitive Strategy",
+      "Corporate M&A"
+    ],
     "careerHistory": [
       {
         "company": "Vellum",
@@ -1201,8 +1434,14 @@
     "role": "Group Managing Director",
     "organization": "Apex Conglomerate",
     "bio": "Group Managing Director at Apex Conglomerate with proven expertise in Enterprise Restructuring, Joint Ventures, Executive Alignment across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Enterprise Restructuring", "Joint Ventures", "Executive Alignment"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Enterprise Restructuring",
+      "Joint Ventures",
+      "Executive Alignment"
+    ],
     "careerHistory": [
       {
         "company": "Crestline",
@@ -1226,8 +1465,14 @@
     "role": "Chief Transformation Officer",
     "organization": "Novaris Global",
     "bio": "Chief Transformation Officer at Novaris Global with proven expertise in Digital Agility, Operating Model Design, Leadership Coaching across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Digital Agility", "Operating Model Design", "Leadership Coaching"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Digital Agility",
+      "Operating Model Design",
+      "Leadership Coaching"
+    ],
     "careerHistory": [
       {
         "company": "Novaris",
@@ -1251,8 +1496,14 @@
     "role": "Executive Chairman",
     "organization": "StrideWorks Group",
     "bio": "Executive Chairman at StrideWorks Group with proven expertise in Capital Allocation, Stakeholder Governance, Public Board Leadership across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Capital Allocation", "Stakeholder Governance", "Public Board Leadership"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Capital Allocation",
+      "Stakeholder Governance",
+      "Public Board Leadership"
+    ],
     "careerHistory": [
       {
         "company": "StrideWorks",
@@ -1276,8 +1527,14 @@
     "role": "Director of Corporate Affairs",
     "organization": "Arcview Corp",
     "bio": "Director of Corporate Affairs at Arcview Corp with proven expertise in Regulatory Affairs, Strategic Influence, Corporate Diplomacy across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Regulatory Affairs", "Strategic Influence", "Corporate Diplomacy"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Regulatory Affairs",
+      "Strategic Influence",
+      "Corporate Diplomacy"
+    ],
     "careerHistory": [
       {
         "company": "Arcview",
@@ -1301,8 +1558,14 @@
     "role": "VP of Enterprise Innovation",
     "organization": "Nexora Ventures",
     "bio": "VP of Enterprise Innovation at Nexora Ventures with proven expertise in Corporate Venture, Incubation, Strategic Growth across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Corporate Venture", "Incubation", "Strategic Growth"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Corporate Venture",
+      "Incubation",
+      "Strategic Growth"
+    ],
     "careerHistory": [
       {
         "company": "Nexora",
@@ -1326,8 +1589,14 @@
     "role": "Senior Director, Strategic Planning",
     "organization": "BrightCore Group",
     "bio": "Senior Director, Strategic Planning at BrightCore Group with proven expertise in Corporate Strategy, Enterprise KPI Frameworks, Organizational Scaling across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Corporate Strategy", "Enterprise KPI Frameworks", "Organizational Scaling"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Corporate Strategy",
+      "Enterprise KPI Frameworks",
+      "Organizational Scaling"
+    ],
     "careerHistory": [
       {
         "company": "BrightCore",
@@ -1351,8 +1620,14 @@
     "role": "EVP of Enterprise Partnerships",
     "organization": "Vellum Strategic",
     "bio": "EVP of Enterprise Partnerships at Vellum Strategic with proven expertise in Alliance Strategy, Cross-Border Ventures, Executive Alignment across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Alliance Strategy", "Cross-Border Ventures", "Executive Alignment"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Alliance Strategy",
+      "Cross-Border Ventures",
+      "Executive Alignment"
+    ],
     "careerHistory": [
       {
         "company": "Vellum",
@@ -1376,8 +1651,14 @@
     "role": "Senior Advisor, Growth Initiatives",
     "organization": "Pivona Group",
     "bio": "Senior Advisor, Growth Initiatives at Pivona Group with proven expertise in Corporate Advisory, P&L Optimization, Strategic Value Creation across hypergrowth and scaled enterprise environments.",
-    "categories": ["Business & Leadership"],
-    "expertise": ["Corporate Advisory", "P&L Optimization", "Strategic Value Creation"],
+    "categories": [
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Corporate Advisory",
+      "P&L Optimization",
+      "Strategic Value Creation"
+    ],
     "careerHistory": [
       {
         "company": "Pivona",
@@ -1401,8 +1682,14 @@
     "role": "Head of AI Research",
     "organization": "Google DeepMind",
     "bio": "Head of AI Research at Google DeepMind with proven expertise in Machine Learning, Large Language Models, AI Ethics across hypergrowth and scaled enterprise environments.",
-    "categories": ["Technology & AI"],
-    "expertise": ["Machine Learning", "Large Language Models", "AI Ethics"],
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Machine Learning",
+      "Large Language Models",
+      "AI Ethics"
+    ],
     "careerHistory": [
       {
         "company": "Google",
@@ -1426,8 +1713,14 @@
     "role": "VP of Cloud Architecture",
     "organization": "Microsoft Azure",
     "bio": "VP of Cloud Architecture at Microsoft Azure with proven expertise in Distributed Systems, Cloud Migration, Kubernetes across hypergrowth and scaled enterprise environments.",
-    "categories": ["Technology & AI"],
-    "expertise": ["Distributed Systems", "Cloud Migration", "Kubernetes"],
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Distributed Systems",
+      "Cloud Migration",
+      "Kubernetes"
+    ],
     "careerHistory": [
       {
         "company": "Microsoft",
@@ -1451,8 +1744,14 @@
     "role": "Principal Machine Learning Engineer",
     "organization": "Nexora AI",
     "bio": "Principal Machine Learning Engineer at Nexora AI with proven expertise in Deep Learning, MLOps, Computer Vision across hypergrowth and scaled enterprise environments.",
-    "categories": ["Technology & AI"],
-    "expertise": ["Deep Learning", "MLOps", "Computer Vision"],
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Deep Learning",
+      "MLOps",
+      "Computer Vision"
+    ],
     "careerHistory": [
       {
         "company": "Nexora",
@@ -1476,8 +1775,14 @@
     "role": "Chief Technology Officer",
     "organization": "Pivona Labs",
     "bio": "Chief Technology Officer at Pivona Labs with proven expertise in Tech Modernization, API Strategy, Engineering Leadership across hypergrowth and scaled enterprise environments.",
-    "categories": ["Technology & AI"],
-    "expertise": ["Tech Modernization", "API Strategy", "Engineering Leadership"],
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Tech Modernization",
+      "API Strategy",
+      "Engineering Leadership"
+    ],
     "careerHistory": [
       {
         "company": "Pivona",
@@ -1501,8 +1806,14 @@
     "role": "Director of Data Engineering",
     "organization": "StrideWorks",
     "bio": "Director of Data Engineering at StrideWorks with proven expertise in Data Lakes, Real-Time Streaming, Analytics Infra across hypergrowth and scaled enterprise environments.",
-    "categories": ["Technology & AI"],
-    "expertise": ["Data Lakes", "Real-Time Streaming", "Analytics Infra"],
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Data Lakes",
+      "Real-Time Streaming",
+      "Analytics Infra"
+    ],
     "careerHistory": [
       {
         "company": "StrideWorks",
@@ -1526,8 +1837,14 @@
     "role": "Head of Cybersecurity",
     "organization": "Novaris Tech",
     "bio": "Head of Cybersecurity at Novaris Tech with proven expertise in Zero Trust, Threat Modeling, Cloud Security across hypergrowth and scaled enterprise environments.",
-    "categories": ["Technology & AI"],
-    "expertise": ["Zero Trust", "Threat Modeling", "Cloud Security"],
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Zero Trust",
+      "Threat Modeling",
+      "Cloud Security"
+    ],
     "careerHistory": [
       {
         "company": "Novaris",
@@ -1551,8 +1868,14 @@
     "role": "VP of Enterprise Engineering",
     "organization": "Microsoft",
     "bio": "VP of Enterprise Engineering at Microsoft with proven expertise in Systems Architecture, High-Scale APIs, DevOps Strategy across hypergrowth and scaled enterprise environments.",
-    "categories": ["Technology & AI"],
-    "expertise": ["Systems Architecture", "High-Scale APIs", "DevOps Strategy"],
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Systems Architecture",
+      "High-Scale APIs",
+      "DevOps Strategy"
+    ],
     "careerHistory": [
       {
         "company": "Microsoft",
@@ -1576,8 +1899,14 @@
     "role": "Director of Product Analytics",
     "organization": "Google",
     "bio": "Director of Product Analytics at Google with proven expertise in Statistical Inference, Experimentation Platforms, Behavioral Modeling across hypergrowth and scaled enterprise environments.",
-    "categories": ["Technology & AI"],
-    "expertise": ["Statistical Inference", "Experimentation Platforms", "Behavioral Modeling"],
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Statistical Inference",
+      "Experimentation Platforms",
+      "Behavioral Modeling"
+    ],
     "careerHistory": [
       {
         "company": "Google",
@@ -1601,8 +1930,14 @@
     "role": "VP of Growth Marketing",
     "organization": "Airbnb",
     "bio": "VP of Growth Marketing at Airbnb with proven expertise in Performance Marketing, Paid Acquisition, Funnel Optimization across hypergrowth and scaled enterprise environments.",
-    "categories": ["Marketing & Growth"],
-    "expertise": ["Performance Marketing", "Paid Acquisition", "Funnel Optimization"],
+    "categories": [
+      "Marketing & Growth"
+    ],
+    "expertise": [
+      "Performance Marketing",
+      "Paid Acquisition",
+      "Funnel Optimization"
+    ],
     "careerHistory": [
       {
         "company": "airbnb",
@@ -1626,8 +1961,14 @@
     "role": "Head of Brand Strategy",
     "organization": "Google",
     "bio": "Head of Brand Strategy at Google with proven expertise in Brand Architecture, Integrated Campaigns, Consumer Insights across hypergrowth and scaled enterprise environments.",
-    "categories": ["Marketing & Growth"],
-    "expertise": ["Brand Architecture", "Integrated Campaigns", "Consumer Insights"],
+    "categories": [
+      "Marketing & Growth"
+    ],
+    "expertise": [
+      "Brand Architecture",
+      "Integrated Campaigns",
+      "Consumer Insights"
+    ],
     "careerHistory": [
       {
         "company": "Google",
@@ -1651,8 +1992,14 @@
     "role": "Director of Product Marketing",
     "organization": "Microsoft",
     "bio": "Director of Product Marketing at Microsoft with proven expertise in GTM Launches, Sales Enablement, Positioning & Messaging across hypergrowth and scaled enterprise environments.",
-    "categories": ["Marketing & Growth"],
-    "expertise": ["GTM Launches", "Sales Enablement", "Positioning & Messaging"],
+    "categories": [
+      "Marketing & Growth"
+    ],
+    "expertise": [
+      "GTM Launches",
+      "Sales Enablement",
+      "Positioning & Messaging"
+    ],
     "careerHistory": [
       {
         "company": "Microsoft",
@@ -1676,8 +2023,14 @@
     "role": "Head of Customer Acquisition",
     "organization": "StrideWorks",
     "bio": "Head of Customer Acquisition at StrideWorks with proven expertise in Growth Loops, Retention Marketing, Viral Coefficient across hypergrowth and scaled enterprise environments.",
-    "categories": ["Marketing & Growth"],
-    "expertise": ["Growth Loops", "Retention Marketing", "Viral Coefficient"],
+    "categories": [
+      "Marketing & Growth"
+    ],
+    "expertise": [
+      "Growth Loops",
+      "Retention Marketing",
+      "Viral Coefficient"
+    ],
     "careerHistory": [
       {
         "company": "StrideWorks",
@@ -1701,8 +2054,14 @@
     "role": "VP of Content & Demand Gen",
     "organization": "Vellum Media",
     "bio": "VP of Content & Demand Gen at Vellum Media with proven expertise in Content Strategy, SEO Architecture, Inbound Flywheels across hypergrowth and scaled enterprise environments.",
-    "categories": ["Marketing & Growth"],
-    "expertise": ["Content Strategy", "SEO Architecture", "Inbound Flywheels"],
+    "categories": [
+      "Marketing & Growth"
+    ],
+    "expertise": [
+      "Content Strategy",
+      "SEO Architecture",
+      "Inbound Flywheels"
+    ],
     "careerHistory": [
       {
         "company": "Vellum",
@@ -1726,8 +2085,14 @@
     "role": "Director of Lifecycle Growth",
     "organization": "Nexora",
     "bio": "Director of Lifecycle Growth at Nexora with proven expertise in Retention Funnels, CRM Strategy, Monetization across hypergrowth and scaled enterprise environments.",
-    "categories": ["Marketing & Growth"],
-    "expertise": ["Retention Funnels", "CRM Strategy", "Monetization"],
+    "categories": [
+      "Marketing & Growth"
+    ],
+    "expertise": [
+      "Retention Funnels",
+      "CRM Strategy",
+      "Monetization"
+    ],
     "careerHistory": [
       {
         "company": "Nexora",
@@ -1751,8 +2116,14 @@
     "role": "Chief Human Resources Officer",
     "organization": "Crestline Global",
     "bio": "Chief Human Resources Officer at Crestline Global with proven expertise in Global HR Strategy, Executive Compensation, Labor Relations across hypergrowth and scaled enterprise environments.",
-    "categories": ["HR & Operations"],
-    "expertise": ["Global HR Strategy", "Executive Compensation", "Labor Relations"],
+    "categories": [
+      "HR & Operations"
+    ],
+    "expertise": [
+      "Global HR Strategy",
+      "Executive Compensation",
+      "Labor Relations"
+    ],
     "careerHistory": [
       {
         "company": "Crestline",
@@ -1776,8 +2147,14 @@
     "role": "VP of People Operations",
     "organization": "BrightCore",
     "bio": "VP of People Operations at BrightCore with proven expertise in People Analytics, Talent Acquisition, Employee Engagement across hypergrowth and scaled enterprise environments.",
-    "categories": ["HR & Operations"],
-    "expertise": ["People Analytics", "Talent Acquisition", "Employee Engagement"],
+    "categories": [
+      "HR & Operations"
+    ],
+    "expertise": [
+      "People Analytics",
+      "Talent Acquisition",
+      "Employee Engagement"
+    ],
     "careerHistory": [
       {
         "company": "BrightCore",
@@ -1801,8 +2178,14 @@
     "role": "Head of Operational Excellence",
     "organization": "Novaris",
     "bio": "Head of Operational Excellence at Novaris with proven expertise in Six Sigma, Process Automation, Lean Operations across hypergrowth and scaled enterprise environments.",
-    "categories": ["HR & Operations"],
-    "expertise": ["Six Sigma", "Process Automation", "Lean Operations"],
+    "categories": [
+      "HR & Operations"
+    ],
+    "expertise": [
+      "Six Sigma",
+      "Process Automation",
+      "Lean Operations"
+    ],
     "careerHistory": [
       {
         "company": "Novaris",
@@ -1826,8 +2209,14 @@
     "role": "Director of Organizational Culture",
     "organization": "Airbnb",
     "bio": "Director of Organizational Culture at Airbnb with proven expertise in DE&I Leadership, Remote Team Dynamics, Employee Retention across hypergrowth and scaled enterprise environments.",
-    "categories": ["HR & Operations"],
-    "expertise": ["DE&I Leadership", "Remote Team Dynamics", "Employee Retention"],
+    "categories": [
+      "HR & Operations"
+    ],
+    "expertise": [
+      "DE&I Leadership",
+      "Remote Team Dynamics",
+      "Employee Retention"
+    ],
     "careerHistory": [
       {
         "company": "airbnb",
@@ -1851,8 +2240,14 @@
     "role": "VP of Supply Chain & Ops",
     "organization": "Arcview",
     "bio": "VP of Supply Chain & Ops at Arcview with proven expertise in Procurement, Vendor Management, Logistics Strategy across hypergrowth and scaled enterprise environments.",
-    "categories": ["HR & Operations"],
-    "expertise": ["Procurement", "Vendor Management", "Logistics Strategy"],
+    "categories": [
+      "HR & Operations"
+    ],
+    "expertise": [
+      "Procurement",
+      "Vendor Management",
+      "Logistics Strategy"
+    ],
     "careerHistory": [
       {
         "company": "Arcview",
@@ -1876,8 +2271,14 @@
     "role": "Head of Learning & Development",
     "organization": "Google",
     "bio": "Head of Learning & Development at Google with proven expertise in Leadership Academies, Executive Coaching, Skills Transformation across hypergrowth and scaled enterprise environments.",
-    "categories": ["HR & Operations"],
-    "expertise": ["Leadership Academies", "Executive Coaching", "Skills Transformation"],
+    "categories": [
+      "HR & Operations"
+    ],
+    "expertise": [
+      "Leadership Academies",
+      "Executive Coaching",
+      "Skills Transformation"
+    ],
     "careerHistory": [
       {
         "company": "Google",
@@ -1901,8 +2302,14 @@
     "role": "Director of Enterprise People Tech",
     "organization": "Microsoft",
     "bio": "Director of Enterprise People Tech at Microsoft with proven expertise in HRIS Architecture, Workday Systems, People Tech Stack across hypergrowth and scaled enterprise environments.",
-    "categories": ["HR & Operations"],
-    "expertise": ["HRIS Architecture", "Workday Systems", "People Tech Stack"],
+    "categories": [
+      "HR & Operations"
+    ],
+    "expertise": [
+      "HRIS Architecture",
+      "Workday Systems",
+      "People Tech Stack"
+    ],
     "careerHistory": [
       {
         "company": "Microsoft",
@@ -1919,5 +2326,511 @@
       "verifiedBy": null,
       "verifiedOn": null
     }
+  },
+  {
+    "id": "mentor-shahnawaj-chowdhury",
+    "name": "Shahnawaj Chowdhury",
+    "role": "Additional Managing Director",
+    "organization": "Modhumoti Bank PLC.",
+    "bio": "Distinguished corporate banking leader and Additional Managing Director at Modhumoti Bank PLC., directing credit risk governance, corporate finance, and strategic banking growth.",
+    "portraitSrc": "/images/mentor-shahnawaj-chowdhury.jpg",
+    "linkedInUrl": "https://linkedin.com/in/shahnawaj-chowdhury-lna",
+    "categories": [
+      "Finance & Banking",
+      "Business & Leadership"
+    ],
+    "expertise": [
+      "Corporate Banking",
+      "Risk Governance",
+      "Financial Management",
+      "Executive Leadership"
+    ],
+    "careerHistory": [
+      {
+        "company": "Modhumoti Bank PLC.",
+        "role": "Additional Managing Director",
+        "logoIcon": "modhumoti"
+      }
+    ],
+    "courseIds": [
+      "irgp"
+    ],
+    "order": 81,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved IRGP Reference Promotional Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-gm-kamrul",
+    "name": "G M Kamrul Hassan",
+    "role": "CEO",
+    "organization": "Akij Infotech, Akij Blue Pills, Akij Telecom Ltd.",
+    "bio": "Enterprise Chief Executive Officer across Akij Group's technology and communications subsidiaries, leading digital infrastructure, IT operations, and corporate transformation.",
+    "portraitSrc": "/images/mentor-gm-kamrul.jpg",
+    "linkedInUrl": "https://linkedin.com/in/gm-kamrul-hassan-lna",
+    "categories": [
+      "Business & Leadership",
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Enterprise Leadership",
+      "Technology Management",
+      "Telecom Operations",
+      "Corporate Growth"
+    ],
+    "careerHistory": [
+      {
+        "company": "Akij Group",
+        "role": "CEO",
+        "logoIcon": "akij"
+      }
+    ],
+    "courseIds": [
+      "irgp"
+    ],
+    "order": 82,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved IRGP Reference Promotional Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-istiaque-bhuiyan",
+    "name": "Istiaque Ahmed Bhuiyan",
+    "role": "Sr. GM (Cloud, Colo, ANS)",
+    "organization": "Aventec PLC (A Robi Axiata Company)",
+    "bio": "Senior technology executive at Aventec PLC (Robi Axiata Group), directing cloud infrastructure, colocation data center facilities, and advanced network solutions.",
+    "portraitSrc": "/images/mentor-istiaque-bhuiyan.jpg",
+    "linkedInUrl": "https://linkedin.com/in/istiaque-bhuiyan-lna",
+    "categories": [
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Cloud Infrastructure",
+      "Enterprise Technology",
+      "Data Centers",
+      "Network Services"
+    ],
+    "careerHistory": [
+      {
+        "company": "Aventec PLC",
+        "role": "Sr. GM",
+        "logoIcon": "aventec"
+      }
+    ],
+    "courseIds": [
+      "irgp"
+    ],
+    "order": 83,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved IRGP Reference Promotional Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-munaf-chowdhury",
+    "name": "Munaf Mojib Chowdhury",
+    "role": "Head of Brand & Communication",
+    "organization": "Aventec PLC.",
+    "bio": "Brand strategist and Head of Brand & Communication at Aventec PLC., leading corporate identity, multi-channel marketing campaigns, and external stakeholder communications.",
+    "portraitSrc": "/images/mentor-munaf-chowdhury.jpg",
+    "linkedInUrl": "https://linkedin.com/in/munaf-chowdhury-lna",
+    "categories": [
+      "Marketing & Growth"
+    ],
+    "expertise": [
+      "Brand Strategy",
+      "Corporate Communications",
+      "Public Relations",
+      "Digital Media"
+    ],
+    "careerHistory": [
+      {
+        "company": "Aventec PLC.",
+        "role": "Head of Brand & Communication",
+        "logoIcon": "aventec"
+      }
+    ],
+    "courseIds": [
+      "irgp"
+    ],
+    "order": 84,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved IRGP Reference Promotional Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-ilmul-sajib",
+    "name": "Ilmul Haque Sajib",
+    "role": "Co-Founder",
+    "organization": "Sheba Platform Limited",
+    "bio": "Tech entrepreneur and Co-Founder of Sheba Platform Limited, revolutionizing home services, MSME operational digitisation, and financial inclusion ecosystems in Bangladesh.",
+    "portraitSrc": "/images/mentor-ilmul-sajib.jpg",
+    "linkedInUrl": "https://linkedin.com/in/ilmul-sajib-lna",
+    "categories": [
+      "Business & Leadership",
+      "Technology & AI"
+    ],
+    "expertise": [
+      "Entrepreneurship",
+      "Platform Business",
+      "MSME Enablement",
+      "Venture Growth"
+    ],
+    "careerHistory": [
+      {
+        "company": "Sheba Platform",
+        "role": "Co-Founder",
+        "logoIcon": "sheba"
+      }
+    ],
+    "courseIds": [
+      "irgp"
+    ],
+    "order": 85,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved IRGP Reference Promotional Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-biplob-rahul",
+    "name": "Biplob G Rahul",
+    "role": "CEO",
+    "organization": "e-Courier Limited",
+    "bio": "Founder and CEO of e-Courier Limited, pioneering modern tech-enabled courier networks, automated warehousing, and nationwide e-commerce logistics across Bangladesh.",
+    "portraitSrc": "/images/mentor-biplob-rahul.jpg",
+    "linkedInUrl": "https://linkedin.com/in/biplob-rahul-lna",
+    "categories": [
+      "Business & Leadership",
+      "HR & Operations"
+    ],
+    "expertise": [
+      "E-Commerce Logistics",
+      "Supply Chain",
+      "Start-up Leadership",
+      "Operational Scale"
+    ],
+    "careerHistory": [
+      {
+        "company": "e-Courier Limited",
+        "role": "CEO",
+        "logoIcon": "ecourier"
+      }
+    ],
+    "courseIds": [
+      "irgp"
+    ],
+    "order": 86,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved IRGP Reference Promotional Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-zia-ashraf",
+    "name": "Zia Ashraf",
+    "role": "COO",
+    "organization": "Chaldal PLC.",
+    "bio": "Co-Founder and Chief Operating Officer of Chaldal PLC., leading logistics engineering, micro-warehouse networks, dark store operations, and rapid delivery infrastructure.",
+    "portraitSrc": "/images/mentor-zia-ashraf.jpg",
+    "linkedInUrl": "https://linkedin.com/in/zia-ashraf-lna",
+    "categories": [
+      "Business & Leadership",
+      "HR & Operations"
+    ],
+    "expertise": [
+      "Operations Management",
+      "Supply Chain Optimization",
+      "Growth Scaling",
+      "E-Commerce"
+    ],
+    "careerHistory": [
+      {
+        "company": "Chaldal PLC.",
+        "role": "COO",
+        "logoIcon": "chaldal"
+      }
+    ],
+    "courseIds": [
+      "irgp"
+    ],
+    "order": 87,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved IRGP Reference Promotional Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-sayeda-salma",
+    "name": "Sayeda Umme Salma",
+    "role": "CEO",
+    "organization": "BrandGear Ltd.",
+    "bio": "Chief Executive Officer of BrandGear Ltd., directing creative brand architecture, promotional strategy, corporate merchandising, and brand experience design.",
+    "portraitSrc": "/images/mentor-sayeda-salma.jpg",
+    "linkedInUrl": "https://linkedin.com/in/sayeda-salma-lna",
+    "categories": [
+      "Marketing & Growth",
+      "Design & UX"
+    ],
+    "expertise": [
+      "Creative Direction",
+      "Brand Development",
+      "Marketing Leadership",
+      "Agency Operations"
+    ],
+    "careerHistory": [
+      {
+        "company": "BrandGear Ltd.",
+        "role": "CEO",
+        "logoIcon": "brandgear"
+      }
+    ],
+    "courseIds": [
+      "irgp"
+    ],
+    "order": 88,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved IRGP Reference Promotional Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "mentor-arif-rahman",
+    "name": "Arif Rahman",
+    "role": "Head of HR",
+    "organization": "BRAC Bank",
+    "bio": "Experienced HR leader and talent strategist specializing in corporate recruitment, executive leadership, and young graduate development at BRAC Bank.",
+    "portraitSrc": "/images/mentor-arif-rahman.jpg",
+    "linkedInUrl": "https://linkedin.com/in/arif-rahman-demo",
+    "categories": [
+      "HR & Operations",
+      "Leadership"
+    ],
+    "expertise": [
+      "Talent Acquisition",
+      "MTO Assessment",
+      "HR Strategy",
+      "Interview Readiness"
+    ],
+    "careerHistory": [
+      {
+        "company": "BRAC Bank",
+        "logoIcon": "bank",
+        "role": "Head of HR"
+      }
+    ],
+    "order": 89,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved MTO Readiness Program Reference Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "courseIds": [
+      "mto"
+    ]
+  },
+  {
+    "id": "mentor-tanvir-hossain",
+    "name": "Tanvir Hossain",
+    "role": "Senior Manager",
+    "organization": "City Bank",
+    "bio": "Senior banking leader at City Bank with extensive background in financial management, retail banking operations, and career mentorship for Management Trainee Officers.",
+    "portraitSrc": "/images/mentor-tanvir-hossain.jpg",
+    "linkedInUrl": "https://linkedin.com/in/tanvir-hossain-demo",
+    "categories": [
+      "Corporate Finance",
+      "Leadership"
+    ],
+    "expertise": [
+      "Retail Banking",
+      "Operations Leadership",
+      "Financial Acumen",
+      "Banking Interviews"
+    ],
+    "careerHistory": [
+      {
+        "company": "City Bank",
+        "logoIcon": "bank",
+        "role": "Senior Manager"
+      }
+    ],
+    "order": 90,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved MTO Readiness Program Reference Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "courseIds": [
+      "mto"
+    ]
+  },
+  {
+    "id": "mentor-mir-hasib",
+    "name": "Mir Hasib Mahmud",
+    "role": "CEO",
+    "organization": "Lead Nation Academy",
+    "bio": "Chief Executive Officer of Lead Nation Academy, guiding institutional vision, executive training excellence, and industry-aligned career acceleration for young leaders across Bangladesh.",
+    "portraitSrc": "/images/mentor-mir-hasib.jpg",
+    "linkedInUrl": "https://linkedin.com/in/mir-hasib-mahmud-demo",
+    "categories": [
+      "Executive Leadership",
+      "Strategy & Governance"
+    ],
+    "expertise": [
+      "Institutional Leadership",
+      "Strategy",
+      "Professional Acumen",
+      "Executive Mentorship"
+    ],
+    "careerHistory": [
+      {
+        "company": "Lead Nation Academy",
+        "logoIcon": "academy",
+        "role": "CEO"
+      }
+    ],
+    "order": 91,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved MTO Readiness Program Reference Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "courseIds": [
+      "mto"
+    ],
+    "featured": true
+  },
+  {
+    "id": "mentor-fahim-ahmed",
+    "name": "Fahim Ahmed",
+    "role": "Product Lead",
+    "organization": "Pathao",
+    "bio": "Product leader at Pathao driving high-growth tech solutions, agile delivery, analytical decision-making, and digital operational mastery for modern professionals.",
+    "portraitSrc": "/images/mentor-fahim-ahmed.jpg",
+    "linkedInUrl": "https://linkedin.com/in/fahim-ahmed-demo",
+    "categories": [
+      "Digital & Technology",
+      "Strategy & Governance"
+    ],
+    "expertise": [
+      "Product Management",
+      "Data Analysis",
+      "Problem Solving",
+      "Tech Leadership"
+    ],
+    "careerHistory": [
+      {
+        "company": "Pathao",
+        "logoIcon": "pathao",
+        "role": "Product Lead"
+      }
+    ],
+    "order": 92,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved MTO Readiness Program Reference Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "courseIds": [
+      "mto"
+    ]
+  },
+  {
+    "id": "mentor-sayem-chowdhury",
+    "name": "Sayem Chowdhury",
+    "role": "Strategy Manager",
+    "organization": "BAT",
+    "bio": "Corporate strategy professional at British American Tobacco (BAT), specializing in strategic planning, commercial execution, market insights, and analytical business modeling.",
+    "portraitSrc": "/images/mentor-sayem-chowdhury.jpg",
+    "linkedInUrl": "https://linkedin.com/in/sayem-chowdhury-demo",
+    "categories": [
+      "Strategy & Governance",
+      "Corporate Finance"
+    ],
+    "expertise": [
+      "Corporate Strategy",
+      "Business Modeling",
+      "Case Analysis",
+      "Market Strategy"
+    ],
+    "careerHistory": [
+      {
+        "company": "BAT",
+        "logoIcon": "bat",
+        "role": "Strategy Manager"
+      }
+    ],
+    "order": 93,
+    "isPlaceholder": false,
+    "published": true,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved MTO Readiness Program Reference Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    },
+    "courseIds": [
+      "mto"
+    ]
   }
 ]
