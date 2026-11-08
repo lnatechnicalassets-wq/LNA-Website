@@ -2,7 +2,7 @@
   "provenance": {
     "class": "B",
     "verified": false,
-    "source": "Demo navigation configuration (Gate B0 deferred until pre-launch)",
+    "source": "Verified navigation configuration mapping to active production routes and anchors",
     "verifiedBy": null,
     "verifiedOn": null
   },
@@ -10,55 +10,53 @@
     "navItems": [
       {
         "label": "Courses",
-        "href": "/courses",
-        "description": "Explore executive and professional offline training programs"
+        "href": "/#courses",
+        "description": "Explore practical offline programs guided by industry leaders"
       },
       {
-        "label": "About",
-        "href": "/about",
-        "description": "Learn about Lead Nation Academy's mission, governance, and faculty"
+        "label": "Mentors",
+        "href": "/#mentors",
+        "description": "Learn from senior corporate directors and executives"
       },
       {
-        "label": "Application Status",
-        "href": "/status",
-        "description": "Track your offline batch enrollment and payment status"
+        "label": "Learner Stories",
+        "href": "/#reviews",
+        "description": "Verified experiences and outcomes from program cohorts"
       },
       {
-        "label": "Contact",
-        "href": "/contact",
-        "description": "Get in touch with academy campus administration"
+        "label": "Internships",
+        "href": "/#internships",
+        "description": "Explore internship opportunities through our partner network"
       }
     ],
     "cta": {
-      "label": "Browse Courses",
-      "href": "/courses"
+      "label": "Explore Programs",
+      "href": "/#courses"
     }
   },
   "footer": {
     "columns": [
       {
-        "title": "Programs & Courses",
+        "title": "Programs",
         "links": [
-          { "label": "Executive Leadership", "href": "/courses" },
-          { "label": "Batch Schedules & Venues", "href": "/courses#schedules" },
-          { "label": "Fee Structure & Enrollment", "href": "/courses#fees" }
+          { "label": "Courses & Programs", "href": "/#courses" },
+          { "label": "MTO Readiness Program", "href": "/courses/mto-readiness" },
+          { "label": "IRGP Program Story", "href": "/courses/irgp" }
         ]
       },
       {
-        "title": "Learner Services",
+        "title": "Explore",
         "links": [
-          { "label": "Check Application Status", "href": "/status" },
-          { "label": "bKash Payment Guide", "href": "/payment-guide" },
-          { "label": "Seat Hold & Refund Policy", "href": "/refund-policy" }
+          { "label": "Internship Opportunities", "href": "/#internships" },
+          { "label": "Meet Our Mentors", "href": "/#mentors" },
+          { "label": "Learner Reviews", "href": "/#reviews" }
         ]
       },
       {
-        "title": "Governance & Policies",
+        "title": "Academy Campus",
         "links": [
-          { "label": "About Lead Nation Academy", "href": "/about" },
-          { "label": "Terms & Conditions", "href": "/terms" },
-          { "label": "Privacy Policy", "href": "/privacy" },
-          { "label": "Staff Administration", "href": "/admin/login" }
+          { "label": "Dhanmondi, Dhaka, Bangladesh", "href": "/#courses" },
+          { "label": "Executive Offline Education", "href": "/#courses" }
         ]
       }
     ],

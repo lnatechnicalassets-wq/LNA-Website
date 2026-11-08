@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowRight,
   Calendar,
@@ -43,6 +44,7 @@ export function CourseCard({
   const effectiveFeePoisha = discountFeePoisha ?? feePoisha;
 
   const statusLabel = isCompleted ? "Completed" : "Upcoming";
+  const courseHref = `/courses/${course.id}`;
 
   // Resolve metadata display matching reference image
   let metaItem1 = {
@@ -67,17 +69,6 @@ export function CourseCard({
     metaItem2 = { icon: Users, text: "8 industry mentors" };
   }
 
-  // Handle card click
-  const handleCardClick = () => {
-    if (isIrgp) {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("lna:open-irgp-story"));
-      }
-    } else if (onSelect) {
-      onSelect(course, batch, mentors);
-    }
-  };
-
   const Icon1 = metaItem1.icon;
   const Icon2 = metaItem2.icon;
 
@@ -85,30 +76,28 @@ export function CourseCard({
 
   return (
     <div
-      tabIndex={0}
-      role="button"
       data-testid="course-card"
       data-course-id={course.id}
       data-mentor-count={mentorCount}
-      onClick={handleCardClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleCardClick();
-        }
-      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onFocus={() => setIsHovered(true)}
       onBlur={() => setIsHovered(false)}
-      className={`group relative flex flex-col justify-between h-[475px] w-full rounded-2xl p-6 sm:p-7 overflow-hidden cursor-pointer transition-all duration-200 ease-out select-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#086477] focus-visible:ring-offset-2 ${
+      className={`group relative flex flex-col justify-between h-[465px] w-full max-w-[330px] rounded-2xl p-6 overflow-hidden transition-all duration-200 ease-out select-none mx-auto ${
         isHovered
           ? "bg-[#086477] text-white shadow-xl border border-[#086477]"
           : "bg-white text-[#172E35] border border-[#E2ECEE] shadow-xs hover:border-[#086477]/40 hover:shadow-md"
       }`}
     >
+      {/* Primary Accessible Link stretching across entire card */}
+      <Link
+        href={courseHref}
+        className="absolute inset-0 z-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#086477] focus-visible:ring-offset-2 rounded-2xl cursor-pointer"
+        aria-label={`View ${course.title} details`}
+      />
+
       {/* Top Row: Category & Status Badge */}
-      <div className="flex items-center justify-between gap-2 shrink-0">
+      <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 pointer-events-none">
         <span
           className={`text-[11px] font-bold uppercase tracking-wider whitespace-nowrap shrink-0 transition-colors duration-200 ${
             isHovered ? "text-[#C5E2E5]" : "text-[#086477]"
@@ -130,9 +119,9 @@ export function CourseCard({
       </div>
 
       {/* Course Title */}
-      <div className="mt-3 shrink-0">
+      <div className="relative z-10 mt-3 shrink-0 pointer-events-none">
         <h3
-          className={`text-[23px] sm:text-[24px] font-bold tracking-tight leading-[1.2] min-h-[58px] transition-colors duration-200 ${
+          className={`text-[21px] sm:text-[22px] font-bold tracking-tight leading-[1.25] min-h-[56px] transition-colors duration-200 ${
             isHovered ? "text-white" : "text-[#172E35]"
           }`}
         >
@@ -141,7 +130,7 @@ export function CourseCard({
       </div>
 
       {/* Middle Section: Swaps between Normal View and "MEET YOUR MENTORS" on Hover */}
-      <div className="relative flex-1 flex flex-col justify-between my-2 overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col justify-between my-2 overflow-hidden pointer-events-none">
         {/* Normal State View */}
         <div
           className={`flex-1 flex flex-col justify-between transition-all duration-200 ${
@@ -166,7 +155,7 @@ export function CourseCard({
           </div>
 
           {/* Normal State Mentors Row */}
-          <div className="mt-auto pt-2">
+          <div className="mt-auto pt-2 pointer-events-auto">
             {isIrgp ? (
               /* IRGP 2x4 Grid */
               <div
@@ -180,10 +169,11 @@ export function CourseCard({
                       key={mentor.id}
                       type="button"
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         openQuickView(mentor);
                       }}
-                      className="relative w-8 h-8 rounded-full overflow-hidden bg-[#E8F3F5] ring-2 ring-white shadow-xs cursor-pointer hover:scale-110 transition-transform"
+                      className="relative z-20 w-8 h-8 rounded-full overflow-hidden bg-[#E8F3F5] ring-2 ring-white shadow-xs cursor-pointer hover:scale-110 transition-transform"
                       title={`${mentor.name} — ${mentor.role}`}
                     >
                       <Image
@@ -216,10 +206,11 @@ export function CourseCard({
                       key={mentor.id}
                       type="button"
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         openQuickView(mentor);
                       }}
-                      className={`relative ${sizeClass} rounded-full overflow-hidden bg-[#E8F3F5] ring-2 ring-white shadow-xs cursor-pointer hover:scale-110 transition-transform`}
+                      className={`relative z-20 ${sizeClass} rounded-full overflow-hidden bg-[#E8F3F5] ring-2 ring-white shadow-xs cursor-pointer hover:scale-110 transition-transform`}
                       title={`${mentor.name} — ${mentor.role}`}
                     >
                       <Image
@@ -239,7 +230,7 @@ export function CourseCard({
 
         {/* Hover State: MEET YOUR MENTORS Showcase */}
         <div
-          className={`flex-1 flex flex-col items-center justify-center transition-all duration-200 ${
+          className={`flex-1 flex flex-col items-center justify-center transition-all duration-200 pointer-events-auto ${
             isHovered ? "opacity-100 relative" : "opacity-0 pointer-events-none absolute inset-0"
           }`}
         >
@@ -257,10 +248,11 @@ export function CourseCard({
                     key={mentor.id}
                     type="button"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       openQuickView(mentor);
                     }}
-                    className="relative w-9 h-9 rounded-full overflow-hidden bg-white/20 ring-2 ring-white/95 shadow-md cursor-pointer hover:scale-115 transition-transform"
+                    className="relative z-20 w-9 h-9 rounded-full overflow-hidden bg-white/20 ring-2 ring-white/95 shadow-md cursor-pointer hover:scale-115 transition-transform"
                     title={`${mentor.name} — ${mentor.role}`}
                   >
                     <Image
@@ -294,10 +286,11 @@ export function CourseCard({
                     key={mentor.id}
                     type="button"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       openQuickView(mentor);
                     }}
-                    className={`relative ${sizeClass} rounded-full overflow-hidden bg-white/20 ring-2 ring-white/95 shadow-md cursor-pointer hover:scale-110 transition-transform`}
+                    className={`relative z-20 ${sizeClass} rounded-full overflow-hidden bg-white/20 ring-2 ring-white/95 shadow-md cursor-pointer hover:scale-110 transition-transform`}
                     title={`${mentor.name} — ${mentor.role}`}
                   >
                     <Image
@@ -317,13 +310,13 @@ export function CourseCard({
 
       {/* Fine Horizontal Divider */}
       <div
-        className={`w-full h-px my-2 transition-colors duration-200 ${
+        className={`relative z-10 w-full h-px my-2 transition-colors duration-200 pointer-events-none ${
           isHovered ? "bg-white/20" : "bg-[#E5ECEE]"
         }`}
       />
 
       {/* Bottom Bar: Price/Story & Circular Arrow Button */}
-      <div className="flex items-center justify-between pt-1 shrink-0">
+      <div className="relative z-10 flex items-center justify-between pt-1 shrink-0 pointer-events-none">
         <div>
           {isCompleted ? (
             <span

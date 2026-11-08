@@ -1,0 +1,82 @@
+[
+  {
+    "id": "internship-chaldal-01",
+    "roleTitle": "Intern",
+    "companyName": "Chaldal",
+    "companyLogo": "chaldal",
+    "workplace": "Chaldal HQ · On-site",
+    "schedule": "6 days/week",
+    "duration": "6 months",
+    "shortDescription": "Experience a technology-driven grocery business.",
+    "fullDescription": "Experience a fast-paced work environment within a technology-driven grocery platform in Bangladesh.",
+    "allowance": {
+      "minPoisha": 600000,
+      "maxPoisha": 1200000,
+      "period": "month",
+      "displayText": "BDT 6,000 – 12,000/month"
+    },
+    "applicationUrl": "https://chaldal.com/careers",
+    "published": true,
+    "order": 1,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo internship listing from partner reference",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "internship-fylo-01",
+    "roleTitle": "Intern",
+    "companyName": "Fylo",
+    "companyLogo": "fylo",
+    "workplace": "Fylo HQ · On-site",
+    "schedule": "6 days/week",
+    "duration": "6 months",
+    "shortDescription": "Explore technology, marketing and business development.",
+    "fullDescription": "Explore technology, marketing and business development initiatives across fast-paced startup teams in Bangladesh.",
+    "allowance": {
+      "minPoisha": 700000,
+      "maxPoisha": 1000000,
+      "period": "month",
+      "displayText": "BDT 7,000 – 10,000/month"
+    },
+    "published": true,
+    "order": 2,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo internship listing from partner reference",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  },
+  {
+    "id": "internship-dotlines-01",
+    "roleTitle": "Intern",
+    "companyName": "Dotlines",
+    "companyLogo": "dotlines",
+    "workplace": "Dotlines HQ · On-site",
+    "schedule": "6 days/week",
+    "duration": "3 months",
+    "shortDescription": "Explore work across multiple business areas.",
+    "fullDescription": "Explore work across multiple business areas including enterprise telecom, consumer technology, and digital payment infrastructure.",
+    "allowance": {
+      "minPoisha": 700000,
+      "maxPoisha": 1200000,
+      "period": "month",
+      "displayText": "BDT 7,000 – 12,000/month"
+    },
+    "published": true,
+    "order": 3,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Demo internship listing from partner reference",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
+  }
+]
+

@@ -22,6 +22,18 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const { header } = navigation;
 
+  const handleNavClick = (href: string) => (e: React.MouseEvent) => {
+    if (href.startsWith("/#") && typeof window !== "undefined" && window.location.pathname === "/") {
+      const id = href.replace("/#", "");
+      const el = document.getElementById(id);
+      if (el) {
+        e.preventDefault();
+        el.scrollIntoView({ behavior: "smooth" });
+        window.history.pushState(null, "", href);
+      }
+    }
+  };
+
   return (
     <header className={`w-full ${className}`} role="banner">
       {/* Top Demo Branding Bar */}
@@ -62,7 +74,8 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
               <Link
                 key={item.href}
                 href={item.href}
-                className="px-3 py-2 rounded-lg text-sm font-semibold text-text-secondary hover:text-primary-900 hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                onClick={handleNavClick(item.href)}
+                className="px-3 py-2 rounded-lg text-sm font-semibold text-text-secondary hover:text-primary-900 hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 cursor-pointer"
               >
                 {item.label}
               </Link>
@@ -71,8 +84,8 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
 
           {/* Desktop Right CTA Actions */}
           <div className="hidden lg:flex items-center gap-3">
-            <Link href={header.cta.href}>
-              <Button variant="primary" size="md">
+            <Link href={header.cta.href} onClick={handleNavClick(header.cta.href)}>
+              <Button variant="primary" size="md" className="cursor-pointer">
                 {header.cta.label}
               </Button>
             </Link>

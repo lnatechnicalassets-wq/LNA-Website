@@ -6,8 +6,7 @@ import {
   CoursesSection,
   MentorsSection,
   ReviewsSection,
-  FaqSection,
-  ContactSection,
+  InternshipsSection,
   MentorQuickViewProvider,
 } from "@/components/home";
 
@@ -22,8 +21,8 @@ export default async function HomePage() {
   const courseRepo = getCourseRepository();
   const batchRepo = getBatchRepository();
 
-  // Load all homepage data in parallel via clean repository interfaces (Rule R4)
-  const [heroSlides, partners, courses, batches, mentors, reviews, irgpData, faqs, contactConfig] =
+  // Load homepage data in parallel via clean repository interfaces (Rule R4)
+  const [heroSlides, partners, courses, batches, mentors, reviews, irgpData, internships] =
     await Promise.all([
       homeRepo.getHeroSlides(),
       homeRepo.getPartners(),
@@ -32,8 +31,7 @@ export default async function HomePage() {
       homeRepo.getMentors(),
       homeRepo.getReviews(),
       homeRepo.getIrgpData(),
-      homeRepo.getFaqs(),
-      homeRepo.getContactConfig(),
+      homeRepo.getInternships(),
     ]);
 
   return (
@@ -51,16 +49,13 @@ export default async function HomePage() {
         {/* 4. Mentors Section (Pixel-Faithful Layered Editorial Showcase) */}
         <MentorsSection mentors={mentors} />
 
-        {/* 5. Section 5: Real Learning. Real Impact. (IRGP Success Story, Gallery, Reviews & Outcomes) */}
+        {/* 5. Section 5: Real Learning. Real Impact. (Learner Reviews & IRGP Showcase) */}
         <ReviewsSection reviews={reviews} irgpData={irgpData} />
 
-        {/* 6. Frequently Asked Questions (Standalone 2-Column Academic FAQ) */}
-        <FaqSection faqs={faqs} />
+        {/* 6. Internship Opportunities Section */}
+        <InternshipsSection internships={internships} />
 
-        {/* 7. Contact Us (Standalone 3-Zone Interactive Contact & Inquiry) */}
-        <ContactSection config={contactConfig} />
-
-        {/* 8. Footer: Rendered automatically by PublicShell wrapper */}
+        {/* 7. Footer: Rendered automatically by PublicShell wrapper */}
       </div>
     </MentorQuickViewProvider>
   );

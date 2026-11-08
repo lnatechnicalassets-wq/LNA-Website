@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import type { Mentor } from "@/lib/content";
 import { getMentorAvatar } from "@/lib/mentors";
+import { CompanyLogo } from "../company-logo";
 
 export interface HeroMentorCardProps {
   mentor: Mentor;
@@ -13,102 +14,110 @@ export interface HeroMentorCardProps {
   priority?: boolean;
 }
 
+// Calibrated per-mentor vertical portrait centering for complete faces and headroom
+const MENTOR_PORTRAIT_POSITIONS: Record<string, string> = {
+  // IRGP Mentors
+  "mentor-shahnawaj-chowdhury": "center 18%",
+  "mentor-gm-kamrul": "center 14%",
+  "mentor-istiaque-bhuiyan": "center 16%",
+  "mentor-munaf-chowdhury": "center 15%",
+  "mentor-ilmul-sajib": "center 16%",
+  "mentor-biplob-rahul": "center 14%",
+  "mentor-zia-ashraf": "center 18%",
+  "mentor-sayeda-salma": "center 14%",
+
+  // MTO Mentors
+  "mentor-arif-rahman": "center 4%",
+  "mentor-tanvir-hossain": "center 2%",
+  "mentor-mir-hasib": "center 4%",
+  "mentor-fahim-ahmed": "center 3%",
+  "mentor-sayem-chowdhury": "center 4%",
+};
+
 export function HeroMentorCard({
   mentor,
   onClick,
   variant = "mto",
   isFeatured = false,
+  priority = false,
 }: HeroMentorCardProps) {
   const avatarSrc = getMentorAvatar(mentor);
-  void isFeatured;
+  const objectPos = MENTOR_PORTRAIT_POSITIONS[mentor.id] || "center 16%";
 
-  if (variant === "irgp") {
-    return (
-      <button
-        type="button"
-        onClick={() => onClick(mentor)}
-        aria-label={`View mentor profile: ${mentor.name}, ${mentor.role} at ${mentor.organization}`}
-        className="group relative text-center transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5CE1E6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#086477] cursor-pointer overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-b from-[#084a57]/95 via-[#05333d]/98 to-[#021f24] hover:border-teal-300/70 hover:shadow-lg w-full h-[200px] sm:h-[215px] lg:h-[225px] xl:h-[235px] flex flex-col justify-between shadow-sm"
-      >
-        {/* Subtle top rim highlight */}
-        <div
-          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-200/40 to-transparent pointer-events-none z-10"
-          aria-hidden="true"
-        />
+  // Resolve primary company name and logoIcon from mentor career history or organization
+  const primaryHistory = mentor.careerHistory?.[0];
+  const companyName =
+    primaryHistory?.company ||
+    mentor.organization.split(",")[0].split("·")[0].trim();
+  const logoIcon = primaryHistory?.logoIcon || companyName;
 
-        {/* 1. Upright portrait area (top ~58%) */}
-        <div className="relative w-full h-[58%] overflow-hidden shrink-0 bg-[#021b20]">
-          <Image
-            src={avatarSrc}
-            alt={mentor.name}
-            fill
-            priority
-            loading="eager"
-            sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 220px"
-            className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
-          />
-          <div
-            className="absolute inset-x-0 bottom-0 h-px bg-white/10 pointer-events-none z-1"
-            aria-hidden="true"
-          />
-        </div>
-
-        {/* 2. Text area (bottom ~42%) */}
-        <div className="w-full h-[42%] flex flex-col items-center justify-center text-center px-2.5 py-1.5 sm:py-2 bg-[#021f24] shrink-0">
-          <h4 className="text-xs sm:text-[13.5px] lg:text-[14px] xl:text-[15px] font-bold text-white tracking-tight leading-tight group-hover:text-teal-200 transition-colors truncate max-w-full">
-            {mentor.name}
-          </h4>
-          <p className="text-[11px] sm:text-xs xl:text-[13px] font-medium text-teal-200 leading-tight mt-1 line-clamp-1 max-w-full">
-            {mentor.role}
-          </p>
-          <p className="text-[10px] sm:text-[11px] xl:text-[12px] text-teal-300/80 leading-tight mt-0.5 line-clamp-1 max-w-full">
-            {mentor.organization}
-          </p>
-        </div>
-      </button>
-    );
-  }
-
-  // MTO Mentor Card:
-  // - Upright portrait area (no slants, no overlapping, no glowing borders)
-  // - Pearl caption area with dark, readable text
-  // - Consistent dimensions, modest rounded corners, and subtle shadow
   return (
     <button
       type="button"
       onClick={() => onClick(mentor)}
-      aria-label={`View mentor profile: ${mentor.name}, ${mentor.role} at ${mentor.organization}`}
-      className="group relative text-center transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#086477] focus-visible:ring-offset-2 cursor-pointer overflow-hidden rounded-2xl border border-white/80 bg-white/95 shadow-md shadow-[#086477]/10 hover:shadow-xl hover:border-[#086477]/30 hover:-translate-y-1.5 w-full h-[270px] sm:h-[285px] lg:h-[295px] xl:h-[305px] flex flex-col justify-between"
+      aria-label={`View mentor profile: ${mentor.name} at ${companyName}`}
+      className={`group relative flex flex-col items-center text-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#086477] focus-visible:ring-offset-2 rounded-2xl transition-all duration-300 hover:-translate-y-0.5 w-full ${
+        isFeatured ? "lg:scale-[1.03] z-10" : "z-0"
+      }`}
     >
-      {/* 1. Upright Portrait Area (Top ~64%) */}
-      <div className="relative w-full h-[64%] overflow-hidden shrink-0 bg-[#E8F4F5]">
-        <Image
-          src={avatarSrc}
-          alt={mentor.name}
-          fill
-          priority
-          loading="eager"
-          sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 220px"
-          className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
-        />
-        {/* Subtle dividing border line outside photo */}
+      {/* 1. Angled Portrait Unit with Offset Teal Backing Layer */}
+      <div
+        className={`relative w-full ${
+          variant === "mto"
+            ? "h-[108px] sm:h-[114px] lg:h-[116px] xl:h-[124px]"
+            : "h-[102px] sm:h-[110px] lg:h-[110px] xl:h-[118px]"
+        }`}
+      >
+        {/* A. Offset Teal Backing Layer (Peeks from behind on the left/bottom with matching angle) */}
         <div
-          className="absolute inset-x-0 bottom-0 h-px bg-[#E2EFF1] pointer-events-none z-1"
+          className="absolute inset-0 translate-x-[-3px] translate-y-[3px] sm:translate-x-[-4px] sm:translate-y-[4px] bg-[#053D47]/90 rounded-md pointer-events-none transition-transform duration-300 group-hover:translate-x-[-5px] group-hover:translate-y-[5px]"
+          style={{
+            clipPath: "polygon(14% 0%, 100% 0%, 86% 100%, 0% 100%)",
+          }}
           aria-hidden="true"
         />
+
+        {/* B. Angled Pearl Photo Panel */}
+        <div
+          className="relative w-full h-full bg-[#FFFFFF] shadow-xs overflow-hidden rounded-md border border-white/70"
+          style={{
+            clipPath: "polygon(14% 0%, 100% 0%, 86% 100%, 0% 100%)",
+          }}
+        >
+          {/* Upright Mentor Photo (Faces, foreheads, and chins remain completely visible and upright) */}
+          <Image
+            src={avatarSrc}
+            alt={mentor.name}
+            fill
+            priority={priority}
+            loading={priority ? "eager" : "lazy"}
+            sizes="(max-width: 640px) 150px, (max-width: 1024px) 200px, 240px"
+            style={{ objectPosition: objectPos }}
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          {/* Subtle top sheen */}
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-white/10 pointer-events-none"
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
-      {/* 2. Pearl Caption Area (Bottom ~36%) with Dark Readable Text */}
-      <div className="w-full h-[36%] flex flex-col items-center justify-center text-center bg-[#F6FAFA] px-2.5 py-2.5 shrink-0">
-        <h4 className="text-xs sm:text-[13.5px] lg:text-[14px] xl:text-[15px] font-bold text-[#172E35] tracking-tight leading-tight group-hover:text-[#086477] transition-colors truncate max-w-full">
+      {/* 2. Separate Pearl Nameplate with Mentor Name & Company Logo */}
+      <div className="relative z-10 -mt-3.5 sm:-mt-4 w-[96%] sm:w-[94%] bg-[#FFFFFF]/98 group-hover:bg-white backdrop-blur-xs border border-[#D5E5E8] rounded-xl shadow-xs group-hover:shadow-md group-hover:border-[#086477]/40 px-2 py-1.5 sm:px-2.5 sm:py-2 xl:px-3 xl:py-2 transition-all duration-300 min-h-[44px] sm:min-h-[46px] lg:min-h-[46px] xl:min-h-[48px] flex flex-col items-center justify-center text-center">
+        {/* 1. Mentor Name: Bold Dark Ink */}
+        <h4 className="text-[12px] sm:text-[12.5px] lg:text-[13px] xl:text-[13.5px] font-bold text-[#172E35] leading-snug tracking-tight group-hover:text-[#086477] transition-colors whitespace-nowrap">
           {mentor.name}
         </h4>
-        <p className="text-[11px] sm:text-xs xl:text-[13px] font-medium text-[#086477] leading-tight mt-1 line-clamp-1 max-w-full">
-          {mentor.role}
-        </p>
-        <p className="text-[10px] sm:text-[11px] xl:text-[12px] text-[#5B7E87] leading-tight mt-0.5 line-clamp-1 max-w-full">
-          {mentor.organization}
-        </p>
+
+        {/* 2. Company Logo: Brand Mark Icon + Prominent Company Name */}
+        <div className="mt-1 flex items-center justify-center max-w-full overflow-hidden">
+          <CompanyLogo
+            name={companyName}
+            logoIcon={logoIcon}
+            className="text-[#086477] font-bold"
+          />
+        </div>
       </div>
     </button>
   );

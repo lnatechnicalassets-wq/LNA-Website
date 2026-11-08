@@ -14,8 +14,108 @@ export function CompanyLogo({
   iconOnly = false,
 }: CompanyLogoProps) {
   const iconKey = (logoIcon || name).toLowerCase().replace(/[^a-z0-9]/g, "");
+  const compKey = (name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
   const renderIcon = () => {
+    // Specific match by company name first if present
+    if (compKey.includes("brac")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <rect x="1" y="1" width="14" height="14" rx="3" fill="#E40046" />
+          <rect x="4" y="4" width="8" height="8" rx="1.5" fill="#FAF9F6" />
+        </svg>
+      );
+    }
+    if (compKey.includes("citybank") || compKey === "city") {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <rect x="1" y="1" width="14" height="14" rx="2.5" fill="#E31B23" />
+          <rect x="5" y="5" width="6" height="6" transform="rotate(45 8 8)" fill="#FAF9F6" />
+        </svg>
+      );
+    }
+    if (compKey.includes("leadnation") || compKey === "lna") {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1.5 L14 4.5 V9 C14 12.5 8 15 8 15 C8 15 2 12.5 2 9 V4.5 Z" fill="#086477" />
+          <polygon points="8,5 11,10 5,10" fill="#FAF9F6" />
+        </svg>
+      );
+    }
+    if (compKey.includes("pathao")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M2 13 C4 5 11 3 15 3 C12 7 9 10 2 13 Z" fill="#EE2A24" />
+        </svg>
+      );
+    }
+    if (compKey === "bat" || compKey.includes("britishamerican")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <polygon points="8,1 15,14 1,14" fill="#001E62" />
+          <line x1="4" y1="10" x2="12" y2="10" stroke="#DB0011" strokeWidth="2" />
+        </svg>
+      );
+    }
+    if (compKey.includes("modhumoti")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="7" fill="#00843D" />
+          <path d="M8 4 C6 6 5 9 8 12 C11 9 10 6 8 4 Z" fill="#E40046" />
+        </svg>
+      );
+    }
+    if (compKey.includes("akij")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <polygon points="8,1 14.5,4.75 14.5,12.25 8,16 1.5,12.25 1.5,4.75" fill="#C4161C" />
+          <circle cx="8" cy="8" r="3" fill="#FAF9F6" />
+        </svg>
+      );
+    }
+    if (compKey.includes("aventec") || compKey.includes("robi")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <polygon points="8,2 14,8 8,14 2,8" fill="#F37023" />
+          <polygon points="8,2 14,8 8,8" fill="#ED1C24" />
+          <polygon points="2,8 8,8 8,14" fill="#00A0E3" />
+        </svg>
+      );
+    }
+    if (compKey.includes("sheba")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="7" fill="#7C2A90" />
+          <polygon points="8,3 9.5,6.5 13,8 9.5,9.5 8,13 6.5,9.5 3,8 6.5,6.5" fill="#FAF9F6" />
+        </svg>
+      );
+    }
+    if (compKey.includes("courier")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <rect x="1" y="2" width="14" height="12" rx="2" fill="#E51937" />
+          <path d="M5 8 L10 5 V7 H12 V9 H10 V11 Z" fill="#FAF9F6" />
+        </svg>
+      );
+    }
+    if (compKey.includes("chaldal")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <rect x="2" y="5" width="12" height="9" rx="2" fill="#FFA500" />
+          <path d="M5 5 C5 2.5 11 2.5 11 5" stroke="#FAF9F6" strokeWidth="2" fill="none" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    if (compKey.includes("brandgear")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="6.5" fill="#086477" />
+          <circle cx="8" cy="8" r="3.5" fill="#FAF9F6" />
+          <circle cx="8" cy="8" r="1.5" fill="#086477" />
+        </svg>
+      );
+    }
+
     switch (iconKey) {
       case "nexora":
         return (
@@ -134,6 +234,12 @@ export function CompanyLogo({
             <polygon points="4,16 12,8 20,16" fill="#DB0011" />
           </svg>
         );
+      case "bank":
+        return (
+          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 2 L14 5 V7 H2 V5 Z M3 8 H5 V12 H3 Z M7 8 H9 V12 H7 Z M11 8 H13 V12 H11 Z M2 13 H14 V14 H2 Z" />
+          </svg>
+        );
       default:
         return (
           <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="currentColor">
@@ -151,7 +257,7 @@ export function CompanyLogo({
       {renderIcon()}
       {!iconOnly && !isBcg && (
         <span
-          className={`text-[11px] sm:text-xs font-semibold tracking-tight ${
+          className={`text-[11px] sm:text-xs font-bold tracking-tight whitespace-nowrap ${
             isAirbnb ? "text-[#FF5A5F]" : "text-inherit"
           }`}
         >
