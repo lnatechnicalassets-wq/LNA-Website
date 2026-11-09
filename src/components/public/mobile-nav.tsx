@@ -24,6 +24,20 @@ export interface MobileNavProps {
  */
 export function MobileNav({ open, onOpenChange, navItems, cta, organization }: MobileNavProps) {
   const pathname = usePathname();
+
+  const handleNavClick = (href: string) => (e: React.MouseEvent) => {
+    onOpenChange(false);
+    if (href.startsWith("/#") && typeof window !== "undefined" && window.location.pathname === "/") {
+      const id = href.replace("/#", "");
+      const el = document.getElementById(id);
+      if (el) {
+        e.preventDefault();
+        el.scrollIntoView({ behavior: "smooth" });
+        window.history.pushState(null, "", href);
+      }
+    }
+  };
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -44,7 +58,14 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
           {/* Top Lockup & Close Button */}
           <div className="space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
-              <DemoLogo size="sm" showTagline={false} showDemoBadge={false} />
+              <Link
+                href="/"
+                onClick={() => onOpenChange(false)}
+                className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                aria-label={`${organization?.name || "Lead Nation Academy"} Home`}
+              >
+                <DemoLogo size="sm" showTagline={false} showDemoBadge={false} />
+              </Link>
               <DialogPrimitive.Close
                 className="rounded-lg p-2 text-text-muted hover:text-primary-900 hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
                 aria-label="Close navigation menu"
@@ -57,14 +78,15 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
             <nav aria-label="Mobile Navigation Links">
               <ul className="space-y-1">
                 {navItems.map((item) => {
-                  const isNews = item.href === "/news";
-                  const isActive = isNews && (pathname === "/news" || pathname.startsWith("/news/"));
+                  const isNews = item.href === "/news" && (pathname === "/news" || pathname.startsWith("/news/"));
+                  const isAbout = item.href === "/about" && (pathname === "/about" || pathname.startsWith("/about/"));
+                  const isActive = isNews || isAbout;
 
                   return (
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        onClick={() => onOpenChange(false)}
+                        onClick={handleNavClick(item.href)}
                         aria-current={isActive ? "page" : undefined}
                         className={cn(
                           "flex items-center min-h-[44px] px-3 py-2.5 rounded-lg text-base font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600",
@@ -83,7 +105,7 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
 
             {/* Mobile CTA */}
             <div className="pt-2">
-              <Link href={cta.href} onClick={() => onOpenChange(false)} className="w-full block">
+              <Link href={cta.href} onClick={handleNavClick(cta.href)} className="w-full block">
                 <Button variant="primary" size="lg" className="w-full justify-center">
                   {cta.label}
                 </Button>

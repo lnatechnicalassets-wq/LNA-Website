@@ -9,6 +9,11 @@
   "header": {
     "navItems": [
       {
+        "label": "About Us",
+        "href": "/about",
+        "description": "Learn about Lead Nation Academy, our executive leadership, and mission"
+      },
+      {
         "label": "Courses",
         "href": "/#courses",
         "description": "Explore practical offline programs guided by industry leaders"
@@ -19,50 +24,51 @@
         "description": "Learn from senior corporate directors and executives"
       },
       {
-        "label": "Learner Stories",
-        "href": "/#reviews",
-        "description": "Verified experiences and outcomes from program cohorts"
-      },
-      {
-        "label": "Internships",
+        "label": "Internship",
         "href": "/#internships",
         "description": "Explore internship opportunities through our partner network"
       },
       {
-        "label": "News & Updates",
+        "label": "News",
         "href": "/news",
         "description": "Invitations, partnerships, and moments from LNA"
+      },
+      {
+        "label": "Contact Us",
+        "href": "/#contact",
+        "description": "Get in touch with Lead Nation Academy"
       }
     ],
     "cta": {
-      "label": "Explore Programs",
-      "href": "/#courses"
+      "label": "Enroll Now",
+      "href": "/enroll"
     }
   },
   "footer": {
     "columns": [
       {
-        "title": "Programs",
-        "links": [
-          { "label": "Courses & Programs", "href": "/#courses" },
-          { "label": "MTO Readiness Program", "href": "/courses/mto-readiness" },
-          { "label": "IRGP Program Story", "href": "/courses/irgp" }
-        ]
-      },
-      {
         "title": "Explore",
         "links": [
-          { "label": "Internship Opportunities", "href": "/#internships" },
-          { "label": "Meet Our Mentors", "href": "/#mentors" },
-          { "label": "Learner Reviews", "href": "/#reviews" },
-          { "label": "News & Updates", "href": "/news" }
+          { "label": "About Us", "href": "/about" },
+          { "label": "Courses", "href": "/#courses" },
+          { "label": "Mentors", "href": "/#mentors" },
+          { "label": "Internship", "href": "/#internships" },
+          { "label": "News", "href": "/news" }
         ]
       },
       {
-        "title": "Academy Campus",
+        "title": "Policies",
         "links": [
-          { "label": "Dhanmondi, Dhaka, Bangladesh", "href": "/#courses" },
-          { "label": "Executive Offline Education", "href": "/#courses" }
+          { "label": "Terms & Conditions", "href": "/terms" },
+          { "label": "Privacy Policy", "href": "/privacy" }
+        ]
+      },
+      {
+        "title": "Get in touch",
+        "links": [
+          { "label": "Contact Us", "href": "/#contact" },
+          { "label": "info@lnabd.org", "href": "mailto:info@lnabd.org" },
+          { "label": "Dhanmondi, Dhaka", "href": "/#contact" }
         ]
       }
     ],

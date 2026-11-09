@@ -68,14 +68,15 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
             className="flex items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
             aria-label={`${organization.name} Home`}
           >
-            <DemoLogo size="md" showTagline={false} showDemoBadge={true} />
+            <DemoLogo size="md" showTagline={false} showDemoBadge={false} />
           </Link>
 
           {/* Desktop Navigation Links */}
           <nav aria-label="Main Navigation" className="hidden lg:flex items-center gap-1 lg:gap-2">
             {header.navItems.map((item) => {
-              const isNews = item.href === "/news";
-              const isActive = isNews && (pathname === "/news" || pathname.startsWith("/news/"));
+              const isNews = item.href === "/news" && (pathname === "/news" || pathname.startsWith("/news/"));
+              const isAbout = item.href === "/about" && (pathname === "/about" || pathname.startsWith("/about/"));
+              const isActive = isNews || isAbout;
 
               return (
                 <Link
