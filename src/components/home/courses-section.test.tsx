@@ -38,6 +38,7 @@ const mockCourse: Course = {
     verifiedBy: null,
     verifiedOn: null,
   },
+  mentorIds: []
 };
 
 const mockBatch: Batch = {
