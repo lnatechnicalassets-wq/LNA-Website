@@ -242,16 +242,16 @@ export function MentorsSection({
           <div className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col justify-center z-10">
             {/* Eyebrow */}
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-[12px] font-bold uppercase tracking-widest text-[#086477]">
-                OUR MENTORS
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#172E35]">
+                Our Mentors
               </span>
-              <span className="w-10 h-px bg-[#086477]/40" />
+              <span className="w-10 h-px bg-[#172E35]/30" />
             </div>
 
             {/* Serif Heading */}
             <h2
               id="mentors-heading"
-              className="text-3xl sm:text-4xl lg:text-[42px] font-serif font-bold text-[#172E35] tracking-tight leading-[1.15]"
+              className="text-3xl sm:text-4xl lg:text-[46px] font-serif font-extrabold text-[#172E35] tracking-tight leading-[1.12]"
             >
               Meet Our
               <br />
