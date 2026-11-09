@@ -1,20 +1,99 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 9 November 2026  
-**Session Context:** Phase 4 Shared Footer Replacement — Replaced shared site footer (`src/components/public/site-footer.tsx`) with the approved Deep Teal Editorial design. Includes full-width deep teal background (`#063A46`), thin soft-teal top divider, left-hand serif headline ("Ready for your next step?") with soft-teal Enroll Now button linking to `/enroll`, Explore column (`About Us`, `Courses`, `Mentors`, `Internship`, `News`), thin vertical column divider, Get in touch column (`Contact Us` linking to restored `/#contact`, mailto `info@lnabd.org`, and `Dhanmondi, Dhaka`), far-right topographical contour lines, and bottom utility row with copyright and working Back to top scroll. Direct edits performed per request without running tests, builds, or scripts.
+**Session Context:** Phase 4 Course-Owned Faculty Roster Architecture (ADR 0012) — Marked ADR 0012 as Accepted. Migrated mentor assignments from mentors.json/hero-slides.json into ordered `mentorIds` arrays directly on each Course in `courses.json`. Upgraded `CourseSchema` and `scripts/validate-content.mjs` to strictly enforce uniqueness and referential integrity against non-existent mentor IDs. Unified `getCourseMentorRoster` across Hero slides, Course cards, and Course details pages.
 
 ---
 
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 4 (Public Website Core)
-- **Current Task:** About Page Implementation (/about)
+- **Current Task:** Task P4-T27 / Course Mentor Roster JSON Migration (ADR 0012)
 - **Task Status:** Fully Completed.
-- **Current Git Branch:** `task/p4-t5-hero-slides`
-- **Base Commit:** `b306a77` (`main`, containing merged `task/p3-t1-content-schemas` via PR #9)
+- **Current Git Branch:** `task/p4-t24-about-page`
+- **Base Commit:** `fc605ae`
 
 ---
 
 ## 2. Completed Tasks
+
+### Task P4-T27 / Course Mentor Roster JSON Migration (ADR 0012)
+- **SRS IDs Covered:** FR-CRS-004, FR-PUB-002, Rule R1, Rule R2, Rule R4, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R19
+- **Architecture & Deliverables:**
+  1. *ADR 0012 Acceptance (`docs/decisions/0012-course-mentor-roster-relationship.md`):*
+     - Marked ADR 0012 Accepted per repo conventions. Established `Course` as aggregate root holding canonical ordered `mentorIds`.
+  2. *Catalog Data Migration (`content/catalog/courses.json`):*
+     - Added ordered `mentorIds` to `mto-readiness` (5 mentors) and `irgp` (8 mentors).
+  3. *Schema & Content Validation (`src/lib/content/courses.ts`, `scripts/validate-content.mjs`):*
+     - Added `mentorIds` to `CourseSchema` with `.refine()` rule rejecting duplicate IDs.
+     - Added referential integrity check verifying all course mentor IDs exist in `mentors.json`.
+  4. *Redundant Field Removal:*
+     - Removed `mentorIds` from `content/home/hero-slides.json`.
+     - Removed `courseId` and `courseIds` from all 15 mentor records in `content/home/mentors.json`.
+  5. *Shared Resolver & Consumers (`src/lib/mentors.ts`):*
+     - Upgraded `getCourseMentorRoster` to resolve from `course.mentorIds`.
+     - Threaded `courses` through `HomePage` -> `HeroSection` -> `HeroSlider` -> `HeroSlide`.
+     - Preserved hero slice limits (5 for MTO, 8 for IRGP) and full roster display on course details pages.
+
+
+### Task P4-T26 / Official Brand Logo & Navigation Shell Integration
+- **SRS IDs Covered:** FR-PUB-001, FR-PUB-002, Rule R1, Rule R2, Rule R4, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R19
+- **Architecture & Deliverables:**
+  1. *Brand Media Assets Generated (`public/images/brand/` & Tab Icons):*
+     - `public/images/brand/logo.png`: Full authentic brand lockup (406x425, RGBA).
+     - `public/images/brand/logo-crest.png`: Circular crest emblem (406x277, RGBA) for light backgrounds.
+     - `public/images/brand/logo-white.png`: Full inverted white/soft-teal lockup (406x425, RGBA) for dark backgrounds.
+     - `public/images/brand/logo-crest-white.png`: Inverted white/soft-teal circular crest emblem (406x277, RGBA) for footer.
+     - `src/app/icon.png`: 48x48 RGBA square tab icon.
+     - `src/app/apple-icon.png`: 180x180 RGBA Apple touch icon.
+     - `public/favicon.ico`: 32x32 multi-platform favicon.
+     - `public/favicon.png`: 48x48 PNG tab favicon.
+  2. *Top Demo Bar Removal & Fixed Navigation (`src/components/public/site-header.tsx`):*
+     - Completely eliminated the top dark development preview banner (`Development Preview (Gate B0 Demo Branding)`).
+     - Upgraded `<header>` to `sticky top-0 z-50 w-full bg-surface-base/95 backdrop-blur-md border-b border-border-subtle shadow-xs`, locking the navigation bar permanently to the top of the viewport across all scroll states without overlapping page content.
+  3. *Brand Logo Component Upgrade (`src/components/ui/demo-logo.tsx`):*
+     - Replaced SVG placeholder monogram shield with authentic circular crest emblem and official brand typography.
+     - Added support for `variant="crest"` (default), `variant="full"`, and `inverted` mode for dark surfaces.
+  4. *Footer Lockup (`src/components/public/site-footer.tsx`):*
+     - Integrated `logo-crest-white.png` alongside serif `Lead Nation Academy` brand heading.
+  5. *Quality & Verification:*
+     - All 5 public component test suites passing (11/11 tests).
+     - `pnpm typecheck`: 0 errors.
+     - `pnpm lint`: 0 errors.
+     - `pnpm format:check`: 100% formatted.
+     - `pnpm build`: 0 errors, 39 static routes generated.
+
+### Task P4-T25 / Public Content & Asset Migration from WordPress Source
+- **SRS IDs Covered:** FR-PUB-001, FR-PUB-002, FR-PUB-003, FR-PUB-004, FR-PUB-005, FR-PUB-006, FR-PUB-007, FR-PUB-008, Rule R1, Rule R2, Rule R4, Rule R5, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R19
+- **Architecture & Deliverables:**
+  1. *Source Extraction & Parsing:*
+     - Parsed 141 MB WordPress backup (`lnabdorg_wp955.sql`) using custom Node streaming SQL parser to extract published posts and `_elementor_data` structures.
+     - Extracted authentic public copy for organization profile, 7 partners, 5 internships, 11 corporate mentors, 10 IRGP FAQs, 4 news articles, 16-module IRGP curriculum, and policy documents (14 Terms clauses, 12 Privacy clauses).
+  2. *Asset Migration (44 images copied to public/images/):*
+     - Partners (7): `btrc.png`, `sheba.png`, `ictd.png`, `ecourier.png`, `goyara.png`, `unicert.png`, `triptakerz.png`.
+     - Internships (5): `chaldal.png`, `fylo.png`, `dotlines.png`, `ghari.png`, `triptakerz.png`.
+     - Mentors (11): `ilmul-sajib.png`, `gm-kamrul.png`, `biplob-rahul.png`, `mir-hasib.png`, `sayeda-salma.png`, `zia-ashraf.png`, `zeeshan-huq.png`, `istiaque-bhuiyan.png`, `shahnawaj-chowdhury.png`, `munaf-chowdhury.png`, `talat-rahim.png`.
+     - News (17): High-resolution photos covering BTRC Fair (2), CUB Partnership (5), and AIUB IRGP Launch (10).
+     - IRGP Gallery (4): Real classroom and workshop photos (`aiub-classroom-1.jpeg`, `aiub-booth-2.jpeg`, `aiub-interview-3.jpeg`, `aiub-discussion-4.jpeg`).
+     - 23 unassigned source images cataloged and excluded from repository.
+  3. *Content Model Updates (content/):*
+     - `content/site/organization.json`: Official registered office (`Plot 06, Tejgaon Industrial Area, Dhaka - 1208`), phone (`+880 1581-799666`), email (`info@lnabd.org`), Class A provenance.
+     - `content/home/contact.json`: Aligned phone, address, and hours with Class A source.
+     - `content/home/partners.json`: Replaced mock partners with 7 real corporate/government partners.
+     - `content/home/internships.json`: 5 real internships with integer poisha stipends (600,000 to 1,200,000 poisha).
+     - `content/home/faqs.json`: 10 published IRGP questions and answers.
+     - `content/home/mentors.json`: 11 real corporate mentors added with authentic designations and transparent portraits.
+     - `content/news/articles.json`: 3 published WordPress news stories with structured blocks and gallery images.
+     - `content/catalog/courses.json`: Updated IRGP with authentic 16-module curriculum structure, AIUB venue, and real outcomes.
+     - `src/app/terms/page.tsx` & `src/app/privacy/page.tsx`: Updated with verbatim published legal clauses.
+  4. *Automated Quality & Risk-Based Testing (ADR 0010):*
+     - Content Validation (`scripts/validate-content.mjs`): PASS (exit code 0).
+     - TypeScript Check (`tsc --noEmit`): PASS (exit code 0).
+     - ESLint (`eslint .`): PASS (exit code 0, 0 errors, 0 warnings).
+     - Prettier Formatter (`prettier --check .`): PASS (exit code 0).
+     - Brand Token Sync (`scripts/generate-tokens.mjs --check`): PASS (exit code 0).
+     - Next.js Production Build (`next build --experimental-build-mode compile && generate`): PASS (exit code 0, 37 static routes generated).
+     - Unit & Integration Tests (`vitest run`): 21 test files passed, 7 failed due to pre-existing UI divergences from previous tasks where tests were explicitly skipped.
+
 
 ### Task P4-T24 / About Lead Nation Academy Page (/about)
 - **SRS IDs Covered:** FR-PUB-001, Rule R1, Rule R2, Rule R4, Rule R6, Rule R7, Rule R8, Rule R13, Rule R14, Rule R15, Rule R19

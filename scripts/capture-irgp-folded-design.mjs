@@ -93,7 +93,9 @@ async function run() {
   async function takeScreenshot(outputPath) {
     const res = await send("Page.captureScreenshot", { format: "png" });
     fs.writeFileSync(outputPath, Buffer.from(res.data, "base64"));
-    console.log(`Saved screenshot: ${path.basename(outputPath)} (${fs.statSync(outputPath).size} bytes)`);
+    console.log(
+      `Saved screenshot: ${path.basename(outputPath)} (${fs.statSync(outputPath).size} bytes)`
+    );
   }
 
   // 1. Desktop 1440x900 - IRGP Slide (Folded Pearl Layers with 3-2-3 Mentors)
@@ -181,4 +183,3 @@ run().catch((e) => {
   console.error("Capture script failed:", e);
   process.exit(1);
 });
-

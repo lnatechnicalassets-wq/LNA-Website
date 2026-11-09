@@ -4,12 +4,7 @@ import React, { useEffect } from "react";
 import { MapPin, Calendar, Clock, Coins, ExternalLink, ArrowLeft, ArrowRight } from "lucide-react";
 import type { Internship } from "@/lib/content";
 import { InternshipLogo } from "./internship-logo";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export interface InternshipDetailsModalProps {
   internship: Internship | null;
@@ -143,9 +138,7 @@ export function InternshipDetailsModal({
             </div>
             <div>
               <span className="text-xs font-medium text-[#526E77] block">Monthly allowance</span>
-              <span className="text-sm font-bold text-[#172E35] block mt-0.5">
-                {allowanceText}
-              </span>
+              <span className="text-sm font-bold text-[#172E35] block mt-0.5">{allowanceText}</span>
             </div>
           </div>
         </div>

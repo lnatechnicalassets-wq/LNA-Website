@@ -1,58 +1,59 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Briefcase,
-  Calendar,
-  Layers,
-  TrendingUp,
-  Users,
-} from "lucide-react";
-import type { HeroSlide as HeroSlideType, Mentor } from "@/lib/content";
-import { Button } from "@/components/ui";
-import { HeroMentorCard } from "./hero-mentor-card";
+import { ArrowRight } from "lucide-react";
+import type { Course, HeroSlide as HeroSlideType, Mentor } from "@/lib/content";
+import { getMentorAvatar, getMentorCompanyLogo, getCourseMentorRoster } from "@/lib/mentors";
 
 export interface HeroSlideProps {
   slide: HeroSlideType;
   mentors: Mentor[];
+  courses?: Course[];
   isActive: boolean;
   slideIndex: number;
   totalSlides: number;
   onMentorClick: (mentor: Mentor) => void;
 }
 
+/**
+ * Render approved company logo at original aspect ratio directly below mentor name.
+ * If verified logo asset is missing, leave slot empty and provide accessible screen-reader name.
+ */
+function renderMentorCompanyLogo(mentor: Mentor) {
+  const logo = getMentorCompanyLogo(mentor);
+  if (logo) {
+    return (
+      <img
+        src={logo.src}
+        alt={logo.alt}
+        title={logo.alt}
+        className="h-3.5 sm:h-4 w-auto object-contain select-none"
+      />
+    );
+  }
+
+  // Missing verified logo asset: leave slot empty and provide accessible company name
+  return <span className="sr-only">{mentor.organization}</span>;
+}
+
 export function HeroSlide({
   slide,
   mentors,
+  courses,
   isActive,
   slideIndex,
   totalSlides,
   onMentorClick,
 }: HeroSlideProps) {
-  const isMto = slide.programType === "mto" || slide.id.includes("mto");
-  const isIrgp = slide.programType === "irgp" || slide.id.includes("irgp");
+  const isMto = slide.courseId === "mto-readiness" || slide.programType === "mto" || slide.id.includes("mto");
+  const isIrgp = slide.courseId === "irgp" || slide.programType === "irgp" || slide.id.includes("irgp");
 
-  // Dynamically resolve mentors from canonical dataset matching program ID (mto / irgp)
-  // Backward-compatible with both courseId (singular) and courseIds (array)
-  const programId = slide.programType || (isMto ? "mto" : isIrgp ? "irgp" : undefined);
-  const programMentors = mentors
-    .filter((m) => {
-      if (!programId) return false;
-      const inCourseIds = Array.isArray(m.courseIds) && m.courseIds.includes(programId);
-      const inCourseId = m.courseId === programId;
-      return inCourseIds || inCourseId;
-    })
-    .sort((a, b) => a.order - b.order);
-
-  // Backward compatibility fallback if mentors not yet mapped in test mocks
-  const displayMentors =
-    programMentors.length > 0
-      ? programMentors
-      : (slide.mentorIds || [])
-          .map((id) => mentors.find((m) => m.id === id))
-          .filter((m): m is Mentor => Boolean(m));
+  // Resolve shared course mentor roster by actual catalog course ID from course.mentorIds
+  const courseId = slide.courseId || (isMto ? "mto-readiness" : isIrgp ? "irgp" : undefined);
+  const matchedCourse = courses?.find((c) => c.id === courseId);
+  const displayMentors = courseId ? getCourseMentorRoster(mentors, matchedCourse ?? courseId, courses) : [];
 
   const handleSecondaryCtaClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (slide.secondaryCtaHref?.startsWith("#")) {
@@ -72,351 +73,421 @@ export function HeroSlide({
     }
   };
 
+  const handleStoryClick = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("lna:open-irgp-story"));
+    }
+  };
+
   return (
     <div
       role="group"
       aria-roledescription="slide"
       aria-label={`Slide ${slideIndex + 1} of ${totalSlides}: ${slide.title}`}
       aria-hidden={!isActive}
-      className={`w-full h-full flex flex-col justify-center transition-opacity duration-500 ease-in-out ${
+      className={`w-full flex flex-col justify-center transition-opacity duration-500 ease-in-out ${
         isActive
           ? "opacity-100 relative z-10 pointer-events-auto"
           : "opacity-0 absolute inset-0 pointer-events-none z-0"
       }`}
     >
       {/* Main Slide Content Container filling the allocated height */}
-      <div className="relative z-10 mx-auto max-w-7xl xl:max-w-[1360px] 2xl:max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 w-full h-full flex flex-col justify-center">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 xl:gap-10 py-3 sm:py-4 lg:py-4 h-full">
-          {/* ========================================================= */}
-          {/* LEFT EDITORIAL COLUMN (~35% Desktop, Inside Pearl Area)   */}
-          {/* ========================================================= */}
-          {isMto ? (
-            <div className="w-full lg:w-[36%] xl:w-[35%] flex flex-col items-start z-10 shrink-0 relative">
-              {/* 1. Eyebrow Badge: FEATURED PROGRAM */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] sm:text-xs font-bold tracking-wider uppercase bg-white/85 text-[#086477] border border-[#086477]/25 shadow-2xs mb-2 sm:mb-2.5 backdrop-blur-xs">
-                <Briefcase className="h-3 w-3 text-[#086477]" aria-hidden="true" />
-                <span>FEATURED PROGRAM</span>
-              </div>
-
-              {/* 2. Large Serif Heading: MTO Readiness Program */}
-              <h1 className="text-3xl sm:text-4xl lg:text-[38px] xl:text-[42px] font-serif font-bold tracking-tight text-[#172E35] leading-[1.04] mb-1 sm:mb-1.5">
-                <span className="block">MTO</span>
-                <span className="block">Readiness</span>
-                <span className="block italic font-serif font-normal text-[#086477]">Program</span>
-              </h1>
-
-              {/* 3. Deep Teal Accent Bar */}
-              <div className="w-10 h-0.5 bg-[#086477] rounded-full my-2 sm:my-2.5" aria-hidden="true" />
-
-              {/* 4. Subtitle */}
-              <h2 className="text-[14px] sm:text-[15px] lg:text-base font-bold text-[#172E35] tracking-tight leading-snug mb-1 font-sans">
-                Graduate Career &amp; Leadership Accelerator
-              </h2>
-
-              {/* 5. Description */}
-              <p className="text-xs sm:text-[13px] lg:text-[13.5px] text-[#426169] leading-relaxed max-w-[400px] mb-3 sm:mb-3.5 font-normal">
-                Practical preparation for Management Trainee Officer opportunities.
-              </p>
-
-              {/* 6. Three Statistics: 16 sessions / 1.5h each, 8 essential skills, 5 industry mentors */}
-              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 xl:gap-4 py-1 mb-3.5 sm:mb-4">
-                {/* 16 sessions */}
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
-                    <Layers className="h-4 w-4" aria-hidden="true" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight whitespace-nowrap">
-                      16 sessions
-                    </span>
-                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight whitespace-nowrap">
-                      1.5h each
-                    </span>
-                  </div>
-                </div>
-
-                <div className="h-6 w-px bg-teal-200/80 shrink-0" aria-hidden="true" />
-
-                {/* 8 essential skills */}
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
-                    <TrendingUp className="h-4 w-4" aria-hidden="true" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight whitespace-nowrap">
-                      8 essential
-                    </span>
-                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight whitespace-nowrap">
-                      skills
-                    </span>
-                  </div>
-                </div>
-
-                <div className="h-6 w-px bg-teal-200/80 shrink-0" aria-hidden="true" />
-
-                {/* 5 industry mentors */}
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
-                    <Users className="h-4 w-4" aria-hidden="true" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight whitespace-nowrap">
-                      5 industry
-                    </span>
-                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight whitespace-nowrap">
-                      mentors
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 7. Primary Button & Compact Start Date */}
-              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-                <Link
-                  href={slide.ctaHref}
-                  tabIndex={isActive ? 0 : -1}
+      <div className="relative z-10 mx-auto max-w-7xl xl:max-w-[1360px] 2xl:max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 w-full flex flex-col justify-center py-2 sm:py-3 lg:py-3">
+        {isMto ? (
+          /* ========================================================= */
+          /* MTO SLIDE (Full-Width Mentor Panel: 30/70 Rounded Frame)  */
+          /* ========================================================= */
+          <div className="w-full rounded-2xl lg:rounded-3xl border border-[#D5E2E5] bg-white shadow-[0_4px_24px_-4px_rgba(7,48,58,0.06)] overflow-hidden flex flex-col lg:flex-row my-auto">
+            {/* ------------------------------------------------------- */}
+            {/* LEFT PANEL (~28-30% Desktop, Solid Deep Teal with Stepped Lines) */}
+            {/* ------------------------------------------------------- */}
+            <div className="relative w-full lg:w-[29%] xl:w-[28%] bg-[#062D35] p-5 sm:p-6 lg:p-6 xl:p-7 flex flex-col justify-between overflow-hidden shrink-0 text-white">
+              {/* Stepped-line pattern in the lower-right corner (faint, SVG) */}
+              <div
+                className="absolute bottom-0 right-0 w-36 h-36 pointer-events-none overflow-hidden select-none z-0"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 140 140"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-full h-full opacity-20"
                 >
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="group rounded-full px-6 sm:px-7 py-2.5 sm:py-3 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-xs sm:text-[13.5px] shadow-sm hover:shadow-md transition-all duration-200 inline-flex items-center gap-2 cursor-pointer"
+                  <path
+                    d="M20 140 V110 H50 V80 H80 V50 H110 V20 H140"
+                    stroke="#86D4DC"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M45 140 V120 H75 V90 H105 V60 H140"
+                    stroke="#86D4DC"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M70 140 V130 H95 V105 H125 V75 H140"
+                    stroke="#86D4DC"
+                    strokeWidth="1"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+
+              {/* Left Top Content Block */}
+              <div className="relative z-10 flex flex-col items-start">
+                <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-[#7EB8C0] select-none">
+                  Lead Nation Academy
+                </span>
+
+                <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold tracking-wider uppercase bg-[#0C3D47]/90 text-[#86D4DC] border border-[#175A67] mt-2 sm:mt-2.5 shadow-2xs backdrop-blur-xs select-none">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"
+                    aria-hidden="true"
+                  />
+                  <span className="sr-only">FEATURED PROGRAM</span>
+                  <span>Cohort 1 · Admissions Open</span>
+                </div>
+
+                <h1 className="text-2xl sm:text-3xl lg:text-[28px] xl:text-[32px] font-serif font-bold tracking-tight text-white leading-[1.1] mt-3 sm:mt-3.5">
+                  <span className="sr-only">MTO Readiness Program</span>
+                  <span aria-hidden="true" className="block">
+                    MTO
+                  </span>
+                  <span aria-hidden="true" className="block">
+                    Readiness
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="block italic font-serif font-normal text-[#86D4DC]"
                   >
-                    <span>Explore the Program</span>
+                    Program
+                  </span>
+                </h1>
+
+                <h2 className="text-xs sm:text-[13px] font-bold text-[#A2C7CD] tracking-tight leading-snug mt-2 sm:mt-2.5">
+                  Graduate Career &amp; Leadership Accelerator
+                </h2>
+
+                <p className="text-[11.5px] sm:text-xs text-[#8BB7BF] leading-relaxed mt-1 max-w-[280px] font-normal">
+                  Practical preparation for Management Trainee Officer opportunities.
+                </p>
+
+                {/* Program Details: 16 sessions, 1.5 hours each, BDT 7,500 */}
+                <div className="flex items-center gap-2.5 sm:gap-3.5 mt-3 sm:mt-3.5 pt-1">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-serif text-2xl sm:text-[26px] xl:text-2xl font-bold text-white leading-none">
+                      16
+                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] sm:text-xs text-[#A2C7CD] leading-tight font-medium">
+                        Sessions
+                      </span>
+                      <span className="text-[9.5px] text-[#73A5AD] leading-none">1.5h each</span>
+                    </div>
+                  </div>
+                  <div className="h-5 sm:h-6 w-px bg-[#18535F] shrink-0" aria-hidden="true" />
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-serif text-xl sm:text-2xl xl:text-xl font-bold text-white leading-none">
+                      BDT 7,500
+                    </span>
+                    <span className="text-[10.5px] sm:text-[11px] text-[#A2C7CD] leading-tight font-medium">
+                      Fee
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Left Bottom Content Block: Actions */}
+              <div className="relative z-10 mt-4 sm:mt-5 pt-3 sm:pt-3.5 border-t border-[#144854] flex flex-col items-start w-full">
+                <span className="text-[9.5px] sm:text-[10px] font-bold tracking-[0.14em] uppercase text-[#73A5AD] mb-2 select-none">
+                  Admissions Open
+                </span>
+
+                <Link
+                  href="/enroll?course=mto-readiness"
+                  tabIndex={isActive ? 0 : -1}
+                  className="w-full block"
+                >
+                  <button
+                    type="button"
+                    className="w-full inline-flex items-center justify-between px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#C5E2E5] hover:bg-[#B3DCE0] text-[#073A44] font-semibold text-xs sm:text-[12.5px] transition-colors shadow-2xs group cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5E2E5]"
+                  >
+                    <span>Enroll Now</span>
                     <ArrowRight
-                      className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
+                      className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
                       aria-hidden="true"
                     />
-                  </Button>
+                  </button>
                 </Link>
 
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 border border-[#BCE1E5] shadow-2xs">
-                  <Calendar className="h-3.5 w-3.5 text-[#086477]" aria-hidden="true" />
-                  <span className="text-[11px] sm:text-xs font-semibold text-[#086477]">
-                    Classes begin December 1
-                  </span>
-                </div>
+                <Link
+                  href={slide.ctaHref || "/courses/mto-readiness"}
+                  tabIndex={isActive ? 0 : -1}
+                  aria-label="View Program Details — Explore the Program"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#86D4DC] hover:text-white transition-colors cursor-pointer group mt-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#86D4DC] rounded-sm"
+                >
+                  <span>View Program Details</span>
+                  <span className="sr-only">(Explore the Program)</span>
+                  <ArrowRight
+                    className="h-3 w-3 transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
+                    aria-hidden="true"
+                  />
+                </Link>
               </div>
             </div>
-          ) : (
-            <div className="w-full lg:w-[36%] xl:w-[35%] flex flex-col items-start z-10 shrink-0 relative">
-              {/* 1. Small Eyebrow Badge: COMPLETED PROGRAM · IRGP */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] sm:text-xs font-bold tracking-wider uppercase bg-white/85 text-[#086477] border border-[#086477]/25 shadow-2xs mb-2 sm:mb-2.5 backdrop-blur-xs">
-                <span>COMPLETED PROGRAM · IRGP</span>
-              </div>
 
-              {/* 2. Large Serif Heading: Industry Readiness Graduate Program */}
-              <h1 className="text-3xl sm:text-4xl lg:text-[36px] xl:text-[40px] font-serif font-bold tracking-tight text-[#172E35] leading-[1.04] mb-1 sm:mb-1.5">
-                <span className="block">Industry</span>
-                <span className="block">Readiness</span>
-                <span className="block">Graduate</span>
-                <span className="block italic font-serif font-normal text-[#086477]">Program</span>
-              </h1>
-
-              {/* 3. Deep Teal Accent Bar */}
-              <div className="w-10 h-0.5 bg-[#086477] rounded-full my-2 sm:my-2.5" aria-hidden="true" />
-
-              {/* 4. Supporting Text */}
-              <p className="text-xs sm:text-[13px] lg:text-[13.5px] text-[#426169] leading-relaxed max-w-[390px] mb-3 sm:mb-3.5 font-normal">
-                Practical learning guided by industry professionals.
-              </p>
-
-              {/* 5. Two Statistics: 10 focus areas, 8 industry mentors */}
-              <div className="flex items-center gap-3 sm:gap-4 py-1 mb-3.5 sm:mb-4">
-                {/* 10 focus areas */}
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
-                    <Layers className="h-4 w-4" aria-hidden="true" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight">
-                      10 focus
-                    </span>
-                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight">
-                      areas
-                    </span>
-                  </div>
-                </div>
-
-                <div className="h-6 w-px bg-teal-200/80 shrink-0" aria-hidden="true" />
-
-                {/* 8 industry mentors */}
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] flex items-center justify-center shrink-0 text-[#086477]">
-                    <Users className="h-4 w-4" aria-hidden="true" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[12.5px] sm:text-[13px] font-bold text-[#172E35] leading-tight">
-                      8 industry
-                    </span>
-                    <span className="text-[10px] sm:text-[11px] text-[#5B7E87] leading-tight">
-                      mentors
-                    </span>
-                  </div>
+            {/* ------------------------------------------------------- */}
+            {/* RIGHT PANEL (~70-72% Desktop, Pearl with 5 MTO Mentors) */}
+            {/* ------------------------------------------------------- */}
+            <div className="w-full lg:w-[71%] xl:w-[72%] bg-white p-4 sm:p-5 lg:p-5 xl:p-6 flex flex-col justify-between">
+              {/* Header Block */}
+              <div className="flex flex-col items-start mb-2.5 sm:mb-3">
+                <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.14em] uppercase text-[#086477] select-none">
+                  Faculty / Featured Program
+                </span>
+                <h2 className="font-serif text-xl sm:text-2xl lg:text-[24px] xl:text-[28px] font-bold text-[#172E35] tracking-tight leading-tight mt-0.5">
+                  Meet your MTO mentors
+                </h2>
+                <div className="sr-only">
+                  <span>MTO PROGRAM FACULTY</span>
+                  <h3>Learn From Industry Leaders</h3>
+                  <span>Class Starts From</span>
+                  <span>December 1, 2026</span>
                 </div>
               </div>
 
-              {/* 6. Primary Button & Underlined Secondary Action */}
-              <div className="flex flex-wrap items-center gap-3">
+              {/* Static Grid: 3 cards on first row, 2 centered below */}
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-2.5 xl:gap-3 w-full">
+                {displayMentors.slice(0, 5).map((mentor, index) => {
+                  const desktopSpanClass =
+                    index === 3
+                      ? "lg:col-span-2 lg:col-start-2"
+                      : index === 4
+                        ? "lg:col-span-2 lg:col-start-4"
+                        : "lg:col-span-2";
+
+                  return (
+                    <div
+                      key={mentor.id}
+                      onClick={() => onMentorClick(mentor)}
+                      role="button"
+                      tabIndex={isActive ? 0 : -1}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onMentorClick(mentor);
+                        }
+                      }}
+                      className={`group relative flex flex-col rounded-xl border border-[#D5E2E5] bg-white p-2 hover:border-[#086477]/40 hover:shadow-xs transition-all duration-200 cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#086477] col-span-1 ${desktopSpanClass}`}
+                      aria-label={`View mentor profile: ${mentor.name}${mentor.role ? `, ${mentor.role}` : ""} at ${mentor.organization}`}
+                    >
+                      {/* Taller portrait area with soft teal photo background */}
+                      <div className="relative w-full aspect-[4/3] sm:aspect-[4/3.2] lg:aspect-[4/2.8] xl:aspect-[4/3] max-h-[140px] sm:max-h-[150px] lg:max-h-[140px] xl:max-h-[155px] rounded-lg bg-[#E6F3F5] overflow-hidden flex items-end justify-center pt-1.5">
+                        <Image
+                          src={getMentorAvatar(mentor, index)}
+                          alt={mentor.name}
+                          fill
+                          sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 200px"
+                          className="object-contain object-bottom transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+
+                      {/* Mentor Name, Designation & Official Company Logo Directly Below */}
+                      <div className="mt-1.5 flex flex-col gap-0.5 w-full">
+                        <span className="text-[11px] sm:text-[11.5px] font-bold text-[#172E35] truncate leading-tight group-hover:text-[#086477] transition-colors">
+                          {mentor.name}
+                        </span>
+                        <span className="text-[10px] sm:text-[10.5px] text-[#526E77] truncate leading-tight">
+                          {mentor.role}
+                        </span>
+                        <div className="h-4 sm:h-4.5 flex items-center">
+                          {renderMentorCompanyLogo(mentor)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ========================================================= */
+          /* IRGP SLIDE (Full-Width Mentor Panel: 30/70 Rounded Frame) */
+          /* ========================================================= */
+          <div className="w-full rounded-2xl lg:rounded-3xl border border-[#D5E2E5] bg-white shadow-[0_4px_24px_-4px_rgba(7,48,58,0.06)] overflow-hidden flex flex-col lg:flex-row my-auto">
+            {/* ------------------------------------------------------- */}
+            {/* LEFT PANEL (~28-30% Desktop, Deep Teal with Event Photo) */}
+            {/* ------------------------------------------------------- */}
+            <div className="relative w-full lg:w-[29%] xl:w-[28%] bg-[#062D35] p-5 sm:p-6 lg:p-6 xl:p-7 flex flex-col justify-between overflow-hidden shrink-0 text-white">
+              {/* Event photo under dark teal overlay */}
+              <div
+                className="absolute inset-0 z-0 overflow-hidden pointer-events-none"
+                aria-hidden="true"
+              >
+                <Image
+                  src="/images/irgp/aiub-classroom-1.jpeg"
+                  alt=""
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 420px"
+                  className="object-cover object-[center_35%] opacity-25 mix-blend-luminosity"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#062D35]/95 via-[#062D35]/80 to-[#062D35]/98" />
+              </div>
+
+              {/* Left Top Content Block */}
+              <div className="relative z-10 flex flex-col items-start">
+                <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-[#7EB8C0] select-none">
+                  Lead Nation Academy
+                </span>
+
+                <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold tracking-wider uppercase bg-[#0C3D47]/90 text-[#86D4DC] border border-[#175A67] mt-2 sm:mt-2.5 shadow-2xs backdrop-blur-xs select-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" aria-hidden="true" />
+                  <span className="sr-only">IRGP</span>
+                  <span>Completed program · IRGP</span>
+                </div>
+
+                <h1 className="text-2xl sm:text-3xl lg:text-[28px] xl:text-[32px] font-serif font-bold tracking-tight text-white leading-[1.1] mt-3 sm:mt-3.5">
+                  <span className="sr-only">Industry Readiness Graduate Program</span>
+                  <span aria-hidden="true" className="block">
+                    Industry
+                  </span>
+                  <span aria-hidden="true" className="block">
+                    Readiness
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="block italic font-serif font-normal text-[#86D4DC]"
+                  >
+                    Graduate Program
+                  </span>
+                </h1>
+
+                <p className="text-xs sm:text-[12.5px] text-[#A2C7CD] leading-relaxed mt-2 sm:mt-2.5 max-w-[280px] font-normal">
+                  Practical learning guided by industry professionals.
+                </p>
+
+                {/* 10 Focus areas | 8 Industry mentors */}
+                <div className="flex items-center gap-3 sm:gap-3.5 mt-3 sm:mt-3.5 pt-1">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-serif text-2xl sm:text-[26px] xl:text-2xl font-bold text-white leading-none">
+                      10
+                    </span>
+                    <span className="text-[11px] sm:text-xs text-[#A2C7CD] leading-tight font-medium">
+                      Focus areas
+                    </span>
+                  </div>
+                  <div className="h-5 sm:h-6 w-px bg-[#18535F] shrink-0" aria-hidden="true" />
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-serif text-2xl sm:text-[26px] xl:text-2xl font-bold text-white leading-none">
+                      8
+                    </span>
+                    <span className="text-[11px] sm:text-xs text-[#A2C7CD] leading-tight font-medium">
+                      Industry mentors
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Left Bottom Content Block: Program Archive Actions */}
+              <div className="relative z-10 mt-4 sm:mt-5 pt-3 sm:pt-3.5 border-t border-[#144854] flex flex-col items-start w-full">
+                <span className="text-[9.5px] sm:text-[10px] font-bold tracking-[0.14em] uppercase text-[#73A5AD] mb-2 select-none">
+                  Program archive
+                </span>
+
                 <Link
-                  href={slide.ctaHref}
+                  href={slide.ctaHref || "/courses/irgp"}
                   tabIndex={isActive ? 0 : -1}
+                  onClick={handleStoryClick}
+                  className="w-full block"
                 >
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="group rounded-full px-6 sm:px-7 py-2.5 sm:py-3 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-xs sm:text-[13.5px] shadow-sm hover:shadow-md transition-all duration-200 inline-flex items-center gap-2 cursor-pointer"
+                  <button
+                    type="button"
+                    className="w-full inline-flex items-center justify-between px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#C5E2E5] hover:bg-[#B3DCE0] text-[#073A44] font-semibold text-xs sm:text-[12.5px] transition-colors shadow-2xs group cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5E2E5]"
                   >
                     <span>Explore the IRGP Story</span>
                     <ArrowRight
-                      className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
+                      className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
                       aria-hidden="true"
                     />
-                  </Button>
+                  </button>
                 </Link>
 
                 <a
-                  href="#reviews"
+                  href={slide.secondaryCtaHref || "#reviews"}
                   tabIndex={isActive ? 0 : -1}
                   onClick={handleSecondaryCtaClick}
-                  className="text-xs sm:text-[13px] font-semibold text-[#086477] hover:text-[#064654] underline underline-offset-4 transition-colors cursor-pointer inline-block"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#86D4DC] hover:text-white transition-colors cursor-pointer group mt-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#86D4DC] rounded-sm"
                 >
-                  View Learner Experiences
+                  <span>View Learner Experiences</span>
+                  <ArrowRight
+                    className="h-3 w-3 transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
+                    aria-hidden="true"
+                  />
                 </a>
               </div>
             </div>
-          )}
 
-          {/* ========================================================= */}
-          {/* RIGHT SHOWCASE COLUMN (~65% Desktop, Floating over Lounge) */}
-          {/* ========================================================= */}
-          {isMto ? (
-            <div className="w-full lg:w-[64%] xl:w-[65%] flex flex-col justify-center items-center lg:items-end relative z-10 shrink-0">
-              {/* Desktop: TWO–ONE–TWO Grid in 3 Rows */}
-              <div className="hidden lg:grid grid-cols-4 gap-x-3.5 xl:gap-x-4 gap-y-2 lg:gap-y-2.5 xl:gap-y-3 w-full max-w-[480px] xl:max-w-[530px]">
-                {/* Row 1: Arif Rahman & Tanvir Hossain */}
-                <div className="col-span-2 col-start-1">
-                  <HeroMentorCard
-                    mentor={displayMentors[0]}
-                    variant="mto"
-                    onClick={onMentorClick}
-                    priority={isActive}
-                  />
-                </div>
-                <div className="col-span-2 col-start-3">
-                  <HeroMentorCard
-                    mentor={displayMentors[1]}
-                    variant="mto"
-                    onClick={onMentorClick}
-                    priority={isActive}
-                  />
-                </div>
-
-                {/* Row 2: Mir Hasib Mahmud (Centered) */}
-                <div className="col-span-2 col-start-2">
-                  <HeroMentorCard
-                    mentor={displayMentors[2]}
-                    variant="mto"
-                    isFeatured={true}
-                    onClick={onMentorClick}
-                    priority={isActive}
-                  />
-                </div>
-
-                {/* Row 3: Fahim Ahmed & Sayem Chowdhury */}
-                <div className="col-span-2 col-start-1">
-                  <HeroMentorCard
-                    mentor={displayMentors[3]}
-                    variant="mto"
-                    onClick={onMentorClick}
-                    priority={isActive}
-                  />
-                </div>
-                <div className="col-span-2 col-start-3">
-                  <HeroMentorCard
-                    mentor={displayMentors[4]}
-                    variant="mto"
-                    onClick={onMentorClick}
-                    priority={isActive}
-                  />
-                </div>
+            {/* ------------------------------------------------------- */}
+            {/* RIGHT PANEL (~70-72% Desktop, Pearl with 4x2 Mentor Grid) */}
+            {/* ------------------------------------------------------- */}
+            <div className="w-full lg:w-[71%] xl:w-[72%] bg-white p-4 sm:p-5 lg:p-5 xl:p-6 flex flex-col justify-between">
+              {/* Header Block */}
+              <div className="flex flex-col items-start mb-2.5 sm:mb-3">
+                <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.14em] uppercase text-[#086477] select-none">
+                  Mentors / Completed Program
+                </span>
+                <h2 className="font-serif text-xl sm:text-2xl lg:text-[24px] xl:text-[28px] font-bold text-[#172E35] tracking-tight leading-tight mt-0.5">
+                  The people behind IRGP.
+                </h2>
               </div>
 
-              {/* Mobile / Tablet: Contained Manually Swipeable Faculty Area */}
-              <div
-                className="lg:hidden w-full overflow-x-auto touch-pan-x snap-x snap-mandatory flex gap-2.5 pb-2 pt-1 no-scrollbar"
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchMove={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
-              >
-                {displayMentors.slice(0, 5).map((mentor, index) => (
-                  <div key={mentor.id} className="w-[145px] shrink-0 snap-center">
-                    <HeroMentorCard
-                      mentor={mentor}
-                      variant="mto"
-                      isFeatured={index === 2}
-                      onClick={onMentorClick}
-                      priority={isActive && index === 0}
-                    />
+              {/* Static 4x2 Mentor Grid on Desktop, 2-col/1-col on Mobile */}
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 xl:gap-3 w-full">
+                {displayMentors.slice(0, 8).map((mentor) => (
+                  <div
+                    key={mentor.id}
+                    onClick={() => onMentorClick(mentor)}
+                    role="button"
+                    tabIndex={isActive ? 0 : -1}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onMentorClick(mentor);
+                      }
+                    }}
+                    className="group relative flex flex-col rounded-xl border border-[#D5E2E5] bg-white p-2 hover:border-[#086477]/40 hover:shadow-xs transition-all duration-200 cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#086477]"
+                    aria-label={`View mentor profile: ${mentor.name} at ${mentor.organization}`}
+                  >
+                    {/* Taller portrait area with soft teal photo background */}
+                    <div className="relative w-full aspect-[4/3.6] min-[420px]:aspect-square sm:aspect-[4/4] lg:aspect-[4/3.4] xl:aspect-[4/3.6] max-h-[135px] sm:max-h-[150px] lg:max-h-[140px] xl:max-h-[150px] rounded-lg bg-[#E6F3F5] overflow-hidden flex items-end justify-center pt-1.5">
+                      <Image
+                        src={getMentorAvatar(mentor)}
+                        alt={mentor.name}
+                        fill
+                        sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 200px"
+                        className="object-contain object-bottom transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+
+                    {/* Mentor Name & Official Company Logo Directly Below */}
+                    <div className="mt-1.5 flex flex-col gap-0.5 w-full">
+                      <span className="text-[11px] sm:text-[11.5px] font-bold text-[#172E35] truncate leading-tight group-hover:text-[#086477] transition-colors">
+                        {mentor.name}
+                      </span>
+                      <div className="h-4 sm:h-4.5 flex items-center">
+                        {renderMentorCompanyLogo(mentor)}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
-          ) : (
-            <div className="w-full lg:w-[64%] xl:w-[65%] flex flex-col justify-center items-center lg:items-end relative z-10 shrink-0">
-              {/* Desktop: THREE–TWO–THREE Grid in 3 Rows */}
-              <div className="hidden lg:grid grid-cols-6 gap-x-2.5 xl:gap-x-3.5 gap-y-2 lg:gap-y-2.5 xl:gap-y-3 w-full max-w-[640px] xl:max-w-[700px]">
-                {/* Row 1 (Top: 3 cards) */}
-                <div className="col-span-2 col-start-1">
-                  <HeroMentorCard mentor={displayMentors[0]} variant="irgp" onClick={onMentorClick} priority={isActive} />
-                </div>
-                <div className="col-span-2 col-start-3">
-                  <HeroMentorCard mentor={displayMentors[1]} variant="irgp" onClick={onMentorClick} priority={isActive} />
-                </div>
-                <div className="col-span-2 col-start-5">
-                  <HeroMentorCard mentor={displayMentors[2]} variant="irgp" onClick={onMentorClick} priority={isActive} />
-                </div>
-
-                {/* Row 2 (Middle: 2 cards centered) */}
-                <div className="col-span-2 col-start-2">
-                  <HeroMentorCard mentor={displayMentors[3]} variant="irgp" onClick={onMentorClick} priority={isActive} />
-                </div>
-                <div className="col-span-2 col-start-4">
-                  <HeroMentorCard mentor={displayMentors[4]} variant="irgp" onClick={onMentorClick} priority={isActive} />
-                </div>
-
-                {/* Row 3 (Bottom: 3 cards) */}
-                <div className="col-span-2 col-start-1">
-                  <HeroMentorCard mentor={displayMentors[5]} variant="irgp" onClick={onMentorClick} priority={isActive} />
-                </div>
-                <div className="col-span-2 col-start-3">
-                  <HeroMentorCard mentor={displayMentors[6]} variant="irgp" onClick={onMentorClick} priority={isActive} />
-                </div>
-                <div className="col-span-2 col-start-5">
-                  <HeroMentorCard mentor={displayMentors[7]} variant="irgp" onClick={onMentorClick} priority={isActive} />
-                </div>
-              </div>
-
-              {/* Mobile / Tablet: Contained Manually Swipeable Faculty Area */}
-              <div
-                className="lg:hidden w-full overflow-x-auto touch-pan-x snap-x snap-mandatory flex gap-2.5 pb-2 pt-1 no-scrollbar"
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchMove={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
-              >
-                {displayMentors.slice(0, 8).map((mentor, index) => (
-                  <div key={mentor.id} className="w-[140px] shrink-0 snap-center">
-                    <HeroMentorCard
-                      mentor={mentor}
-                      variant="irgp"
-                      onClick={onMentorClick}
-                      priority={isActive && index === 0}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

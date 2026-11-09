@@ -31,7 +31,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ["content/*", "**/content/*"],
+              group: ["content/*", "content/**", "!@/lib/content/**"],
               message:
                 "Components never import from /content directly. Use @/lib/content (Rule R4).",
             },

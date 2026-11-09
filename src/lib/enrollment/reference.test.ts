@@ -15,4 +15,3 @@ describe("generateEnrollmentReference", () => {
     expect(refs.size).toBe(50);
   });
 });
-

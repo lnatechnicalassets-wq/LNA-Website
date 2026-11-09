@@ -24,4 +24,3 @@ export function getEnrollmentConfig(): EnrollmentConfig {
   const raw = fs.readFileSync(filePath, "utf-8");
   return JSON.parse(raw);
 }
-

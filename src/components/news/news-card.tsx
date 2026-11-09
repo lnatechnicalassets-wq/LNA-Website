@@ -13,11 +13,7 @@ export interface NewsCardProps {
   priority?: boolean;
 }
 
-export function NewsCard({
-  article,
-  variant = "standard",
-  priority = false,
-}: NewsCardProps) {
+export function NewsCard({ article, variant = "standard", priority = false }: NewsCardProps) {
   const isCompact = variant === "compact";
 
   return (
@@ -57,9 +53,7 @@ export function NewsCard({
           {/* Title */}
           <h3
             className={`font-serif font-bold text-[#172E35] group-hover:text-[#086477] transition-colors line-clamp-2 ${
-              isCompact
-                ? "text-lg sm:text-xl leading-snug"
-                : "text-xl sm:text-2xl leading-snug"
+              isCompact ? "text-lg sm:text-xl leading-snug" : "text-xl sm:text-2xl leading-snug"
             }`}
           >
             {article.title}
@@ -93,4 +87,3 @@ export function NewsCard({
     </article>
   );
 }
-

@@ -3,28 +3,12 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  CheckCircle2,
-  ArrowRight,
-  X,
-  Users,
-  Award,
-  BookOpen,
-} from "lucide-react";
+import { Calendar, MapPin, CheckCircle2, ArrowRight } from "lucide-react";
 import type { Course, Batch, Mentor } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
 import { getMentorAvatar } from "@/lib/mentors";
 import { useMentorQuickView } from "./mentor-quick-view-context";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export interface CourseDetailsModalProps {
   course: Course | null;
@@ -224,4 +208,3 @@ export function CourseDetailsModal({
     </Dialog>
   );
 }
-

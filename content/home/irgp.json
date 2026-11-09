@@ -42,80 +42,80 @@
       }
     ],
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "LNA Academic Registry (Inaugural Program Record)",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (post ID 469, post ID 1290)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   },
   "gallery": [
     {
       "id": "irgp-gallery-01",
-      "src": "/images/irgp-gallery-skills.jpg",
-      "category": "Skill Development Session",
+      "src": "/images/irgp/aiub-classroom-1.jpeg",
+      "category": "Orientation & Briefing",
       "icon": "Monitor",
-      "title": "Executive Skill Development",
-      "caption": "Interactive classroom workshops focused on practical workplace frameworks, digital tools, and analytical problem solving. (Representative executive training visual)",
-      "alt": "Representative executive workshop photograph: Bangladeshi learners collaborating with laptops in a training session",
+      "title": "Program Orientation Session",
+      "caption": "Orientation and briefing session conducted at AIUB campus, introducing students to the 16-module corporate curriculum.",
+      "alt": "AIUB students attending IRGP orientation session in auditorium",
       "order": 1,
       "provenance": {
-        "class": "B",
-        "verified": false,
-        "source": "Representative Executive Training Visual (Class B Development Placeholder - Official event photo archive pending LNA release)",
-        "verifiedBy": null,
-        "verifiedOn": null
+        "class": "A",
+        "verified": true,
+        "source": "WordPress lnabdorg_wp955.sql (attachment ID 1296)",
+        "verifiedBy": "Content Migration",
+        "verifiedOn": "2026-11-09"
       }
     },
     {
       "id": "irgp-gallery-02",
-      "src": "/images/irgp-gallery-teamwork.jpg",
-      "category": "Team Project & Practice",
+      "src": "/images/irgp/aiub-booth-2.jpeg",
+      "category": "Recruitment Drive",
       "icon": "Users",
-      "title": "Collaborative Team Projects",
-      "caption": "Participants collaborating closely on business presentation decks, market research models, and cross-functional case studies. (Representative executive training visual)",
-      "alt": "Representative executive workshop photograph: Young professionals gathered around a laptop collaborating on a business presentation",
+      "title": "On-Campus CV Submission Drive",
+      "caption": "Over 100 CVs submitted directly at the LNA information booth during the on-campus recruitment drive at AIUB.",
+      "alt": "Students submitting CVs at the LNA information booth",
       "order": 2,
       "provenance": {
-        "class": "B",
-        "verified": false,
-        "source": "Representative Executive Training Visual (Class B Development Placeholder - Official event photo archive pending LNA release)",
-        "verifiedBy": null,
-        "verifiedOn": null
+        "class": "A",
+        "verified": true,
+        "source": "WordPress lnabdorg_wp955.sql (attachment ID 1299)",
+        "verifiedBy": "Content Migration",
+        "verifiedOn": "2026-11-09"
       }
     },
     {
       "id": "irgp-gallery-03",
-      "src": "/images/irgp-gallery-discussion.jpg",
-      "category": "Mentor-Led Discussion",
+      "src": "/images/irgp/aiub-interview-3.jpeg",
+      "category": "Real-Time Interviews",
       "icon": "UserCheck",
-      "title": "Executive Mentorship Sessions",
-      "caption": "Senior corporate directors advising learners on organizational culture, communication etiquette, and strategic leadership thinking. (Representative executive training visual)",
-      "alt": "Representative executive workshop photograph: Senior corporate mentor actively mentoring an early-career learner across a meeting table",
+      "title": "On-Spot Screening & Viva",
+      "caption": "40 shortlisted candidates participating in real-time screening interviews conducted by corporate evaluators.",
+      "alt": "Industry evaluators conducting interviews with student candidates",
       "order": 3,
       "provenance": {
-        "class": "B",
-        "verified": false,
-        "source": "Representative Executive Training Visual (Class B Development Placeholder - Official event photo archive pending LNA release)",
-        "verifiedBy": null,
-        "verifiedOn": null
+        "class": "A",
+        "verified": true,
+        "source": "WordPress lnabdorg_wp955.sql (attachment ID 1298)",
+        "verifiedBy": "Content Migration",
+        "verifiedOn": "2026-11-09"
       }
     },
     {
       "id": "irgp-gallery-04",
-      "src": "/images/irgp-gallery-completion.jpg",
-      "category": "Program Completion",
+      "src": "/images/irgp/aiub-discussion-4.jpeg",
+      "category": "Executive Collaboration",
       "icon": "Award",
-      "title": "Cohort Graduation & Milestones",
-      "caption": "Cohort milestone celebration with certificates presented in front of the LNA executive backdrop banner. (Representative executive milestone visual)",
-      "alt": "Representative executive milestone photograph: Graduates in executive attire holding completion folders in front of an LNA backdrop banner",
+      "title": "AIUB ICE × LNA Partnership Panel",
+      "caption": "Academic leadership from AIUB Institute of Continuing Education and Lead Nation Academy directors in strategic dialogue.",
+      "alt": "AIUB faculty and LNA executive leadership during the partnership launch",
       "order": 4,
       "provenance": {
-        "class": "B",
-        "verified": false,
-        "source": "Representative Executive Training Visual (Class B Development Placeholder - Official event photo archive pending LNA release)",
-        "verifiedBy": null,
-        "verifiedOn": null
+        "class": "A",
+        "verified": true,
+        "source": "WordPress lnabdorg_wp955.sql (attachment ID 1300)",
+        "verifiedBy": "Content Migration",
+        "verifiedOn": "2026-11-09"
       }
     }
   ],

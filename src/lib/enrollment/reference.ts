@@ -18,4 +18,3 @@ export function generateEnrollmentReference(): string {
 
   return `LNA-${seg1}-${seg2}`;
 }
-

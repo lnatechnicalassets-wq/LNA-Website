@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, RotateCcw, X, AlertCircle } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowRight, Check, ChevronDown, X, AlertCircle } from "lucide-react";
 import type { Course, Batch } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
 import type { EnrollmentConfig, EnrollmentStep, EnrollmentState } from "@/lib/enrollment/types";
@@ -17,7 +17,6 @@ export interface EnrollmentViewProps {
 }
 
 export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   // Read URL preselection
@@ -223,12 +222,9 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
 
   // Determine which step bar to render
   const isPostReviewPayment =
-    step === "payment_method" ||
-    step === "bank_transfer" ||
-    step === "payment_failed";
+    step === "payment_method" || step === "bank_transfer" || step === "payment_failed";
 
-  const isCompletedStep =
-    step === "confirmed" || step === "pending_verification";
+  const isCompletedStep = step === "confirmed" || step === "pending_verification";
 
   // Check which photo to show
   const isConfirmationPhoto = isCompletedStep;
@@ -283,7 +279,8 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
               {step === "program" && (
                 <>
                   <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-serif font-bold text-[#172E35] leading-[1.08] tracking-tight mb-2">
-                    Choose what <span className="italic font-normal text-[#086477]">comes next.</span>
+                    Choose what{" "}
+                    <span className="italic font-normal text-[#086477]">comes next.</span>
                   </h1>
                   <p className="text-sm sm:text-base text-[#526E77]">
                     Choose a program and an available batch to get started.
@@ -413,7 +410,10 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                     <div>
                       <div
                         className={`h-1 rounded-full mb-2 ${
-                          step === "program" || step === "details" || step === "questions" || step === "review"
+                          step === "program" ||
+                          step === "details" ||
+                          step === "questions" ||
+                          step === "review"
                             ? "bg-[#086477]"
                             : "bg-[#D5E2E5]"
                         }`}
@@ -477,9 +477,7 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                   <h4 className="font-semibold text-sm sm:text-base text-[#172E35]">
                     {selectedCourse.title}
                   </h4>
-                  <p className="text-xs text-[#526E77] mt-0.5">
-                    {selectedBatch.name}
-                  </p>
+                  <p className="text-xs text-[#526E77] mt-0.5">{selectedBatch.name}</p>
                 </div>
                 <button
                   type="button"
@@ -524,9 +522,7 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                     />
                   </div>
                   {errors.courseId && (
-                    <p className="mt-1.5 text-xs text-rose-600 font-medium">
-                      {errors.courseId}
-                    </p>
+                    <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors.courseId}</p>
                   )}
                 </div>
 
@@ -602,9 +598,7 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                   )}
 
                   {errors.batchId && (
-                    <p className="mt-1.5 text-xs text-rose-600 font-medium">
-                      {errors.batchId}
-                    </p>
+                    <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors.batchId}</p>
                   )}
                 </div>
 
@@ -768,9 +762,7 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                           />
                         </div>
                         {errors[q.id] && (
-                          <p className="mt-1.5 text-xs text-rose-600 font-medium">
-                            {errors[q.id]}
-                          </p>
+                          <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors[q.id]}</p>
                         )}
                       </div>
                     );
@@ -800,9 +792,7 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                           className="w-full px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs resize-none"
                         />
                         {errors[q.id] && (
-                          <p className="mt-1.5 text-xs text-rose-600 font-medium">
-                            {errors[q.id]}
-                          </p>
+                          <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors[q.id]}</p>
                         )}
                       </div>
                     );
@@ -832,9 +822,7 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                         className="w-full px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
                       />
                       {errors[q.id] && (
-                        <p className="mt-1.5 text-xs text-rose-600 font-medium">
-                          {errors[q.id]}
-                        </p>
+                        <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors[q.id]}</p>
                       )}
                     </div>
                   );
@@ -1052,7 +1040,9 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-[#086477]"
                   >
                     <span>
-                      {state.paymentMethod === "bkash" ? "Continue to bKash" : "Continue to bank details"}
+                      {state.paymentMethod === "bkash"
+                        ? "Continue to bKash"
+                        : "Continue to bank details"}
                     </span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
@@ -1464,4 +1454,3 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
     </div>
   );
 }
-

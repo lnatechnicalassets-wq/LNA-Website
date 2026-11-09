@@ -23,24 +23,33 @@ export default async function HomePage() {
   const batchRepo = getBatchRepository();
 
   // Load homepage data in parallel via clean repository interfaces (Rule R4)
-  const [heroSlides, partners, courses, batches, mentors, reviews, irgpData, internships, contactConfig] =
-    await Promise.all([
-      homeRepo.getHeroSlides(),
-      homeRepo.getPartners(),
-      courseRepo.getAllCourses(),
-      batchRepo.getAllBatches(),
-      homeRepo.getMentors(),
-      homeRepo.getReviews(),
-      homeRepo.getIrgpData(),
-      homeRepo.getInternships(),
-      homeRepo.getContactConfig(),
-    ]);
+  const [
+    heroSlides,
+    partners,
+    courses,
+    batches,
+    mentors,
+    reviews,
+    irgpData,
+    internships,
+    contactConfig,
+  ] = await Promise.all([
+    homeRepo.getHeroSlides(),
+    homeRepo.getPartners(),
+    courseRepo.getAllCourses(),
+    batchRepo.getAllBatches(),
+    homeRepo.getMentors(),
+    homeRepo.getReviews(),
+    homeRepo.getIrgpData(),
+    homeRepo.getInternships(),
+    homeRepo.getContactConfig(),
+  ]);
 
   return (
     <MentorQuickViewProvider>
       <div className="flex flex-col bg-surface-base">
         {/* 1. Hero Section (HeroSlider + Two-Slide Mentor Showcase) */}
-        <HeroSection slides={heroSlides} mentors={mentors} />
+        <HeroSection slides={heroSlides} mentors={mentors} courses={courses} />
 
         {/* 2. Partners Section (Corporate Sector Alignments) */}
         <PartnersSection partners={partners} />

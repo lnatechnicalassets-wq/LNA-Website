@@ -3,12 +3,12 @@
     "id": "internship-chaldal-01",
     "roleTitle": "Intern",
     "companyName": "Chaldal",
-    "companyLogo": "chaldal",
+    "companyLogo": "/images/internships/chaldal.png",
     "workplace": "Chaldal HQ · On-site",
     "schedule": "6 days/week",
     "duration": "6 months",
-    "shortDescription": "Experience a technology-driven grocery business.",
-    "fullDescription": "Experience a fast-paced work environment within a technology-driven grocery platform in Bangladesh.",
+    "shortDescription": "Experience a technology-driven grocery business in Bangladesh.",
+    "fullDescription": "Apply now to experience a fast-paced work environment with one of the leading tech-driven grocery platforms in Bangladesh.",
     "allowance": {
       "minPoisha": 600000,
       "maxPoisha": 1200000,
@@ -19,23 +19,23 @@
     "published": true,
     "order": 1,
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo internship listing from partner reference",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 1193)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   },
   {
     "id": "internship-fylo-01",
     "roleTitle": "Intern",
     "companyName": "Fylo",
-    "companyLogo": "fylo",
+    "companyLogo": "/images/internships/fylo.png",
     "workplace": "Fylo HQ · On-site",
     "schedule": "6 days/week",
     "duration": "6 months",
     "shortDescription": "Explore technology, marketing and business development.",
-    "fullDescription": "Explore technology, marketing and business development initiatives across fast-paced startup teams in Bangladesh.",
+    "fullDescription": "Join Fylo’s team and gain practical skills in the fields of technology, marketing, and business development!",
     "allowance": {
       "minPoisha": 700000,
       "maxPoisha": 1000000,
@@ -45,23 +45,23 @@
     "published": true,
     "order": 2,
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo internship listing from partner reference",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 1192)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   },
   {
     "id": "internship-dotlines-01",
     "roleTitle": "Intern",
     "companyName": "Dotlines",
-    "companyLogo": "dotlines",
+    "companyLogo": "/images/internships/dotlines.png",
     "workplace": "Dotlines HQ · On-site",
     "schedule": "6 days/week",
     "duration": "3 months",
-    "shortDescription": "Explore work across multiple business areas.",
-    "fullDescription": "Explore work across multiple business areas including enterprise telecom, consumer technology, and digital payment infrastructure.",
+    "shortDescription": "Work with a globally diversified company.",
+    "fullDescription": "Work with a globally diversified company that drives impact across multiple verticals. A great opportunity to grow!",
     "allowance": {
       "minPoisha": 700000,
       "maxPoisha": 1200000,
@@ -71,12 +71,63 @@
     "published": true,
     "order": 3,
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo internship listing from partner reference",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 1194)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
+    }
+  },
+  {
+    "id": "internship-ghari-01",
+    "roleTitle": "Intern",
+    "companyName": "Ghari Detergent",
+    "companyLogo": "/images/internships/ghari.png",
+    "workplace": "Ghari Detergent HQ · On-site",
+    "schedule": "6 days/week",
+    "duration": "6 months",
+    "shortDescription": "Gain hands-on corporate FMCG experience.",
+    "fullDescription": "Hands-on corporate experience in brand operations, supply chain, and retail distribution with Ghari Detergent.",
+    "allowance": {
+      "minPoisha": 700000,
+      "maxPoisha": 1200000,
+      "period": "month",
+      "displayText": "BDT 7,000 – 12,000/month"
+    },
+    "published": true,
+    "order": 4,
+    "provenance": {
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 1190)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
+    }
+  },
+  {
+    "id": "internship-triptakerz-01",
+    "roleTitle": "Intern",
+    "companyName": "Trip Takerz",
+    "companyLogo": "/images/internships/triptakerz.png",
+    "workplace": "Trip Takerz HQ · On-site",
+    "schedule": "5 days (6 hours)/week",
+    "duration": "6 months",
+    "shortDescription": "Gain experience in corporate travel and hospitality.",
+    "fullDescription": "Gain hands-on experience in travel management, customer support, and business operations with Trip Takerz.",
+    "allowance": {
+      "minPoisha": 600000,
+      "maxPoisha": 800000,
+      "period": "month",
+      "displayText": "BDT 6,000 – 8,000/month"
+    },
+    "published": true,
+    "order": 5,
+    "provenance": {
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 1229)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   }
 ]
-

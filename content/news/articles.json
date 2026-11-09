@@ -1,16 +1,179 @@
 [
   {
+    "id": "news-btrc-telecom-fair-2025",
+    "slug": "lna-partners-with-btrc-for-telecom-and-digital-innovation-fair-2025",
+    "title": "LNA Partners with BTRC for Telecom and Digital Innovation Fair 2025",
+    "excerpt": "Lead Nation Academy served as the Strategic Partner for the Telecom and Digital Innovation Fair 2025, organized by the Bangladesh Telecommunication Regulatory Commission (BTRC).",
+    "category": "Partnerships",
+    "publishedAt": "2025-12-05",
+    "author": "LNA Team",
+    "readTime": "3 min read",
+    "coverImage": "/images/news/btrc-1.jpeg",
+    "coverImageAlt": "LNA and BTRC officials at the Telecom and Digital Innovation Fair 2025",
+    "featured": true,
+    "status": "published",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "Lead Nation Academy (LNA) was proud to serve as the Strategic Partner for the Telecom and Digital Innovation Fair 2025, organized by the Bangladesh Telecommunication Regulatory Commission (BTRC)."
+      },
+      {
+        "type": "paragraph",
+        "text": "As the Strategic Partner, LNA took the lead in full event planning, jury board support, and overall coordination, ensuring the smooth execution of this prestigious national event. This collaboration highlights LNA’s commitment to empowering innovation, fostering collaboration between academia, industry, and government bodies, and creating meaningful opportunities for the next generation of digital leaders."
+      },
+      {
+        "type": "image",
+        "src": "/images/news/btrc-2.jpeg",
+        "alt": "BTRC Telecom and Digital Innovation Fair 2025 coordination session",
+        "caption": "LNA leadership coordinating event operations and jury panels with BTRC"
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Fostering National Digital Innovation",
+        "id": "fostering-national-digital-innovation"
+      },
+      {
+        "type": "paragraph",
+        "text": "Through this strategic alignment, LNA worked alongside telecom regulators, university innovators, and tech industry executives to evaluate forward-looking digital initiatives and promote industry-ready technical talent across Bangladesh."
+      }
+    ],
+    "provenance": {
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (post ID 1394, attachments 1395, 1396)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
+    }
+  },
+  {
+    "id": "news-cub-partnership-agreement",
+    "slug": "lna-signs-strategic-partnership-with-canadian-university-of-bangladesh-cub",
+    "title": "LNA Signs Strategic Partnership with Canadian University of Bangladesh (CUB)",
+    "excerpt": "Lead Nation Academy (LNA) and Canadian University of Bangladesh (CUB) officially signed a partnership agreement aimed at bridging the industry-academia gap.",
+    "category": "Partnerships",
+    "publishedAt": "2025-12-05",
+    "author": "LNA Team",
+    "readTime": "3 min read",
+    "coverImage": "/images/news/cub-image-1.png",
+    "coverImageAlt": "LNA and Canadian University of Bangladesh leadership signing the partnership agreement",
+    "featured": false,
+    "status": "published",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "On July 28, 2025, Lead Nation Academy (LNA) and Canadian University of Bangladesh (CUB) officially signed a partnership agreement aimed at bridging the industry-academia gap."
+      },
+      {
+        "type": "image",
+        "src": "/images/news/cub-image-2.png",
+        "alt": "CUB and LNA representatives exchanging documents",
+        "caption": "Official signing and document exchange at CUB campus"
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Strengthening Industry-Academia Collaboration",
+        "id": "strengthening-industry-academia-collaboration"
+      },
+      {
+        "type": "paragraph",
+        "text": "This collaboration focuses on equipping students with practical corporate skills, professional development workshops, and direct industry exposure, preparing graduates to excel in competitive workplace environments."
+      },
+      {
+        "type": "image",
+        "src": "/images/news/cub-image-3.png",
+        "alt": "CUB leadership and LNA team group photograph",
+        "caption": "Faculty members and LNA executive leadership at Canadian University of Bangladesh"
+      },
+      {
+        "type": "paragraph",
+        "text": "Through joint initiatives, CUB students will gain access to mentorship from top corporate directors, real-world case simulations, and structured evaluation-to-hiring pathways."
+      }
+    ],
+    "provenance": {
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (post ID 1384, attachments 1386-1390)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
+    }
+  },
+  {
+    "id": "news-irgp-aiub-launch",
+    "slug": "industry-readiness-graduate-program-irgp-introduced-at-aiub-powered-by-aiub-ice-x-lead-nation-academy",
+    "title": "Industry Readiness Graduate Program (IRGP) Introduced at AIUB | Powered by AIUB ICE × Lead Nation Academy",
+    "excerpt": "American International University-Bangladesh (AIUB) Institute of Continuing Education (ICE) and Lead Nation Academy launched the Industry Readiness Graduate Program (IRGP) with an on-spot recruitment drive.",
+    "category": "Program updates",
+    "publishedAt": "2025-11-29",
+    "author": "LNA Team",
+    "readTime": "4 min read",
+    "coverImage": "/images/news/aiub-1.jpeg",
+    "coverImageAlt": "AIUB ICE and Lead Nation Academy IRGP launch event at AIUB campus",
+    "featured": false,
+    "status": "published",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "On 27th November 2025, the Institute of Continuing Education (ICE) at American International University-Bangladesh (AIUB), in collaboration with Lead Nation Academy, organized an orientation and on-spot recruitment session for the Industry Readiness Graduate Program (IRGP) at the AIUB Campus."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Event Highlights and Leadership Presence",
+        "id": "event-highlights-and-leadership-presence"
+      },
+      {
+        "type": "paragraph",
+        "text": "The event witnessed enthusiastic participation from students and distinguished guests, including university administrators, faculty, and corporate executives. The session featured comprehensive briefings by LNA mentors on practical corporate readiness, communication mastery, and career roadmapping."
+      },
+      {
+        "type": "image",
+        "src": "/images/news/aiub-2.jpeg",
+        "alt": "Students attending the IRGP booth at AIUB campus",
+        "caption": "Enthusiastic students submitting CVs at the LNA information booth"
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "On-Spot Internship and Hiring Drive",
+        "id": "on-spot-internship-and-hiring-drive"
+      },
+      {
+        "type": "paragraph",
+        "text": "A key highlight of the event was the on-the-spot internship and recruitment drive arranged by LNA: over 100 CVs were submitted at the booth, and 40 students participated in real-time interviews on campus with partner companies."
+      },
+      {
+        "type": "image",
+        "src": "/images/news/aiub-3.jpeg",
+        "alt": "On-campus interviews conducted at AIUB",
+        "caption": "Real-time interviews conducted by industry evaluators"
+      },
+      {
+        "type": "paragraph",
+        "text": "Through IRGP, AIUB ICE and Lead Nation Academy aim to enhance employability, strengthen workplace readiness, and empower students with the capabilities needed to excel in a competitive corporate marketplace."
+      }
+    ],
+    "provenance": {
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (post ID 1290, attachments 1291-1300)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
+    }
+  },
+  {
     "id": "news-connecting-learning-with-industry",
     "slug": "connecting-learning-with-industry",
     "title": "Connecting learning with industry",
     "excerpt": "A collaborative conversation about how practical learning can bridge the gap between classroom knowledge and real workplace expectations.",
-    "category": "Partnerships",
+    "category": "Community",
     "publishedAt": "2026-11-04",
     "author": "LNA Team",
     "readTime": "4 min read",
     "coverImage": "/images/irgp-gallery-discussion.jpg",
     "coverImageAlt": "Roundtable discussion on industry skills and workplace readiness",
-    "featured": true,
+    "featured": false,
     "status": "published",
     "blocks": [
       {
@@ -35,318 +198,15 @@
       },
       {
         "type": "paragraph",
-        "text": "The discussion focused on three key areas. First, practical learning, such as hands-on activities and real-world problem solving, which helps build job-ready skills. Second, professional communication, including clear, respectful, and goal-oriented collaboration in a team setting. Third, analytical thinking, which enables learners to break down problems, evaluate options, and make informed decisions. The role of mentorship emerged as a common thread, offering guidance, feedback, and perspective as learners navigate their career journey."
-      },
-      {
-        "type": "image",
-        "src": "/images/faq-academic.jpg",
-        "alt": "Structured learning notebook and checklist",
-        "caption": "Illustrative photograph"
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Looking ahead",
-        "id": "looking-ahead"
-      },
-      {
-        "type": "paragraph",
-        "text": "The conversation reinforced the importance of continued collaboration between learning and industry perspectives. By combining practical learning, strong communication, analytical thinking, and ongoing mentorship, learners can be better prepared for future opportunities and contribute with greater confidence in professional settings."
-      }
-    ],
-    "seo": {
-      "title": "Connecting learning with industry — News & Updates — Lead Nation Academy",
-      "description": "A collaborative conversation about how practical learning can bridge the gap between classroom knowledge and real workplace expectations."
-    },
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Approved News & Updates Reference Design Specification",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "news-conversations-on-industry-ready-learning",
-    "slug": "conversations-on-industry-ready-learning",
-    "title": "Conversations on industry-ready learning",
-    "excerpt": "A focused discussion on practical skills, emerging opportunities, and the evolving needs of learners.",
-    "category": "Invitations",
-    "publishedAt": "2026-11-03",
-    "author": "LNA Team",
-    "readTime": "3 min read",
-    "coverImage": "/images/irgp-gallery-skills.jpg",
-    "coverImageAlt": "Focused discussion on industry-ready learning and professional skills",
-    "featured": false,
-    "status": "published",
-    "blocks": [
-      {
-        "type": "paragraph",
-        "text": "Corporate leaders and education practitioners gathered to evaluate how structured offline training bridges the gap between academic graduation and high-performance corporate expectations."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Evolving workplace demands",
-        "id": "evolving-workplace-demands"
-      },
-      {
-        "type": "paragraph",
-        "text": "Modern organizations seek graduates who possess more than theoretical literacy. Critical judgment, structured communication, and the agility to adapt across cross-functional initiatives are non-negotiable baselines."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Targeted offline simulations",
-        "id": "targeted-offline-simulations"
-      },
-      {
-        "type": "paragraph",
-        "text": "Through live workshops and executive peer assessments, participants experienced realistic boardroom presentations and received actionable feedback from senior executives."
+        "text": "The discussion focused on three key areas. First, practical learning, such as hands-on activities and real-world problem solving, which helps build job-ready skills. Second, professional communication, including clear, respectful, and goal-oriented collaboration in a team setting. Third, analytical thinking, which enables learners to break down problems, evaluate options, and make informed decisions."
       }
     ],
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Approved News & Updates Reference Design Specification",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "news-inside-a-mentor-led-learning-session",
-    "slug": "inside-a-mentor-led-learning-session",
-    "title": "Inside a mentor-led learning session",
-    "excerpt": "A look inside an interactive session where learners explored real-world concepts with a mentor.",
-    "category": "Program updates",
-    "publishedAt": "2026-11-02",
-    "author": "LNA Team",
-    "readTime": "3 min read",
-    "coverImage": "/images/course-classroom-banner.jpg",
-    "coverImageAlt": "Learners collaborating during an interactive classroom workshop",
-    "featured": false,
-    "status": "published",
-    "blocks": [
-      {
-        "type": "paragraph",
-        "text": "An interactive look inside an executive classroom session where mentors and early-career learners explored workplace scenarios, practical tools, and tactical decision-making."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Hands-on problem solving",
-        "id": "hands-on-problem-solving"
-      },
-      {
-        "type": "paragraph",
-        "text": "Learners worked through simulated market scenarios, applying financial discipline, strategic planning, and structured problem framing to resolve operational trade-offs."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Direct practitioner insights",
-        "id": "direct-practitioner-insights"
-      },
-      {
-        "type": "paragraph",
-        "text": "By learning directly from industry veterans, participants gain immediate context on what top management trainee recruiters look for during multi-stage evaluation processes."
-      }
-    ],
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Approved News & Updates Reference Design Specification",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "news-connecting-learners-with-industry-perspectives",
-    "slug": "connecting-learners-with-industry-perspectives",
-    "title": "Connecting learners with industry perspectives",
-    "excerpt": "A collaborative conversation that gave learners practical insights into real workplace expectations.",
-    "category": "Community",
-    "publishedAt": "2026-11-01",
-    "author": "LNA Team",
-    "readTime": "3 min read",
-    "coverImage": "/images/irgp-gallery-teamwork.jpg",
-    "coverImageAlt": "Small group discussion between learners and industry mentors",
-    "featured": false,
-    "status": "published",
-    "blocks": [
-      {
-        "type": "paragraph",
-        "text": "A candid conversation connecting ambitious university graduates with established industry leaders, exploring early career hurdles, professional ethics, and long-term career growth."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Navigating early career transitions",
-        "id": "navigating-early-career-transitions"
-      },
-      {
-        "type": "paragraph",
-        "text": "Transitioning from university to the corporate environment requires building interpersonal trust, active listening, and delivering dependable work under strict deadlines."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Mentorship as a sounding board",
-        "id": "mentorship-as-a-sounding-board"
-      },
-      {
-        "type": "paragraph",
-        "text": "Mentors offered personalized guidance on interview preparation, personal branding, and cultivating resilient habits that support sustainable career progression."
-      }
-    ],
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Approved News & Updates Reference Design Specification",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "news-a-new-chapter-in-practical-learning",
-    "slug": "a-new-chapter-in-practical-learning",
-    "title": "A new chapter in practical learning",
-    "excerpt": "An update on recent learning activities that brought more hands-on experience for learners.",
-    "category": "Program updates",
-    "publishedAt": "2026-10-28",
-    "author": "LNA Team",
-    "readTime": "4 min read",
-    "coverImage": "/images/hero-leadership.jpg",
-    "coverImageAlt": "Modern executive training room at Lead Nation Academy",
-    "featured": false,
-    "status": "published",
-    "blocks": [
-      {
-        "type": "paragraph",
-        "text": "Lead Nation Academy continues to refine its cohort curriculum with immersive real-time simulations, data analytics exercises, and commercial acumen assessments."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Refined studio curriculum",
-        "id": "refined-studio-curriculum"
-      },
-      {
-        "type": "paragraph",
-        "text": "New modules incorporate advanced data modeling, executive memo writing, and rapid cross-functional pitching, mirroring expectations at multinational firms and top local conglomerates."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Continuous outcome tracking",
-        "id": "continuous-outcome-tracking"
-      },
-      {
-        "type": "paragraph",
-        "text": "Instructors track competency benchmarks throughout each cohort to identify areas for individual coaching before participants enter competitive recruitment cycles."
-      }
-    ],
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Approved News & Updates Reference Design Specification",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "news-learning-beyond-the-classroom",
-    "slug": "learning-beyond-the-classroom",
-    "title": "Learning beyond the classroom",
-    "excerpt": "A glimpse of learner activities that encouraged curiosity, collaboration, and real-world exposure.",
-    "category": "Community",
-    "publishedAt": "2026-10-24",
-    "author": "LNA Team",
-    "readTime": "3 min read",
-    "coverImage": "/images/event-boardroom.jpg",
-    "coverImageAlt": "Executive boardroom discussion and networking event",
-    "featured": false,
-    "status": "published",
-    "blocks": [
-      {
-        "type": "paragraph",
-        "text": "A look at cohort engagements outside standard classroom lectures, fostering collaborative networks and lifelong professional relationships among learners."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Building community resilience",
-        "id": "building-community-resilience"
-      },
-      {
-        "type": "paragraph",
-        "text": "Learners formed study groups and collaborative research circles, tackling case study challenges and preparing together for management trainee aptitude assessments."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Long-term peer networks",
-        "id": "long-term-peer-networks"
-      },
-      {
-        "type": "paragraph",
-        "text": "The bonds established during intensive workshop weekends create an enduring professional support system that extends far beyond program completion."
-      }
-    ],
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Approved News & Updates Reference Design Specification",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "news-building-collaborative-pathways-for-graduates",
-    "slug": "building-collaborative-pathways-for-graduates",
-    "title": "Building collaborative pathways for graduates",
-    "excerpt": "Exploring sustained corporate engagement to widen offline training and internship exposure for university seniors.",
-    "category": "Partnerships",
-    "publishedAt": "2026-10-18",
-    "author": "LNA Team",
-    "readTime": "3 min read",
-    "coverImage": "/images/contact-office.jpg",
-    "coverImageAlt": "Corporate partnership office environment",
-    "featured": false,
-    "status": "published",
-    "blocks": [
-      {
-        "type": "paragraph",
-        "text": "Expanding meaningful ties between higher education institutions and leading commercial enterprises across Bangladesh to support seamless graduate employment."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Corporate dialogue on talent needs",
-        "id": "corporate-dialogue-on-talent-needs"
-      },
-      {
-        "type": "paragraph",
-        "text": "Industry partners shared perspectives on entry-level competency benchmarks, validating the focus on rigorous offline preparation, presentation poise, and analytical agility."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Strengthening internship bridges",
-        "id": "strengthening-internship-bridges"
-      },
-      {
-        "type": "paragraph",
-        "text": "Structured internship opportunities allow vetted graduates to demonstrate their capabilities directly within leading operational teams."
-      }
-    ],
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Approved News & Updates Reference Design Specification",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "LNA Community Dialogues",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   }
 ]
-

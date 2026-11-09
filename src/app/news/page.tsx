@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
-import { getNewsRepository } from "@/lib/content/repository";
+import { getNewsRepository } from "@/lib/content";
 import { NewsArchiveView } from "./news-archive-view";
 
 export const metadata: Metadata = {
@@ -28,4 +28,3 @@ export default async function NewsArchivePage() {
     </Suspense>
   );
 }
-

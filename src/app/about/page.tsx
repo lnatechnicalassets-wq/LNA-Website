@@ -50,7 +50,8 @@ export default function AboutPage() {
 
             {/* Subtitle */}
             <p className="mt-4 sm:mt-6 text-base sm:text-lg text-[#E0ECEE] leading-relaxed max-w-lg font-normal">
-              A place to learn with peers, ask questions, and prepare for your first role or your next one.
+              A place to learn with peers, ask questions, and prepare for your first role or your
+              next one.
             </p>
 
             {/* CTA Button */}
@@ -69,10 +70,7 @@ export default function AboutPage() {
             </div>
 
             {/* Subtle Divider & Motto */}
-            <div
-              className="w-48 sm:w-60 h-px bg-white/20 mt-10 sm:mt-12 mb-3"
-              aria-hidden="true"
-            />
+            <div className="w-48 sm:w-60 h-px bg-white/20 mt-10 sm:mt-12 mb-3" aria-hidden="true" />
             <p className="text-xs sm:text-sm text-[#C5E2E5]/90 font-medium tracking-wide">
               Learn. Lead. Succeed.
             </p>
@@ -117,7 +115,10 @@ export default function AboutPage() {
 
             {/* Body */}
             <p className="text-base sm:text-[17px] text-[#526E77] leading-relaxed mb-8 sm:mb-10 max-w-2xl">
-              Lead Nation Academy helps students, recent graduates, and young professionals prepare for work. Our training covers workplace communication, practical professional skills, and stock market fundamentals. We also offer career guidance and help learners who pass our screening process pursue job and internship opportunities.
+              Lead Nation Academy helps students, recent graduates, and young professionals prepare
+              for work. Our training covers workplace communication, practical professional skills,
+              and stock market fundamentals. We also offer career guidance and help learners who
+              pass our screening process pursue job and internship opportunities.
             </p>
 
             {/* Divider Rule */}
@@ -136,7 +137,8 @@ export default function AboutPage() {
                   </h3>
                 </div>
                 <p className="text-sm sm:text-base text-[#526E77] leading-relaxed">
-                  To help learners make the move from education to employment through practical training, career guidance, and exposure to how people work in industry.
+                  To help learners make the move from education to employment through practical
+                  training, career guidance, and exposure to how people work in industry.
                 </p>
               </div>
 
@@ -151,7 +153,9 @@ export default function AboutPage() {
                   </h3>
                 </div>
                 <p className="text-sm sm:text-base text-[#526E77] leading-relaxed">
-                  To see more students and recent graduates enter the workplace with the skills to contribute, the confidence to take responsibility, and the opportunity to grow into leadership roles.
+                  To see more students and recent graduates enter the workplace with the skills to
+                  contribute, the confidence to take responsibility, and the opportunity to grow
+                  into leadership roles.
                 </p>
               </div>
             </div>

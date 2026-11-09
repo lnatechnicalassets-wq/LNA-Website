@@ -231,4 +231,3 @@ export function InternshipsSection({ internships }: InternshipsSectionProps) {
     </section>
   );
 }
-

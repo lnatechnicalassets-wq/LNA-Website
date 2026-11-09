@@ -16,13 +16,11 @@ import {
   Plus,
   Minus,
   ArrowRight,
-  ShieldCheck,
   Building,
-  MapPin,
 } from "lucide-react";
 import type { Course, Batch, Mentor } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
-import { getMentorAvatar } from "@/lib/mentors";
+import { getMentorAvatar, getMentorCompanyLogo } from "@/lib/mentors";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,11 +40,7 @@ export interface CourseDetailViewProps {
 
 type TabType = "overview" | "curriculum" | "mentors";
 
-export function CourseDetailView({
-  course,
-  batch,
-  mentors,
-}: CourseDetailViewProps) {
+export function CourseDetailView({ course, batch, mentors }: CourseDetailViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
     "0": true, // first module open by default
@@ -91,7 +85,7 @@ export function CourseDetailView({
 
   return (
     <div className="w-full bg-[#F6FAFA] text-[#172E35] min-h-screen py-8 sm:py-10 lg:py-12">
-      <div className="max-w-7xl xl:max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl xl:max-w-340 mx-auto px-4 sm:px-6 lg:px-8">
         {/* ============================================================ */}
         {/* 1. COMPACT COURSE INTRODUCTION (Title, Subtitle, CTA)         */}
         {/* ============================================================ */}
@@ -128,7 +122,7 @@ export function CourseDetailView({
         {/* 2. WIDE CLASSROOM OR PROGRAM BANNER                          */}
         {/* ============================================================ */}
         <div className="mt-4">
-          <div className="relative w-full h-[220px] sm:h-[300px] lg:h-[340px] rounded-2xl overflow-hidden shadow-xs border border-[#E5ECEE] bg-[#E8F3F5]">
+          <div className="relative w-full h-55 sm:h-75 lg:h-85 rounded-2xl overflow-hidden shadow-xs border border-[#E5ECEE] bg-[#E8F3F5]">
             <Image
               src={bannerSrc}
               alt={bannerAlt}
@@ -152,15 +146,11 @@ export function CourseDetailView({
               <>
                 <div className="flex items-center gap-3">
                   <Calendar className="h-5 w-5 text-[#086477] shrink-0" />
-                  <span className="text-xs sm:text-sm font-bold text-[#172E35]">
-                    16 sessions
-                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-[#172E35]">16 sessions</span>
                 </div>
                 <div className="flex items-center gap-3 pt-3 lg:pt-0 lg:pl-6">
                   <Clock className="h-5 w-5 text-[#086477] shrink-0" />
-                  <span className="text-xs sm:text-sm font-bold text-[#172E35]">
-                    1.5h each
-                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-[#172E35]">1.5h each</span>
                 </div>
                 <div className="flex items-center gap-3 pt-3 lg:pt-0 lg:pl-6">
                   <Layers className="h-5 w-5 text-[#086477] shrink-0" />
@@ -242,9 +232,7 @@ export function CourseDetailView({
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
                   PROGRAM FEE
                 </span>
-                <p className="text-3xl font-extrabold text-[#172E35] my-2">
-                  {formattedFee}
-                </p>
+                <p className="text-3xl font-extrabold text-[#172E35] my-2">{formattedFee}</p>
                 <div className="space-y-2 text-xs sm:text-sm text-[#526E77] mb-5">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-[#086477]" />
@@ -259,7 +247,10 @@ export function CourseDetailView({
                     <span>5 industry mentors</span>
                   </div>
                 </div>
-                <Link href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`} className="w-full">
+                <Link
+                  href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}
+                  className="w-full"
+                >
                   <Button
                     variant="primary"
                     className="w-full py-3.5 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 cursor-pointer"
@@ -488,9 +479,7 @@ export function CourseDetailView({
                     <div className="flex items-center gap-1.5 text-xs text-[#526E77] mt-1">
                       <Clock className="h-3.5 w-3.5 text-[#086477]" />
                       <span>
-                        {isMto
-                          ? "16 sessions · 1.5h each"
-                          : "10 focus areas · 8 industry mentors"}
+                        {isMto ? "16 sessions · 1.5h each" : "10 focus areas · 8 industry mentors"}
                       </span>
                     </div>
                   </div>
@@ -656,11 +645,22 @@ export function CourseDetailView({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 sm:border-l sm:border-[#E5ECEE] sm:pl-4">
-                          <span className="text-sm sm:text-base font-bold text-[#086477] font-serif tracking-tight whitespace-nowrap">
-                            {orgDisplay}
-                          </span>
-                        </div>
+                        {(() => {
+                          const companyLogo = getMentorCompanyLogo(mentor);
+                          if (companyLogo) {
+                            return (
+                              <div className="flex items-center sm:border-l sm:border-[#E5ECEE] sm:pl-4 shrink-0">
+                                <img
+                                  src={companyLogo.src}
+                                  alt={companyLogo.alt}
+                                  title={companyLogo.alt}
+                                  className="h-6 sm:h-7 max-w-35 w-auto object-contain select-none"
+                                />
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     );
                   })}
@@ -671,7 +671,8 @@ export function CourseDetailView({
                     Learn through industry perspectives
                   </h3>
                   <p className="text-xs text-[#526E77] mt-1 leading-relaxed">
-                    The program brings mentor perspectives into practical learning and career preparation.
+                    The program brings mentor perspectives into practical learning and career
+                    preparation.
                   </p>
                   <button
                     type="button"
@@ -752,9 +753,7 @@ export function CourseDetailView({
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
                     PROGRAM FEE
                   </span>
-                  <p className="text-3xl font-extrabold text-[#172E35] my-2">
-                    {formattedFee}
-                  </p>
+                  <p className="text-3xl font-extrabold text-[#172E35] my-2">{formattedFee}</p>
 
                   <div className="space-y-2.5 text-xs sm:text-[13px] text-[#526E77] my-4">
                     <div className="flex items-center gap-2">
@@ -771,7 +770,10 @@ export function CourseDetailView({
                     </div>
                   </div>
 
-                  <Link href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`} className="w-full">
+                  <Link
+                    href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}
+                    className="w-full"
+                  >
                     <Button
                       variant="primary"
                       className="w-full py-3.5 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 cursor-pointer"
@@ -862,9 +864,7 @@ export function CourseDetailView({
           <div className="my-4 space-y-3 bg-[#F6FAFA] p-4 rounded-xl border border-[#E5ECEE] text-xs">
             <div className="flex justify-between">
               <span className="text-[#526E77]">Batch Name:</span>
-              <span className="font-bold text-[#172E35]">
-                {batch?.name || "Cohort 1"}
-              </span>
+              <span className="font-bold text-[#172E35]">{batch?.name || "Cohort 1"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#526E77]">Schedule:</span>
@@ -880,27 +880,25 @@ export function CourseDetailView({
             </div>
             <div className="flex justify-between">
               <span className="text-[#526E77]">Campus Venue:</span>
-              <span className="font-bold text-[#172E35]">
-                {course.venue || "Dhanmondi, Dhaka"}
-              </span>
+              <span className="font-bold text-[#172E35]">{course.venue || "Dhanmondi, Dhaka"}</span>
             </div>
             <div className="flex justify-between pt-2 border-t border-[#E5ECEE]">
               <span className="font-bold text-[#172E35]">Tuition Fee:</span>
-              <span className="font-bold text-[#086477] text-sm">
-                {formattedFee}
-              </span>
+              <span className="font-bold text-[#086477] text-sm">{formattedFee}</span>
             </div>
           </div>
 
           <p className="text-xs text-[#526E77] leading-relaxed">
-            Offline cohorts have strictly capped capacity. To reserve your seat and confirm enrollment, please reach out to our Dhanmondi campus admissions desk at{" "}
+            Offline cohorts have strictly capped capacity. To reserve your seat and confirm
+            enrollment, please reach out to our Dhanmondi campus admissions desk at{" "}
             <a href="mailto:info@lnabd.org" className="text-[#086477] font-bold underline">
               info@lnabd.org
             </a>{" "}
             or call{" "}
             <a href="tel:+8801700000000" className="text-[#086477] font-bold underline">
               +880 1700-000000
-            </a>.
+            </a>
+            .
           </p>
 
           <DialogFooter className="mt-5 flex items-center justify-end gap-2.5">
@@ -924,4 +922,3 @@ export function CourseDetailView({
     </div>
   );
 }
-

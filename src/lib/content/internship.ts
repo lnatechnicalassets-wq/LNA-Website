@@ -27,4 +27,3 @@ export const InternshipSchema = z.object({
 
 export type InternshipAllowance = z.infer<typeof InternshipAllowanceSchema>;
 export type Internship = z.infer<typeof InternshipSchema>;
-

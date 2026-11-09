@@ -7,6 +7,14 @@ import "@/styles/globals.css";
 export const metadata: Metadata = {
   title: "Lead Nation Academy | LNA",
   description: "Official rebuild of lnabd.org for Lead Nation Academy.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon.png", type: "image/png", sizes: "48x48" },
+      { url: "/icon.png", type: "image/png", sizes: "48x48" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

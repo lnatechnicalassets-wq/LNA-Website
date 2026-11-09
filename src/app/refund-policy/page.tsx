@@ -40,7 +40,8 @@ export default function RefundPolicyPage() {
               1. Seat Holds &amp; Capacity
             </h2>
             <p>
-              Due to physical classroom capacity limits in our Dhanmondi executive classrooms, seat allocations are reserved strictly upon confirmed fee payment.
+              Due to physical classroom capacity limits in our Dhanmondi executive classrooms, seat
+              allocations are reserved strictly upon confirmed fee payment.
             </p>
           </section>
 
@@ -49,7 +50,10 @@ export default function RefundPolicyPage() {
               2. Cancellation Before Cohort Commencement
             </h2>
             <p>
-              Applicants may request a full refund or cohort transfer up to 7 calendar days prior to the first scheduled offline session. Cancellations requested between 3 to 6 days prior to commencement are eligible for a 75% refund or a one-time fee credit toward the subsequent cohort.
+              Applicants may request a full refund or cohort transfer up to 7 calendar days prior to
+              the first scheduled offline session. Cancellations requested between 3 to 6 days prior
+              to commencement are eligible for a 75% refund or a one-time fee credit toward the
+              subsequent cohort.
             </p>
           </section>
 
@@ -58,7 +62,8 @@ export default function RefundPolicyPage() {
               3. Non-Refundable Period
             </h2>
             <p>
-              Once cohort classes begin and session materials are distributed, tuition fees become non-refundable to maintain mentor and cohort scheduling integrity.
+              Once cohort classes begin and session materials are distributed, tuition fees become
+              non-refundable to maintain mentor and cohort scheduling integrity.
             </p>
           </section>
 
@@ -67,7 +72,8 @@ export default function RefundPolicyPage() {
               4. Refund Processing
             </h2>
             <p>
-              Approved refunds are credited directly back to the original bKash account or bank transfer account within 5 to 7 business days following formal administrative approval.
+              Approved refunds are credited directly back to the original bKash account or bank
+              transfer account within 5 to 7 business days following formal administrative approval.
             </p>
           </section>
         </div>
@@ -75,4 +81,3 @@ export default function RefundPolicyPage() {
     </div>
   );
 }
-

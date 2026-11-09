@@ -1,53 +1,35 @@
+import type { Mentor } from "@/lib/content";
+
 const mentorAvatars: Record<string, string> = {
-  "mentor-nadia-islam": "/images/mentor-nadia.jpg",
-  "mentor-riya-sharma": "/images/mentor-riya.jpg",
-  "mentor-ethan-park": "/images/mentor-ethan.jpg",
-  "mentor-marcus-reed": "/images/mentor-marcus.jpg",
-  "mentor-lena-chen": "/images/mentor-lena.jpg",
-  "mentor-leadership-lead": "/images/mentor-tariq.jpg",
-  "mentor-finance-lead": "/images/mentor-kamrul.jpg",
-  "mentor-digital-lead": "/images/mentor-farah.jpg",
-  "mentor-da-01": "/images/mentor-arif-rahman.jpg",
-  "mentor-da-02": "/images/learner-nusrat.jpg",
-  "mentor-el-02": "/images/learner-farzana.jpg",
-  "mentor-el-03": "/images/mentor-tanvir-hossain.jpg",
-  "mentor-cf-02": "/images/mentor-tariq.jpg",
-  "mentor-cf-03": "/images/mentor-anisur.jpg",
-  "mentor-cf-04": "/images/mentor-kamrul.jpg",
-  "mentor-dt-02": "/images/mentor-tariq.jpg",
-  "mentor-dt-03": "/images/mentor-kamrul.jpg",
-  "mentor-dt-04": "/images/mentor-anisur.jpg",
-  "mentor-dt-05": "/images/mentor-tariq.jpg",
-  "mentor-so-01": "/images/mentor-tariq.jpg",
-  "mentor-so-02": "/images/mentor-anisur.jpg",
-  "mentor-so-03": "/images/mentor-kamrul.jpg",
-  "mentor-so-04": "/images/mentor-tariq.jpg",
-  "mentor-so-05": "/images/mentor-anisur.jpg",
-  "mentor-so-06": "/images/mentor-kamrul.jpg",
-  "mentor-pg-01": "/images/mentor-kamrul.jpg",
-  "mentor-pg-02": "/images/mentor-anisur.jpg",
-  "mentor-pg-03": "/images/mentor-tariq.jpg",
-  "mentor-arif-rahman": "/images/mentor-arif-rahman.jpg",
-  "mentor-tanvir-hossain": "/images/mentor-tanvir-hossain.jpg",
-  "mentor-mir-hasib": "/images/mentor-mir-hasib.jpg",
-  "mentor-fahim-ahmed": "/images/mentor-fahim-ahmed.jpg",
-  "mentor-sayem-chowdhury": "/images/mentor-sayem-chowdhury.jpg",
-  "mentor-shahnawaj-chowdhury": "/images/mentor-shahnawaj-chowdhury.jpg",
-  "mentor-gm-kamrul": "/images/mentor-gm-kamrul.jpg",
-  "mentor-istiaque-bhuiyan": "/images/mentor-istiaque-bhuiyan.jpg",
-  "mentor-munaf-chowdhury": "/images/mentor-munaf-chowdhury.jpg",
-  "mentor-ilmul-sajib": "/images/mentor-ilmul-sajib.jpg",
-  "mentor-biplob-rahul": "/images/mentor-biplob-rahul.jpg",
-  "mentor-zia-ashraf": "/images/mentor-zia-ashraf.jpg",
-  "mentor-sayeda-salma": "/images/mentor-sayeda-salma.jpg",
+  // MTO Mentors (5)
+  "mentor-mohammad-salekeen-ibrahim": "/images/mentors/mohammad-salekeen-ibrahim.png",
+  "mentor-salekeen-ibrahim": "/images/mentors/mohammad-salekeen-ibrahim.png",
+  "mentor-syed-himyanuddin-ahmed": "/images/mentors/syed-himyanuddin-ahmed.png",
+  "mentor-himyanuddin-ahmed": "/images/mentors/syed-himyanuddin-ahmed.png",
+  "mentor-anubhab-rahman": "/images/mentors/anubhab-rahman-v3.png",
+  "mentor-md-manik-hossain": "/images/mentors/md-manik-hossain.png",
+  "mentor-manik-hossain": "/images/mentors/md-manik-hossain.png",
+  "mentor-mir-hasib": "/images/mentors/mir-hasib-v3.png",
+
+  // IRGP Mentors (10)
+  "mentor-shahnawaj-chowdhury": "/images/mentors/shahnawaj-chowdhury.png",
+  "mentor-gm-kamrul": "/images/mentors/gm-kamrul.png",
+  "mentor-istiaque-bhuiyan": "/images/mentors/istiaque-bhuiyan.png",
+  "mentor-munaf-chowdhury": "/images/mentors/munaf-chowdhury.png",
+  "mentor-ilmul-sajib": "/images/mentors/ilmul-sajib.png",
+  "mentor-biplob-rahul": "/images/mentors/biplob-rahul.png",
+  "mentor-zia-ashraf": "/images/mentors/zia-ashraf.png",
+  "mentor-sayeda-salma": "/images/mentors/sayeda-salma.png",
+  "mentor-zeeshan-huq": "/images/mentors/zeeshan-huq.png",
+  "mentor-talat-rahim": "/images/mentors/talat-rahim.png",
 };
 
 const defaultAvatars = [
-  "/images/mentor-nadia.jpg",
-  "/images/mentor-ethan.jpg",
-  "/images/mentor-riya.jpg",
-  "/images/mentor-marcus.jpg",
-  "/images/mentor-lena.jpg",
+  "/images/mentors/mir-hasib.png",
+  "/images/mentors/anubhab-rahman.png",
+  "/images/mentors/syed-himyanuddin-ahmed.png",
+  "/images/mentors/mohammad-salekeen-ibrahim.png",
+  "/images/mentors/md-manik-hossain.png",
 ];
 
 export function getMentorAvatar(
@@ -57,4 +39,227 @@ export function getMentorAvatar(
   if (mentor.portraitSrc) return mentor.portraitSrc;
   if (mentorAvatars[mentor.id]) return mentorAvatars[mentor.id];
   return defaultAvatars[index % defaultAvatars.length];
+}
+
+const defaultCourseMentorIds: Record<string, string[]> = {
+  "mto-readiness": [
+    "mentor-mohammad-salekeen-ibrahim",
+    "mentor-syed-himyanuddin-ahmed",
+    "mentor-anubhab-rahman",
+    "mentor-md-manik-hossain",
+    "mentor-mir-hasib",
+  ],
+  "mto": [
+    "mentor-mohammad-salekeen-ibrahim",
+    "mentor-syed-himyanuddin-ahmed",
+    "mentor-anubhab-rahman",
+    "mentor-md-manik-hossain",
+    "mentor-mir-hasib",
+  ],
+  "irgp": [
+    "mentor-shahnawaj-chowdhury",
+    "mentor-gm-kamrul",
+    "mentor-istiaque-bhuiyan",
+    "mentor-munaf-chowdhury",
+    "mentor-ilmul-sajib",
+    "mentor-biplob-rahul",
+    "mentor-zia-ashraf",
+    "mentor-sayeda-salma",
+  ],
+};
+
+/**
+ * Resolves the shared canonical mentor roster for a given catalog course.
+ * Reads the ordered `mentorIds` defined on the Course aggregate (ADR 0012)
+ * and resolves each mentor in sequence.
+ * Serves as the single shared source of truth across Hero Slides, Course Cards, and Course Details.
+ */
+export function getCourseMentorRoster(
+  mentors: Mentor[],
+  courseOrId?: { id?: string; mentorIds?: string[] } | string[] | string | null,
+  courses?: { id: string; mentorIds?: string[] }[]
+): Mentor[] {
+  if (!mentors || !Array.isArray(mentors) || !courseOrId) return [];
+
+  const mentorMap = new Map<string, Mentor>(mentors.map((m) => [m.id, m]));
+
+  // 1. Direct array of mentor IDs
+  if (Array.isArray(courseOrId)) {
+    return courseOrId
+      .map((id) => mentorMap.get(id))
+      .filter((m): m is Mentor => Boolean(m));
+  }
+
+  // 2. Course object with mentorIds array
+  if (typeof courseOrId === "object" && Array.isArray(courseOrId.mentorIds)) {
+    return courseOrId.mentorIds
+      .map((id) => mentorMap.get(id))
+      .filter((m): m is Mentor => Boolean(m));
+  }
+
+  // 3. String courseId: resolve via provided courses array or default map
+  const rawId = typeof courseOrId === "string" ? courseOrId : courseOrId.id;
+  if (!rawId) return [];
+  const normalizedId = rawId.trim().toLowerCase();
+
+  let targetMentorIds: string[] | undefined;
+  if (Array.isArray(courses)) {
+    const matched = courses.find((c) => c.id.trim().toLowerCase() === normalizedId);
+    if (matched && Array.isArray(matched.mentorIds)) {
+      targetMentorIds = matched.mentorIds;
+    }
+  }
+
+  if (!targetMentorIds) {
+    targetMentorIds = defaultCourseMentorIds[normalizedId];
+  }
+
+  if (targetMentorIds) {
+    return targetMentorIds
+      .map((id) => mentorMap.get(id))
+      .filter((m): m is Mentor => Boolean(m));
+  }
+
+  return [];
+}
+
+/**
+ * Resolve verified official company logo for mentor organization.
+ * Used across homepage hero slides and course details pages.
+ * Returns null if an official asset is unavailable so the logo is omitted cleanly.
+ */
+export function getMentorCompanyLogo(mentor: {
+  id?: string;
+  organization?: string;
+}): { src: string; alt: string } | null {
+  const org = (mentor.organization || "").toLowerCase();
+  const id = mentor.id || "";
+
+  // 1. Eastern Bank PLC (Mohammad Salekeen Ibrahim)
+  if (
+    id === "mentor-mohammad-salekeen-ibrahim" ||
+    org.includes("eastern bank") ||
+    org.includes("ebl")
+  ) {
+    return {
+      src: "/images/partners/eastern-bank.png",
+      alt: mentor.organization || "Eastern Bank PLC",
+    };
+  }
+
+  // 2. Nagad Ltd. (Syed Himyanuddin Ahmed, Anubhab Rahman, Md. Manik Hossain)
+  if (
+    id === "mentor-syed-himyanuddin-ahmed" ||
+    id === "mentor-anubhab-rahman" ||
+    id === "mentor-md-manik-hossain" ||
+    org.includes("nagad")
+  ) {
+    return {
+      src: "/images/partners/nagad.png",
+      alt: mentor.organization || "Nagad Ltd.",
+    };
+  }
+
+  // 3. Lead Nation Academy (Mir Hasib Mahmud)
+  if (id === "mentor-mir-hasib" || org.includes("lead nation")) {
+    return {
+      src: "/images/brand/logo.png",
+      alt: mentor.organization || "Lead Nation Academy",
+    };
+  }
+
+  // 4. Modhumoti Bank PLC (Shahnawaj Chowdhury)
+  if (id === "mentor-shahnawaj-chowdhury" || org.includes("modhumoti")) {
+    return {
+      src: "/images/partners/modhumoti-bank.png",
+      alt: mentor.organization || "Modhumoti Bank PLC",
+    };
+  }
+
+  // 5. IGLOO (G M Kamrul Hassan)
+  if (id === "mentor-gm-kamrul" || org.includes("igloo")) {
+    return {
+      src: "/images/partners/igloo.png",
+      alt: mentor.organization || "IGLOO",
+    };
+  }
+
+  // 6. Axentec PLC (Istiaque Ahmed Bhuiyan, Munaf Mojib Chowdhury)
+  if (
+    id === "mentor-istiaque-bhuiyan" ||
+    id === "mentor-munaf-chowdhury" ||
+    org.includes("axentec") ||
+    org.includes("robi axiata")
+  ) {
+    return {
+      src: "/images/partners/axentec.png",
+      alt: mentor.organization || "Axentec PLC",
+    };
+  }
+
+  // 7. Sheba Platform Ltd (Ilmul Haque Sajib)
+  if (id === "mentor-ilmul-sajib" || org.includes("sheba")) {
+    return {
+      src: "/images/partners/sheba.png",
+      alt: mentor.organization || "Sheba Platform Ltd",
+    };
+  }
+
+  // 8. e-Courier Limited (Biplob G Rahul)
+  if (id === "mentor-biplob-rahul" || org.includes("courier")) {
+    return {
+      src: "/images/partners/ecourier.png",
+      alt: mentor.organization || "e-Courier Limited",
+    };
+  }
+
+  // 9. Chaldal PLC (Zia Ashraf)
+  if (id === "mentor-zia-ashraf" || org.includes("chaldal")) {
+    return {
+      src: "/images/internships/chaldal.png",
+      alt: mentor.organization || "Chaldal PLC",
+    };
+  }
+
+  // 10. BrandGear Limited (Sayeda Umme Salma)
+  if (id === "mentor-sayeda-salma" || org.includes("brandgear")) {
+    return {
+      src: "/images/partners/brandgear.png",
+      alt: mentor.organization || "BrandGear Limited",
+    };
+  }
+
+  // 11. Goyara Ltd
+  if (org.includes("goyara")) {
+    return {
+      src: "/images/partners/goyara.png",
+      alt: mentor.organization || "Goyara Ltd",
+    };
+  }
+
+  // 12. United Commercial Bank PLC (Zeeshan Kingshuk Huq)
+  if (
+    id === "mentor-zeeshan-huq" ||
+    org.includes("united commercial bank") ||
+    org.includes("ucb")
+  ) {
+    return {
+      src: "/images/partners/ucb.svg",
+      alt: mentor.organization || "United Commercial Bank PLC",
+    };
+  }
+
+  // 13. Shohoz.com (Talat Rahim)
+  if (
+    id === "mentor-talat-rahim" ||
+    org.includes("shohoz")
+  ) {
+    return {
+      src: "/images/partners/shohoz.svg",
+      alt: mentor.organization || "Shohoz.com",
+    };
+  }
+
+  // Omit logo if official verified asset is unavailable
+  return null;
 }

@@ -66,7 +66,9 @@ export interface INewsRepository {
  * JsonContentRepository: Loads and validates JSON content files.
  * Provides early development and static seed capabilities before Supabase DB migrations.
  */
-export class JsonContentRepository implements ICourseRepository, IBatchRepository, IHomeRepository, INewsRepository {
+export class JsonContentRepository
+  implements ICourseRepository, IBatchRepository, IHomeRepository, INewsRepository
+{
   private contentDir: string;
   private cachedCourses: Course[] | null = null;
   private cachedBatches: Batch[] | null = null;
@@ -360,7 +362,11 @@ export class JsonContentRepository implements ICourseRepository, IBatchRepositor
     return [...explicitFeatured, ...nonFeatured].slice(0, limit);
   }
 
-  async getRelatedArticles(currentSlug: string, category: string, limit = 3): Promise<NewsArticle[]> {
+  async getRelatedArticles(
+    currentSlug: string,
+    category: string,
+    limit = 3
+  ): Promise<NewsArticle[]> {
     const published = await this.getPublishedArticles();
     const candidates = published.filter((a) => a.slug !== currentSlug);
     const sameCategory = candidates.filter((a) => a.category === category);

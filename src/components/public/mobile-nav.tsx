@@ -27,7 +27,11 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
 
   const handleNavClick = (href: string) => (e: React.MouseEvent) => {
     onOpenChange(false);
-    if (href.startsWith("/#") && typeof window !== "undefined" && window.location.pathname === "/") {
+    if (
+      href.startsWith("/#") &&
+      typeof window !== "undefined" &&
+      window.location.pathname === "/"
+    ) {
       const id = href.replace("/#", "");
       const el = document.getElementById(id);
       if (el) {
@@ -78,8 +82,12 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
             <nav aria-label="Mobile Navigation Links">
               <ul className="space-y-1">
                 {navItems.map((item) => {
-                  const isNews = item.href === "/news" && (pathname === "/news" || pathname.startsWith("/news/"));
-                  const isAbout = item.href === "/about" && (pathname === "/about" || pathname.startsWith("/about/"));
+                  const isNews =
+                    item.href === "/news" &&
+                    (pathname === "/news" || Boolean(pathname?.startsWith("/news/")));
+                  const isAbout =
+                    item.href === "/about" &&
+                    (pathname === "/about" || Boolean(pathname?.startsWith("/about/")));
                   const isActive = isNews || isAbout;
 
                   return (

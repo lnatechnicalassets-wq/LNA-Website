@@ -94,9 +94,7 @@ async function run() {
     const res = await send("Page.captureScreenshot", { format: "png" });
     fs.writeFileSync(outputPath, Buffer.from(res.data, "base64"));
     console.log(
-      `Saved screenshot: ${path.basename(outputPath)} (${
-        fs.statSync(outputPath).size
-      } bytes)`
+      `Saved screenshot: ${path.basename(outputPath)} (${fs.statSync(outputPath).size} bytes)`
     );
   }
 
@@ -127,9 +125,7 @@ async function run() {
     `,
   });
   await sleep(600);
-  await takeScreenshot(
-    path.join(ARTIFACT_DIR, "mto-folded-nameplates-closeup.png")
-  );
+  await takeScreenshot(path.join(ARTIFACT_DIR, "mto-folded-nameplates-closeup.png"));
 
   // 3. Mobile 390x844 - MTO Slide (Header, Title, Stats, and All 5 Mentors)
   console.log("\n=== 3. Capturing Mobile 390x844 MTO Slide ===");
@@ -167,9 +163,7 @@ async function run() {
     `,
   });
   await sleep(1500);
-  await takeScreenshot(
-    path.join(ARTIFACT_DIR, "irgp-slide-confirmed-unchanged.png")
-  );
+  await takeScreenshot(path.join(ARTIFACT_DIR, "irgp-slide-confirmed-unchanged.png"));
 
   ws.close();
   chrome.kill();

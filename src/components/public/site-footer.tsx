@@ -22,7 +22,11 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
   const orgEmail = organization?.email || "info@lnabd.org";
 
   const handleNavClick = (href: string) => (e: React.MouseEvent) => {
-    if (href.startsWith("/#") && typeof window !== "undefined" && window.location.pathname === "/") {
+    if (
+      href.startsWith("/#") &&
+      typeof window !== "undefined" &&
+      window.location.pathname === "/"
+    ) {
       const id = href.replace("/#", "");
       const el = document.getElementById(id);
       if (el) {
@@ -101,9 +105,20 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-12 lg:gap-14 xl:gap-16">
           {/* Left Column: Brand Lockup, Serif Headline, Soft-Teal Enroll Now Button */}
           <div className="max-w-md xl:max-w-lg shrink-0">
-            <p className="font-serif text-xl sm:text-2xl text-[#F6FAFA] tracking-tight">
-              Lead Nation Academy
-            </p>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-3 sm:gap-3.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5E2E5] rounded-lg group"
+              aria-label={`${organization?.name || "Lead Nation Academy"} Home`}
+            >
+              <img
+                src="/images/brand/logo-crest-white.png"
+                alt="Lead Nation Academy Emblem"
+                className="h-10 sm:h-12 w-auto object-contain select-none transition-transform duration-200 group-hover:scale-105"
+              />
+              <span className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                Lead Nation Academy
+              </span>
+            </Link>
 
             <h2 className="font-serif text-4xl sm:text-5xl lg:text-[54px] font-bold text-white tracking-tight leading-[1.08] mt-6 sm:mt-8 mb-8 sm:mb-10">
               Ready for your

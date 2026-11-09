@@ -1,92 +1,100 @@
 [
   {
-    "id": "partner-banking",
-    "name": "Apex Financial",
-    "sector": "Banking & Capital Markets",
-    "badgeText": "Demo Wordmark",
-    "isPlaceholder": true,
+    "id": "partner-btrc",
+    "name": "BTRC",
+    "sector": "Telecommunications & Regulatory",
+    "isPlaceholder": false,
     "order": 1,
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 748)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   },
   {
-    "id": "partner-rmg",
-    "name": "Crestline Enterprise",
-    "sector": "Industrial & Manufacturing",
-    "badgeText": "Demo Wordmark",
-    "isPlaceholder": true,
+    "id": "partner-sheba",
+    "name": "Sheba Platform",
+    "sector": "Technology & Platform Services",
+    "isPlaceholder": false,
     "order": 2,
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 744)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   },
   {
-    "id": "partner-telecom",
-    "name": "Telenex Global",
-    "sector": "Telecommunications & Infra",
-    "badgeText": "Demo Wordmark",
-    "isPlaceholder": true,
+    "id": "partner-ictd",
+    "name": "ICT Division",
+    "sector": "Digital Innovation & Public Sector",
+    "isPlaceholder": false,
     "order": 3,
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 749)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   },
   {
-    "id": "partner-tech",
-    "name": "Stratos Cloud",
-    "sector": "Enterprise Software & AI",
-    "badgeText": "Demo Wordmark",
-    "isPlaceholder": true,
+    "id": "partner-ecourier",
+    "name": "eCourier",
+    "sector": "Logistics & Supply Chain",
+    "isPlaceholder": false,
     "order": 4,
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 745)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   },
   {
-    "id": "partner-pharma",
-    "name": "Novavita Life Sciences",
-    "sector": "Healthcare & Pharmaceuticals",
-    "badgeText": "Demo Wordmark",
-    "isPlaceholder": true,
+    "id": "partner-goyara",
+    "name": "Goyara",
+    "sector": "Technology & E-commerce",
+    "isPlaceholder": false,
     "order": 5,
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 750)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   },
   {
-    "id": "partner-logistics",
-    "name": "Horizon Global",
-    "sector": "Supply Chain & Trade",
-    "badgeText": "Demo Wordmark",
-    "isPlaceholder": true,
+    "id": "partner-unicert",
+    "name": "Unicert Global",
+    "sector": "Certification & Quality Systems",
+    "isPlaceholder": false,
     "order": 6,
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Fictional demo wordmark for development preview only (Gate B0 deferred until official corporate partner audit)",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 1221)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
+    }
+  },
+  {
+    "id": "partner-triptakerz",
+    "name": "Trip Takerz",
+    "sector": "Travel & Corporate Hospitality",
+    "isPlaceholder": false,
+    "order": 7,
+    "provenance": {
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (attachment ID 1230)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   }
 ]

@@ -90,7 +90,9 @@ async function run() {
   async function takeScreenshot(outputPath) {
     const res = await send("Page.captureScreenshot", { format: "png" });
     fs.writeFileSync(outputPath, Buffer.from(res.data, "base64"));
-    console.log(`Saved screenshot: ${path.basename(outputPath)} (${fs.statSync(outputPath).size} bytes)`);
+    console.log(
+      `Saved screenshot: ${path.basename(outputPath)} (${fs.statSync(outputPath).size} bytes)`
+    );
   }
 
   await send("Page.navigate", { url: `http://127.0.0.1:${PORT}` });
