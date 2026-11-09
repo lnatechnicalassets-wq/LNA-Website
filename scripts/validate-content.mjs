@@ -103,6 +103,12 @@ const CourseSchema = z.object({
   venue: z.string().min(3),
   status: z.enum(["draft", "published", "archived"]),
   featured: z.boolean(),
+  mentorIds: z
+    .array(z.string().min(1))
+    .default([])
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: "mentorIds must not contain duplicate mentor IDs",
+    }),
   provenance: ProvenanceSchema,
 });
 
@@ -556,6 +562,28 @@ export function validateAllContent() {
   const mentors = readJson("home/mentors.json");
   scanForSecrets(mentors.raw, "home/mentors.json");
   const parsedMentors = z.array(MentorSchema).parse(mentors.data);
+  const mentorIdsSet = new Set(parsedMentors.map((m) => m.id));
+
+  // Referential Integrity: Every course.mentorIds must match an existing mentor.id and contain no duplicates
+  for (const course of parsedCourses) {
+    if (course.mentorIds && Array.isArray(course.mentorIds)) {
+      const seen = new Set();
+      for (const mId of course.mentorIds) {
+        if (seen.has(mId)) {
+          throw new Error(
+            `Duplicate Mentor Error: Course ${course.id} contains duplicate mentorId "${mId}"`
+          );
+        }
+        seen.add(mId);
+        if (!mentorIdsSet.has(mId)) {
+          throw new Error(
+            `Referential Integrity Error: Course ${course.id} references non-existent mentorId "${mId}"`
+          );
+        }
+      }
+    }
+  }
+
   for (const mentor of parsedMentors) {
     if (mentor.courseId && !courseIds.has(mentor.courseId)) {
       throw new Error(

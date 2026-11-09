@@ -23,6 +23,12 @@ export const CourseSchema = z.object({
   venue: z.string().min(3),
   status: z.enum(["draft", "published", "archived"]).default("published"),
   featured: z.boolean().default(false),
+  mentorIds: z
+    .array(z.string().min(1))
+    .default([])
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: "mentorIds must not contain duplicates",
+    }),
   provenance: ProvenanceSchema,
 });
 

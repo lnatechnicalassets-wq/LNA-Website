@@ -19,14 +19,7 @@ export function InternshipLogo({ company, className = "" }: InternshipLogoProps)
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            <radialGradient
-              id="chaldalEgg"
-              cx="35%"
-              cy="35%"
-              r="65%"
-              fx="25%"
-              fy="25%"
-            >
+            <radialGradient id="chaldalEgg" cx="35%" cy="35%" r="65%" fx="25%" fy="25%">
               <stop offset="0%" stopColor="#FFC875" />
               <stop offset="35%" stopColor="#FFA033" />
               <stop offset="75%" stopColor="#F26522" />
@@ -48,9 +41,7 @@ export function InternshipLogo({ company, className = "" }: InternshipLogoProps)
           <span className="font-serif italic font-black text-2xl tracking-tight text-[#172E35]">
             Chaldal
           </span>
-          <span className="text-[10px] font-bold text-[#E53935] ml-0.5 tracking-tighter">
-            .com
-          </span>
+          <span className="text-[10px] font-bold text-[#E53935] ml-0.5 tracking-tighter">.com</span>
         </div>
       </div>
     );
@@ -92,4 +83,3 @@ export function InternshipLogo({ company, className = "" }: InternshipLogoProps)
     </div>
   );
 }
-

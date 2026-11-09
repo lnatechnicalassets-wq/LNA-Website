@@ -72,4 +72,3 @@ export function NewsLeadCard({ article, priority = true }: NewsLeadCardProps) {
     </article>
   );
 }
-

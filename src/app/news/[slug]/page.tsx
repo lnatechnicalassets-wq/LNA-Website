@@ -1,7 +1,7 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getNewsRepository } from "@/lib/content/repository";
+import { getNewsRepository } from "@/lib/content";
 import { NewsArticleView } from "./news-article-view";
 
 interface NewsArticlePageProps {
@@ -14,9 +14,7 @@ export async function generateStaticParams() {
   return articles.map((a) => ({ slug: a.slug }));
 }
 
-export async function generateMetadata({
-  params,
-}: NewsArticlePageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: NewsArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
   const newsRepo = getNewsRepository();
   const article = await newsRepo.getArticleBySlug(slug);
@@ -65,17 +63,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
     notFound();
   }
 
-  const relatedArticles = await newsRepo.getRelatedArticles(
-    article.slug,
-    article.category,
-    3
-  );
+  const relatedArticles = await newsRepo.getRelatedArticles(article.slug, article.category, 3);
 
-  return (
-    <NewsArticleView
-      article={article}
-      relatedArticles={relatedArticles}
-    />
-  );
+  return <NewsArticleView article={article} relatedArticles={relatedArticles} />;
 }
-

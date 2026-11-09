@@ -105,4 +105,3 @@ export function formatNewsDate(isoDate: string): string {
     return isoDate;
   }
 }
-

@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-const ARTIFACT_DIR = "C:/Users/refat/.gemini/antigravity/brain/c0a9f902-1d07-4d4e-8d3a-e34931387069";
+const ARTIFACT_DIR =
+  "C:/Users/refat/.gemini/antigravity/brain/c0a9f902-1d07-4d4e-8d3a-e34931387069";
 const CHROME_PATH = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const PORT = 3020;
 
@@ -24,13 +25,20 @@ async function waitForServer(url, timeoutMs = 25000) {
 
 async function capture() {
   try {
-    execSync(`for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT}') do taskkill /f /pid %a`, { stdio: "ignore" });
+    execSync(
+      `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT}') do taskkill /f /pid %a`,
+      { stdio: "ignore" }
+    );
   } catch {}
 
-  const server = spawn("cmd.exe", ["/c", "npx", "next", "start", "-H", "127.0.0.1", "-p", String(PORT)], {
-    stdio: "inherit",
-    env: { ...process.env, PORT: String(PORT) },
-  });
+  const server = spawn(
+    "cmd.exe",
+    ["/c", "npx", "next", "start", "-H", "127.0.0.1", "-p", String(PORT)],
+    {
+      stdio: "inherit",
+      env: { ...process.env, PORT: String(PORT) },
+    }
+  );
 
   try {
     await waitForServer(`http://127.0.0.1:${PORT}`);
@@ -114,10 +122,12 @@ async function capture() {
   } finally {
     server.kill("SIGKILL");
     try {
-      execSync(`for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT}') do taskkill /f /pid %a`, { stdio: "ignore" });
+      execSync(
+        `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT}') do taskkill /f /pid %a`,
+        { stdio: "ignore" }
+      );
     } catch {}
   }
 }
 
 capture().catch(console.error);
-

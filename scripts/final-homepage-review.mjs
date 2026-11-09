@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-const ARTIFACT_DIR = "C:/Users/refat/.gemini/antigravity/brain/c0a9f902-1d07-4d4e-8d3a-e34931387069";
+const ARTIFACT_DIR =
+  "C:/Users/refat/.gemini/antigravity/brain/c0a9f902-1d07-4d4e-8d3a-e34931387069";
 const CHROME_PATH = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const PORT = 3022;
 const DEBUG_PORT = 9248;
@@ -29,16 +30,26 @@ async function runReview() {
 
   // Clean any hanging port
   try {
-    execSync(`for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT}') do taskkill /f /pid %a`, { stdio: "ignore" });
+    execSync(
+      `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT}') do taskkill /f /pid %a`,
+      { stdio: "ignore" }
+    );
   } catch {}
   try {
-    execSync(`for /f "tokens=5" %a in ('netstat -aon ^| findstr :${DEBUG_PORT}') do taskkill /f /pid %a`, { stdio: "ignore" });
+    execSync(
+      `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${DEBUG_PORT}') do taskkill /f /pid %a`,
+      { stdio: "ignore" }
+    );
   } catch {}
 
-  const server = spawn("cmd.exe", ["/c", "npx", "next", "start", "-H", "127.0.0.1", "-p", String(PORT)], {
-    stdio: "inherit",
-    env: { ...process.env, PORT: String(PORT) },
-  });
+  const server = spawn(
+    "cmd.exe",
+    ["/c", "npx", "next", "start", "-H", "127.0.0.1", "-p", String(PORT)],
+    {
+      stdio: "inherit",
+      env: { ...process.env, PORT: String(PORT) },
+    }
+  );
 
   const tempProfile = path.join(process.cwd(), ".temp-chrome-" + Date.now());
   let chrome;
@@ -154,7 +165,10 @@ async function runReview() {
     });
 
     console.log("Sections detected:", JSON.stringify(sectionAudit.result.value.sections, null, 2));
-    console.log("Desktop horizontal scroll:", sectionAudit.result.value.hasHorizontalScroll ? "FAIL" : "PASS (No overflow)");
+    console.log(
+      "Desktop horizontal scroll:",
+      sectionAudit.result.value.hasHorizontalScroll ? "FAIL" : "PASS (No overflow)"
+    );
     console.log("Desktop course card dimensions:", sectionAudit.result.value.courseCards);
 
     // Capture Full Desktop Page Screenshot
@@ -164,7 +178,9 @@ async function runReview() {
     });
     const desktopPath = path.join(ARTIFACT_DIR, "homepage-desktop-full.png");
     fs.writeFileSync(desktopPath, Buffer.from(fullDesktopRes.data, "base64"));
-    console.log(`✓ Saved desktop full-page screenshot: ${desktopPath} (${fs.statSync(desktopPath).size} bytes)`);
+    console.log(
+      `✓ Saved desktop full-page screenshot: ${desktopPath} (${fs.statSync(desktopPath).size} bytes)`
+    );
 
     // Capture Close-up of Desktop Course Cards
     await send("Runtime.evaluate", {
@@ -174,7 +190,9 @@ async function runReview() {
     const courseCloseupRes = await send("Page.captureScreenshot", { format: "png" });
     const courseCloseupPath = path.join(ARTIFACT_DIR, "courses-desktop-cards.png");
     fs.writeFileSync(courseCloseupPath, Buffer.from(courseCloseupRes.data, "base64"));
-    console.log(`✓ Saved close-up desktop course cards screenshot: ${courseCloseupPath} (${fs.statSync(courseCloseupPath).size} bytes)`);
+    console.log(
+      `✓ Saved close-up desktop course cards screenshot: ${courseCloseupPath} (${fs.statSync(courseCloseupPath).size} bytes)`
+    );
 
     // Scroll back to top
     await send("Runtime.evaluate", { expression: `window.scrollTo(0, 0);` });
@@ -303,7 +321,9 @@ async function runReview() {
     const heroMobileCloseupRes = await send("Page.captureScreenshot", { format: "png" });
     const heroMobileCloseupPath = path.join(ARTIFACT_DIR, "hero-mobile-closeup.png");
     fs.writeFileSync(heroMobileCloseupPath, Buffer.from(heroMobileCloseupRes.data, "base64"));
-    console.log(`✓ Saved close-up mobile hero screenshot: ${heroMobileCloseupPath} (${fs.statSync(heroMobileCloseupPath).size} bytes)`);
+    console.log(
+      `✓ Saved close-up mobile hero screenshot: ${heroMobileCloseupPath} (${fs.statSync(heroMobileCloseupPath).size} bytes)`
+    );
 
     // Progressive scroll on mobile to trigger all image loads
     await send("Runtime.evaluate", {
@@ -333,7 +353,10 @@ async function runReview() {
       })()`,
     });
     console.log("Mobile audit:", mobileAudit.result.value);
-    console.log("Mobile horizontal scroll:", mobileAudit.result.value.hasHorizontalScroll ? "FAIL" : "PASS (No overflow)");
+    console.log(
+      "Mobile horizontal scroll:",
+      mobileAudit.result.value.hasHorizontalScroll ? "FAIL" : "PASS (No overflow)"
+    );
 
     // Capture Full Mobile Page Screenshot
     const fullMobileRes = await send("Page.captureScreenshot", {
@@ -342,7 +365,9 @@ async function runReview() {
     });
     const mobilePath = path.join(ARTIFACT_DIR, "homepage-mobile-full.png");
     fs.writeFileSync(mobilePath, Buffer.from(fullMobileRes.data, "base64"));
-    console.log(`✓ Saved mobile full-page screenshot: ${mobilePath} (${fs.statSync(mobilePath).size} bytes)`);
+    console.log(
+      `✓ Saved mobile full-page screenshot: ${mobilePath} (${fs.statSync(mobilePath).size} bytes)`
+    );
 
     ws.close();
     console.log("\n=== Targeted Pass Review Finished Successfully ===");
@@ -357,10 +382,16 @@ async function runReview() {
       }
     } catch {}
     try {
-      execSync(`for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT}') do taskkill /f /pid %a`, { stdio: "ignore" });
+      execSync(
+        `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT}') do taskkill /f /pid %a`,
+        { stdio: "ignore" }
+      );
     } catch {}
     try {
-      execSync(`for /f "tokens=5" %a in ('netstat -aon ^| findstr :${DEBUG_PORT}') do taskkill /f /pid %a`, { stdio: "ignore" });
+      execSync(
+        `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${DEBUG_PORT}') do taskkill /f /pid %a`,
+        { stdio: "ignore" }
+      );
     } catch {}
   }
 }

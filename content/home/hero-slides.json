@@ -1,6 +1,7 @@
 [
   {
     "id": "slide-mto-readiness",
+    "courseId": "mto-readiness",
     "programType": "mto",
     "eyebrow": "FEATURED PROGRAM",
     "title": "MTO Readiness Program",
@@ -26,13 +27,6 @@
     ],
     "mentorEyebrow": "MTO PROGRAM FACULTY",
     "mentorHeading": "Learn From Industry Leaders",
-    "mentorIds": [
-      "mentor-arif-rahman",
-      "mentor-tanvir-hossain",
-      "mentor-mir-hasib",
-      "mentor-fahim-ahmed",
-      "mentor-sayem-chowdhury"
-    ],
     "ctaText": "Explore the Program",
     "ctaHref": "/courses/mto-readiness",
     "classStartLabel": "Classes begin",
@@ -51,6 +45,7 @@
   },
   {
     "id": "slide-irgp",
+    "courseId": "irgp",
     "programType": "irgp",
     "eyebrow": "COMPLETED PROGRAM",
     "title": "IRGP",
@@ -76,16 +71,6 @@
     ],
     "mentorEyebrow": "IRGP PROGRAM FACULTY",
     "mentorHeading": "Meet Our IRGP Mentors",
-    "mentorIds": [
-      "mentor-shahnawaj-chowdhury",
-      "mentor-gm-kamrul",
-      "mentor-istiaque-bhuiyan",
-      "mentor-munaf-chowdhury",
-      "mentor-ilmul-sajib",
-      "mentor-biplob-rahul",
-      "mentor-zia-ashraf",
-      "mentor-sayeda-salma"
-    ],
     "ctaText": "Explore the IRGP Story",
     "ctaHref": "/courses/irgp",
     "secondaryCtaText": "View Learner Experiences",

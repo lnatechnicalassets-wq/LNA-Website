@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
-import { getCourseRepository, getBatchRepository } from "@/lib/content/repository";
+import { getCourseRepository, getBatchRepository } from "@/lib/content";
 import { getEnrollmentConfig } from "@/lib/enrollment/config";
 import { EnrollmentView } from "./enrollment-view";
 
@@ -34,12 +34,7 @@ export default async function EnrollPage() {
         </div>
       }
     >
-      <EnrollmentView
-        courses={courses}
-        batches={batches}
-        config={config}
-      />
+      <EnrollmentView courses={courses} batches={batches} config={config} />
     </Suspense>
   );
 }
-

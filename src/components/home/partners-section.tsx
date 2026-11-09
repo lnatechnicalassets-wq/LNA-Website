@@ -8,17 +8,79 @@ export interface PartnersSectionProps {
 }
 
 /**
- * Fictional Demo Partner Monograms & Corporate Wordmarks (Provenance Class B, Rule R15).
- * Styled with minimal, well-proportioned institutional typography and geometric monograms.
+ * Corporate Partner Logos & Wordmarks (Provenance Class A, Rule R15).
+ * Generously sized for high-visibility editorial branding across desktop and mobile.
  */
 function PartnerWordmark({ id }: { id: string }) {
+  const uniformLogoClass =
+    "h-10 sm:h-11 md:h-13 lg:h-15 xl:h-16 w-auto object-contain select-none shrink-0";
+  const uniformContainerClass =
+    "flex items-center justify-center select-none h-12 sm:h-13 md:h-15 lg:h-17 xl:h-18 px-1";
+
   switch (id) {
+    case "partner-btrc":
+      return (
+        <div className={uniformContainerClass}>
+          <img src="/images/partners/btrc.png" alt="BTRC" className={uniformLogoClass} />
+        </div>
+      );
+
+    case "partner-sheba":
+      return (
+        <div className={uniformContainerClass}>
+          <img src="/images/partners/sheba.png" alt="Sheba Platform" className={uniformLogoClass} />
+        </div>
+      );
+
+    case "partner-ictd":
+      return (
+        <div className={uniformContainerClass}>
+          <img src="/images/partners/ictd.png" alt="ICT Division" className={uniformLogoClass} />
+        </div>
+      );
+
+    case "partner-ecourier":
+      return (
+        <div className={uniformContainerClass}>
+          <img src="/images/partners/ecourier.png" alt="eCourier" className={uniformLogoClass} />
+        </div>
+      );
+
+    case "partner-goyara":
+      return (
+        <div className={uniformContainerClass}>
+          <img src="/images/partners/goyara.png" alt="Goyara" className={uniformLogoClass} />
+        </div>
+      );
+
+    case "partner-unicert":
+      return (
+        <div className={uniformContainerClass}>
+          <img
+            src="/images/partners/unicert.png"
+            alt="Unicert Global"
+            className={uniformLogoClass}
+          />
+        </div>
+      );
+
+    case "partner-triptakerz":
+      return (
+        <div className={uniformContainerClass}>
+          <img
+            src="/images/partners/triptakerz.png"
+            alt="Trip Takerz"
+            className={uniformLogoClass}
+          />
+        </div>
+      );
+
     case "partner-banking":
       return (
-        <div className="flex items-center gap-2 sm:gap-2.5 select-none">
+        <div className="flex items-center gap-4 sm:gap-5 select-none h-16 sm:h-20 md:h-24">
           {/* Diamond Financial Crest */}
           <svg
-            className="h-5 w-5 sm:h-6 sm:w-6 shrink-0 text-[#086477]"
+            className="h-9 w-9 sm:h-12 sm:w-12 md:h-14 md:w-14 shrink-0 text-[#086477]"
             viewBox="0 0 28 28"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -44,18 +106,18 @@ function PartnerWordmark({ id }: { id: string }) {
               strokeLinejoin="round"
             />
           </svg>
-          <span className="text-xs sm:text-sm font-bold tracking-tight text-[#172E35] whitespace-nowrap">
-            APEX <span className="font-medium text-[#086477]">FINANCIAL</span>
+          <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-[#172E35] whitespace-nowrap">
+            APEX <span className="font-bold text-[#086477]">FINANCIAL</span>
           </span>
         </div>
       );
 
     case "partner-rmg":
       return (
-        <div className="flex items-center gap-2 sm:gap-2.5 select-none">
+        <div className="flex items-center gap-4 sm:gap-5 select-none h-16 sm:h-20 md:h-24">
           {/* Industrial Geometric Peak */}
           <svg
-            className="h-5 w-5 sm:h-6 sm:w-6 shrink-0 text-[#172E35]"
+            className="h-9 w-9 sm:h-12 sm:w-12 md:h-14 md:w-14 shrink-0 text-[#172E35]"
             viewBox="0 0 28 28"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -71,18 +133,18 @@ function PartnerWordmark({ id }: { id: string }) {
             />
             <circle cx="11" cy="7" r="2" fill="#086477" />
           </svg>
-          <span className="text-xs sm:text-sm font-bold tracking-tight text-[#172E35] whitespace-nowrap">
-            CRESTLINE <span className="font-light text-[#5A737D]">ENTERPRISE</span>
+          <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-[#172E35] whitespace-nowrap">
+            CRESTLINE <span className="font-medium text-[#5A737D]">ENTERPRISE</span>
           </span>
         </div>
       );
 
     case "partner-telecom":
       return (
-        <div className="flex items-center gap-2 sm:gap-2.5 select-none">
+        <div className="flex items-center gap-4 sm:gap-5 select-none h-16 sm:h-20 md:h-24">
           {/* Telecommunications Pulse Rings */}
           <svg
-            className="h-5 w-5 sm:h-6 sm:w-6 shrink-0 text-[#086477]"
+            className="h-9 w-9 sm:h-12 sm:w-12 md:h-14 md:w-14 shrink-0 text-[#086477]"
             viewBox="0 0 28 28"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -92,18 +154,18 @@ function PartnerWordmark({ id }: { id: string }) {
             <circle cx="14" cy="14" r="7" stroke="#086477" strokeWidth="1.8" />
             <circle cx="14" cy="14" r="3" fill="#086477" />
           </svg>
-          <span className="text-xs sm:text-sm font-bold tracking-tight text-[#172E35] whitespace-nowrap">
-            TELENEX <span className="font-semibold text-[#086477]">GLOBAL</span>
+          <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-[#172E35] whitespace-nowrap">
+            TELENEX <span className="font-bold text-[#086477]">GLOBAL</span>
           </span>
         </div>
       );
 
     case "partner-tech":
       return (
-        <div className="flex items-center gap-2 sm:gap-2.5 select-none">
+        <div className="flex items-center gap-4 sm:gap-5 select-none h-16 sm:h-20 md:h-24">
           {/* Isometric Cloud AI Cube */}
           <svg
-            className="h-5 w-5 sm:h-6 sm:w-6 shrink-0 text-[#172E35]"
+            className="h-9 w-9 sm:h-12 sm:w-12 md:h-14 md:w-14 shrink-0 text-[#172E35]"
             viewBox="0 0 28 28"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -123,18 +185,18 @@ function PartnerWordmark({ id }: { id: string }) {
               strokeOpacity="0.5"
             />
           </svg>
-          <span className="text-xs sm:text-sm font-bold tracking-tight text-[#172E35] whitespace-nowrap">
-            STRATOS <span className="font-medium text-[#086477]">CLOUD</span>
+          <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-[#172E35] whitespace-nowrap">
+            STRATOS <span className="font-bold text-[#086477]">CLOUD</span>
           </span>
         </div>
       );
 
     case "partner-pharma":
       return (
-        <div className="flex items-center gap-2 sm:gap-2.5 select-none">
+        <div className="flex items-center gap-4 sm:gap-5 select-none h-16 sm:h-20 md:h-24">
           {/* Life Sciences Bio-Helix Cross */}
           <svg
-            className="h-5 w-5 sm:h-6 sm:w-6 shrink-0 text-[#086477]"
+            className="h-9 w-9 sm:h-12 sm:w-12 md:h-14 md:w-14 shrink-0 text-[#086477]"
             viewBox="0 0 28 28"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -144,8 +206,8 @@ function PartnerWordmark({ id }: { id: string }) {
             <rect x="4" y="11.5" width="20" height="5" rx="2.5" fill="#086477" fillOpacity="0.2" />
             <circle cx="14" cy="14" r="3.5" fill="#086477" />
           </svg>
-          <span className="text-xs sm:text-sm font-bold tracking-tight text-[#172E35] whitespace-nowrap">
-            NOVAVITA <span className="font-light text-[#5A737D]">SCIENCES</span>
+          <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-[#172E35] whitespace-nowrap">
+            NOVAVITA <span className="font-medium text-[#5A737D]">SCIENCES</span>
           </span>
         </div>
       );
@@ -153,10 +215,10 @@ function PartnerWordmark({ id }: { id: string }) {
     case "partner-logistics":
     default:
       return (
-        <div className="flex items-center gap-2 sm:gap-2.5 select-none">
+        <div className="flex items-center gap-4 sm:gap-5 select-none h-16 sm:h-20 md:h-24">
           {/* Supply Chain Forward Chevrons */}
           <svg
-            className="h-5 w-5 sm:h-6 sm:w-6 shrink-0 text-[#172E35]"
+            className="h-9 w-9 sm:h-12 sm:w-12 md:h-14 md:w-14 shrink-0 text-[#172E35]"
             viewBox="0 0 28 28"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -170,8 +232,8 @@ function PartnerWordmark({ id }: { id: string }) {
               strokeLinejoin="round"
             />
           </svg>
-          <span className="text-xs sm:text-sm font-bold tracking-tight text-[#172E35] whitespace-nowrap">
-            HORIZON <span className="font-semibold text-[#172E35]">GLOBAL</span>
+          <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-[#172E35] whitespace-nowrap">
+            HORIZON <span className="font-bold text-[#172E35]">GLOBAL</span>
           </span>
         </div>
       );
@@ -206,12 +268,12 @@ export function PartnersSection({ partners }: PartnersSectionProps) {
   return (
     <section
       aria-label="Our Partners — Corporate Sector Alignments"
-      className="relative w-full bg-surface-base pt-6 sm:pt-8 md:pt-10 pb-12 sm:pb-16 overflow-hidden"
+      className="relative w-full bg-surface-base pt-10 sm:pt-14 md:pt-18 pb-16 sm:pb-22 md:pb-26 overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Centered Heading (No prominent visible pause icon) */}
-        <div className="relative flex items-center justify-center mb-8 sm:mb-10">
-          <h2 className="text-center text-xs sm:text-sm font-bold tracking-[0.2em] uppercase text-[#172E35]">
+        {/* Centered Heading */}
+        <div className="relative flex items-center justify-center mb-12 sm:mb-14 md:mb-16">
+          <h2 className="text-center text-sm sm:text-base md:text-lg font-extrabold tracking-[0.25em] uppercase text-[#086477]">
             Our Partners
           </h2>
 
@@ -246,11 +308,11 @@ export function PartnersSection({ partners }: PartnersSectionProps) {
 
           {/* Subtle Left and Right Edge Boundary Fades */}
           <div
-            className="absolute left-0 top-0 bottom-0 w-12 sm:w-20 md:w-28 bg-gradient-to-r from-[var(--surface-base,#F6FAFA)] to-transparent pointer-events-none z-10"
+            className="absolute left-0 top-0 bottom-0 w-20 sm:w-32 md:w-44 bg-gradient-to-r from-[var(--surface-base,#F6FAFA)] to-transparent pointer-events-none z-10"
             aria-hidden="true"
           />
           <div
-            className="absolute right-0 top-0 bottom-0 w-12 sm:w-20 md:w-28 bg-gradient-to-l from-[var(--surface-base,#F6FAFA)] to-transparent pointer-events-none z-10"
+            className="absolute right-0 top-0 bottom-0 w-20 sm:w-32 md:w-44 bg-gradient-to-l from-[var(--surface-base,#F6FAFA)] to-transparent pointer-events-none z-10"
             aria-hidden="true"
           />
 
@@ -261,11 +323,11 @@ export function PartnersSection({ partners }: PartnersSectionProps) {
             }`}
           >
             {/* Primary Track (Accessible to Screen Readers) */}
-            <div className="flex items-center gap-12 sm:gap-16 lg:gap-20 shrink-0 pr-12 sm:pr-16 lg:pr-20">
+            <div className="flex items-center gap-8 sm:gap-10 md:gap-12 lg:gap-14 shrink-0 pr-8 sm:pr-10 md:pr-12 lg:pr-14">
               {partners.map((partner) => (
                 <div
                   key={partner.id}
-                  className="flex items-center opacity-85 hover:opacity-100 transition-opacity select-none shrink-0"
+                  className="flex items-center opacity-95 hover:opacity-100 transition-opacity select-none shrink-0"
                   title={
                     partner.isPlaceholder
                       ? `${partner.name} (Demonstration Wordmark)`
@@ -283,12 +345,12 @@ export function PartnersSection({ partners }: PartnersSectionProps) {
             {/* Duplicated Track for Seamless Loop (Hidden from Assistive Technology) */}
             <div
               aria-hidden="true"
-              className="flex items-center gap-12 sm:gap-16 lg:gap-20 shrink-0 pr-12 sm:pr-16 lg:pr-20"
+              className="flex items-center gap-8 sm:gap-10 md:gap-12 lg:gap-14 shrink-0 pr-8 sm:pr-10 md:pr-12 lg:pr-14"
             >
               {partners.map((partner, index) => (
                 <div
                   key={`dup-${partner.id}-${index}`}
-                  className="flex items-center opacity-85 hover:opacity-100 transition-opacity select-none shrink-0"
+                  className="flex items-center opacity-95 hover:opacity-100 transition-opacity select-none shrink-0"
                 >
                   <PartnerWordmark id={partner.id} />
                 </div>

@@ -6,10 +6,7 @@ const ARTIFACT_DIR =
   "C:/Users/refat/.gemini/antigravity/brain/c0a9f902-1d07-4d4e-8d3a-e34931387069";
 const CHROME_PATH = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const PORT = 3030;
-const TEMP_PROFILE_DIR = path.join(
-  process.cwd(),
-  ".chrome-profile-fixed-teal-lounge"
-);
+const TEMP_PROFILE_DIR = path.join(process.cwd(), ".chrome-profile-fixed-teal-lounge");
 
 async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -97,9 +94,7 @@ async function run() {
     const res = await send("Page.captureScreenshot", { format: "png" });
     fs.writeFileSync(outputPath, Buffer.from(res.data, "base64"));
     console.log(
-      `Saved screenshot: ${path.basename(outputPath)} (${
-        fs.statSync(outputPath).size
-      } bytes)`
+      `Saved screenshot: ${path.basename(outputPath)} (${fs.statSync(outputPath).size} bytes)`
     );
   }
 
@@ -152,9 +147,7 @@ async function run() {
     if (showcase) showcase.scrollIntoView({ behavior: 'instant', block: 'center' });
   `);
   await sleep(600);
-  await takeScreenshot(
-    path.join(ARTIFACT_DIR, "mto-lounge-nameplates-closeup.png")
-  );
+  await takeScreenshot(path.join(ARTIFACT_DIR, "mto-lounge-nameplates-closeup.png"));
 
   // Switch to IRGP (dot 2) on Desktop
   await evalExpr(`
@@ -195,9 +188,7 @@ async function run() {
     if (showcase) showcase.scrollIntoView({ behavior: 'instant', block: 'center' });
   `);
   await sleep(600);
-  await takeScreenshot(
-    path.join(ARTIFACT_DIR, "irgp-lounge-nameplates-closeup.png")
-  );
+  await takeScreenshot(path.join(ARTIFACT_DIR, "irgp-lounge-nameplates-closeup.png"));
 
   // ==========================================
   // 2. MOBILE 390x844 MEASUREMENTS & CAPTURE
@@ -281,4 +272,3 @@ run().catch((e) => {
   console.error("Capture script failed:", e);
   process.exit(1);
 });
-

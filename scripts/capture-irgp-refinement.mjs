@@ -225,4 +225,3 @@ run().catch((e) => {
   console.error("Capture failed:", e);
   process.exit(1);
 });
-

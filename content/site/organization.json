@@ -3,19 +3,19 @@
   "shortName": "LNA",
   "domain": "lnabd.org",
   "email": "info@lnabd.org",
-  "phone": "+880 1700-000000",
+  "phone": "+880 1581-799666",
   "address": {
-    "street": "Dhanmondi, Road 27",
+    "street": "Plot 06, Tejgaon Industrial Area",
     "city": "Dhaka",
-    "postalCode": "1209",
+    "postalCode": "1208",
     "country": "Bangladesh"
   },
   "businessHours": "Saturday – Thursday: 9:00 AM – 6:00 PM (GMT+6)",
   "provenance": {
-    "class": "B",
-    "verified": false,
-    "source": "Demo organization contact details (Gate B0 deferred until pre-launch)",
-    "verifiedBy": null,
-    "verifiedOn": null
+    "class": "A",
+    "verified": true,
+    "source": "WordPress lnabdorg_wp955.sql (Privacy Policy ID 1177, Terms ID 1168)",
+    "verifiedBy": "Content Migration",
+    "verifiedOn": "2026-11-09"
   }
 }

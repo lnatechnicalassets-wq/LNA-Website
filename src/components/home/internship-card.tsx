@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { MapPin, Calendar, Clock, Plus } from "lucide-react";
+import { MapPin, Calendar, Clock } from "lucide-react";
 import type { Internship } from "@/lib/content";
 import { InternshipLogo } from "./internship-logo";
 
@@ -108,4 +108,3 @@ export function InternshipCard({ internship, isActive = false, onSelect }: Inter
     </div>
   );
 }
-

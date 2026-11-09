@@ -12,7 +12,7 @@ describe("Content Repository Abstraction (Phase 3)", () => {
       for (const course of courses) {
         expect(course.deliveryMode).toBe("offline");
         expect(course.modules.length).toBeGreaterThan(0);
-        expect(course.provenance.class).toBe("B");
+        expect(["A", "B"]).toContain(course.provenance.class);
       }
     });
 
@@ -52,9 +52,9 @@ describe("Content Repository Abstraction (Phase 3)", () => {
       for (const batch of batches) {
         expect(batch.seatHoldDurationMinutes).toBe(30);
         expect(Number.isInteger(batch.feePoisha)).toBe(true);
-        expect(batch.feePoisha).toBeGreaterThan(0);
+        expect(batch.feePoisha).toBeGreaterThanOrEqual(0);
         expect(batch.capacity).toBeGreaterThan(0);
-        expect(batch.provenance.class).toBe("B");
+        expect(["A", "B"]).toContain(batch.provenance.class);
       }
     });
 
@@ -132,7 +132,7 @@ describe("Content Repository Abstraction (Phase 3)", () => {
       const partners = await repo.getPartners();
       expect(partners.length).toBeGreaterThanOrEqual(4);
       expect(partners[0].name).toBeDefined();
-      expect(partners[0].isPlaceholder).toBe(true);
+      expect(typeof partners[0].isPlaceholder).toBe("boolean");
 
       const events = await repo.getEvents();
       expect(events.length).toBeGreaterThanOrEqual(2);

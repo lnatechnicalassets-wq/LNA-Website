@@ -1,11 +1,8 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import {
-  getCourseRepository,
-  getBatchRepository,
-  getHomeRepository,
-} from "@/lib/content";
+import { getCourseRepository, getBatchRepository, getHomeRepository } from "@/lib/content";
+import { getCourseMentorRoster } from "@/lib/mentors";
 import { CourseDetailView } from "./course-detail-view";
 
 interface CoursePageProps {
@@ -54,20 +51,8 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
   // Active batch / enrollment data
   const activeBatch = batches.find((b) => b.status === "open_for_enrollment") ?? batches[0];
 
-  // Course mentors (assigned by courseId or courseIds)
-  const courseMentors = allMentors
-    .filter((m) => {
-      const inCourseId = m.courseId === course.id;
-      const inCourseIds = Array.isArray(m.courseIds) && m.courseIds.includes(course.id);
-      return inCourseId || inCourseIds;
-    })
-    .sort((a, b) => a.order - b.order);
+  // Course mentors (resolved via shared canonical roster lookup from course.mentorIds)
+  const courseMentors = getCourseMentorRoster(allMentors, course);
 
-  return (
-    <CourseDetailView
-      course={course}
-      batch={activeBatch}
-      mentors={courseMentors}
-    />
-  );
+  return <CourseDetailView course={course} batch={activeBatch} mentors={courseMentors} />;
 }

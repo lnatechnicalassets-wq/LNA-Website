@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Course, Batch, Mentor } from "@/lib/content";
+import { getCourseMentorRoster } from "@/lib/mentors";
 import { CourseCard } from "./course-card";
 
 export interface CoursesSectionProps {
@@ -24,24 +25,13 @@ export function CoursesSection({ courses, batches, mentors = [] }: CoursesSectio
     }
   }
 
-  // Group mentors by courseId supporting both mentor.courseId and mentor.courseIds
-  const mentorLookup = new Map<string, Mentor[]>();
-  for (const mentor of mentors) {
-    const ids = new Set<string>();
-    if (mentor.courseId) ids.add(mentor.courseId);
-    if (mentor.courseIds) mentor.courseIds.forEach((id) => ids.add(id));
-    for (const cId of ids) {
-      const existing = mentorLookup.get(cId) || [];
-      existing.push(mentor);
-      mentorLookup.set(cId, existing);
-    }
-  }
-
   // Display exactly two homepage cards: MTO Readiness and IRGP per approved architecture
   const targetIds = ["mto-readiness", "irgp"];
   const targeted = targetIds
     .map((id) => courses.find((c) => c.id === id))
-    .filter((c): c is Course => c !== undefined && c.status === "published" && batchLookup.has(c.id));
+    .filter(
+      (c): c is Course => c !== undefined && c.status === "published" && batchLookup.has(c.id)
+    );
 
   const eligibleCourses =
     targeted.length > 0
@@ -187,7 +177,7 @@ export function CoursesSection({ courses, batches, mentors = [] }: CoursesSectio
           >
             {eligibleCourses.map((course, idx) => {
               const batch = batchLookup.get(course.id);
-              const courseMentors = mentorLookup.get(course.id) || [];
+              const courseMentors = getCourseMentorRoster(mentors, course);
 
               return (
                 <div

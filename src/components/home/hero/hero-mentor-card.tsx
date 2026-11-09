@@ -25,13 +25,15 @@ const MENTOR_PORTRAIT_POSITIONS: Record<string, string> = {
   "mentor-biplob-rahul": "center 14%",
   "mentor-zia-ashraf": "center 18%",
   "mentor-sayeda-salma": "center 14%",
+  "mentor-zeeshan-huq": "center 14%",
+  "mentor-talat-rahim": "center 14%",
 
   // MTO Mentors
-  "mentor-arif-rahman": "center 4%",
-  "mentor-tanvir-hossain": "center 2%",
+  "mentor-mohammad-salekeen-ibrahim": "center 8%",
+  "mentor-syed-himyanuddin-ahmed": "center 8%",
+  "mentor-anubhab-rahman": "center 8%",
+  "mentor-md-manik-hossain": "center 8%",
   "mentor-mir-hasib": "center 4%",
-  "mentor-fahim-ahmed": "center 3%",
-  "mentor-sayem-chowdhury": "center 4%",
 };
 
 export function HeroMentorCard({
@@ -47,15 +49,14 @@ export function HeroMentorCard({
   // Resolve primary company name and logoIcon from mentor career history or organization
   const primaryHistory = mentor.careerHistory?.[0];
   const companyName =
-    primaryHistory?.company ||
-    mentor.organization.split(",")[0].split("·")[0].trim();
+    primaryHistory?.company || mentor.organization.split(",")[0].split("·")[0].trim();
   const logoIcon = primaryHistory?.logoIcon || companyName;
 
   return (
     <button
       type="button"
       onClick={() => onClick(mentor)}
-      aria-label={`View mentor profile: ${mentor.name} at ${companyName}`}
+      aria-label={`View mentor profile: ${mentor.name}${mentor.role ? `, ${mentor.role}` : ""} at ${companyName}`}
       className={`group relative flex flex-col items-center text-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#086477] focus-visible:ring-offset-2 rounded-2xl transition-all duration-300 hover:-translate-y-0.5 w-full ${
         isFeatured ? "lg:scale-[1.03] z-10" : "z-0"
       }`}
@@ -64,7 +65,7 @@ export function HeroMentorCard({
       <div
         className={`relative w-full ${
           variant === "mto"
-            ? "h-[108px] sm:h-[114px] lg:h-[116px] xl:h-[124px]"
+            ? "h-27 sm:h-[114px] lg:h-[116px] xl:h-[124px]"
             : "h-[102px] sm:h-[110px] lg:h-[110px] xl:h-[118px]"
         }`}
       >

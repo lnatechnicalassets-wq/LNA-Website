@@ -21,7 +21,12 @@ export function NewsArticleView({ article, relatedArticles }: NewsArticleViewPro
   article.blocks.forEach((block) => {
     if (block.type === "heading") {
       headings.push({
-        id: block.id || block.text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-"),
+        id:
+          block.id ||
+          block.text
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, "")
+            .replace(/\s+/g, "-"),
         text: block.text,
         level: block.level,
       });
@@ -40,14 +45,16 @@ export function NewsArticleView({ article, relatedArticles }: NewsArticleViewPro
         {/* 1. BREADCRUMBS & BACK TO NEWS                                */}
         {/* ============================================================ */}
         <div className="mb-6 space-y-3">
-          <nav aria-label="Breadcrumb" className="text-xs sm:text-sm text-[#526E77] flex items-center gap-2">
-            <Link
-              href="/news"
-              className="hover:text-[#086477] transition-colors"
-            >
+          <nav
+            aria-label="Breadcrumb"
+            className="text-xs sm:text-sm text-[#526E77] flex items-center gap-2"
+          >
+            <Link href="/news" className="hover:text-[#086477] transition-colors">
               News &amp; Updates
             </Link>
-            <span aria-hidden="true" className="text-[#A4D1D6]">/</span>
+            <span aria-hidden="true" className="text-[#A4D1D6]">
+              /
+            </span>
             <span className="text-[#172E35] font-medium">{article.category}</span>
           </nav>
 
@@ -86,9 +93,7 @@ export function NewsArticleView({ article, relatedArticles }: NewsArticleViewPro
             </h1>
 
             {/* Subtitle / Excerpt */}
-            <p className="text-base sm:text-lg text-[#526E77] leading-relaxed">
-              {article.excerpt}
-            </p>
+            <p className="text-base sm:text-lg text-[#526E77] leading-relaxed">{article.excerpt}</p>
 
             {/* Author, Date, Read Time */}
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-[#526E77]">
@@ -268,4 +273,3 @@ export function NewsArticleView({ article, relatedArticles }: NewsArticleViewPro
     </div>
   );
 }
-

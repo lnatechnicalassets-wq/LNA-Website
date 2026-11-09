@@ -3,14 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Calendar,
-  Clock,
-  MapPin,
-  Layers,
-  Users,
-} from "lucide-react";
+import { ArrowRight, Calendar, Clock, MapPin, Layers, Users } from "lucide-react";
 import type { Course, Batch, Mentor } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
 import { getMentorAvatar } from "@/lib/mentors";
@@ -28,8 +21,8 @@ export function CourseCard({
   course,
   batch,
   mentors = [],
-  priority = false,
-  onSelect,
+  priority: _priority = false,
+  onSelect: _onSelect,
 }: CourseCardProps) {
   const { openQuickView } = useMentorQuickView();
   const [isHovered, setIsHovered] = useState(false);
@@ -58,10 +51,7 @@ export function CourseCard({
     text: "Offline · Dhanmondi",
   };
 
-  if (course.id === "data-analytics" || course.id === "executive-leadership") {
-    metaItem1 = { icon: Calendar, text: "8 Weeks" };
-    metaItem2 = { icon: MapPin, text: "Offline · Dhanmondi" };
-  } else if (isMto) {
+  if (isMto) {
     metaItem1 = { icon: Calendar, text: "16 Sessions" };
     metaItem2 = { icon: Clock, text: "1.5h each" };
   } else if (isIrgp) {
@@ -83,7 +73,7 @@ export function CourseCard({
       onMouseLeave={() => setIsHovered(false)}
       onFocus={() => setIsHovered(true)}
       onBlur={() => setIsHovered(false)}
-      className={`group relative flex flex-col justify-between h-[465px] w-full max-w-[330px] rounded-2xl p-6 overflow-hidden transition-all duration-200 ease-out select-none mx-auto ${
+      className={`group relative flex flex-col justify-between h-116.25 w-full max-w-82.5 rounded-2xl p-6 overflow-hidden transition-all duration-200 ease-out select-none mx-auto ${
         isHovered
           ? "bg-[#086477] text-white shadow-xl border border-[#086477]"
           : "bg-white text-[#172E35] border border-[#E2ECEE] shadow-xs hover:border-[#086477]/40 hover:shadow-md"
@@ -121,7 +111,7 @@ export function CourseCard({
       {/* Course Title */}
       <div className="relative z-10 mt-3 shrink-0 pointer-events-none">
         <h3
-          className={`text-[21px] sm:text-[22px] font-bold tracking-tight leading-[1.25] min-h-[56px] transition-colors duration-200 ${
+          className={`text-[21px] sm:text-[22px] font-bold tracking-tight leading-tight min-h-14 transition-colors duration-200 ${
             isHovered ? "text-white" : "text-[#172E35]"
           }`}
         >
@@ -138,7 +128,7 @@ export function CourseCard({
           }`}
         >
           {/* Subtitle / Summary */}
-          <p className="text-[14px] text-[#526E77] leading-snug line-clamp-2 min-h-[38px]">
+          <p className="text-[14px] text-[#526E77] leading-snug line-clamp-2 min-h-9.5">
             {course.subtitle || course.summary}
           </p>
 
@@ -158,10 +148,7 @@ export function CourseCard({
           <div className="mt-auto pt-2 pointer-events-auto">
             {isIrgp ? (
               /* IRGP 2x4 Grid */
-              <div
-                className="grid grid-cols-4 gap-2 w-max"
-                aria-label="IRGP Faculty"
-              >
+              <div className="grid grid-cols-4 gap-2 w-max" aria-label="IRGP Faculty">
                 {mentors.slice(0, 8).map((mentor, idx) => {
                   const avatar = getMentorAvatar(mentor, idx);
                   return (
@@ -196,11 +183,7 @@ export function CourseCard({
                 {mentors.map((mentor, idx) => {
                   const avatar = getMentorAvatar(mentor, idx);
                   const sizeClass =
-                    mentorCount <= 2
-                      ? "w-11 h-11"
-                      : mentorCount === 3
-                        ? "w-10 h-10"
-                        : "w-9 h-9";
+                    mentorCount <= 2 ? "w-11 h-11" : mentorCount === 3 ? "w-10 h-10" : "w-9 h-9";
                   return (
                     <button
                       key={mentor.id}
@@ -276,11 +259,7 @@ export function CourseCard({
               {mentors.map((mentor, idx) => {
                 const avatar = getMentorAvatar(mentor, idx);
                 const sizeClass =
-                  mentorCount <= 2
-                    ? "w-16 h-16"
-                    : mentorCount === 3
-                      ? "w-14 h-14"
-                      : "w-11 h-11";
+                  mentorCount <= 2 ? "w-16 h-16" : mentorCount === 3 ? "w-14 h-14" : "w-11 h-11";
                 return (
                   <button
                     key={mentor.id}
@@ -357,7 +336,10 @@ export function CourseCard({
               : "border-[#D5E2E5] text-[#172E35] group-hover:border-[#086477] group-hover:text-[#086477]"
           }`}
         >
-          <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
+          <ArrowRight
+            className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5"
+            strokeWidth={2}
+          />
         </div>
       </div>
     </div>

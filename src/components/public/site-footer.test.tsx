@@ -16,16 +16,7 @@ const mockNav: NavigationConfig = {
     cta: { label: "Enroll", href: "/courses" },
   },
   footer: {
-    columns: [
-      {
-        title: "Programs",
-        links: [{ label: "Executive Track", href: "/courses" }],
-      },
-      {
-        title: "Support",
-        links: [{ label: "Helpdesk", href: "/help" }],
-      },
-    ],
+    columns: [],
     bottomNote: "© 2026 Lead Nation Academy.",
     demoNotice: "Demo footer notice.",
   },
@@ -54,21 +45,20 @@ const mockOrg: Organization = {
 };
 
 describe("SiteFooter Component (WCAG 2.2 AA)", () => {
-  it("renders contentinfo landmark and organization address", () => {
+  it("renders contentinfo landmark and organization branding", () => {
     render(<SiteFooter navigation={mockNav} organization={mockOrg} />);
     expect(screen.getByRole("contentinfo")).toBeDefined();
-    expect(screen.getByText(/Dhanmondi Road 27, Dhaka - 1209, Bangladesh/i)).toBeDefined();
-    expect(screen.getByText("+880 1700-000000")).toBeDefined();
+    expect(screen.getByRole("link", { name: /Lead Nation Academy Home/i })).toBeDefined();
     expect(screen.getByText("info@lnabd.org")).toBeDefined();
   });
 
-  it("renders navigation columns and legal/demo notices", () => {
+  it("renders editorial navigation columns and CTA", () => {
     render(<SiteFooter navigation={mockNav} organization={mockOrg} />);
-    expect(screen.getByRole("heading", { level: 4, name: "Programs" })).toBeDefined();
-    expect(screen.getByRole("link", { name: "Executive Track" })).toBeDefined();
-    expect(screen.getByRole("heading", { level: 4, name: "Support" })).toBeDefined();
-    expect(screen.getByRole("link", { name: "Helpdesk" })).toBeDefined();
-    expect(screen.getByText(/© 2026 Lead Nation Academy\./i)).toBeDefined();
-    expect(screen.getByText(/Demo footer notice\./i)).toBeDefined();
+    expect(screen.getByRole("heading", { level: 2, name: /Ready for your/i })).toBeDefined();
+    expect(screen.getByRole("heading", { level: 3, name: "Explore" })).toBeDefined();
+    expect(screen.getByRole("heading", { level: 3, name: "Policies" })).toBeDefined();
+    expect(screen.getByRole("heading", { level: 3, name: "Get in touch" })).toBeDefined();
+    expect(screen.getByRole("link", { name: /Enroll Now/i })).toBeDefined();
+    expect(screen.getByText(/All rights reserved/i)).toBeDefined();
   });
 });

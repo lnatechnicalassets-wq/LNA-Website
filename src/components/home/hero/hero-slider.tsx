@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import type { HeroSlide as HeroSlideType, Mentor } from "@/lib/content";
+import type { Course, HeroSlide as HeroSlideType, Mentor } from "@/lib/content";
 import { useMentorQuickView } from "../mentor-quick-view-context";
 import { HeroSlide } from "./hero-slide";
 
 export interface HeroSliderProps {
   slides: HeroSlideType[];
   mentors?: Mentor[];
+  courses?: Course[];
 }
 
 /**
@@ -20,7 +21,7 @@ export interface HeroSliderProps {
  * - Shared authentic teal lounge background filling the hero.
  * - Accessible controls and zero horizontal overflow across all viewports.
  */
-export function HeroSlider({ slides, mentors = [] }: HeroSliderProps) {
+export function HeroSlider({ slides, mentors = [], courses = [] }: HeroSliderProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [isFocusedWithin, setIsFocusedWithin] = useState(false);
@@ -224,12 +225,15 @@ export function HeroSlider({ slides, mentors = [] }: HeroSliderProps) {
           setIsFocusedWithin(false);
         }
       }}
-      className="relative w-full overflow-hidden bg-[#F6FAFA] select-none flex flex-col justify-between h-[640px] sm:h-[660px] lg:h-[640px]"
+      className="relative w-full bg-[#F6FAFA] select-none flex flex-col justify-between transition-colors duration-500 h-auto min-h-[580px] lg:min-h-[620px] overflow-visible py-3 sm:py-4 lg:py-5"
     >
       {/* ============================================================= */}
       {/* 1. SHARED TEAL LOUNGE BACKGROUND (Absolute layer filling hero) */}
       {/* ============================================================= */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
+      <div
+        className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none opacity-0"
+        aria-hidden="true"
+      >
         <Image
           src="/images/hero-teal-lounge-bg.jpg"
           alt=""
@@ -255,12 +259,13 @@ export function HeroSlider({ slides, mentors = [] }: HeroSliderProps) {
       {/* ============================================================= */}
       {/* 2. THE SLIDES (Dual Executive Showcase)                      */}
       {/* ============================================================= */}
-      <div className="relative w-full h-full z-10 flex flex-col justify-center overflow-hidden">
+      <div className="relative w-full h-full z-10 flex flex-col justify-center">
         {heroSlides.map((slide, index) => (
           <HeroSlide
             key={slide.id}
             slide={slide}
             mentors={mentors}
+            courses={courses}
             isActive={index === activeIndex}
             slideIndex={index}
             totalSlides={totalSlides}

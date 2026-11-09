@@ -69,7 +69,10 @@ async function run() {
   ws.addEventListener("message", (evt) => {
     const data = JSON.parse(evt.data);
     if (data.method === "Runtime.consoleAPICalled") {
-      console.log("BROWSER CONSOLE:", data.params.args.map((a) => a.value || a.description));
+      console.log(
+        "BROWSER CONSOLE:",
+        data.params.args.map((a) => a.value || a.description)
+      );
     }
     if (data.method === "Runtime.exceptionThrown") {
       console.error("BROWSER EXCEPTION:", data.params.exceptionDetails);
@@ -155,4 +158,3 @@ async function run() {
 }
 
 run().catch(console.error);
-

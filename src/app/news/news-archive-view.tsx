@@ -133,8 +133,7 @@ export function NewsArchiveView({ initialArticles }: NewsArchiveViewProps) {
     useMemo(() => {
       if (isUnfilteredDefault) {
         // Featured lead: explicit featured or newest
-        const lead =
-          filteredArticles.find((a) => a.featured) || filteredArticles[0] || null;
+        const lead = filteredArticles.find((a) => a.featured) || filteredArticles[0] || null;
 
         // Side stories: up to 2 other stories
         const remainingAfterLead = filteredArticles.filter((a) => a.id !== lead?.id);
@@ -260,9 +259,7 @@ export function NewsArchiveView({ initialArticles }: NewsArchiveViewProps) {
         {filteredArticles.length === 0 ? (
           /* Empty State */
           <div className="text-center py-16 sm:py-20 px-4 rounded-2xl bg-white border border-[#E5ECEE] shadow-2xs max-w-2xl mx-auto">
-            <h3 className="font-serif font-bold text-2xl text-[#172E35] mb-2">
-              No updates found
-            </h3>
+            <h3 className="font-serif font-bold text-2xl text-[#172E35] mb-2">No updates found</h3>
             <p className="text-sm text-[#526E77] mb-6 max-w-md mx-auto">
               We couldn&apos;t find any stories matching your current search or category filter.
             </p>
@@ -326,7 +323,8 @@ export function NewsArchiveView({ initialArticles }: NewsArchiveViewProps) {
           <div className="space-y-8">
             <div className="flex items-center justify-between border-b border-[#E5ECEE] pb-3">
               <span className="text-xs sm:text-sm font-semibold text-[#526E77]">
-                Showing {filteredArticles.length} {filteredArticles.length === 1 ? "story" : "stories"}
+                Showing {filteredArticles.length}{" "}
+                {filteredArticles.length === 1 ? "story" : "stories"}
                 {activeCategory !== "All updates" && ` in ${activeCategory}`}
                 {searchQueryParam && ` matching “${searchQueryParam}”`}
               </span>
@@ -409,4 +407,3 @@ export function NewsArchiveView({ initialArticles }: NewsArchiveViewProps) {
     </div>
   );
 }
-

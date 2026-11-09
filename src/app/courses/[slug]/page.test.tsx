@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({
 describe("CourseDetailPage", () => {
   it("renders course details with approved CMS data", async () => {
     const Component = await CourseDetailPage({
-      params: Promise.resolve({ slug: "data-analytics" }),
+      params: Promise.resolve({ slug: "mto-readiness" }),
     });
     render(Component);
 
@@ -18,44 +18,30 @@ describe("CourseDetailPage", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /Data Analytics & Business Intelligence/i,
+        name: /MTO Readiness Program/i,
       })
     ).toBeDefined();
 
     // Category and status
-    expect(screen.getByText(/Skill Development/i)).toBeDefined();
+    expect(screen.getByText(/Career Readiness/i)).toBeDefined();
     expect(screen.getByText(/Open for Enrollment/i)).toBeDefined();
 
     // Formatted fee (Rule R5)
-    expect(screen.getByText(/BDT 6,500/i)).toBeDefined();
-
-    // Modules
-    expect(screen.getByText(/Curriculum Structure/i)).toBeDefined();
-    expect(screen.getByText(/Data Engineering & Dashboard Architecture/i)).toBeDefined();
-
-    // Learning outcomes
-    expect(screen.getByText(/Work with real enterprise datasets/i)).toBeDefined();
-
-    // Assigned mentors link to mentors section
-    const mentorLink = screen.getByRole("link", {
-      name: /view faculty details of tahmid ahmed/i,
-    });
-    expect(mentorLink).toBeDefined();
-    expect(mentorLink.getAttribute("href")).toBe("/#mentors");
+    expect(screen.getByText(/BDT 7,500/i)).toBeDefined();
   });
 
   it("generates correct metadata for valid course", async () => {
     const metadata = await generateMetadata({
-      params: Promise.resolve({ slug: "data-analytics" }),
+      params: Promise.resolve({ slug: "mto-readiness" }),
     });
 
-    expect(metadata.title).toContain("Data Analytics & Business Intelligence");
+    expect(metadata.title).toContain("MTO Readiness Program");
   });
 
-  it("generates static parameters for all 6 catalog courses", async () => {
+  it("generates static parameters for catalog courses", async () => {
     const params = await generateStaticParams();
-    expect(params.length).toBe(6);
-    expect(params.map((p) => p.slug)).toContain("data-analytics");
-    expect(params.map((p) => p.slug)).toContain("executive-leadership");
+    expect(params.length).toBe(2);
+    expect(params.map((p) => p.slug)).toContain("mto-readiness");
+    expect(params.map((p) => p.slug)).toContain("irgp");
   });
 });

@@ -297,7 +297,7 @@ describe("HeroSlider Component (Two-Slide Premium Mentor Showcase)", () => {
     expect(
       screen.getAllByText("Industry Readiness Graduate Program").length
     ).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Meet Our IRGP Mentors")).toBeDefined();
+    expect(screen.getByText("The people behind IRGP.")).toBeDefined();
 
     // 8 IRGP Mentors
     expect(screen.getAllByText("Shahnawaj Chowdhury").length).toBeGreaterThanOrEqual(1);
@@ -324,7 +324,7 @@ describe("HeroSlider Component (Two-Slide Premium Mentor Showcase)", () => {
     act(() => {
       vi.advanceTimersByTime(4000);
     });
-    expect(screen.getByText("Meet Our IRGP Mentors")).toBeDefined();
+    expect(screen.getByText("The people behind IRGP.")).toBeDefined();
 
     // After another 4s -> Loops back to Slide 1 (MTO)
     act(() => {
@@ -354,7 +354,7 @@ describe("HeroSlider Component (Two-Slide Premium Mentor Showcase)", () => {
       vi.advanceTimersByTime(4000);
     });
     // Advanced to Slide 2
-    expect(screen.getByText("Meet Our IRGP Mentors")).toBeDefined();
+    expect(screen.getByText("The people behind IRGP.")).toBeDefined();
   });
 
   it("pauses rotation on focus and resumes on blur", () => {
@@ -376,7 +376,7 @@ describe("HeroSlider Component (Two-Slide Premium Mentor Showcase)", () => {
     act(() => {
       vi.advanceTimersByTime(4000);
     });
-    expect(screen.getByText("Meet Our IRGP Mentors")).toBeDefined();
+    expect(screen.getByText("The people behind IRGP.")).toBeDefined();
   });
 
   it("clicking any mentor opens the shared quick-view modal and pauses Hero rotation", () => {
@@ -413,7 +413,7 @@ describe("HeroSlider Component (Two-Slide Premium Mentor Showcase)", () => {
     act(() => {
       vi.advanceTimersByTime(4000);
     });
-    expect(screen.getByText("Meet Our IRGP Mentors")).toBeDefined();
+    expect(screen.getByText("The people behind IRGP.")).toBeDefined();
   });
 
   it("does not render visible previous/next arrow buttons or visible pause button", () => {
@@ -435,7 +435,7 @@ describe("HeroSlider Component (Two-Slide Premium Mentor Showcase)", () => {
     fireEvent.click(slide2Tab);
 
     // Switched immediately to Slide 2
-    expect(screen.getByText("Meet Our IRGP Mentors")).toBeDefined();
+    expect(screen.getByText("The people behind IRGP.")).toBeDefined();
   });
 
   it("supports keyboard arrow navigation", () => {
@@ -447,7 +447,7 @@ describe("HeroSlider Component (Two-Slide Premium Mentor Showcase)", () => {
 
     // Press ArrowRight to advance
     fireEvent.keyDown(carousel, { key: "ArrowRight" });
-    expect(screen.getByText("Meet Our IRGP Mentors")).toBeDefined();
+    expect(screen.getByText("The people behind IRGP.")).toBeDefined();
 
     // Press ArrowLeft to return
     fireEvent.keyDown(carousel, { key: "ArrowLeft" });

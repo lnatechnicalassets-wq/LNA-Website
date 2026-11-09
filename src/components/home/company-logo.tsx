@@ -102,7 +102,13 @@ export function CompanyLogo({
       return (
         <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
           <rect x="2" y="5" width="12" height="9" rx="2" fill="#FFA500" />
-          <path d="M5 5 C5 2.5 11 2.5 11 5" stroke="#FAF9F6" strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path
+            d="M5 5 C5 2.5 11 2.5 11 5"
+            stroke="#FAF9F6"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+          />
         </svg>
       );
     }
@@ -112,6 +118,22 @@ export function CompanyLogo({
           <circle cx="8" cy="8" r="6.5" fill="#086477" />
           <circle cx="8" cy="8" r="3.5" fill="#FAF9F6" />
           <circle cx="8" cy="8" r="1.5" fill="#086477" />
+        </svg>
+      );
+    }
+    if (compKey.includes("ucb") || compKey.includes("unitedcommercialbank")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <rect x="1" y="2" width="14" height="12" rx="2" fill="#C4161C" />
+          <polygon points="4,5 8,11 12,5" fill="#FAF9F6" />
+        </svg>
+      );
+    }
+    if (compKey.includes("shohoz")) {
+      return (
+        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="7" fill="#E41B23" />
+          <path d="M5 8 L7 10 L11 6" stroke="#FAF9F6" strokeWidth="2" fill="none" strokeLinecap="round" />
         </svg>
       );
     }

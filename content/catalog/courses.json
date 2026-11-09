@@ -1,135 +1,5 @@
 [
   {
-    "id": "data-analytics",
-    "title": "Data Analytics & Business Intelligence",
-    "subtitle": "Turn data into actionable business insights.",
-    "category": "Skill Development",
-    "summary": "Turn data into actionable business insights.",
-    "description": "An intensive offline masterclass covering executive business intelligence, automated KPI dashboards, and data-driven decision frameworks for senior leaders.",
-    "learningOutcomes": [
-      "Work with real enterprise datasets",
-      "Build decision dashboards & reports",
-      "Apply modern analytical tools"
-    ],
-    "targetAudience": [
-      "Operations Managers and Business Analysts",
-      "Department Heads and Strategy Directors",
-      "Founders and Commercial Executives"
-    ],
-    "prerequisites": [
-      "Familiarity with spreadsheets and basic business metrics"
-    ],
-    "modules": [
-      {
-        "id": "mod-da-01",
-        "title": "Data Engineering & Dashboard Architecture",
-        "duration": "4 Weeks",
-        "topics": [
-          "Data pipelines",
-          "Executive KPI visualization",
-          "Power BI / Tableau"
-        ]
-      },
-      {
-        "id": "mod-da-02",
-        "title": "Predictive Analytics & Decision Modeling",
-        "duration": "4 Weeks",
-        "topics": [
-          "Forecasting models",
-          "Scenario analysis",
-          "Executive presentation"
-        ]
-      }
-    ],
-    "deliveryMode": "offline",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
-    "status": "published",
-    "featured": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "executive-leadership",
-    "title": "Executive Leadership & Strategic Governance",
-    "subtitle": "Master executive decision-making, strategic alignment, and board-level leadership.",
-    "category": "Leadership & Strategy",
-    "summary": "Master strategic decision-making and board governance.",
-    "description": "The Executive Leadership & Strategic Governance program provides senior executives with actionable frameworks to navigate complex institutional challenges, formulate corporate strategy, and establish high-accountability organizational governance.",
-    "learningOutcomes": [
-      "Formulate agile strategic corporate roadmaps",
-      "Drive executive board communications",
-      "Lead cross-functional change management"
-    ],
-    "targetAudience": [
-      "Managing Directors and Board Members",
-      "C-Suite Executives (CEO, COO, CFO, CTO)",
-      "Senior Vice Presidents and Business Unit Heads",
-      "Aspiring enterprise directors with 8+ years management experience"
-    ],
-    "prerequisites": [
-      "Minimum 5 years of senior managerial or executive leadership experience",
-      "Undergraduate degree from an accredited institution"
-    ],
-    "modules": [
-      {
-        "id": "mod-el-01",
-        "title": "Strategic Thinking & Corporate Vision",
-        "duration": "2 Weeks",
-        "topics": [
-          "Macroeconomic analysis for Bangladesh",
-          "Competitive positioning",
-          "Scenario planning"
-        ]
-      },
-      {
-        "id": "mod-el-02",
-        "title": "Corporate Governance, Ethics & Compliance",
-        "duration": "2 Weeks",
-        "topics": [
-          "Regulatory compliance frameworks",
-          "Boardroom dynamics",
-          "Audit and risk mitigation"
-        ]
-      },
-      {
-        "id": "mod-el-03",
-        "title": "Executive Influence & Team Orchestration",
-        "duration": "2 Weeks",
-        "topics": [
-          "High-stakes negotiation",
-          "Crisis leadership",
-          "Talent management systems"
-        ]
-      },
-      {
-        "id": "mod-el-04",
-        "title": "Capstone Strategic Simulation",
-        "duration": "2 Weeks",
-        "topics": [
-          "Enterprise simulation",
-          "Board presentation pitch",
-          "Peer strategic review"
-        ]
-      }
-    ],
-    "deliveryMode": "offline",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
-    "status": "published",
-    "featured": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
     "id": "mto-readiness",
     "title": "MTO Readiness Program",
     "subtitle": "Graduate Career & Leadership Accelerator",
@@ -156,47 +26,38 @@
         "id": "mod-mto-01",
         "title": "Corporate Aptitude & Analytical Problem Solving",
         "duration": "4 Sessions",
-        "topics": [
-          "Analytical reasoning",
-          "Numerical problem solving",
-          "Critical comprehension"
-        ]
+        "topics": ["Analytical reasoning", "Numerical problem solving", "Critical comprehension"]
       },
       {
         "id": "mod-mto-02",
         "title": "Business Case Analysis & Strategic Frameworks",
         "duration": "4 Sessions",
-        "topics": [
-          "Market entry cases",
-          "Profitability diagnosis",
-          "Executive synthesis"
-        ]
+        "topics": ["Market entry cases", "Profitability diagnosis", "Executive synthesis"]
       },
       {
         "id": "mod-mto-03",
         "title": "Assessment Center Dynamics & Group Exercises",
         "duration": "4 Sessions",
-        "topics": [
-          "Leaderless group discussions",
-          "In-tray simulations",
-          "Team consensus"
-        ]
+        "topics": ["Leaderless group discussions", "In-tray simulations", "Team consensus"]
       },
       {
         "id": "mod-mto-04",
         "title": "Boardroom Presentations & Leadership Communication",
         "duration": "4 Sessions",
-        "topics": [
-          "Executive storytelling",
-          "Stress interviews",
-          "Personal leadership branding"
-        ]
+        "topics": ["Executive storytelling", "Stress interviews", "Personal leadership branding"]
       }
     ],
     "deliveryMode": "offline",
     "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
     "status": "published",
     "featured": true,
+    "mentorIds": [
+      "mentor-mohammad-salekeen-ibrahim",
+      "mentor-syed-himyanuddin-ahmed",
+      "mentor-anubhab-rahman",
+      "mentor-md-manik-hossain",
+      "mentor-mir-hasib"
+    ],
     "provenance": {
       "class": "B",
       "verified": false,
@@ -210,332 +71,192 @@
     "title": "Industry Readiness Graduate Program",
     "subtitle": "Industry-focused learning and career preparation.",
     "category": "Industry Readiness",
-    "summary": "Industry-focused learning and career preparation.",
-    "description": "A comprehensive industry-readiness initiative empowering graduates with real-world skills, direct executive mentorship, and career placement support across leading corporate institutions.",
+    "summary": "Industry-focused practical learning and corporate placement gateway.",
+    "description": "The Industry Readiness Graduate Program (IRGP) is a professionally structured development initiative designed to close the gap between academic education and real-world corporate expectations. Delivered entirely through offline, face-to-face sessions in collaboration with industry experts, IRGP equips participants with practical simulations, executive mentorship, and a structured evaluation-to-hiring framework.",
     "learningOutcomes": [
-      "Cross-sector functional business literacy",
-      "Corporate governance, compliance, and workplace culture",
-      "Hands-on project work under senior corporate mentors",
-      "Guaranteed interview and placement support"
+      "Industry-focused practical corporate problem solving and case analysis",
+      "Real corporate case studies & scenario-based training under seasoned directors",
+      "Mentorship from experienced Bangladeshi CEOs, founders, and industry leaders",
+      "Structured evaluation-to-hiring gateway with on-spot recruitment access",
+      "Internship opportunities and career placement support",
+      "Joint graduation certification from AIUB ICE & Lead Nation Academy"
     ],
     "targetAudience": [
-      "University graduates seeking transition to formal corporate careers",
-      "Young professionals seeking cross-industry mobility"
+      "Open to all university students (public or private universities)",
+      "Fresh graduates aiming to strengthen their corporate readiness",
+      "Early-career working professionals preparing for executive acceleration"
     ],
-    "prerequisites": [
-      "Undergraduate degree or equivalent"
-    ],
+    "prerequisites": ["Undergraduate degree or equivalent"],
     "modules": [
       {
         "id": "mod-irgp-01",
-        "title": "Industry Foundations & Functional Excellence",
-        "duration": "5 Weeks",
+        "title": "Communication & Networking",
+        "duration": "Week 1",
         "topics": [
-          "Banking & Telecom",
-          "Supply Chain & Retail",
-          "Digital Commerce"
+          "Professional business correspondence",
+          "Active listening & corporate networking",
+          "Workplace relationship management"
         ]
       },
       {
         "id": "mod-irgp-02",
-        "title": "Corporate Practice & Executive Mentorship",
-        "duration": "5 Weeks",
+        "title": "Operations & Workflow Management",
+        "duration": "Week 2",
         "topics": [
-          "Cross-functional projects",
-          "Workplace ethics",
-          "Leadership communication"
+          "Standard operating procedures (SOPs)",
+          "Cross-departmental workflows",
+          "Process efficiency & execution"
         ]
+      },
+      {
+        "id": "mod-irgp-03",
+        "title": "Customer Experience (CX)",
+        "duration": "Week 3",
+        "topics": [
+          "Customer journey mapping",
+          "Retention strategies",
+          "Service excellence & issue resolution"
+        ]
+      },
+      {
+        "id": "mod-irgp-04",
+        "title": "Basic Finance & Budgeting",
+        "duration": "Week 4",
+        "topics": [
+          "Reading financial statements",
+          "Departmental budget management",
+          "Cost control & ROI metrics"
+        ]
+      },
+      {
+        "id": "mod-irgp-05",
+        "title": "Sales Techniques & Strategies",
+        "duration": "Week 5",
+        "topics": [
+          "Consultative B2B & B2C selling",
+          "Pitching & negotiation",
+          "Sales pipeline management"
+        ]
+      },
+      {
+        "id": "mod-irgp-06",
+        "title": "Marketing & Branding Basics",
+        "duration": "Week 6",
+        "topics": [
+          "Brand architecture",
+          "Integrated marketing campaigns",
+          "Market research & positioning"
+        ]
+      },
+      {
+        "id": "mod-irgp-07",
+        "title": "Tools for Professionals",
+        "duration": "Week 7",
+        "topics": [
+          "Modern office productivity suites",
+          "Data dashboards & spreadsheets",
+          "Digital collaboration platforms"
+        ]
+      },
+      {
+        "id": "mod-irgp-08",
+        "title": "Entrepreneurship & Startup Basics",
+        "duration": "Week 8",
+        "topics": [
+          "Business model canvas",
+          "Validating market demand",
+          "Early-stage fundraising & agility"
+        ]
+      },
+      {
+        "id": "mod-irgp-09",
+        "title": "Technology in Business",
+        "duration": "Week 9",
+        "topics": [
+          "Enterprise software & cloud infrastructure",
+          "Cybersecurity fundamentals",
+          "Automation & AI in the workplace"
+        ]
+      },
+      {
+        "id": "mod-irgp-10",
+        "title": "Personal Branding & Career Growth",
+        "duration": "Week 10",
+        "topics": [
+          "LinkedIn profile optimization",
+          "Executive presence & thought leadership",
+          "Career roadmapping"
+        ]
+      },
+      {
+        "id": "mod-irgp-11",
+        "title": "Communication for Leadership",
+        "duration": "Week 11",
+        "topics": [
+          "Difficult workplace conversations",
+          "Leading team syndicates",
+          "Inspiring accountability & action"
+        ]
+      },
+      {
+        "id": "mod-irgp-12",
+        "title": "Presentation Skills & Public Speaking",
+        "duration": "Week 12",
+        "topics": [
+          "Structured slide deck creation",
+          "Confidence on stage & delivery",
+          "Handling Q&A from executive panels"
+        ]
+      },
+      {
+        "id": "mod-irgp-13",
+        "title": "Comprehensive Review & Case Simulation",
+        "duration": "Week 13",
+        "topics": [
+          "Cross-module review",
+          "Mock boardroom simulations",
+          "Mentor feedback roundtables"
+        ]
+      },
+      {
+        "id": "mod-irgp-14",
+        "title": "Evaluation & Assessment (Written Exam)",
+        "duration": "Week 14",
+        "topics": ["Comprehensive written assessment", "Business case analysis test"]
+      },
+      {
+        "id": "mod-irgp-15",
+        "title": "Evaluation & Viva Voce",
+        "duration": "Week 15",
+        "topics": ["One-on-one executive viva interview", "Portfolio evaluation by industry jury"]
+      },
+      {
+        "id": "mod-irgp-16",
+        "title": "Graduation & Placement Showcase",
+        "duration": "Week 16",
+        "topics": ["Formal graduation ceremony", "On-spot hiring interviews & corporate networking"]
       }
     ],
     "deliveryMode": "offline",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "venue": "AIUB – Institute of Continuing Education (ICE), Banani, Plot 58/B, Road #21, Banani, Dhaka",
     "status": "published",
     "featured": true,
+    "mentorIds": [
+      "mentor-shahnawaj-chowdhury",
+      "mentor-gm-kamrul",
+      "mentor-istiaque-bhuiyan",
+      "mentor-munaf-chowdhury",
+      "mentor-ilmul-sajib",
+      "mentor-biplob-rahul",
+      "mentor-zia-ashraf",
+      "mentor-sayeda-salma"
+    ],
     "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "LNA IRGP cohort 1 records",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "corporate-finance",
-    "title": "Corporate Finance & Capital Structuring",
-    "subtitle": "Advanced financial modeling, capital budgeting, and enterprise valuation.",
-    "category": "Finance & Economics",
-    "summary": "Master enterprise financial strategy, capital allocation, valuation, and debt syndication.",
-    "description": "Designed for finance directors, investment analysts, and business owners, this masterclass dives into enterprise balance sheet optimization, risk hedging, and financial leadership in Bangladesh's evolving regulatory environment.",
-    "learningOutcomes": [
-      "Evaluate complex capital projects via DCF",
-      "Structure optimal debt-equity ratios",
-      "Execute corporate valuation for M&A deals"
-    ],
-    "targetAudience": [
-      "Chief Financial Officers and Finance Controllers",
-      "Corporate Bankers and Investment Officers",
-      "Treasury Managers and Private Equity Associates"
-    ],
-    "prerequisites": [
-      "Solid foundation in accounting principles or 3+ years in corporate finance"
-    ],
-    "modules": [
-      {
-        "id": "mod-cf-01",
-        "title": "Financial Statement Engineering & Analysis",
-        "duration": "2 Weeks",
-        "topics": [
-          "Cash flow forensics",
-          "Quality of earnings",
-          "Capital expenditure audits"
-        ]
-      },
-      {
-        "id": "mod-cf-02",
-        "title": "Valuation Methodologies & M&A",
-        "duration": "2 Weeks",
-        "topics": [
-          "Discounted cash flow modeling",
-          "Trading comparables",
-          "Deal structuring"
-        ]
-      },
-      {
-        "id": "mod-cf-03",
-        "title": "Capital Markets, Debt & Syndication",
-        "duration": "2 Weeks",
-        "topics": [
-          "Banking syndication in Bangladesh",
-          "Sukuk and bond instruments",
-          "Hedging instruments"
-        ]
-      }
-    ],
-    "deliveryMode": "offline",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
-    "status": "published",
-    "featured": true,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "digital-transformation",
-    "title": "Digital Transformation & Enterprise AI",
-    "subtitle": "Accelerating legacy modernization, data architecture, and applied AI governance.",
-    "category": "Technology & Innovation",
-    "summary": "Lead enterprise digital transformation, AI adoption, and modern technology workflows.",
-    "description": "This program equips operational and technical leaders with the strategic vision required to deploy artificial intelligence safely, overhaul outdated legacy IT infrastructure, and create data-driven business models.",
-    "learningOutcomes": [
-      "Architect enterprise AI transformation roadmaps",
-      "Overhaul legacy enterprise workflows safely",
-      "Establish strict cybersecurity governance"
-    ],
-    "targetAudience": [
-      "Chief Information Officers and Chief Technology Officers",
-      "Heads of Digital Strategy and Business Operations",
-      "Technical Founders and Product Leaders"
-    ],
-    "prerequisites": [
-      "Professional experience in business operations or technology project management"
-    ],
-    "modules": [
-      {
-        "id": "mod-dt-01",
-        "title": "Enterprise Modernization & Cloud Paradigms",
-        "duration": "2 Weeks",
-        "topics": [
-          "Cloud migration strategy",
-          "API economies",
-          "Legacy modernization"
-        ]
-      },
-      {
-        "id": "mod-dt-02",
-        "title": "Applied AI & Machine Learning Strategy",
-        "duration": "2 Weeks",
-        "topics": [
-          "Generative AI business cases",
-          "LLM evaluation",
-          "Process automation"
-        ]
-      },
-      {
-        "id": "mod-dt-03",
-        "title": "Cybersecurity, Compliance & Data Ethics",
-        "duration": "2 Weeks",
-        "topics": [
-          "Data governance frameworks",
-          "Threat modeling",
-          "Regulatory compliance"
-        ]
-      }
-    ],
-    "deliveryMode": "offline",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
-    "status": "published",
-    "featured": false,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "strategic-operations",
-    "title": "Strategic Operations & Supply Chain Excellence",
-    "subtitle": "Resilient logistics, lean operations, and modern procurement strategies.",
-    "category": "Operations & Logistics",
-    "summary": "Build resilient supply chains, lean enterprise operations, and procurement agility.",
-    "description": "A comprehensive executive program focused on mitigating supply disruptions, building high-efficiency manufacturing workflows, and optimizing capital in inventory management.",
-    "learningOutcomes": [
-      "Build resilient supply chain networks",
-      "Implement lean operational excellence",
-      "Negotiate strategic enterprise supplier contracts"
-    ],
-    "targetAudience": [
-      "Chief Operating Officers and Operations Directors",
-      "Supply Chain Heads and Procurement Leads",
-      "General Managers in Manufacturing and Distribution"
-    ],
-    "prerequisites": [
-      "3+ years in operational management or logistics"
-    ],
-    "modules": [
-      {
-        "id": "mod-so-01",
-        "title": "Supply Chain Architecture & Risk Modeling",
-        "duration": "4 Weeks",
-        "topics": [
-          "Supplier networks",
-          "Disruption hedging",
-          "Logistics technology"
-        ]
-      },
-      {
-        "id": "mod-so-02",
-        "title": "Lean Operations & Process Engineering",
-        "duration": "4 Weeks",
-        "topics": [
-          "Six Sigma principles",
-          "Bottleneck reduction",
-          "Quality management"
-        ]
-      }
-    ],
-    "deliveryMode": "offline",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
-    "status": "published",
-    "featured": false,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "people-governance",
-    "title": "Executive Talent & Human Capital Governance",
-    "subtitle": "Board succession, performance alignment, and C-suite talent retention.",
-    "category": "Human Capital",
-    "summary": "Align executive compensation, talent retention, and board succession governance.",
-    "description": "Designed for CHROs, managing directors, and board compensation committee members to establish ethical leadership succession, talent governance, and institutional performance metrics.",
-    "learningOutcomes": [
-      "Design executive compensation structures",
-      "Implement board succession planning",
-      "Lead corporate cultural alignment"
-    ],
-    "targetAudience": [
-      "Chief Human Resources Officers and People Directors",
-      "Board Compensation Committee Members",
-      "Managing Directors and Executive Recruiters"
-    ],
-    "prerequisites": [
-      "Senior HR or executive management experience"
-    ],
-    "modules": [
-      {
-        "id": "mod-pg-01",
-        "title": "Executive Compensation & Incentive Design",
-        "duration": "3 Weeks",
-        "topics": [
-          "Equity schemes",
-          "Performance KPIs",
-          "Retention agreements"
-        ]
-      },
-      {
-        "id": "mod-pg-02",
-        "title": "Board Succession & Governance Protocols",
-        "duration": "3 Weeks",
-        "topics": [
-          "Succession pipelines",
-          "Leadership evaluation",
-          "Culture audits"
-        ]
-      }
-    ],
-    "deliveryMode": "offline",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
-    "status": "published",
-    "featured": false,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Demo catalog course seed (Gate B0 deferred until official curriculum review)",
-      "verifiedBy": null,
-      "verifiedOn": null
-    }
-  },
-  {
-    "id": "career-planning-workshop",
-    "title": "Career Planning Workshop",
-    "subtitle": "Practical guidance on early-career trajectory and interview readiness.",
-    "category": "Career Readiness",
-    "summary": "Free interactive workshop for graduates and university seniors.",
-    "description": "An open offline session exploring career goal alignment, CV architecture, and interview preparation with Lead Nation Academy mentors.",
-    "learningOutcomes": [
-      "Understand competitive early-career expectations",
-      "Structure high-impact professional resumes",
-      "Prepare for corporate recruitment stages"
-    ],
-    "targetAudience": [
-      "Final-year university students",
-      "Recent graduates seeking career direction"
-    ],
-    "prerequisites": [
-      "No prerequisites required"
-    ],
-    "modules": [
-      {
-        "id": "mod-cpw-01",
-        "title": "Career Strategy & Recruitment Readiness",
-        "duration": "1 Day",
-        "topics": [
-          "Career goal framing",
-          "Recruitment process overview",
-          "Q&A with industry mentors"
-        ]
-      }
-    ],
-    "deliveryMode": "offline",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
-    "status": "published",
-    "featured": false,
-    "provenance": {
-      "class": "B",
-      "verified": false,
-      "source": "Approved Free Workshop Specification",
-      "verifiedBy": null,
-      "verifiedOn": null
+      "class": "A",
+      "verified": true,
+      "source": "WordPress lnabdorg_wp955.sql (post ID 469)",
+      "verifiedBy": "Content Migration",
+      "verifiedOn": "2026-11-09"
     }
   }
 ]

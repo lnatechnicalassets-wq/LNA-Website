@@ -1,5 +1,3 @@
-import type { Course, Batch } from "@/lib/content";
-
 export interface ProgramQuestion {
   id: string;
   label: string;
@@ -53,4 +51,3 @@ export interface EnrollmentState {
   applicationReference: string;
   isFree: boolean;
 }
-
