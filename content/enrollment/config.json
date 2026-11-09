@@ -1,0 +1,122 @@
+{
+  "programQuestions": {
+    "mto-readiness": [
+      {
+        "id": "university",
+        "label": "University",
+        "type": "text",
+        "placeholder": "Enter university",
+        "required": true
+      },
+      {
+        "id": "department",
+        "label": "Department",
+        "type": "text",
+        "placeholder": "Enter department",
+        "required": true
+      },
+      {
+        "id": "professionalPhase",
+        "label": "Current professional phase",
+        "type": "select",
+        "placeholder": "Select your current phase",
+        "options": [
+          "Undergraduate",
+          "Graduating soon",
+          "Recent graduate",
+          "Working professional"
+        ],
+        "required": true
+      },
+      {
+        "id": "goals",
+        "label": "What would you like to get out of this program? (optional)",
+        "type": "textarea",
+        "placeholder": "Share a short answer",
+        "required": false
+      }
+    ],
+    "data-analytics": [
+      {
+        "id": "university",
+        "label": "University",
+        "type": "text",
+        "placeholder": "Enter university",
+        "required": true
+      },
+      {
+        "id": "department",
+        "label": "Department",
+        "type": "text",
+        "placeholder": "Enter department",
+        "required": true
+      },
+      {
+        "id": "professionalPhase",
+        "label": "Current professional phase",
+        "type": "select",
+        "placeholder": "Select your current phase",
+        "options": [
+          "Undergraduate",
+          "Graduating soon",
+          "Recent graduate",
+          "Working professional"
+        ],
+        "required": true
+      },
+      {
+        "id": "goals",
+        "label": "What would you like to get out of this program? (optional)",
+        "type": "textarea",
+        "placeholder": "Share a short answer",
+        "required": false
+      }
+    ],
+    "executive-leadership": [
+      {
+        "id": "company",
+        "label": "Current organization",
+        "type": "text",
+        "placeholder": "Enter current organization",
+        "required": true
+      },
+      {
+        "id": "role",
+        "label": "Current job title",
+        "type": "text",
+        "placeholder": "Enter current job title",
+        "required": true
+      },
+      {
+        "id": "experienceYears",
+        "label": "Years of managerial experience",
+        "type": "select",
+        "placeholder": "Select years of experience",
+        "options": [
+          "3-5 years",
+          "5-8 years",
+          "8-12 years",
+          "12+ years"
+        ],
+        "required": true
+      }
+    ],
+    "career-planning-workshop": []
+  },
+  "payment": {
+    "bkash": {
+      "enabled": true
+    },
+    "bankTransfer": {
+      "enabled": true,
+      "bankDetails": {
+        "bankName": "City Bank",
+        "accountName": "Lead Nation Academy Ltd.",
+        "accountNumber": "1503 8291 0001",
+        "branch": "Dhanmondi Branch, Dhaka",
+        "routingNumber": "225272654"
+      }
+    }
+  }
+}
+

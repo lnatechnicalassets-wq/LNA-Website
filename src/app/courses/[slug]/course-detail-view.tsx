@@ -111,14 +111,15 @@ export function CourseDetailView({
                 <span>COMPLETED PROGRAM · IRGP</span>
               </div>
             ) : (
-              <Button
-                variant="primary"
-                onClick={() => setIsEnrollDialogOpen(true)}
-                className="rounded-full px-6 py-2.5 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-xs sm:text-sm shadow-sm transition-all duration-200 inline-flex items-center gap-2 cursor-pointer"
-              >
-                <span>Enroll in {course.title}</span>
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Button>
+              <Link href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}>
+                <Button
+                  variant="primary"
+                  className="rounded-full px-6 py-2.5 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-xs sm:text-sm shadow-sm transition-all duration-200 inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Enroll in {course.title}</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </Link>
             )}
           </div>
         </div>
@@ -258,14 +259,15 @@ export function CourseDetailView({
                     <span>5 industry mentors</span>
                   </div>
                 </div>
-                <Button
-                  variant="primary"
-                  onClick={() => setIsEnrollDialogOpen(true)}
-                  className="w-full py-3.5 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2"
-                >
-                  <span>Enroll in {course.title}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                <Link href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`} className="w-full">
+                  <Button
+                    variant="primary"
+                    className="w-full py-3.5 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Enroll in {course.title}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
             )}
           </div>
@@ -769,14 +771,15 @@ export function CourseDetailView({
                     </div>
                   </div>
 
-                  <Button
-                    variant="primary"
-                    onClick={() => setIsEnrollDialogOpen(true)}
-                    className="w-full py-3.5 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>Enroll in {course.title}</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  <Link href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`} className="w-full">
+                    <Button
+                      variant="primary"
+                      className="w-full py-3.5 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>Enroll in {course.title}</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
 
                   <div className="w-full h-px bg-[#E5ECEE] my-6" />
 

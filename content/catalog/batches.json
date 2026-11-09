@@ -176,5 +176,27 @@
       "verifiedBy": null,
       "verifiedOn": null
     }
+  },
+  {
+    "id": "batch-cpw-2026-01",
+    "courseId": "career-planning-workshop",
+    "batchNumber": 1,
+    "name": "Open Workshop",
+    "startDate": "2026-11-21",
+    "endDate": "2026-11-21",
+    "scheduleDescription": "Saturday, 3:00 PM – 6:00 PM (Free Workshop)",
+    "capacity": 50,
+    "enrolledCount": 12,
+    "seatHoldDurationMinutes": 30,
+    "feePoisha": 0,
+    "status": "open_for_enrollment",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Free Workshop Batch Schedule",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
   }
 ]
