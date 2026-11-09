@@ -7,6 +7,7 @@ import {
   MentorsSection,
   ReviewsSection,
   InternshipsSection,
+  ContactSection,
   MentorQuickViewProvider,
 } from "@/components/home";
 
@@ -22,7 +23,7 @@ export default async function HomePage() {
   const batchRepo = getBatchRepository();
 
   // Load homepage data in parallel via clean repository interfaces (Rule R4)
-  const [heroSlides, partners, courses, batches, mentors, reviews, irgpData, internships] =
+  const [heroSlides, partners, courses, batches, mentors, reviews, irgpData, internships, contactConfig] =
     await Promise.all([
       homeRepo.getHeroSlides(),
       homeRepo.getPartners(),
@@ -32,6 +33,7 @@ export default async function HomePage() {
       homeRepo.getReviews(),
       homeRepo.getIrgpData(),
       homeRepo.getInternships(),
+      homeRepo.getContactConfig(),
     ]);
 
   return (
@@ -55,7 +57,10 @@ export default async function HomePage() {
         {/* 6. Internship Opportunities Section */}
         <InternshipsSection internships={internships} />
 
-        {/* 7. Footer: Rendered automatically by PublicShell wrapper */}
+        {/* 7. Contact Us (Standalone 3-Zone Interactive Contact & Inquiry) */}
+        <ContactSection config={contactConfig} />
+
+        {/* 8. Footer: Rendered automatically by PublicShell wrapper */}
       </div>
     </MentorQuickViewProvider>
   );

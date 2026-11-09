@@ -1,20 +1,114 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 9 November 2026  
-**Session Context:** Phase 4 Enrollment Flow — Implemented shared public enrollment flow (`/enroll`) matching approved 13 desktop and 10 mobile mockups. Supports general entry, course and batch pre-selection, no-open-batches handling, applicant details with program-specific questions, review & edit, paid (bKash & bank transfer) and free registration confirmation paths, live UI gradient/caption overlays with supplied WebP assets, and Crockford Base32 application references (`LNA-XXXX-XXXX`). Verified via `pnpm tokens:check`, `pnpm content:validate`, `pnpm typecheck`, vitest reference suite, and `pnpm build` (114/114 static routes generated with 0 errors).
+**Session Context:** Phase 4 Shared Footer Replacement — Replaced shared site footer (`src/components/public/site-footer.tsx`) with the approved Deep Teal Editorial design. Includes full-width deep teal background (`#063A46`), thin soft-teal top divider, left-hand serif headline ("Ready for your next step?") with soft-teal Enroll Now button linking to `/enroll`, Explore column (`About Us`, `Courses`, `Mentors`, `Internship`, `News`), thin vertical column divider, Get in touch column (`Contact Us` linking to restored `/#contact`, mailto `info@lnabd.org`, and `Dhanmondi, Dhaka`), far-right topographical contour lines, and bottom utility row with copyright and working Back to top scroll. Direct edits performed per request without running tests, builds, or scripts.
 
 ---
 
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 4 (Public Website Core)
-- **Current Task:** Shared Public Enrollment Flow (`/enroll`)
-- **Task Status:** Fully Completed & Verified via Production Build (`next build` 114/114 static routes generated with 0 errors).
+- **Current Task:** About Page Implementation (/about)
+- **Task Status:** Fully Completed.
 - **Current Git Branch:** `task/p4-t5-hero-slides`
 - **Base Commit:** `b306a77` (`main`, containing merged `task/p3-t1-content-schemas` via PR #9)
 
 ---
 
 ## 2. Completed Tasks
+
+### Task P4-T24 / About Lead Nation Academy Page (/about)
+- **SRS IDs Covered:** FR-PUB-001, Rule R1, Rule R2, Rule R4, Rule R6, Rule R7, Rule R8, Rule R13, Rule R14, Rule R15, Rule R19
+- **Architecture & Deliverables:**
+  1. *About Page Implementation (`src/app/about/page.tsx`):*
+     - Replaced placeholder with full editorial layout matching approved mockup.
+     - **Hero Section**: Full-width wide collaborative learning photograph (`/images/about-hero.jpg`), uppercase eyebrow ("ABOUT LEAD NATION ACADEMY"), dual-line serif headline ("A seat at" / italic "the table."), subtitle, soft-teal "Get to know LNA →" CTA button scrolling to `#who-we-are`, and brand motto ("Learn. Lead. Succeed.").
+     - **Who We Are Section**: 2-column layout with authentic sketching photo (`/images/about-sketching.jpg`) on the left, and editorial text, headline ("Learning with a purpose."), and two-column Mission ("01 Our mission") & Vision ("02 Our vision") cards on the right.
+     - **CTA Banner**: Soft-teal card ("Take the next step with LNA.") with deep teal "Explore courses →" button linking to `/#courses`.
+  2. *Navigation & Shared Shell Integration:*
+     - Header active indicator cleanly displays on `/about` with bottom underline.
+     - Deep Teal editorial footer integrates seamlessly via `PublicShell`.
+  3. *Quality & Verification:*
+     - Content validation (`node scripts/validate-content.mjs`): Passed cleanly.
+     - TypeScript compilation (`npx tsc --noEmit`): Passed with 0 errors.
+
+### Task P4-T23 / Footer Policies Column & Legal Pages
+- **SRS IDs Covered:** FR-PUB-001, Rule R1, Rule R2, Rule R4, Rule R7, Rule R8, Rule R13, Rule R14, Rule R19
+- **Architecture & Deliverables:**
+  1. *Footer Policies Column (src/components/public/site-footer.tsx):*
+     - Added dedicated "Policies" column with thin vertical divider lines between Explore and Get in touch.
+     - Displaying "Terms & Conditions" (/terms) and "Privacy Policy" (/privacy).
+     - Refund policy link removed per user request.
+  2. *Legal Documentation Pages (src/app/):*
+     - Created accessible /terms and /privacy pages matching Deep Teal & Pearl brand tokens.
+  3. *Navigation Configuration (content/site/navigation.json):*
+     - Aligned footer.columns schema to include Explore, Policies (Terms & Conditions, Privacy Policy), and Get in touch.
+
+### Task P4-T22 / Deep Teal Editorial Site Footer
+- **SRS IDs Covered:** FR-PUB-001, Rule R1, Rule R2, Rule R4, Rule R6, Rule R7, Rule R8, Rule R13, Rule R14, Rule R19
+- **Architecture & Deliverables:**
+  1. *Visual & Layout Implementation (`src/components/public/site-footer.tsx`):*
+     - Replaced light pearl footer with full-width deep teal (`#063A46`) surface with pearl typography.
+     - Thin soft-teal top divider line (`border-t border-[#8ABBC2]/40`) separating footer from restored homepage Contact section.
+     - Left-hand block: Serif brand label "Lead Nation Academy", large editorial serif headline "Ready for your next step?", and soft-teal button ("Enroll Now →") linking to `/enroll`.
+     - Explore column: Nav links in exact order (`About Us`, `Courses`, `Mentors`, `Internship`, `News`) reusing active navbar destinations with smooth-scrolling for homepage anchors.
+     - Thin vertical divider line (`w-px bg-white/20`) between Explore and Get in touch columns on desktop.
+     - Get in touch column: Contact Us linking to `/#contact`, mailto link for `info@lnabd.org`, and Dhanmondi, Dhaka location with official Lucide icons (`Mail`, `MapPin`).
+     - Subtle topographical contour lines along far-right edge rendered via responsive SVG paths.
+     - Bottom utility row: Thin horizontal divider (`bg-white/15`), copyright notice on left, and working smooth Back to top control on right.
+     - Mobile layout: Stacks headline & CTA button first, followed by Explore, Get in touch, and utility row with full-width accessible touch targets.
+  2. *Navigation Configuration (`content/site/navigation.json`):*
+     - Aligned `footer.columns` to match the two-column editorial structure (Explore and Get in touch).
+
+### Task P4-T21 / Homepage Section 4 & 5 Design Restoration
+- **SRS IDs Covered:** FR-PUB-002, FR-PUB-006, Rule R1, Rule R2, Rule R4, Rule R6, Rule R7, Rule R8, Rule R13, Rule R14, Rule R19
+- **Architecture & Deliverables:**
+  1. *Section 5: Real Learning. Real Impact. (`src/components/home/reviews-section.tsx`):*
+     - Reverted from 2-column compromise back to approved 3-column composition:
+       - Zone 1: `IrgpOverviewCard` (approx 29% width / `xl:col-span-4`) with deep teal rounded rectangle card.
+       - Zone 2: `IrgpGallery` (approx 36% width / `xl:col-span-4`) with 2x2 photo mosaic and interactive lightbox.
+       - Zone 3: `ReviewsCarousel` (approx 35% width / `xl:col-span-4`) with authentic learner voices across cohorts.
+     - Restored container max-widths (`max-w-7xl xl:max-w-[1360px] 2xl:max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10`).
+     - Restored section vertical padding (`py-16 sm:py-24 lg:py-28`) and heading typography (`lg:text-5xl`).
+     - Preserved `IrgpOutcomesStrip` spacing, `CommunityBanner`, and external `lna:open-irgp-story` event listeners.
+  2. *Section 4: Meet Our Mentors (`src/components/home/`):*
+     - Reverted `mentor-carousel.tsx` from flat horizontal overflow scroll back to accepted 5-card symmetrical layered 3D carousel deck (`perspective: 1400`, `slots: -2, -1, 0, 1, 2`).
+     - Restored exact card dimensions (`w-[280px] sm:w-[300px] xl:w-[315px] h-[380px] sm:h-[400px] xl:h-[420px]`), specular glass sheen, opaque card foundation, and quick-view trigger.
+     - Restored carousel placement inside the diagonal deep teal gradient sweep background.
+     - Restored category pills & search field alignment in `mentors-section.tsx`.
+     - Restored approved eyebrow (`Our Mentors` with `#172E35` styling) and serif heading typography (`lg:text-[46px] font-extrabold`).
+
+### Task P4-T20 / Header Navigation (Official Logo & 6-Link Structure + /about Destination)
+- **SRS IDs Covered:** FR-PUB-001, Rule R1, Rule R2, Rule R4, Rule R6, Rule R7, Rule R8, Rule R13, Rule R14, Rule R19
+- **Architecture & Deliverables:**
+  1. *Navigation Architecture (`content/site/navigation.json`):*
+     - Header navigation items set to exact sequence:
+       - `About Us` → `/about`
+       - `Courses` → `/#courses`
+       - `Mentors` → `/#mentors`
+       - `Internship` → `/#internships`
+       - `News` → `/news`
+       - `Contact Us` → `/#contact`
+     - Header CTA set to `Enroll Now` → `/enroll`.
+     - Footer navigation data left untouched.
+  2. *Working About Destination (`src/app/about/page.tsx`):*
+     - Created accessible `/about` placeholder page with executive overview copy, WCAG AA compliance, and home/courses action buttons so the `/about` navbar link is functional.
+  3. *Header & Mobile Nav Components (`src/components/public/`):*
+     - Desktop (`site-header.tsx`): Displays only the official LNA logo monogram and brand name (demo badge removed), active state support for `/news` and `/about`, and primary teal "Enroll Now" CTA button on the far right.
+     - Mobile (`mobile-nav.tsx`): Displays official LNA logo, links in matching order, prominent full-width teal "Enroll Now" CTA directly after the links, and automatic drawer dismissal upon click.
+  3. *Homepage Contact Section Restoration (`src/app/page.tsx`):*
+     - Diagnosed git history: Identified that `ContactSection` was inadvertently dropped in commit `0ab9f0a` during the course detail pages update.
+     - Restored `<ContactSection config={contactConfig} />` in its original location on the homepage (Section 7, right above the footer).
+     - Component retains native `id="contact"` and `scroll-mt-20`.
+     - Removed the duplicate `id="contact"` from `src/components/public/site-footer.tsx`.
+  4. *Flagged Missing Destinations:*
+     - Currently, no dedicated `/internships` route exists in `src/app/`. The navbar links to the working homepage section anchor `/#internships`. When a dedicated `/internships` page is created, the configuration can seamlessly switch to `/internships`.
+  5. *Quality & Verification:*
+     - Content validation (`node scripts/validate-content.mjs`): Clean pass.
+     - TypeScript compilation (`pnpm typecheck`): Clean pass with zero errors.
+     - Contact section unit tests (`pnpm test src/components/home/contact-section.test.tsx`): 3/3 passed.
+     - Mobile navigation tests (`pnpm test src/components/public/mobile-nav.test.tsx`): 3/3 passed.
+     - Header tests (`pnpm test src/components/public/site-header.test.tsx`): 3/3 passed.
+     - Next.js production build (`pnpm build`): 114/114 static routes generated with 0 errors.
 
 ### Task P4-T18 / Shared Public Enrollment Flow
 - **SRS IDs Covered:** FR-ENR-001, FR-ENR-002, FR-ENR-005, FR-CRS-004, FR-CRS-005, Rule R1, Rule R2, Rule R3, Rule R4, Rule R5, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R16, Rule R19
