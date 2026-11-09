@@ -1,20 +1,50 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
 **Last Updated:** 9 November 2026  
-**Session Context:** Phase 4 News & Updates — Implemented dedicated News & Updates archive (`/news`) and dynamic article pages (`/news/[slug]`) adhering strictly to approved visual designs. Added "News & Updates" with active state to global desktop and mobile navigation and footer Explore links. Fully data-driven through typed `NewsArticle` schema and JSON repository. Verified via Next.js production build (`next build` 112/112 static routes generated with 0 errors).
+**Session Context:** Phase 4 Enrollment Flow — Implemented shared public enrollment flow (`/enroll`) matching approved 13 desktop and 10 mobile mockups. Supports general entry, course and batch pre-selection, no-open-batches handling, applicant details with program-specific questions, review & edit, paid (bKash & bank transfer) and free registration confirmation paths, live UI gradient/caption overlays with supplied WebP assets, and Crockford Base32 application references (`LNA-XXXX-XXXX`). Verified via `pnpm tokens:check`, `pnpm content:validate`, `pnpm typecheck`, vitest reference suite, and `pnpm build` (114/114 static routes generated with 0 errors).
 
 ---
 
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 4 (Public Website Core)
-- **Current Task:** Dedicated News & Updates Archive (`/news`) and Dynamic Article Pages (`/news/[slug]`)
-- **Task Status:** Fully Completed & Verified via Production Build (`next build` 112/112 static routes generated with 0 errors).
+- **Current Task:** Shared Public Enrollment Flow (`/enroll`)
+- **Task Status:** Fully Completed & Verified via Production Build (`next build` 114/114 static routes generated with 0 errors).
 - **Current Git Branch:** `task/p4-t5-hero-slides`
 - **Base Commit:** `b306a77` (`main`, containing merged `task/p3-t1-content-schemas` via PR #9)
 
 ---
 
 ## 2. Completed Tasks
+
+### Task P4-T18 / Shared Public Enrollment Flow
+- **SRS IDs Covered:** FR-ENR-001, FR-ENR-002, FR-ENR-005, FR-CRS-004, FR-CRS-005, Rule R1, Rule R2, Rule R3, Rule R4, Rule R5, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R16, Rule R19
+- **Architecture & Deliverables:**
+  1. *Universal Enrollment Flow (`/enroll`):*
+     - Created `src/app/enroll/page.tsx` with `<Suspense>` boundary and metadata, loading catalog courses, batches, and enrollment configuration.
+     - Created `src/app/enroll/enrollment-view.tsx` implementing all 7 state transitions matching the 13 desktop and 10 mobile approved mockups:
+       - **Stage 1 (Program Selection):** General entry with empty picker (`Choose what comes next.`). Loads only available batches for chosen program. Handles "No open batches" state with info alert box and "Explore programs" link. Supports preselection via query params (`?course=...&batch=...`). Changing program clears batch selection.
+       - **Stage 2 (Applicant Details):** Collects Full Name, Email, and WhatsApp number with input validation. Selected program summary card with "Change" link.
+       - **Stage 2b (Program Questions):** Renders program-specific questions (e.g. University, Department, Professional phase, Goals) configured in `content/enrollment/config.json`. Automatically bypassed if program has no questions.
+       - **Stage 3 (Review):** Comprehensive summary with "Edit" link back to details, program summary, answers view/collapse, and payable fee (BDT integer poisha via Rule R5 or "Free").
+       - **Stage 4 (Payment Methods - Paid):** Configured options for bKash (simulated checkout modal with verification/failure test handlers) and Bank transfer (configured bank, account, and reference entry).
+       - **Stage 5 (Outcomes):**
+         - Verified Paid Enrollment: `11-enrollment-confirmed.png` with green `Confirmed` badge, `LNA-XXXX-XXXX` reference, and confirmation photo.
+         - Free Workshop Registration: `13-free-registration-confirmed.png` bypassing payment directly after review.
+         - Bank Transfer Review: `09-payment-pending.png` with amber `Pending verification` badge.
+         - Payment Failure: `10-payment-failed.png` with rose error alert and retry/change-method actions.
+  2. *Visual & Asset Integration:*
+     - Copied approved WebP assets to `public/images/enrollment/`: `lna-enrollment-workshop-1120.webp`, `640.webp`, `lna-enrollment-confirmation-1120.webp`, `640.webp`.
+     - Desktop: Editorial two-column layout with fixed-position photo panel, dark gradient overlay, and live white caption typography.
+     - Mobile: Single-column layout showing shallow workshop crop on entry screen, form-prioritized intermediate steps (photo hidden), and confirmation crop on confirmation.
+  3. *Entry Point Wiring:*
+     - Updated course detail view `src/app/courses/[slug]/course-detail-view.tsx` "Enroll in {course.title}" buttons to route directly to `/enroll?course=${course.id}&batch=${batch.id}`.
+     - Added `career-planning-workshop` to `content/catalog/courses.json` and `batches.json` to enable testing of the free registration path.
+  4. *Quality & Verification:*
+     - Tokens check (`pnpm tokens:check`): Clean pass.
+     - Content validation (`pnpm content:validate`): Clean pass.
+     - TypeScript compilation (`pnpm typecheck`): Clean pass with zero errors.
+     - Reference generator unit test (`src/lib/enrollment/reference.test.ts`): Passed.
+     - Next.js production build (`pnpm build`): 114/114 static routes generated with 0 errors.
 
 ### Task P4-T17 / Dedicated News & Updates Archive & Article Pages
 - **SRS IDs Covered:** FR-PUB-001, FR-PUB-002, Rule R1, Rule R2, Rule R3, Rule R4, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R16, Rule R19

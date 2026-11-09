@@ -494,5 +494,48 @@
       "verifiedBy": null,
       "verifiedOn": null
     }
+  },
+  {
+    "id": "career-planning-workshop",
+    "title": "Career Planning Workshop",
+    "subtitle": "Practical guidance on early-career trajectory and interview readiness.",
+    "category": "Career Readiness",
+    "summary": "Free interactive workshop for graduates and university seniors.",
+    "description": "An open offline session exploring career goal alignment, CV architecture, and interview preparation with Lead Nation Academy mentors.",
+    "learningOutcomes": [
+      "Understand competitive early-career expectations",
+      "Structure high-impact professional resumes",
+      "Prepare for corporate recruitment stages"
+    ],
+    "targetAudience": [
+      "Final-year university students",
+      "Recent graduates seeking career direction"
+    ],
+    "prerequisites": [
+      "No prerequisites required"
+    ],
+    "modules": [
+      {
+        "id": "mod-cpw-01",
+        "title": "Career Strategy & Recruitment Readiness",
+        "duration": "1 Day",
+        "topics": [
+          "Career goal framing",
+          "Recruitment process overview",
+          "Q&A with industry mentors"
+        ]
+      }
+    ],
+    "deliveryMode": "offline",
+    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "status": "published",
+    "featured": false,
+    "provenance": {
+      "class": "B",
+      "verified": false,
+      "source": "Approved Free Workshop Specification",
+      "verifiedBy": null,
+      "verifiedOn": null
+    }
   }
 ]

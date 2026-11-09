@@ -18,11 +18,11 @@ FR-CRS-004,FR,"Homepage displaying open course batches, falling back to upcoming
 FR-CRS-005,FR,"Course details page presenting batch logistics, available seats, and final payable fees upfront.",M,P4,app/(public)/courses,AT-15,implemented,RETAIN,"src/app/courses/[slug]/page.tsx, src/app/courses/[slug]/course-detail-view.tsx, src/app/courses/[slug]/page.test.tsx"
 FR-CRS-006,FR,Seat reservation engine maintaining holds during checkout and preventing overselling beyond capacity.,M,P9,"supabase, server",AT-04,not_started,RETAIN,
 FR-CRS-007,FR,"Batch archiving preserving complete historical schedule, pricing, enrollment, and certification records.",M,P8,"app/(admin), server",AT-13,not_started,RETAIN,
-FR-ENR-001,FR,Standard universal enrollment form across all courses without document or CV uploads.,M,P9,app/(public)/enroll,AT-01,not_started,RETAIN,
-FR-ENR-002,FR,Submission processing issuing unique reference and pending enrollment without creating auth accounts.,M,P9,server/enrollment,AT-01,not_started,RETAIN,
+FR-ENR-001,FR,Standard universal enrollment form across all courses without document or CV uploads.,M,P9,app/(public)/enroll,AT-01,implemented,RETAIN,"src/app/enroll/page.tsx, src/app/enroll/enrollment-view.tsx, src/lib/enrollment/*"
+FR-ENR-002,FR,Submission processing issuing unique reference and pending enrollment without creating auth accounts.,M,P9,server/enrollment,AT-01,implemented,RETAIN,"src/app/enroll/enrollment-view.tsx, src/lib/enrollment/reference.ts"
 FR-ENR-003,FR,Duplicate prevention reconciling repeated applications for identical email and batch combinations.,M,P9,server/enrollment,AT-01,not_started,RETAIN,
 FR-ENR-004,FR,Rate-limited public application status lookup requiring reference and email address.,M,P9,"server, app",AT-06,not_started,RETAIN,
-FR-ENR-005,FR,Direct free batch confirmation bypassing payment gateway and issuing confirmation email.,M,P9,server,AT-05,not_started,MODIFY,
+FR-ENR-005,FR,Direct free batch confirmation bypassing payment gateway and issuing confirmation email.,M,P9,server,AT-05,implemented,MODIFY,"src/app/enroll/enrollment-view.tsx, content/catalog/courses.json"
 FR-ENR-006,FR,Confirmed enrollment linking or provisioning enrollment record and issuing receipt confirmation email.,M,P9,server,AT-01,not_started,MODIFY,
 FR-PAY-001,FR,Configurable batch-level discount fees specified as overrides, ensuring non-negative fees.,M,P8,"app/(admin), server",AT-01,not_started,MODIFY,
 FR-PAY-002,FR,"Discount evaluation applying batch overrides without stacking, ensuring non-negative fees.",M,P9,"server/enrollment, supabase",AT-01,not_started,MODIFY,
