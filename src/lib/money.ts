@@ -45,6 +45,31 @@ export function poishaToTakaString(poishaInput: number | bigint | string): strin
 }
 
 /**
+ * Strict gateway formatter (ADR 0009): converts non-negative integer poisha to BDT string "XXXX.XX".
+ */
+export function poishaToBdtString(poishaInput: number | bigint | string): string {
+  const poisha = typeof poishaInput === "bigint" ? poishaInput : BigInt(poishaInput);
+  if (poisha < 0n) {
+    throw new RangeError("Amount cannot be negative");
+  }
+  return poishaToTakaString(poisha);
+}
+
+/**
+ * Strict gateway parser (ADR 0009): parses non-negative numeric BDT string (up to 2 decimals) into integer poisha.
+ */
+export function bdtStringToPoisha(amountStr: string): bigint {
+  const trimmed = amountStr.trim();
+  const match = trimmed.match(/^(\d+)(?:\.(\d{1,2}))?$/);
+  if (!match) {
+    throw new Error(`Invalid monetary amount format: "${amountStr}"`);
+  }
+  const taka = BigInt(match[1]);
+  const decimal = match[2] ? match[2].padEnd(2, "0") : "00";
+  return taka * 100n + BigInt(decimal);
+}
+
+/**
  * Safely parses a decimal Taka string into integer poisha without floating-point math.
  * (e.g., "25000" -> 2500000n, "25000.50" -> 2500050n, "25,000" -> 2500000n)
  */

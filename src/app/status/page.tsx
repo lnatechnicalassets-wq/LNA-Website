@@ -1,6 +1,9 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
+import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
 import { StatusLookupView } from "./status-lookup-view";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Application Status — Lead Nation Academy",
@@ -14,6 +17,8 @@ export const metadata: Metadata = {
 };
 
 export default function ApplicationStatusPage() {
+  const runtime = getEnrollmentRuntimeConfig();
+
   return (
     <Suspense
       fallback={
@@ -22,7 +27,7 @@ export default function ApplicationStatusPage() {
         </div>
       }
     >
-      <StatusLookupView />
+      <StatusLookupView enabled={runtime.statusLookupEnabled} />
     </Suspense>
   );
 }

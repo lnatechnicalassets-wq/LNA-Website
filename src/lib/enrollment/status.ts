@@ -1,6 +1,10 @@
 import type { PaymentMethod } from "./types";
 
-export type ApplicationStatusValue = "Application in process" | "Enrollment confirmed";
+export type ApplicationStatusValue =
+  | "Application in process"
+  | "Enrollment confirmed"
+  | "Reservation expired"
+  | "Cancelled";
 
 export type StatusPaymentMethod = PaymentMethod | "free";
 

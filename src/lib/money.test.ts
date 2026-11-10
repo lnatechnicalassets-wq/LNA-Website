@@ -3,6 +3,8 @@ import { describe, it, expect } from "vitest";
 import {
   formatPoishaToBDT,
   poishaToTakaString,
+  poishaToBdtString,
+  bdtStringToPoisha,
   takaStringToPoisha,
   percentToBasisPoints,
   calculateDiscountAmountPoisha,
@@ -39,6 +41,19 @@ describe("Rule R5: Integer Poisha Money Calculations", () => {
     expect(() => takaStringToPoisha("")).toThrow();
     expect(() => takaStringToPoisha("12.34.56")).toThrow();
     expect(() => takaStringToPoisha("12.345")).toThrow(); // sub-poisha
+  });
+
+  it("enforces strict ADR 0009 poishaToBdtString and bdtStringToPoisha gateway boundaries", () => {
+    expect(poishaToBdtString(750000n)).toBe("7500.00");
+    expect(poishaToBdtString(0n)).toBe("0.00");
+    expect(() => poishaToBdtString(-1n)).toThrow(RangeError);
+
+    expect(bdtStringToPoisha("7500")).toBe(750000n);
+    expect(bdtStringToPoisha("7500.5")).toBe(750050n);
+    expect(bdtStringToPoisha("7500.00")).toBe(750000n);
+    expect(() => bdtStringToPoisha("-7500")).toThrow();
+    expect(() => bdtStringToPoisha("7500.123")).toThrow();
+    expect(() => bdtStringToPoisha("7500.00abc")).toThrow();
   });
 });
 

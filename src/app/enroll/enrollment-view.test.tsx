@@ -1,10 +1,14 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import type { Course, Batch } from "@/lib/content";
-import type { EnrollmentConfig } from "@/lib/enrollment/types";
+import type { EnrollmentConfig, EnrollmentOutcomeSummary } from "@/lib/enrollment/types";
 import { generateEnrollmentReference } from "@/lib/enrollment/reference";
-import { EnrollmentView, type EnrollmentSubmissionPayload } from "./enrollment-view";
+import {
+  EnrollmentView,
+  type EnrollmentCheckoutResponse,
+  type EnrollmentSubmissionPayload,
+} from "./enrollment-view";
 
 let mockSearchParams = new URLSearchParams();
 
@@ -168,17 +172,12 @@ function createOfficialConfig(submissionEnabled: boolean): EnrollmentConfig {
         qrImageSrc: "/images/payments/lna-bkash-merchant-qr.png",
         qrImageAlt: "Lead Nation Academy official bKash Merchant QR code",
         instruction:
-          "Scan the official LNA bKash Merchant QR code, pay the exact amount due, and enter your bKash Transaction ID below.",
+          "Click Continue to bKash Checkout to open the hosted bKash payment page and complete payment.",
       },
       bankTransfer: {
-        enabled: true,
-        instruction:
-          "Transfer the exact amount due to the official Lead Nation Academy bank account below, then enter your bank-issued Transaction Reference.",
-        bankDetails: {
-          bankName: "Mutual Trust Bank PLC",
-          accountName: "Lead Nation Academy - LNA",
-          accountNumber: "130100052843",
-        },
+        enabled: false,
+        instruction: "Bank transfer is not enabled for this release.",
+        bankDetails: null,
       },
     },
   };
@@ -186,10 +185,11 @@ function createOfficialConfig(submissionEnabled: boolean): EnrollmentConfig {
 
 function navigateToPaidPaymentStep(
   config: EnrollmentConfig,
-  batchId = "batch-mto-2026-01",
-  onSubmitApplication?: (payload: EnrollmentSubmissionPayload) => {
-    applicationReference: string;
-    status: "Application in process" | "Enrollment confirmed";
+  options?: {
+    batchId?: string;
+    checkoutMode?: "closed" | "mock" | "live";
+    onStartCheckout?: (payload: EnrollmentSubmissionPayload) => Promise<EnrollmentCheckoutResponse>;
+    onRedirectToCheckout?: (url: string) => void;
   }
 ) {
   render(
@@ -197,12 +197,16 @@ function navigateToPaidPaymentStep(
       courses={testCourses}
       batches={testBatches}
       config={config}
-      onSubmitApplication={onSubmitApplication}
+      checkoutMode={options?.checkoutMode ?? "closed"}
+      onStartCheckout={options?.onStartCheckout}
+      onRedirectToCheckout={options?.onRedirectToCheckout}
     />
   );
 
   fireEvent.change(screen.getByLabelText("Program"), { target: { value: "mto-readiness" } });
-  fireEvent.change(screen.getByLabelText("Batch"), { target: { value: batchId } });
+  fireEvent.change(screen.getByLabelText("Batch"), {
+    target: { value: options?.batchId ?? "batch-mto-2026-01" },
+  });
   fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
 
   fireEvent.change(screen.getByLabelText(/Full name/i), { target: { value: "Samira Rahman" } });
@@ -224,7 +228,7 @@ function navigateToPaidPaymentStep(
   fireEvent.click(screen.getByRole("button", { name: /Continue to payment/i }));
 }
 
-describe("EnrollmentView flow", () => {
+describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams();
   });
@@ -234,12 +238,13 @@ describe("EnrollmentView flow", () => {
     vi.restoreAllMocks();
   });
 
-  it("shows a returning-applicant Check application status link and 'Online enrollment is coming soon' banner in public disabled mode", () => {
+  it("shows a returning-applicant /status link and 'Online enrollment is coming soon' banner in closed mode", () => {
     render(
       <EnrollmentView
         courses={testCourses}
         batches={testBatches}
         config={createOfficialConfig(false)}
+        checkoutMode="closed"
       />
     );
 
@@ -250,90 +255,38 @@ describe("EnrollmentView flow", () => {
     );
   });
 
-  it("renders official LNA bKash QR and Mutual Trust Bank details without demo strings, hides live instructions, and disables submission when submissionEnabled is false", () => {
-    navigateToPaidPaymentStep(createOfficialConfig(false), "batch-mto-discounted");
+  it("renders hosted bKash Checkout without manual QR, Transaction ID, or Bank Transfer fields and disables CTA when closed", () => {
+    navigateToPaidPaymentStep(createOfficialConfig(false), {
+      batchId: "batch-mto-discounted",
+      checkoutMode: "closed",
+    });
 
-    // Coming soon banner visible; zero demo content anywhere in page
     expect(screen.getByTestId("online-enrollment-coming-soon").textContent).toMatch(
       /Online enrollment is coming soon/i
     );
-    expect(screen.queryByText(/Demo/i)).toBeNull();
-    expect(screen.queryByText(/01700-000000/)).toBeNull();
-    expect(screen.queryByText(/City Bank/i)).toBeNull();
-
-    // Official bKash QR (inline + desktop right panel) + amount due + transaction field preserved, live instruction hidden
     expect(screen.getByTestId("payment-amount-due").textContent).toBe("BDT 5,500");
-    const inlineQrBtn = screen.getByTestId("bkash-qr-inline-trigger");
-    const inlineQrImg = within(inlineQrBtn).getByRole("img", {
-      name: /Lead Nation Academy official bKash Merchant QR code/i,
-    });
-    expect(inlineQrImg.getAttribute("src")).toBe("/images/payments/lna-bkash-merchant-qr.png");
+    expect(screen.getByTestId("hosted-bkash-checkout-panel")).toBeDefined();
 
-    const desktopQrPanel = screen.getByTestId("desktop-bkash-qr-panel");
-    const desktopQrImg = within(desktopQrPanel).getByRole("img", {
-      name: /Lead Nation Academy official bKash Merchant QR code/i,
-    });
-    expect(desktopQrImg.getAttribute("src")).toBe("/images/payments/lna-bkash-merchant-qr.png");
-
-    expect(screen.getAllByText("Lead Nation Academy").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("0158 1799 666").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByLabelText(/bKash Transaction ID/i)).toBeDefined();
-    expect(screen.queryByText(/Scan the official LNA bKash Merchant QR code/i)).toBeNull();
-
-    // Switch to Bank Transfer: desktop QR panel hides, official MTB details shown, unapproved branch/routing omitted, instruction hidden
-    fireEvent.click(screen.getByLabelText(/Bank Transfer/i));
+    // Ensure old manual QR / manual TrxID / Bank transfer inputs are completely gone
+    expect(screen.queryByTestId("bkash-qr-inline-trigger")).toBeNull();
     expect(screen.queryByTestId("desktop-bkash-qr-panel")).toBeNull();
-    expect(screen.getByTestId("payment-amount-due").textContent).toBe("BDT 5,500");
-    expect(screen.getByText("Mutual Trust Bank PLC")).toBeDefined();
-    expect(screen.getByText("Lead Nation Academy - LNA")).toBeDefined();
-    expect(screen.getByText("130100052843")).toBeDefined();
-    expect(screen.queryByText(/^Branch$/i)).toBeNull();
-    expect(screen.queryByText(/^Routing number$/i)).toBeNull();
-    expect(screen.getByLabelText(/Bank Transaction Reference/i)).toBeDefined();
-    expect(
-      screen.queryByText(/Transfer the exact amount due to the official Lead Nation Academy/i)
-    ).toBeNull();
+    expect(screen.queryByLabelText(/bKash Transaction ID/i)).toBeNull();
+    expect(screen.queryByLabelText(/Bank Transaction Reference/i)).toBeNull();
+    expect(screen.queryByText(/Mutual Trust Bank PLC/i)).toBeNull();
 
-    // Submission button is disabled and does not simulate submission
     const submitBtn = screen.getByRole("button", {
-      name: /Submission disabled \(coming soon\)/i,
+      name: /Online enrollment is coming soon/i,
     }) as HTMLButtonElement;
     expect(submitBtn.disabled).toBe(true);
-    fireEvent.click(submitBtn);
-    expect(screen.queryByRole("heading", { level: 1, name: /Application in process/i })).toBeNull();
   });
 
-  it("opens an enlarged bKash QR popup dialog when clicking the inline, enlarge, or desktop QR trigger", async () => {
-    navigateToPaidPaymentStep(createOfficialConfig(false), "batch-mto-2026-01");
-
-    expect(screen.queryByTestId("bkash-qr-popup-dialog")).toBeNull();
-
-    // Open via mobile/inline QR trigger
-    fireEvent.click(screen.getByTestId("bkash-qr-inline-trigger"));
-    const popup = await screen.findByTestId("bkash-qr-popup-dialog");
-    expect(
-      within(popup)
-        .getByRole("img", { name: /Lead Nation Academy official bKash Merchant QR code/i })
-        .getAttribute("src")
-    ).toBe("/images/payments/lna-bkash-merchant-qr.png");
-    expect(within(popup).getByText("0158 1799 666")).toBeDefined();
-    expect(within(popup).getByText("BDT 7,500")).toBeDefined();
-
-    // Close dialog cleanly
-    fireEvent.click(within(popup).getByRole("button", { name: /^Close$/i }));
-    await waitFor(() => expect(screen.queryByTestId("bkash-qr-popup-dialog")).toBeNull());
-
-    // Open again via desktop right panel trigger
-    fireEvent.click(screen.getByTestId("bkash-qr-desktop-trigger"));
-    expect(await screen.findByTestId("bkash-qr-popup-dialog")).toBeDefined();
-  });
-
-  it("disables free cohort registration button in public disabled mode", () => {
+  it("disables free cohort registration button in closed mode", () => {
     render(
       <EnrollmentView
         courses={testCourses}
         batches={testBatches}
         config={createOfficialConfig(false)}
+        checkoutMode="closed"
       />
     );
 
@@ -355,11 +308,50 @@ describe("EnrollmentView flow", () => {
       name: /Online enrollment is coming soon/i,
     }) as HTMLButtonElement;
     expect(confirmBtn.disabled).toBe(true);
-    fireEvent.click(confirmBtn);
-    expect(screen.queryByText("Enrollment confirmed")).toBeNull();
   });
 
-  it("validates bKash Transaction ID, submits via handler, copies LNA ID, and links to /status?ref= when enabled in tests", async () => {
+  it("starts hosted bKash Checkout and redirects in mock mode without asking for a manual transaction reference", async () => {
+    const startSpy = vi.fn().mockResolvedValue({
+      isFree: false,
+      applicationReference: "LNA-MTOK-2026",
+      status: "pending",
+      checkoutUrl: "http://localhost:3000/api/payments/bkash/mock-checkout?token=mocktok",
+      outcomeToken: "outtok",
+    });
+    const redirectSpy = vi.fn();
+
+    navigateToPaidPaymentStep(createOfficialConfig(true), {
+      batchId: "batch-mto-2026-01",
+      checkoutMode: "mock",
+      onStartCheckout: startSpy,
+      onRedirectToCheckout: redirectSpy,
+    });
+
+    expect(screen.queryByTestId("online-enrollment-coming-soon")).toBeNull();
+    expect(screen.getByTestId("payment-amount-due").textContent).toBe("BDT 7,500");
+    expect(screen.getByText(/Mock Gateway Mode \(Dev\)/i)).toBeDefined();
+
+    fireEvent.click(screen.getByRole("button", { name: /Continue to bKash Checkout/i }));
+
+    await waitFor(() =>
+      expect(startSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          courseId: "mto-readiness",
+          batchId: "batch-mto-2026-01",
+          fullName: "Samira Rahman",
+          email: "samira@example.com",
+          whatsapp: "01711223344",
+        })
+      )
+    );
+    await waitFor(() =>
+      expect(redirectSpy).toHaveBeenCalledWith(
+        "http://localhost:3000/api/payments/bkash/mock-checkout?token=mocktok"
+      )
+    );
+  });
+
+  it("confirms free registrations directly, copies LNA ID, and links to /status?ref=", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       value: { writeText: writeTextMock },
@@ -367,108 +359,11 @@ describe("EnrollmentView flow", () => {
     });
 
     const fixtureRef = generateEnrollmentReference();
-    const onSubmitSpy = vi.fn().mockResolvedValue({
+    const startSpy = vi.fn().mockResolvedValue({
+      isFree: true,
       applicationReference: fixtureRef,
-      status: "Application in process" as const,
-    });
-
-    navigateToPaidPaymentStep(createOfficialConfig(true), "batch-mto-2026-01", onSubmitSpy);
-
-    expect(screen.queryByTestId("online-enrollment-coming-soon")).toBeNull();
-    expect(screen.getByTestId("payment-amount-due").textContent).toBe("BDT 7,500");
-    expect(screen.getByText(/Scan the official LNA bKash Merchant QR code/i)).toBeDefined();
-
-    // Validation requires bKash Transaction ID
-    fireEvent.click(screen.getByRole("button", { name: /Submit application/i }));
-    const errorAlert = screen.getByRole("alert");
-    expect(errorAlert.textContent).toMatch(/bKash Transaction ID/i);
-    const txInput = screen.getByLabelText(/bKash Transaction ID/i);
-    expect(txInput.getAttribute("aria-invalid")).toBe("true");
-    expect(onSubmitSpy).not.toHaveBeenCalled();
-
-    // Submit with valid bKash TrxID
-    fireEvent.change(txInput, { target: { value: "BKASH998877" } });
-    fireEvent.click(screen.getByRole("button", { name: /Submit application/i }));
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("heading", { level: 1, name: /Application in process/i })
-      ).toBeDefined()
-    );
-    expect(onSubmitSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        courseId: "mto-readiness",
-        batchId: "batch-mto-2026-01",
-        fullName: "Samira Rahman",
-        email: "samira@example.com",
-        paymentMethod: "bkash",
-        transactionReference: "BKASH998877",
-      })
-    );
-    expect(
-      screen.getByText(/Enrollment is confirmed after staff verify the payment/i)
-    ).toBeDefined();
-
-    const appIdEl = screen.getByTestId("application-id-value");
-    expect(appIdEl.textContent?.trim()).toBe(fixtureRef);
-    expect(fixtureRef).not.toBe("BKASH998877");
-    expect(screen.queryByText("BKASH998877")).toBeNull();
-
-    const copyBtn = screen.getByRole("button", { name: /Copy LNA Application ID/i });
-    fireEvent.click(copyBtn);
-    await waitFor(() => expect(writeTextMock).toHaveBeenCalledWith(fixtureRef));
-
-    const statusLink = screen.getByRole("link", { name: /Check application status/i });
-    expect(statusLink.getAttribute("href")).toBe(`/status?ref=${encodeURIComponent(fixtureRef)}`);
-  });
-
-  it("supports switching to Bank Transfer, validates reference, and submits via handler when enabled in tests", async () => {
-    const fixtureRef = "LNA-BANK-2026";
-    const onSubmitSpy = vi.fn().mockResolvedValue({
-      applicationReference: fixtureRef,
-      status: "Application in process" as const,
-    });
-
-    navigateToPaidPaymentStep(createOfficialConfig(true), "batch-mto-discounted", onSubmitSpy);
-
-    expect(screen.getByTestId("payment-amount-due").textContent).toBe("BDT 5,500");
-
-    fireEvent.click(screen.getByLabelText(/Bank Transfer/i));
-    expect(screen.getByTestId("payment-amount-due").textContent).toBe("BDT 5,500");
-    expect(screen.getByText("Mutual Trust Bank PLC")).toBeDefined();
-    expect(screen.getByText("130100052843")).toBeDefined();
-    expect(
-      screen.getByText(/Transfer the exact amount due to the official Lead Nation Academy/i)
-    ).toBeDefined();
-
-    fireEvent.click(screen.getByRole("button", { name: /Submit application/i }));
-    expect(screen.getByRole("alert").textContent).toMatch(/bank transaction reference/i);
-    expect(onSubmitSpy).not.toHaveBeenCalled();
-
-    const bankRefInput = screen.getByLabelText(/Bank Transaction Reference/i);
-    fireEvent.change(bankRefInput, { target: { value: "BANK-TRX-4455" } });
-    fireEvent.click(screen.getByRole("button", { name: /Submit application/i }));
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("heading", { level: 1, name: /Application in process/i })
-      ).toBeDefined()
-    );
-    expect(onSubmitSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        paymentMethod: "bank_transfer",
-        transactionReference: "BANK-TRX-4455",
-      })
-    );
-    expect(screen.getByText("Bank Transfer")).toBeDefined();
-    expect(screen.queryByText("BANK-TRX-4455")).toBeNull();
-  });
-
-  it("confirms free registrations via handler and shows /status?ref= link when enabled in tests", async () => {
-    const fixtureRef = "LNA-FREE-2026";
-    const onSubmitSpy = vi.fn().mockResolvedValue({
-      applicationReference: fixtureRef,
-      status: "Enrollment confirmed" as const,
+      status: "confirmed" as const,
+      outcomeToken: "tok",
     });
 
     render(
@@ -476,7 +371,8 @@ describe("EnrollmentView flow", () => {
         courses={testCourses}
         batches={testBatches}
         config={createOfficialConfig(true)}
-        onSubmitApplication={onSubmitSpy}
+        checkoutMode="mock"
+        onStartCheckout={startSpy}
       />
     );
 
@@ -497,16 +393,118 @@ describe("EnrollmentView flow", () => {
     fireEvent.click(screen.getByRole("button", { name: /Confirm registration/i }));
 
     await waitFor(() => expect(screen.getByText("Enrollment confirmed")).toBeDefined());
-    expect(onSubmitSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        courseId: "career-planning-workshop",
-        batchId: "batch-free-2026-01",
-        paymentMethod: "free",
-      })
-    );
     expect(screen.getByTestId("application-id-value").textContent?.trim()).toBe(fixtureRef);
+    expect(screen.getByText(/Keep this ID to verify status anytime/i)).toBeDefined();
+    expect(document.body.textContent).not.toMatch(/confirmation email/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy LNA Application ID/i }));
+    await waitFor(() => expect(writeTextMock).toHaveBeenCalledWith(fixtureRef));
+
     expect(
       screen.getByRole("link", { name: /Check application status/i }).getAttribute("href")
     ).toBe(`/status?ref=${encodeURIComponent(fixtureRef)}`);
+  });
+
+  it("renders failed callback outcome with seat hold preserved and working Retry bKash payment button", async () => {
+    const failedOutcome: EnrollmentOutcomeSummary = {
+      outcome: "failed",
+      applicationReference: "LNA-FAIL-2026",
+      courseTitle: "MTO Readiness Program",
+      batchName: "MTO Readiness Cohort 1",
+      payablePoisha: 750000,
+      paymentMethod: "bkash",
+      status: "pending",
+      holdExpiresAt: "2099-01-01T00:00:00.000Z",
+      canRetry: true,
+      outcomeToken: "signed-outcome-tok",
+    };
+
+    const retrySpy = vi.fn().mockResolvedValue({
+      applicationReference: "LNA-FAIL-2026",
+      checkoutUrl: "http://localhost:3000/api/payments/bkash/mock-checkout?token=retry",
+      outcomeToken: "fresh-tok",
+    });
+    const redirectSpy = vi.fn();
+
+    render(
+      <EnrollmentView
+        courses={testCourses}
+        batches={testBatches}
+        config={createOfficialConfig(true)}
+        checkoutMode="mock"
+        initialOutcome={failedOutcome}
+        onRetryCheckout={retrySpy}
+        onRedirectToCheckout={redirectSpy}
+      />
+    );
+
+    expect(screen.getByTestId("payment-failed-alert").textContent).toMatch(/LNA-FAIL-2026/);
+    fireEvent.click(screen.getByRole("button", { name: /Retry bKash payment/i }));
+
+    await waitFor(() =>
+      expect(retrySpy).toHaveBeenCalledWith({
+        applicationReference: "LNA-FAIL-2026",
+        outcomeToken: "signed-outcome-tok",
+      })
+    );
+    await waitFor(() =>
+      expect(redirectSpy).toHaveBeenCalledWith(
+        "http://localhost:3000/api/payments/bkash/mock-checkout?token=retry"
+      )
+    );
+  });
+
+  it("renders server-verified confirmed and review_hold return summaries cleanly", () => {
+    const reviewOutcome: EnrollmentOutcomeSummary = {
+      outcome: "review_hold",
+      applicationReference: "LNA-HOLD-2026",
+      courseTitle: "MTO Readiness Program",
+      batchName: "MTO Readiness Cohort 1",
+      payablePoisha: 550000,
+      paymentMethod: "bkash",
+      status: "review_hold",
+      holdExpiresAt: null,
+      canRetry: false,
+      outcomeToken: "tok",
+    };
+
+    const { unmount } = render(
+      <EnrollmentView
+        courses={testCourses}
+        batches={testBatches}
+        config={createOfficialConfig(true)}
+        checkoutMode="mock"
+        initialOutcome={reviewOutcome}
+      />
+    );
+
+    expect(screen.getByText(/Under manual review/i)).toBeDefined();
+    expect(screen.getByTestId("application-id-value").textContent).toBe("LNA-HOLD-2026");
+    unmount();
+
+    const confirmedOutcome: EnrollmentOutcomeSummary = {
+      ...reviewOutcome,
+      outcome: "confirmed",
+      applicationReference: "LNA-CONF-2026",
+      status: "confirmed",
+    };
+
+    render(
+      <EnrollmentView
+        courses={testCourses}
+        batches={testBatches}
+        config={createOfficialConfig(true)}
+        checkoutMode="mock"
+        initialOutcome={confirmedOutcome}
+      />
+    );
+
+    expect(screen.getByText(/You're enrolled\./i)).toBeDefined();
+    expect(screen.getByTestId("application-id-value").textContent).toBe("LNA-CONF-2026");
+    expect(screen.getByText(/Keep this ID to verify status anytime/i)).toBeDefined();
+    expect(
+      screen.getByRole("link", { name: /Check application status/i }).getAttribute("href")
+    ).toBe("/status?ref=LNA-CONF-2026");
+    expect(document.body.textContent).not.toMatch(/confirmation email/i);
   });
 });

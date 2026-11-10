@@ -28,6 +28,7 @@ describe("Health Check API Endpoint (NFR-OBS-01, NFR-SEC-02)", () => {
     const rawBody = await response.text();
 
     // Verify sensitive keys never leak in JSON string representation
+    expect(rawBody).not.toContain("SUPABASE_SECRET_KEY");
     expect(rawBody).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(rawBody).not.toContain("BKASH_APP_SECRET");
     expect(rawBody).not.toContain("BKASH_PASSWORD");

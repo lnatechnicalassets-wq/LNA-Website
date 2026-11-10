@@ -1,7 +1,7 @@
 # 0009. Direct bKash Payment Gateway Integration
 
-**Status:** Proposed (Pending Human Approval)  
-**Date:** 4 November 2026  
+**Status:** Accepted (Approved by Owner on 10 November 2026)  
+**Date:** 10 November 2026  
 **Deciders:** Refat (Owner), Engineering Agent  
 **Supersedes:** ADR 0003 (In-House SSLCOMMERZ Hosted Checkout Client)  
 **Citations:** Supervisor Scope Revision; SRS Section 9.1; Business Rules BR-02, BR-05, BR-06  
@@ -38,12 +38,16 @@ Official bKash merchant integration supports:
 - **bKash Checkout (URL-Based PGW API)** for one-time e-commerce payments.
 - **bKash Tokenized Checkout (Merchant API)** in agreement-less mode (`mode: "0011"`).
 
-To guarantee compatibility with whichever merchant contract and credentials bKash issues during LNA merchant onboarding, all endpoint URLs, version paths, and credentials will be fully parameterized in server-only environment variables:
-* `BKASH_BASE_URL` (Sandbox: `https://tokenized.sandbox.bka.sh` or `https://pay.bka.sh`; Production: `https://tokenized.pay.bka.sh` or `https://pay.bka.sh`)
-* `BKASH_API_VERSION` (e.g. `v1.2.0-beta` or `v1`)
-* `BKASH_APP_KEY`, `BKASH_APP_SECRET`, `BKASH_USERNAME`, `BKASH_PASSWORD`
+To guarantee compatibility with whichever merchant contract and credentials bKash issues during LNA merchant onboarding, all endpoint URLs, version paths, and credentials are standardized exclusively under `BKASH_*` server-only environment variables:
+* `BKASH_CHECKOUT_MODE` (`closed` | `mock` | `live`; defaults to `closed`; `mock` is hard-rejected when `NODE_ENV=production`; `live` requires non-placeholder credentials and active operator opt-in after the controlled live payment test)
+* `BKASH_BASE_URL` (Sandbox: `https://tokenized.sandbox.bka.sh`; Production: `https://tokenized.pay.bka.sh`)
+* `BKASH_API_VERSION` (default `v1.2.0-beta`; confirm exact version path and mode against LNA's bKash merchant sheet before live testing)
+* `BKASH_MODE` (default `0011` for agreement-less Tokenized Checkout)
+* `BKASH_APP_KEY`, `BKASH_APP_SECRET`, `BKASH_USERNAME`, `BKASH_PASSWORD` (strictly server-only)
 
-All credentials reside strictly on the server and are validated in `src/env.ts` with `server-only` guards. Zero credentials touch client bundles.
+All credentials reside strictly on the server and are validated in `src/server/env.ts` with `server-only` guards. Zero credentials touch client bundles. Public manual QR/TrxID submission and Bank Transfer remain disabled in v1 in favor of hosted bKash Checkout redirect.
+
+**v1 Release Scope Note on Receipts:** Standalone PDF receipt generation (`pdf-lib`) is deferred to a post-v1 milestone. Return redirects from `/api/payments/bkash/callback` to `/enroll` are authenticated via a short-lived `APP_SECRET` HMAC-SHA256 outcome token, while official confirmation emails are persisted in `email_outbox` and dispatched via Resend.
 
 ### 3. Pure Integer-Safe Monetary Arithmetic (Rule R5)
 All prices, fees, discounts, and payment amounts are stored and calculated strictly in integer poisha (`bigint`, where `1 BDT = 100 poisha`). 
