@@ -1,20 +1,79 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
-**Last Updated:** 9 November 2026  
-**Session Context:** Phase 4 Course-Owned Faculty Roster Architecture (ADR 0012) — Marked ADR 0012 as Accepted. Migrated mentor assignments from mentors.json/hero-slides.json into ordered `mentorIds` arrays directly on each Course in `courses.json`. Upgraded `CourseSchema` and `scripts/validate-content.mjs` to strictly enforce uniqueness and referential integrity against non-existent mentor IDs. Unified `getCourseMentorRoster` across Hero slides, Course cards, and Course details pages.
+**Last Updated:** 10 November 2026  
+**Session Context:** Enlarged the official LNA bKash Merchant QR across `/enroll` on both desktop and mobile (dedicated right-panel bKash QR showcase on `lg:` desktop + larger inline mobile QR + Radix UI Dialog popup modal on click/tap), while preserving demo removal, Mutual Trust Bank PLC receiving details (`130100052843`), and the `"Online enrollment is coming soon"` submission/lookup gate.
 
 ---
 
 ## 1. Current Phase and Task
-- **Current Phase:** Phase 4 (Public Website Core)
-- **Current Task:** Task P4-T27 / Course Mentor Roster JSON Migration (ADR 0012)
-- **Task Status:** Fully Completed.
-- **Current Git Branch:** `task/p4-t24-about-page`
-- **Base Commit:** `fc605ae`
+- **Current Phase:** Phase 4 (Public Website Core) / Enrollment & Status Public Readiness
+- **Current Task:** Enlarge Official bKash Merchant QR (Desktop Right Panel + Popup Dialog + Responsive Mobile Layout) on `/enroll`
+- **Task Status:** Completed (verified across tests, build, and headless Chromium Desktop `1440x900` + Mobile `390x844` visual checks; pending commit by owner).
+- **Current Git Branch:** `fix/course-mentor-build`
+- **Base Commit:** `5aafa5a`
+- **Open Issues:** Backend Supabase submission/persistence, server `onSubmitApplication` and `/status` `onLookup` handlers, Upstash rate-limiting, staff payment verification UI, and Resend confirmation email remain paused for the backend task (`content/enrollment/config.json` sets `"submissionEnabled": false`; `/enroll` and `/status` show `"Online enrollment is coming soon"`). Bank branch and routing number remain omitted until supplied/approved by LNA. Pre-existing Prettier warnings (`content/home/mentors.json`, `src/lib/mentors.ts`, and earlier colleague-edited `src/*` files), pre-existing unused-var ESLint warning in `src/app/courses/[slug]/course-detail-view.tsx:615` (`orgDisplay`), and pre-existing Vitest test divergences (`src/lib/content/repository.test.ts`, `src/app/courses/[slug]/page.test.tsx`, `src/components/home/hero-slider.test.tsx`, `src/app/page.test.tsx`) remain outside task scope. Also note `pnpm build` regenerates `.next` and updates gitignored/generated type references in `next-env.d.ts`.
+- **Next Task:** Review & commit pending changes on `fix/course-mentor-build`; test scanning the enlarged bKash Merchant QR live on mobile & desktop; resume Supabase backend operational enrollment milestone and flip `submissionEnabled: true` when ready.
 
 ---
 
 ## 2. Completed Tasks
+
+### Public Demo Content Removal, Official Payment Details & Scannable bKash QR Sizing (`/enroll`, `/status`)
+- **SRS IDs Covered:** FR-ENR-001, FR-ENR-002, FR-ENR-004, FR-ENR-005, FR-PAY-001 (fee display), FR-PAY-002 (batch discount UI), Rule R2, Rule R3, Rule R4, Rule R5, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R16, Rule R19
+- **Architecture & Deliverables:**
+  1. *Official LNA Assets, Payment Config & Schema Validation:*
+     - `public/images/payments/lna-bkash-merchant-qr.png`: Installed verbatim official LNA bKash Merchant QR PNG (`612x780`, `113,161` bytes, SHA-256 `063773A514EBD6EA8157CFFFC2C6581E1D2D0EA333ACF2C272490E5D8C058A33`, merchant number `0158 1799 666`) and deleted `public/images/payments/demo-bkash-qr.svg`.
+     - `content/enrollment/config.json`: Removed demo flags/notices and unverified placeholder bank data; configured official bKash (`Lead Nation Academy`, `0158 1799 666`, `/images/payments/lna-bkash-merchant-qr.png`) and approved receiving bank details (`Mutual Trust Bank PLC`, `Lead Nation Academy - LNA`, `130100052843`) with `"submissionEnabled": false` while preserving `programQuestions["mto-readiness"]`.
+     - `src/lib/enrollment/types.ts`, `src/lib/enrollment/config.ts`, `scripts/validate-content.mjs`: Removed demo schema fields (`isDemo`, `demoNotice`), added `submissionEnabled: boolean`, made optional `branch`/`routingNumber` nullable/optional, and updated `pnpm content:validate` QR asset verification.
+  2. *Clean Status Projection & Normalization Helpers (`src/lib/enrollment/status.ts`, `src/lib/enrollment/status.test.ts`):*
+     - Deleted `src/lib/enrollment/demo-status.ts` and `src/lib/enrollment/demo-status.test.ts`, removing all public sample application records and browser `sessionStorage` simulation from runtime code.
+     - Exported pure helpers (`normalizeApplicationRef`, `normalizeEmail`, `normalizeBdPhone`, `isValidBdPhone`, `formatPaymentMethodLabel`, `projectSafeStatusResult`) with all sample test fixtures isolated inside `src/lib/enrollment/status.test.ts`.
+  3. *Enrollment Flow Public Gating & Scannable QR Layout (`/enroll` — `src/app/enroll/enrollment-view.tsx`, `src/app/enroll/enrollment-view.test.tsx`):*
+     - Replaced the tiny `w-36 sm:w-40` inline QR thumbnail with: (a) a dedicated sticky right-panel official bKash QR showcase on `lg:` desktop (`w-[300px] xl:w-[350px]`, rendered at `350x446` px on `1440px` desktop) when `bKash` is active on the payment step, (b) a wider centered clickable QR card (`w-full max-w-[270px] sm:max-w-[300px]`, rendered at `252x321` px on `390px` mobile) on mobile/tablet, and (c) an accessible `Dialog` popup (`src/components/ui/dialog.tsx`, rendered up to `364x464` px desktop / `298x380` px mobile) triggered from `"Enlarge QR"`, inline tap, or right-panel click.
+     - Kept official Mutual Trust Bank PLC details (`130100052843`, omitting unapproved branch/routing), integer poisha Amount due breakdown, `bKash Transaction ID` / `Bank Transaction Reference` inputs, `"Online enrollment is coming soon"` gating (`submissionEnabled: false`), and zero demo strings/simulations.
+  4. *Application Status Page Public Gating (`/status` — `src/app/status/status-lookup-view.tsx`, `src/app/status/status-lookup-view.test.tsx`):*
+     - Removed `"Frontend demo lookup"` badge, `"Demo sample applications"` sidebar, demo placeholders, and simulated lookups.
+     - Default public state displays `"Online enrollment is coming soon"` and disables lookup submission while keeping `?ref=` prefill, clean form structure, and `enabled` + `onLookup` testability against fixtures inside `status-lookup-view.test.tsx`.
+- **Verification:**
+  - `pnpm tokens:check`: PASS.
+  - `pnpm content:validate`: PASS (18 JSON/config checks including `content/enrollment/config.json` and `public/images/payments/lna-bkash-merchant-qr.png`).
+  - `pnpm typecheck`: PASS (`tsc --noEmit`, 0 errors).
+  - `pnpm exec eslint --max-warnings=0 src/lib/enrollment/ src/app/enroll/ src/app/status/`: PASS (0 errors, 0 warnings).
+  - `pnpm exec prettier --check` (touched enrollment/status/validation files formatted cleanly).
+  - `pnpm exec vitest run src/lib/enrollment/ src/app/enroll/ src/app/status/`: PASS (4 test files, 17/17 tests passed).
+  - Headless Chrome (`1440x900` desktop & `390x844` mobile) rendered QR size check & modal visual inspection: PASS (`350px` desktop panel, `364px` desktop popup, `252px` mobile inline, `298px` mobile popup, `overflowX: false`).
+  - `pnpm build`: PASS (`next build`, static routes including `/enroll` and `/status` built cleanly).
+
+### Company Logo Enlargement & Mentors Section Rework (Hero + Mentors Showcase + Course Details)
+- **SRS IDs Covered:** FR-PUB-002, FR-PUB-004, FR-CRS-005, Rule R2, Rule R4, Rule R6, Rule R7, Rule R11, Rule R12, Rule R13, Rule R14, Rule R19
+- **Files Changed:**
+  - `src/lib/mentors.ts`: Exported `MentorCompanyLogo`, `formatMentorRoleWithCompany`, and `getMentorCompanyLogos` (preserving `getMentorCompanyLogo` compatibility for `HeroSlide` and `CourseDetailView`).
+  - `src/components/home/company-logo.tsx`: Added `role="img"` / `aria-label` accessibility when `CompanyLogo` renders `iconOnly`, and upgraded `OfficialCompanyLogo` to support `size?: "hero" | "card" | "modal"` with scaled-up, per-asset calibrated dimensions (`brandgear.png`, `nagad.png`, `eastern-bank.png`, `ecourier.png`, `chaldal.png`, `goyara.png`, `brand/logo.png`, `igloo.png`, `modhumoti-bank.png`, `sheba.png`, `axentec.png`, `ucb.svg`, `shohoz.svg`).
+  - `src/components/home/hero/hero-slide.tsx`: Switched `renderMentorCompanyLogo` from raw `h-3.5 sm:h-4` `<img>` tags to `<OfficialCompanyLogo size="hero" />` inside `h-8 sm:h-9` containers across MTO and IRGP Hero mentor cards so padded/dense marks (`Nagad`, `BrandGear`, `IGLOO`, `Lead Nation Academy`, `Modhumoti`, `Sheba`, `Axentec`, `e-Courier`, `Chaldal`, `Eastern Bank`) render cleanly and recognizably.
+  - `src/components/home/mentor-carousel.tsx`: Refined card split/typography (`h3` scaled down to `text-[13px] sm:text-sm xl:text-[15px] leading-snug line-clamp-2`, role line scaled to `text-[10.5px] sm:text-[11px] leading-[1.35] line-clamp-3` displaying `formatMentorRoleWithCompany(mentor)`), and updated bottom logo strip (`min-h-[42px] sm:min-h-[46px]`) to render enlarged `OfficialCompanyLogo` marks only (falling back to `iconOnly` `CompanyLogo` marks for test fixtures without image assets).
+  - `src/components/home/mentor-quick-view-modal.tsx`, `src/components/home/mentor-quick-view-panel.tsx`, & `src/app/courses/[slug]/course-detail-view.tsx`: Updated heading sizing, role-at-company subtitle (modals/panels), and calibrated `OfficialCompanyLogo` `size="modal"` rendering.
+  - `src/components/home/mentors-section.test.tsx`: Updated carousel logo assertions for accessible `role="img"` logo-only rendering and added unit tests for LNA mentor `role at organization` formatting, official logo images, and calibrated `OfficialCompanyLogo` `hero`/`card`/`modal` sizing classes.
+  - `docs/STATE.md`, `docs/traceability.csv`: Updated state and verification evidence.
+- **Verification:**
+  - `pnpm content:validate`: PASS.
+  - `pnpm exec eslint src/lib/mentors.ts src/components/home/company-logo.tsx src/components/home/hero/hero-slide.tsx src/components/home/mentor-carousel.tsx src/components/home/mentor-quick-view-modal.tsx src/components/home/mentor-quick-view-panel.tsx src/components/home/mentors-section.test.tsx src/app/courses/[slug]/course-detail-view.tsx`: PASS (0 errors; 1 pre-existing warning on untouched line `course-detail-view.tsx:615` for `orgDisplay`).
+  - `pnpm typecheck`: PASS (`tsc --noEmit`, 0 errors).
+  - `pnpm exec vitest run src/components/home/mentors-section.test.tsx src/app/mentors/[slug]/page.test.tsx`: PASS (2 test files, 14/14 tests passed: 12 in `mentors-section.test.tsx`, 2 in `mentors/[slug]/page.test.tsx`).
+  - `pnpm exec vitest run src/components/home/hero-slider.test.tsx`: 8/10 passed, same 2 pre-existing MTO mock fixture failures documented in Open Issues (IRGP slide passed).
+  - Note: Level 1 check per ADR 0010 (`next build` and full test suite intentionally not run). Pre-existing Prettier warnings exist in touched files (no sweeping formatting applied per Rule R7).
+
+### Fix / Replace `mir-hasib-v3.png` Portrait Reference with `mir-hasib.png`
+- **SRS IDs Covered:** FR-PUB-002, Rule R2, Rule R7, Rule R11, Rule R12, Rule R14, Rule R19
+- **Files Changed:**
+  - `content/home/mentors.json`: Updated `mentor-mir-hasib` `portraitSrc` from `/images/mentors/mir-hasib-v3.png` to `/images/mentors/mir-hasib.png`.
+  - `src/lib/mentors.ts`: Already updated in working tree to map `mentor-mir-hasib` to `/images/mentors/mir-hasib.png`.
+  - `docs/STATE.md`, `docs/traceability.csv`: Updated state and evidence.
+- **Verification:**
+  - `pnpm content:validate`: PASS.
+  - `pnpm exec eslint src/lib/mentors.ts`: PASS.
+  - `pnpm typecheck`: PASS (0 errors).
+  - `pnpm exec vitest run src/components/home/mentors-section.test.tsx` (10/10) & `src/app/mentors/[slug]/page.test.tsx` (2/2): PASS.
+  - Note: Pre-existing failures reported in `prettier --check` (`content/home/mentors.json`, `src/lib/mentors.ts`) and unrelated/pre-existing assertions in `repository.test.ts`, `courses/[slug]/page.test.tsx`, `hero-slider.test.tsx`, `page.test.tsx`.
 
 ### Task P4-T27 / Course Mentor Roster JSON Migration (ADR 0012)
 - **SRS IDs Covered:** FR-CRS-004, FR-PUB-002, Rule R1, Rule R2, Rule R4, Rule R6, Rule R7, Rule R8, Rule R11, Rule R12, Rule R13, Rule R14, Rule R15, Rule R19

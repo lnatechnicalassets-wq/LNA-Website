@@ -11,33 +11,44 @@ export interface BankDetails {
   bankName: string;
   accountName: string;
   accountNumber: string;
-  branch: string;
+  branch?: string;
   routingNumber?: string;
+}
+
+export interface BkashPaymentConfig {
+  enabled: boolean;
+  merchantName: string;
+  merchantNumber: string;
+  qrImageSrc: string;
+  qrImageAlt: string;
+  instruction: string;
+}
+
+export interface BankTransferConfig {
+  enabled: boolean;
+  instruction: string;
+  bankDetails: BankDetails | null;
 }
 
 export interface EnrollmentConfig {
   programQuestions: Record<string, ProgramQuestion[]>;
   payment: {
-    bkash: {
-      enabled: boolean;
-    };
-    bankTransfer: {
-      enabled: boolean;
-      bankDetails: BankDetails;
-    };
+    submissionEnabled: boolean;
+    bkash: BkashPaymentConfig;
+    bankTransfer: BankTransferConfig;
   };
 }
 
+export type PaymentMethod = "bkash" | "bank_transfer";
+
 export type EnrollmentStep =
-  | "program" // 01-program.png, 02-batch-selected.png, 03-no-open-batches.png
-  | "details" // 04-your-details.png
-  | "questions" // 05-program-questions.png
-  | "review" // 06-review.png, 12-free-review.png
-  | "payment_method" // 07-payment-method.png
-  | "bank_transfer" // 08-bank-transfer.png
-  | "pending_verification" // 09-payment-pending.png
-  | "payment_failed" // 10-payment-failed.png
-  | "confirmed"; // 11-enrollment-confirmed.png, 13-free-registration-confirmed.png
+  | "program"
+  | "details"
+  | "questions"
+  | "review"
+  | "payment"
+  | "pending_verification"
+  | "confirmed";
 
 export interface EnrollmentState {
   courseId: string;
@@ -46,8 +57,9 @@ export interface EnrollmentState {
   email: string;
   whatsapp: string;
   answers: Record<string, string>;
-  paymentMethod: "bkash" | "bank_transfer";
-  transferReference: string;
+  paymentMethod: PaymentMethod;
+  bkashTransactionId: string;
+  bankTransactionReference: string;
   applicationReference: string;
   isFree: boolean;
 }

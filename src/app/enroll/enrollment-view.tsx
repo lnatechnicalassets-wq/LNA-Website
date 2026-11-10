@@ -1,35 +1,77 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Check, ChevronDown, X, AlertCircle } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Copy, AlertCircle, Search, ZoomIn } from "lucide-react";
 import type { Course, Batch } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
-import type { EnrollmentConfig, EnrollmentStep, EnrollmentState } from "@/lib/enrollment/types";
-import { generateEnrollmentReference } from "@/lib/enrollment/reference";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type {
+  EnrollmentConfig,
+  EnrollmentStep,
+  EnrollmentState,
+  PaymentMethod,
+} from "@/lib/enrollment/types";
+import {
+  formatPaymentMethodLabel,
+  isValidBdPhone,
+  type ApplicationStatusValue,
+} from "@/lib/enrollment/status";
+
+export interface EnrollmentSubmissionPayload {
+  courseId: string;
+  batchId: string;
+  fullName: string;
+  email: string;
+  whatsapp: string;
+  answers: Record<string, string>;
+  paymentMethod: PaymentMethod | "free";
+  transactionReference?: string;
+}
+
+export interface EnrollmentSubmissionResponse {
+  applicationReference: string;
+  status: ApplicationStatusValue;
+}
 
 export interface EnrollmentViewProps {
   courses: Course[];
   batches: Batch[];
   config: EnrollmentConfig;
+  onSubmitApplication?: (
+    payload: EnrollmentSubmissionPayload
+  ) => EnrollmentSubmissionResponse | Promise<EnrollmentSubmissionResponse>;
 }
 
-export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps) {
+export function EnrollmentView({
+  courses,
+  batches,
+  config,
+  onSubmitApplication,
+}: EnrollmentViewProps) {
   const searchParams = useSearchParams();
 
-  // Read URL preselection
   const initialCourseId = searchParams.get("course") || searchParams.get("program") || "";
   const initialBatchId = searchParams.get("batch") || "";
+  const defaultPaymentMethod: PaymentMethod = config.payment.bkash.enabled
+    ? "bkash"
+    : "bank_transfer";
 
-  // Filter published courses
+  const canSubmitOnline = Boolean(config.payment.submissionEnabled && onSubmitApplication);
+
   const publishedCourses = useMemo(
     () => courses.filter((c) => c.status === "published"),
     [courses]
   );
 
-  // Enrollment state
   const [state, setState] = useState<EnrollmentState>({
     courseId: initialCourseId,
     batchId: initialBatchId,
@@ -37,18 +79,30 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
     email: "",
     whatsapp: "",
     answers: {},
-    paymentMethod: "bkash",
-    transferReference: "",
-    applicationReference: generateEnrollmentReference(),
+    paymentMethod: defaultPaymentMethod,
+    bkashTransactionId: "",
+    bankTransactionReference: "",
+    applicationReference: "",
     isFree: false,
   });
 
   const [step, setStep] = useState<EnrollmentStep>("program");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showBkashModal, setShowBkashModal] = useState(false);
+  const [submitError, setSubmitError] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showAnswersExpanded, setShowAnswersExpanded] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Resolve currently selected course & available batches
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
+
   const selectedCourse = useMemo(
     () => publishedCourses.find((c) => c.id === state.courseId) || null,
     [publishedCourses, state.courseId]
@@ -61,12 +115,10 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
     );
   }, [batches, state.courseId]);
 
-  const selectedBatch = useMemo(
-    () => availableBatches.find((b) => b.id === state.batchId) || null,
-    [availableBatches, state.batchId]
-  );
+  const selectedBatch = useMemo(() => {
+    return availableBatches.find((b) => b.id === state.batchId) || null;
+  }, [availableBatches, state.batchId]);
 
-  // If initial batch param was passed, validate it matches available batches
   useEffect(() => {
     if (initialCourseId && availableBatches.length > 0 && !state.batchId) {
       if (initialBatchId && availableBatches.some((b) => b.id === initialBatchId)) {
@@ -77,29 +129,49 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
     }
   }, [initialCourseId, initialBatchId, availableBatches, state.batchId]);
 
-  // Sync fee and free state
-  const isFree = useMemo(() => {
-    if (!selectedBatch) return false;
-    const feePoisha = selectedBatch.discountFeePoisha ?? selectedBatch.feePoisha;
-    return feePoisha === 0;
+  // Rule R5: All price math uses integer poisha; zero float arithmetic.
+  const feeDetails = useMemo(() => {
+    if (!selectedBatch) {
+      return {
+        basePoisha: 0,
+        payablePoisha: 0,
+        hasDiscount: false,
+        isFree: false,
+        formattedBase: "BDT 0",
+        formattedPayable: "BDT 0",
+      };
+    }
+
+    const basePoisha = selectedBatch.feePoisha;
+    const payablePoisha = selectedBatch.discountFeePoisha ?? selectedBatch.feePoisha;
+    const hasDiscount =
+      selectedBatch.discountFeePoisha !== undefined &&
+      selectedBatch.discountFeePoisha < selectedBatch.feePoisha;
+    const isFreeBatch = payablePoisha === 0;
+
+    const formatBdt = (poisha: number) =>
+      poisha === 0 ? "Free" : formatPoishaToBDT(poisha).replace("৳", "BDT ");
+
+    return {
+      basePoisha,
+      payablePoisha,
+      hasDiscount,
+      isFree: isFreeBatch,
+      formattedBase: formatBdt(basePoisha),
+      formattedPayable: formatBdt(payablePoisha),
+    };
   }, [selectedBatch]);
 
-  const formattedFee = useMemo(() => {
-    if (!selectedBatch) return "BDT 0";
-    const feePoisha = selectedBatch.discountFeePoisha ?? selectedBatch.feePoisha;
-    if (feePoisha === 0) return "Free";
-    return formatPoishaToBDT(feePoisha).replace("৳", "BDT ");
-  }, [selectedBatch]);
+  const isFree = feeDetails.isFree;
 
-  // Program questions configured for selected course
   const programQuestions = useMemo(() => {
     if (!state.courseId) return [];
     return config.programQuestions[state.courseId] || [];
   }, [config.programQuestions, state.courseId]);
 
-  // Handle program change: clear batch
   const handleProgramChange = (newCourseId: string) => {
     setErrors({});
+    setSubmitError("");
     const courseBatches = batches.filter(
       (b) => b.courseId === newCourseId && b.status === "open_for_enrollment"
     );
@@ -112,7 +184,6 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
     }));
   };
 
-  // Step 1: Validate & Continue to details
   const handleContinueFromProgram = () => {
     const newErrors: Record<string, string> = {};
     if (!state.courseId) {
@@ -132,7 +203,6 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
     setStep("details");
   };
 
-  // Step 2: Validate Contact Details
   const handleContinueFromDetails = () => {
     const newErrors: Record<string, string> = {};
     if (!state.fullName.trim()) {
@@ -144,8 +214,8 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
       newErrors.email = "Please enter a valid email address.";
     }
     if (!state.whatsapp.trim()) {
-      newErrors.whatsapp = "Please enter your WhatsApp number.";
-    } else if (!/^01[3-9]\d{8}$/.test(state.whatsapp.replace(/\D/g, ""))) {
+      newErrors.whatsapp = "Please enter your phone / WhatsApp number.";
+    } else if (!isValidBdPhone(state.whatsapp)) {
       newErrors.whatsapp = "Please enter a valid 11-digit Bangladeshi mobile number.";
     }
 
@@ -162,12 +232,11 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
     }
   };
 
-  // Step 2b: Validate Program Questions
   const handleContinueFromQuestions = () => {
     const newErrors: Record<string, string> = {};
     programQuestions.forEach((q) => {
       if (q.required && (!state.answers[q.id] || !state.answers[q.id].trim())) {
-        newErrors[q.id] = `Please answer this question.`;
+        newErrors[q.id] = "Please answer this question.";
       }
     });
 
@@ -180,56 +249,144 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
     setStep("review");
   };
 
-  // Step 3: Review -> Submit Free Registration OR Continue to Payment
-  const handleContinueFromReview = () => {
-    if (isFree) {
-      // Free program confirmed immediately
-      setStep("confirmed");
-    } else {
-      setStep("payment_method");
-    }
-  };
+  const handleContinueFromReview = async () => {
+    setErrors({});
+    setSubmitError("");
 
-  // Step 4: Continue from Payment Method
-  const handleContinueFromPaymentMethod = () => {
-    if (state.paymentMethod === "bkash") {
-      setShowBkashModal(true);
-    } else if (state.paymentMethod === "bank_transfer") {
-      setStep("bank_transfer");
-    }
-  };
-
-  // Step 4b: Submit Bank Transfer Reference
-  const handleSubmitBankReference = () => {
-    if (!state.transferReference.trim()) {
-      setErrors({ transferReference: "Please enter your bank transfer reference." });
+    if (!isFree) {
+      setStep("payment");
       return;
     }
+
+    if (!canSubmitOnline || !onSubmitApplication || !selectedCourse || !selectedBatch) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await onSubmitApplication({
+        courseId: selectedCourse.id,
+        batchId: selectedBatch.id,
+        fullName: state.fullName.trim(),
+        email: state.email.trim(),
+        whatsapp: state.whatsapp.trim(),
+        answers: state.answers,
+        paymentMethod: "free",
+      });
+      setCopiedRef(false);
+      setState((prev) => ({
+        ...prev,
+        applicationReference: response.applicationReference,
+        isFree: true,
+      }));
+      setStep(response.status === "Enrollment confirmed" ? "confirmed" : "pending_verification");
+    } catch {
+      setSubmitError("Unable to submit your application right now. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSelectPaymentMethod = (method: PaymentMethod) => {
     setErrors({});
-    setStep("pending_verification");
+    setSubmitError("");
+    if (method !== "bkash") {
+      setIsQrModalOpen(false);
+    }
+    setState((prev) => ({ ...prev, paymentMethod: method }));
   };
 
-  // Simulated bKash handlers
-  const handleBkashSimulateSuccess = () => {
-    setShowBkashModal(false);
-    setStep("confirmed");
+  const handleSubmitPaymentApplication = async () => {
+    if (!canSubmitOnline || !onSubmitApplication || !selectedCourse || !selectedBatch) {
+      return;
+    }
+
+    const newErrors: Record<string, string> = {};
+    const submittedRef =
+      state.paymentMethod === "bkash"
+        ? state.bkashTransactionId.trim()
+        : state.bankTransactionReference.trim();
+
+    if (state.paymentMethod === "bkash") {
+      if (!submittedRef) {
+        newErrors.bkashTransactionId = "Please enter your bKash Transaction ID.";
+      } else if (submittedRef.length < 4) {
+        newErrors.bkashTransactionId =
+          "Please enter a valid bKash Transaction ID (at least 4 characters).";
+      }
+    } else {
+      if (!submittedRef) {
+        newErrors.bankTransactionReference = "Please enter your bank transaction reference.";
+      } else if (submittedRef.length < 4) {
+        newErrors.bankTransactionReference =
+          "Please enter a valid bank transaction reference (at least 4 characters).";
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+    setSubmitError("");
+    setIsSubmitting(true);
+    try {
+      const response = await onSubmitApplication({
+        courseId: selectedCourse.id,
+        batchId: selectedBatch.id,
+        fullName: state.fullName.trim(),
+        email: state.email.trim(),
+        whatsapp: state.whatsapp.trim(),
+        answers: state.answers,
+        paymentMethod: state.paymentMethod,
+        transactionReference: submittedRef,
+      });
+
+      setIsQrModalOpen(false);
+      setCopiedRef(false);
+      setState((prev) => ({
+        ...prev,
+        applicationReference: response.applicationReference,
+        isFree: false,
+      }));
+      setStep(response.status === "Enrollment confirmed" ? "confirmed" : "pending_verification");
+    } catch {
+      setSubmitError("Unable to submit your application right now. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleBkashSimulateFailure = () => {
-    setShowBkashModal(false);
-    setStep("payment_failed");
+  const handleCopyApplicationId = async () => {
+    if (!state.applicationReference) {
+      return;
+    }
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(state.applicationReference);
+        setCopiedRef(true);
+      } else {
+        setCopiedRef(true);
+      }
+    } catch {
+      setCopiedRef(true);
+    }
+
+    if (copyTimerRef.current) {
+      clearTimeout(copyTimerRef.current);
+    }
+    copyTimerRef.current = setTimeout(() => {
+      setCopiedRef(false);
+    }, 2500);
   };
 
-  // Determine which step bar to render
-  const isPostReviewPayment =
-    step === "payment_method" || step === "bank_transfer" || step === "payment_failed";
-
+  const isPaymentStep = step === "payment";
   const isCompletedStep = step === "confirmed" || step === "pending_verification";
-
-  // Check which photo to show
   const isConfirmationPhoto = isCompletedStep;
+  const showDesktopBkashRightPanel =
+    isPaymentStep && state.paymentMethod === "bkash" && config.payment.bkash.enabled;
 
-  // Format start date for display
   const formatStartDate = (dateStr?: string) => {
     if (!dateStr) return "Upcoming";
     try {
@@ -244,6 +401,12 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
       return dateStr;
     }
   };
+
+  const statusHref = state.applicationReference
+    ? `/status?ref=${encodeURIComponent(state.applicationReference)}`
+    : "/status";
+
+  const bankDetails = config.payment.bankTransfer.bankDetails;
 
   return (
     <div className="w-full bg-[#F6FAFA] text-[#172E35] min-h-screen py-8 sm:py-12 lg:py-16">
@@ -268,13 +431,12 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
           {/* ========================================================== */}
           {/* LEFT COLUMN: Form & Navigation Flow                       */}
           {/* ========================================================== */}
-          <div className="lg:col-span-6 xl:col-span-6 flex flex-col justify-start">
-            {/* 1. Eyebrow */}
+          <div className="lg:col-span-6 xl:col-span-6 flex flex-col justify-start min-w-0">
             <span className="text-xs font-bold uppercase tracking-widest text-[#086477] mb-2">
               PROGRAM ENROLLMENT
             </span>
 
-            {/* 2. Dynamic Headline & Subtitle */}
+            {/* Dynamic Headline & Subtitle */}
             <div className="mb-6 sm:mb-8">
               {step === "program" && (
                 <>
@@ -323,24 +485,13 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                 </>
               )}
 
-              {step === "payment_method" && (
+              {step === "payment" && (
                 <>
                   <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2">
-                    Choose how to pay.
+                    Complete your payment.
                   </h1>
                   <p className="text-sm sm:text-base text-[#526E77]">
-                    Select a payment method to complete your enrollment.
-                  </p>
-                </>
-              )}
-
-              {step === "bank_transfer" && (
-                <>
-                  <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2">
-                    Pay by bank transfer.
-                  </h1>
-                  <p className="text-sm sm:text-base text-[#526E77]">
-                    Use the transfer details below, then enter your reference.
+                    Review the payable amount and payment details for bKash or Bank Transfer.
                   </p>
                 </>
               )}
@@ -348,21 +499,11 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
               {step === "pending_verification" && (
                 <>
                   <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2">
-                    Transfer under review.
+                    Application in process.
                   </h1>
                   <p className="text-sm sm:text-base text-[#526E77]">
-                    We received your reference. LNA will verify the transfer.
-                  </p>
-                </>
-              )}
-
-              {step === "payment_failed" && (
-                <>
-                  <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2">
-                    Payment unsuccessful.
-                  </h1>
-                  <p className="text-sm sm:text-base text-[#526E77]">
-                    This payment attempt failed. You can try again or change methods.
+                    We received your payment details. Save your separate LNA Application ID below to
+                    track your verification progress.
                   </p>
                 </>
               )}
@@ -381,31 +522,69 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
               )}
             </div>
 
-            {/* 3. Progress Step Indicator (Shown on form stages) */}
+            {/* Online enrollment coming soon notice when submission is disabled */}
+            {!canSubmitOnline && !isCompletedStep && (
+              <div
+                role="status"
+                data-testid="online-enrollment-coming-soon"
+                className="mb-6 p-4 rounded-xl bg-[#FEF3C7]/70 border border-[#FDE68A] text-xs sm:text-sm text-[#78350F] flex items-start gap-2.5"
+              >
+                <AlertCircle
+                  className="w-4 h-4 text-[#B45309] shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
+                <div>
+                  <div className="font-bold text-[#92400E]">Online enrollment is coming soon</div>
+                  <p className="text-xs text-[#78350F] mt-0.5 leading-relaxed">
+                    Online payment instructions and application submission are disabled until
+                    backend verification opens.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Returning Applicant Link (Entry Screen) */}
+            {step === "program" && (
+              <div className="mb-6 p-3.5 sm:p-4 rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[#172E35]">
+                  <Search className="w-4 h-4 text-[#086477] shrink-0" aria-hidden="true" />
+                  <span>Already submitted an application?</span>
+                </div>
+                <Link
+                  href="/status"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold text-[#086477] hover:bg-white/70 underline underline-offset-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                >
+                  <span>Check application status</span>
+                  <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                </Link>
+              </div>
+            )}
+
+            {/* Progress Step Indicator (Form stages) */}
             {!isCompletedStep && (
               <div className="mb-8">
-                {isPostReviewPayment ? (
-                  /* 4-Step Progress for Payment */
-                  <div className="grid grid-cols-4 gap-3">
+                {isPaymentStep ? (
+                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
                     <div>
                       <div className="h-1 rounded-full bg-[#086477] mb-2" />
-                      <span className="text-xs text-[#526E77]">01 Program</span>
+                      <span className="text-[11px] sm:text-xs text-[#526E77]">01 Program</span>
                     </div>
                     <div>
                       <div className="h-1 rounded-full bg-[#086477] mb-2" />
-                      <span className="text-xs text-[#526E77]">02 Details</span>
+                      <span className="text-[11px] sm:text-xs text-[#526E77]">02 Details</span>
                     </div>
                     <div>
                       <div className="h-1 rounded-full bg-[#086477] mb-2" />
-                      <span className="text-xs text-[#526E77]">03 Review</span>
+                      <span className="text-[11px] sm:text-xs text-[#526E77]">03 Review</span>
                     </div>
                     <div>
                       <div className="h-1 rounded-full bg-[#086477] mb-2" />
-                      <span className="text-xs font-bold text-[#172E35]">04 Payment</span>
+                      <span className="text-[11px] sm:text-xs font-bold text-[#172E35]">
+                        04 Payment
+                      </span>
                     </div>
                   </div>
                 ) : (
-                  /* 3-Step Progress for Application */
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <div
@@ -461,7 +640,6 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                   </div>
                 )}
 
-                {/* Sub-step eyebrow when on program questions */}
                 {step === "questions" && (
                   <div className="mt-3 text-[11px] font-bold tracking-wider uppercase text-[#086477]">
                     DETAILS / PROGRAM QUESTIONS
@@ -470,19 +648,24 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
               </div>
             )}
 
-            {/* 4. Selected Program Summary Card (Steps 2, 2b, 3, 4, 4b, failed) */}
+            {/* Selected Program Summary Card */}
             {selectedCourse && selectedBatch && step !== "program" && !isCompletedStep && (
-              <div className="mb-6 p-4 rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] flex items-center justify-between shadow-2xs">
-                <div>
-                  <h4 className="font-semibold text-sm sm:text-base text-[#172E35]">
+              <div className="mb-6 p-4 rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] flex items-center justify-between gap-3 shadow-2xs">
+                <div className="min-w-0">
+                  <h2 className="font-semibold text-sm sm:text-base text-[#172E35] truncate">
                     {selectedCourse.title}
-                  </h4>
+                  </h2>
                   <p className="text-xs text-[#526E77] mt-0.5">{selectedBatch.name}</p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setStep("program")}
-                  className="text-xs sm:text-sm font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer"
+                  onClick={() => {
+                    setErrors({});
+                    setSubmitError("");
+                    setIsQrModalOpen(false);
+                    setStep("program");
+                  }}
+                  className="shrink-0 min-h-[44px] px-2 text-xs sm:text-sm font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#086477]"
                 >
                   Change
                 </button>
@@ -494,7 +677,6 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
             {/* ======================================================== */}
             {step === "program" && (
               <div className="space-y-6">
-                {/* Program Select Field */}
                 <div>
                   <label
                     htmlFor="program-select"
@@ -507,7 +689,9 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                       id="program-select"
                       value={state.courseId}
                       onChange={(e) => handleProgramChange(e.target.value)}
-                      className="w-full appearance-none px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs cursor-pointer pr-10"
+                      aria-invalid={Boolean(errors.courseId)}
+                      aria-describedby={errors.courseId ? "program-select-error" : undefined}
+                      className="w-full min-h-[44px] appearance-none px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs cursor-pointer pr-10"
                     >
                       <option value="">Select a program</option>
                       {publishedCourses.map((c) => (
@@ -522,11 +706,16 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                     />
                   </div>
                   {errors.courseId && (
-                    <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors.courseId}</p>
+                    <p
+                      id="program-select-error"
+                      role="alert"
+                      className="mt-1.5 text-xs text-rose-700 font-medium"
+                    >
+                      {errors.courseId}
+                    </p>
                   )}
                 </div>
 
-                {/* Batch Select Field */}
                 <div>
                   <label
                     htmlFor="batch-select"
@@ -543,7 +732,9 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                         setErrors({});
                         setState((prev) => ({ ...prev, batchId: e.target.value }));
                       }}
-                      className={`w-full appearance-none px-4 py-3 rounded-xl border text-sm focus:outline-none shadow-2xs pr-10 transition-colors ${
+                      aria-invalid={Boolean(errors.batchId)}
+                      aria-describedby={errors.batchId ? "batch-select-error" : undefined}
+                      className={`w-full min-h-[44px] appearance-none px-4 py-3 rounded-xl border text-sm focus:outline-none shadow-2xs pr-10 transition-colors ${
                         !state.courseId || availableBatches.length === 0
                           ? "bg-[#F0F5F6] border-[#D5E2E5] text-[#8AA4AB] cursor-not-allowed"
                           : "bg-white border-[#D5E2E5] text-[#172E35] focus:border-[#086477] focus:ring-1 focus:ring-[#086477] cursor-pointer"
@@ -570,26 +761,32 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                     />
                   </div>
 
-                  {/* Batch Details (when open batch is selected) */}
                   {selectedBatch && (
                     <p className="mt-2 text-xs font-medium text-[#526E77]">
-                      Starts {formatStartDate(selectedBatch.startDate)} | {formattedFee}
+                      Starts {formatStartDate(selectedBatch.startDate)} |{" "}
+                      {feeDetails.hasDiscount && (
+                        <span className="line-through mr-1.5 text-[#8AA4AB]">
+                          {feeDetails.formattedBase}
+                        </span>
+                      )}
+                      <span className="font-semibold text-[#172E35]">
+                        {feeDetails.formattedPayable}
+                      </span>
                     </p>
                   )}
 
-                  {/* No Open Batches Info Box */}
                   {state.courseId && availableBatches.length === 0 && (
                     <div className="mt-4 p-4 rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] shadow-2xs">
-                      <h4 className="font-semibold text-xs sm:text-sm text-[#086477]">
+                      <h3 className="font-semibold text-xs sm:text-sm text-[#086477]">
                         No open batches
-                      </h4>
+                      </h3>
                       <p className="text-xs text-[#526E77] mt-1">
                         Choose another program to view its available batches.
                       </p>
                       <div className="mt-3">
                         <Link
                           href="/#courses"
-                          className="text-xs font-semibold text-[#086477] underline hover:text-[#06505F]"
+                          className="inline-flex items-center min-h-[44px] text-xs font-semibold text-[#086477] underline hover:text-[#06505F]"
                         >
                           Explore programs
                         </Link>
@@ -598,20 +795,25 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                   )}
 
                   {errors.batchId && (
-                    <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors.batchId}</p>
+                    <p
+                      id="batch-select-error"
+                      role="alert"
+                      className="mt-1.5 text-xs text-rose-700 font-medium"
+                    >
+                      {errors.batchId}
+                    </p>
                   )}
                 </div>
 
-                {/* Continue Action */}
                 {(!state.courseId || availableBatches.length > 0) && (
                   <div className="pt-2">
                     <button
                       type="button"
                       onClick={handleContinueFromProgram}
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-[#086477]"
+                      className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                     >
                       <span>Continue</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowRight className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 )}
@@ -623,7 +825,6 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
             {/* ======================================================== */}
             {step === "details" && (
               <div className="space-y-5">
-                {/* Full Name */}
                 <div>
                   <label
                     htmlFor="fullName"
@@ -639,15 +840,22 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                       setErrors((prev) => ({ ...prev, fullName: "" }));
                       setState((prev) => ({ ...prev, fullName: e.target.value }));
                     }}
-                    placeholder="Samira Rahman"
-                    className="w-full px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
+                    placeholder="Enter your full name"
+                    aria-invalid={Boolean(errors.fullName)}
+                    aria-describedby={errors.fullName ? "fullName-error" : undefined}
+                    className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
                   />
                   {errors.fullName && (
-                    <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors.fullName}</p>
+                    <p
+                      id="fullName-error"
+                      role="alert"
+                      className="mt-1.5 text-xs text-rose-700 font-medium"
+                    >
+                      {errors.fullName}
+                    </p>
                   )}
                 </div>
 
-                {/* Email & WhatsApp Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label
@@ -664,11 +872,19 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                         setErrors((prev) => ({ ...prev, email: "" }));
                         setState((prev) => ({ ...prev, email: e.target.value }));
                       }}
-                      placeholder="samira@example.com"
-                      className="w-full px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
+                      placeholder="name@example.com"
+                      aria-invalid={Boolean(errors.email)}
+                      aria-describedby={errors.email ? "email-error" : undefined}
+                      className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
                     />
                     {errors.email && (
-                      <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors.email}</p>
+                      <p
+                        id="email-error"
+                        role="alert"
+                        className="mt-1.5 text-xs text-rose-700 font-medium"
+                      >
+                        {errors.email}
+                      </p>
                     )}
                   </div>
 
@@ -677,7 +893,7 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                       htmlFor="whatsapp"
                       className="block text-sm font-semibold text-[#172E35] mb-1.5"
                     >
-                      WhatsApp number
+                      WhatsApp / Phone number
                     </label>
                     <input
                       id="whatsapp"
@@ -688,34 +904,44 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                         setState((prev) => ({ ...prev, whatsapp: e.target.value }));
                       }}
                       placeholder="01XXXXXXXXX"
-                      className="w-full px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
+                      aria-invalid={Boolean(errors.whatsapp)}
+                      aria-describedby={errors.whatsapp ? "whatsapp-error" : undefined}
+                      className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
                     />
                     {errors.whatsapp && (
-                      <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors.whatsapp}</p>
+                      <p
+                        id="whatsapp-error"
+                        role="alert"
+                        className="mt-1.5 text-xs text-rose-700 font-medium"
+                      >
+                        {errors.whatsapp}
+                      </p>
                     )}
                   </div>
                 </div>
 
                 <p className="text-xs text-[#526E77] pt-1">
-                  We&apos;ll use these details to contact you about your application.
+                  We&apos;ll use your email or phone number to verify your application status later.
                 </p>
 
-                {/* Action Row */}
                 <div className="flex items-center justify-between pt-4">
                   <button
                     type="button"
-                    onClick={() => setStep("program")}
-                    className="text-sm font-semibold text-[#086477] hover:underline cursor-pointer"
+                    onClick={() => {
+                      setErrors({});
+                      setStep("program");
+                    }}
+                    className="min-h-[44px] px-2 text-sm font-semibold text-[#086477] hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-[#086477]"
                   >
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={handleContinueFromDetails}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-[#086477]"
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                   >
                     <span>Continue</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -727,6 +953,7 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
             {step === "questions" && (
               <div className="space-y-5">
                 {programQuestions.map((q) => {
+                  const errId = `${q.id}-error`;
                   if (q.type === "select") {
                     return (
                       <div key={q.id}>
@@ -747,7 +974,9 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                                 answers: { ...prev.answers, [q.id]: e.target.value },
                               }));
                             }}
-                            className="w-full appearance-none px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs cursor-pointer pr-10"
+                            aria-invalid={Boolean(errors[q.id])}
+                            aria-describedby={errors[q.id] ? errId : undefined}
+                            className="w-full min-h-[44px] appearance-none px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs cursor-pointer pr-10"
                           >
                             <option value="">{q.placeholder || "Select an option"}</option>
                             {q.options?.map((opt) => (
@@ -762,7 +991,13 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                           />
                         </div>
                         {errors[q.id] && (
-                          <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors[q.id]}</p>
+                          <p
+                            id={errId}
+                            role="alert"
+                            className="mt-1.5 text-xs text-rose-700 font-medium"
+                          >
+                            {errors[q.id]}
+                          </p>
                         )}
                       </div>
                     );
@@ -789,16 +1024,23 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                             }));
                           }}
                           placeholder={q.placeholder || "Share a short answer"}
+                          aria-invalid={Boolean(errors[q.id])}
+                          aria-describedby={errors[q.id] ? errId : undefined}
                           className="w-full px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs resize-none"
                         />
                         {errors[q.id] && (
-                          <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors[q.id]}</p>
+                          <p
+                            id={errId}
+                            role="alert"
+                            className="mt-1.5 text-xs text-rose-700 font-medium"
+                          >
+                            {errors[q.id]}
+                          </p>
                         )}
                       </div>
                     );
                   }
 
-                  // Standard text field
                   return (
                     <div key={q.id}>
                       <label
@@ -819,31 +1061,41 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                           }));
                         }}
                         placeholder={q.placeholder || ""}
-                        className="w-full px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
+                        aria-invalid={Boolean(errors[q.id])}
+                        aria-describedby={errors[q.id] ? errId : undefined}
+                        className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
                       />
                       {errors[q.id] && (
-                        <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors[q.id]}</p>
+                        <p
+                          id={errId}
+                          role="alert"
+                          className="mt-1.5 text-xs text-rose-700 font-medium"
+                        >
+                          {errors[q.id]}
+                        </p>
                       )}
                     </div>
                   );
                 })}
 
-                {/* Actions */}
                 <div className="flex items-center justify-between pt-4">
                   <button
                     type="button"
-                    onClick={() => setStep("details")}
-                    className="text-sm font-semibold text-[#086477] hover:underline cursor-pointer"
+                    onClick={() => {
+                      setErrors({});
+                      setStep("details");
+                    }}
+                    className="min-h-[44px] px-2 text-sm font-semibold text-[#086477] hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-[#086477]"
                   >
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={handleContinueFromQuestions}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-[#086477]"
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                   >
                     <span>Continue</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -854,7 +1106,6 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
             {/* ======================================================== */}
             {step === "review" && (
               <div className="space-y-6">
-                {/* Applicant Details Table */}
                 <div className="border border-[#E5ECEE] bg-white rounded-xl p-5 shadow-2xs">
                   <div className="flex items-center justify-between pb-3 border-b border-[#E5ECEE]">
                     <h3 className="font-serif font-bold text-lg text-[#172E35]">
@@ -863,35 +1114,36 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                     <button
                       type="button"
                       onClick={() => setStep("details")}
-                      className="text-xs sm:text-sm font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer"
+                      className="min-h-[44px] px-2 text-xs sm:text-sm font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer"
                     >
                       Edit
                     </button>
                   </div>
 
                   <dl className="divide-y divide-[#E5ECEE] text-xs sm:text-sm">
-                    <div className="py-2.5 flex items-center justify-between">
+                    <div className="py-2.5 flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Name</dt>
-                      <dd className="font-semibold text-[#172E35]">{state.fullName}</dd>
+                      <dd className="font-semibold text-[#172E35] text-right">{state.fullName}</dd>
                     </div>
-                    <div className="py-2.5 flex items-center justify-between">
+                    <div className="py-2.5 flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Email</dt>
-                      <dd className="font-semibold text-[#172E35]">{state.email}</dd>
+                      <dd className="font-semibold text-[#172E35] text-right break-all">
+                        {state.email}
+                      </dd>
                     </div>
-                    <div className="py-2.5 flex items-center justify-between">
-                      <dt className="text-[#526E77]">WhatsApp</dt>
-                      <dd className="font-semibold text-[#172E35]">{state.whatsapp}</dd>
+                    <div className="py-2.5 flex items-center justify-between gap-4">
+                      <dt className="text-[#526E77]">Phone / WhatsApp</dt>
+                      <dd className="font-semibold text-[#172E35] text-right">{state.whatsapp}</dd>
                     </div>
 
-                    {/* Program Questions Summary */}
                     {programQuestions.length > 0 && (
-                      <div className="py-2.5 flex items-center justify-between">
+                      <div className="py-2.5 flex items-center justify-between gap-4">
                         <dt className="text-[#526E77]">Program questions</dt>
                         <dd>
                           <button
                             type="button"
                             onClick={() => setShowAnswersExpanded(!showAnswersExpanded)}
-                            className="font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer"
+                            className="min-h-[44px] px-1 font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer"
                           >
                             {showAnswersExpanded ? "Hide answers" : "View answers"}
                           </button>
@@ -900,7 +1152,6 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                     )}
                   </dl>
 
-                  {/* Expandable answers */}
                   {showAnswersExpanded && programQuestions.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-[#E5ECEE] bg-[#F6FAFA] p-3 rounded-lg space-y-2 text-xs">
                       {programQuestions.map((q) => (
@@ -916,283 +1167,566 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
                 </div>
 
                 {/* Amount Due Bar */}
-                <div className="flex items-center justify-between py-2 border-t border-b border-[#E5ECEE]">
+                <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-white border border-[#E5ECEE]">
                   <span className="text-sm font-semibold text-[#172E35]">Amount due</span>
-                  <span className="font-bold text-lg text-[#172E35]">{formattedFee}</span>
+                  <div className="text-right">
+                    {feeDetails.hasDiscount && (
+                      <span className="text-xs line-through text-[#8AA4AB] mr-2">
+                        {feeDetails.formattedBase}
+                      </span>
+                    )}
+                    <span className="font-bold text-lg text-[#086477]">
+                      {feeDetails.formattedPayable}
+                    </span>
+                  </div>
                 </div>
+
+                {submitError && (
+                  <p role="alert" className="text-xs text-rose-700 font-medium">
+                    {submitError}
+                  </p>
+                )}
 
                 <p className="text-xs text-[#526E77]">
                   By continuing, you agree to the enrollment terms.
                 </p>
 
-                {/* Actions */}
                 <div className="flex items-center justify-between pt-2">
                   <button
                     type="button"
                     onClick={() => {
+                      setErrors({});
+                      setSubmitError("");
                       if (programQuestions.length > 0) {
                         setStep("questions");
                       } else {
                         setStep("details");
                       }
                     }}
-                    className="text-sm font-semibold text-[#086477] hover:underline cursor-pointer"
+                    className="min-h-[44px] px-2 text-sm font-semibold text-[#086477] hover:underline cursor-pointer"
                   >
                     Back
                   </button>
                   <button
                     type="button"
+                    disabled={isSubmitting || (isFree && !canSubmitOnline)}
+                    aria-disabled={isSubmitting || (isFree && !canSubmitOnline)}
                     onClick={handleContinueFromReview}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-[#086477]"
-                  >
-                    <span>{isFree ? "Confirm registration" : "Continue to payment"}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ======================================================== */}
-            {/* STEP 4: CHOOSE HOW TO PAY (Paid Programs)                 */}
-            {/* ======================================================== */}
-            {step === "payment_method" && (
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  {/* bKash Payment Method Option */}
-                  {config.payment.bkash.enabled && (
-                    <label
-                      htmlFor="method-bkash"
-                      className={`flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${
-                        state.paymentMethod === "bkash"
-                          ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
-                          : "bg-white border-[#D5E2E5] hover:border-[#BCE1E5]"
-                      }`}
-                    >
-                      <input
-                        id="method-bkash"
-                        type="radio"
-                        name="paymentMethod"
-                        value="bkash"
-                        checked={state.paymentMethod === "bkash"}
-                        onChange={() => setState((prev) => ({ ...prev, paymentMethod: "bkash" }))}
-                        className="mt-1 h-4 w-4 text-[#086477] focus:ring-[#086477] cursor-pointer"
-                      />
-                      <div>
-                        <div className="font-bold text-sm sm:text-base text-[#172E35]">bKash</div>
-                        <div className="text-xs text-[#526E77] mt-0.5">
-                          Continue to bKash checkout.
-                        </div>
-                      </div>
-                    </label>
-                  )}
-
-                  {/* Bank Transfer Option */}
-                  {config.payment.bankTransfer.enabled && (
-                    <label
-                      htmlFor="method-bank"
-                      className={`flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${
-                        state.paymentMethod === "bank_transfer"
-                          ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
-                          : "bg-white border-[#D5E2E5] hover:border-[#BCE1E5]"
-                      }`}
-                    >
-                      <input
-                        id="method-bank"
-                        type="radio"
-                        name="paymentMethod"
-                        value="bank_transfer"
-                        checked={state.paymentMethod === "bank_transfer"}
-                        onChange={() =>
-                          setState((prev) => ({ ...prev, paymentMethod: "bank_transfer" }))
-                        }
-                        className="mt-1 h-4 w-4 text-[#086477] focus:ring-[#086477] cursor-pointer"
-                      />
-                      <div>
-                        <div className="font-bold text-sm sm:text-base text-[#172E35]">
-                          Bank transfer
-                        </div>
-                        <div className="text-xs text-[#526E77] mt-0.5">
-                          Submit your transfer reference for verification.
-                        </div>
-                      </div>
-                    </label>
-                  )}
-                </div>
-
-                {/* Total Due */}
-                <div className="flex items-center justify-between py-3 border-t border-b border-[#E5ECEE]">
-                  <span className="text-sm font-semibold text-[#172E35]">Total due</span>
-                  <span className="font-bold text-lg text-[#172E35]">{formattedFee}</span>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setStep("review")}
-                    className="text-sm font-semibold text-[#086477] hover:underline cursor-pointer"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleContinueFromPaymentMethod}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-[#086477]"
+                    className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
+                      isSubmitting || (isFree && !canSubmitOnline)
+                        ? "bg-[#9BB7BE] text-white cursor-not-allowed"
+                        : "bg-[#086477] hover:bg-[#06505F] text-white cursor-pointer"
+                    }`}
                   >
                     <span>
-                      {state.paymentMethod === "bkash"
-                        ? "Continue to bKash"
-                        : "Continue to bank details"}
+                      {isFree
+                        ? canSubmitOnline
+                          ? "Confirm registration"
+                          : "Online enrollment is coming soon"
+                        : "Continue to payment"}
                     </span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
             )}
 
             {/* ======================================================== */}
-            {/* STEP 4b: BANK TRANSFER DETAILS & REFERENCE                */}
+            {/* STEP 4: PAYMENT METHOD, DETAILS & REFERENCE (Paid)       */}
             {/* ======================================================== */}
-            {step === "bank_transfer" && (
+            {step === "payment" && (
               <div className="space-y-6">
-                {/* Configured Bank Details Card */}
-                <div className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-5 shadow-2xs">
-                  <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477] block mb-3">
-                    BANK TRANSFER DETAILS
-                  </span>
-                  <dl className="space-y-2 text-xs sm:text-sm">
-                    <div className="flex items-center justify-between">
-                      <dt className="text-[#526E77]">Bank</dt>
-                      <dd className="font-semibold text-[#172E35]">
-                        {config.payment.bankTransfer.bankDetails.bankName}
-                      </dd>
+                {/* Amount Due Card (Always visible regardless of selected payment method) */}
+                <div className="p-4 rounded-xl bg-white border border-[#C5E2E5] shadow-2xs flex items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477] block">
+                      Amount due
+                    </span>
+                    <span className="text-xs text-[#526E77]">
+                      {feeDetails.hasDiscount
+                        ? "Discounted cohort fee applied"
+                        : "Payable course fee"}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    {feeDetails.hasDiscount && (
+                      <span className="text-xs line-through text-[#8AA4AB] block">
+                        {feeDetails.formattedBase}
+                      </span>
+                    )}
+                    <span
+                      data-testid="payment-amount-due"
+                      className="font-bold text-xl text-[#172E35]"
+                    >
+                      {feeDetails.formattedPayable}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Method Selection */}
+                <fieldset className="space-y-3">
+                  <legend className="text-sm font-semibold text-[#172E35] mb-1">
+                    Choose payment method
+                  </legend>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {config.payment.bkash.enabled && (
+                      <label
+                        htmlFor="method-bkash"
+                        className={`flex items-start gap-3 p-4 min-h-[44px] rounded-xl border transition-all cursor-pointer ${
+                          state.paymentMethod === "bkash"
+                            ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
+                            : "bg-white border-[#D5E2E5] hover:border-[#BCE1E5]"
+                        }`}
+                      >
+                        <input
+                          id="method-bkash"
+                          type="radio"
+                          name="paymentMethod"
+                          value="bkash"
+                          checked={state.paymentMethod === "bkash"}
+                          onChange={() => handleSelectPaymentMethod("bkash")}
+                          className="mt-1 h-4 w-4 text-[#086477] focus:ring-[#086477] cursor-pointer"
+                        />
+                        <div>
+                          <div className="font-bold text-sm text-[#172E35]">bKash</div>
+                          <div className="text-xs text-[#526E77] mt-0.5">
+                            Pay using bKash Merchant QR
+                          </div>
+                        </div>
+                      </label>
+                    )}
+
+                    {config.payment.bankTransfer.enabled && (
+                      <label
+                        htmlFor="method-bank"
+                        className={`flex items-start gap-3 p-4 min-h-[44px] rounded-xl border transition-all cursor-pointer ${
+                          state.paymentMethod === "bank_transfer"
+                            ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
+                            : "bg-white border-[#D5E2E5] hover:border-[#BCE1E5]"
+                        }`}
+                      >
+                        <input
+                          id="method-bank"
+                          type="radio"
+                          name="paymentMethod"
+                          value="bank_transfer"
+                          checked={state.paymentMethod === "bank_transfer"}
+                          onChange={() => handleSelectPaymentMethod("bank_transfer")}
+                          className="mt-1 h-4 w-4 text-[#086477] focus:ring-[#086477] cursor-pointer"
+                        />
+                        <div>
+                          <div className="font-bold text-sm text-[#172E35]">Bank Transfer</div>
+                          <div className="text-xs text-[#526E77] mt-0.5">
+                            Transfer to LNA receiving bank account
+                          </div>
+                        </div>
+                      </label>
+                    )}
+                  </div>
+                </fieldset>
+
+                {/* Active Payment Panel & Reference Input */}
+                {state.paymentMethod === "bkash" && config.payment.bkash.enabled && (
+                  <div className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-4 sm:p-5 space-y-5 shadow-2xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477]">
+                        BKASH MERCHANT QR
+                      </span>
+                      <button
+                        type="button"
+                        data-testid="bkash-qr-enlarge-button"
+                        onClick={() => setIsQrModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg bg-white border border-[#C5E2E5] hover:border-[#086477] text-xs font-semibold text-[#086477] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                      >
+                        <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>Enlarge QR</span>
+                      </button>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-[#526E77]">Account name</dt>
-                      <dd className="font-semibold text-[#172E35]">
-                        {config.payment.bankTransfer.bankDetails.accountName}
-                      </dd>
+
+                    {/* Mobile / Tablet generous scannable QR trigger (hidden on lg where dedicated right panel is shown) */}
+                    <div className="lg:hidden flex flex-col items-center">
+                      <button
+                        type="button"
+                        data-testid="bkash-qr-inline-trigger"
+                        onClick={() => setIsQrModalOpen(true)}
+                        aria-label="Enlarge bKash Merchant QR code"
+                        className="w-full max-w-[270px] sm:max-w-[300px] bg-white p-2 sm:p-2.5 rounded-2xl border border-[#C5E2E5] hover:border-[#086477] shadow-2xs flex flex-col items-center justify-center transition-all cursor-pointer group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                      >
+                        <img
+                          src={config.payment.bkash.qrImageSrc}
+                          alt={config.payment.bkash.qrImageAlt}
+                          width={612}
+                          height={780}
+                          className="w-full h-auto rounded-xl"
+                        />
+                        <span className="mt-2.5 mb-1 inline-flex items-center gap-1.5 text-xs font-semibold text-[#086477] group-hover:underline">
+                          <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" />
+                          <span>Tap QR to open full size</span>
+                        </span>
+                      </button>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-[#526E77]">Account number</dt>
-                      <dd className="font-semibold font-mono text-[#172E35]">
-                        {config.payment.bankTransfer.bankDetails.accountNumber}
-                      </dd>
+
+                    <div className="space-y-3 min-w-0">
+                      <dl className="space-y-1.5 text-xs sm:text-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <dt className="text-[#526E77]">Merchant</dt>
+                          <dd className="font-semibold text-[#172E35]">
+                            {config.payment.bkash.merchantName}
+                          </dd>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <dt className="text-[#526E77]">Merchant number</dt>
+                          <dd className="font-semibold font-mono text-[#172E35]">
+                            {config.payment.bkash.merchantNumber}
+                          </dd>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#C5E2E5]">
+                          <dt className="text-[#526E77]">Amount due</dt>
+                          <dd className="font-bold text-[#086477]">
+                            {feeDetails.formattedPayable}
+                          </dd>
+                        </div>
+                      </dl>
+                      {canSubmitOnline ? (
+                        <p className="text-xs text-[#526E77] leading-relaxed">
+                          {config.payment.bkash.instruction}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[#92400E] font-medium leading-relaxed">
+                          Online enrollment is coming soon. Payment instructions and submission will
+                          activate once backend verification is live.
+                        </p>
+                      )}
+                      <p className="hidden lg:block text-xs text-[#526E77]">
+                        Scan the large QR displayed on the right panel, or click{" "}
+                        <button
+                          type="button"
+                          onClick={() => setIsQrModalOpen(true)}
+                          className="font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer"
+                        >
+                          Enlarge QR
+                        </button>{" "}
+                        to open it in a popup.
+                      </p>
                     </div>
-                    {config.payment.bankTransfer.bankDetails.branch && (
-                      <div className="flex items-center justify-between">
-                        <dt className="text-[#526E77]">Branch</dt>
-                        <dd className="font-semibold text-[#172E35]">
-                          {config.payment.bankTransfer.bankDetails.branch}
-                        </dd>
+
+                    <div>
+                      <label
+                        htmlFor="bkashTransactionId"
+                        className="block text-sm font-semibold text-[#172E35] mb-1.5"
+                      >
+                        bKash Transaction ID{" "}
+                        <span className="text-rose-700" aria-hidden="true">
+                          *
+                        </span>
+                      </label>
+                      <input
+                        id="bkashTransactionId"
+                        type="text"
+                        required
+                        value={state.bkashTransactionId}
+                        onChange={(e) => {
+                          setErrors({});
+                          setState((prev) => ({ ...prev, bkashTransactionId: e.target.value }));
+                        }}
+                        placeholder="Enter your bKash Transaction ID"
+                        aria-invalid={Boolean(errors.bkashTransactionId)}
+                        aria-describedby={
+                          errors.bkashTransactionId
+                            ? "bkashTransactionId-error"
+                            : "bkashTransactionId-hint"
+                        }
+                        className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm font-mono text-[#172E35] placeholder:text-[#8AA4AB] placeholder:font-sans focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
+                      />
+                      <p id="bkashTransactionId-hint" className="mt-1.5 text-xs text-[#526E77]">
+                        Enter the bKash Transaction ID (TrxID) shown after payment.
+                      </p>
+                      {errors.bkashTransactionId && (
+                        <p
+                          id="bkashTransactionId-error"
+                          role="alert"
+                          className="mt-1.5 text-xs text-rose-700 font-medium"
+                        >
+                          {errors.bkashTransactionId}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {state.paymentMethod === "bank_transfer" && config.payment.bankTransfer.enabled && (
+                  <div className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-5 space-y-5 shadow-2xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477]">
+                        BANK ACCOUNT DETAILS
+                      </span>
+                    </div>
+
+                    {bankDetails ? (
+                      <dl className="space-y-2 text-xs sm:text-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <dt className="text-[#526E77]">Bank name</dt>
+                          <dd className="font-semibold text-[#172E35]">{bankDetails.bankName}</dd>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <dt className="text-[#526E77]">Account name</dt>
+                          <dd className="font-semibold text-[#172E35]">
+                            {bankDetails.accountName}
+                          </dd>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <dt className="text-[#526E77]">Account number</dt>
+                          <dd className="font-semibold font-mono text-[#172E35]">
+                            {bankDetails.accountNumber}
+                          </dd>
+                        </div>
+                        {bankDetails.branch && (
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <dt className="text-[#526E77]">Branch</dt>
+                            <dd className="font-semibold text-[#172E35]">{bankDetails.branch}</dd>
+                          </div>
+                        )}
+                        {bankDetails.routingNumber && (
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <dt className="text-[#526E77]">Routing number</dt>
+                            <dd className="font-semibold font-mono text-[#172E35]">
+                              {bankDetails.routingNumber}
+                            </dd>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#C5E2E5]">
+                          <dt className="text-[#526E77]">Amount due</dt>
+                          <dd className="font-bold text-[#086477] text-base">
+                            {feeDetails.formattedPayable}
+                          </dd>
+                        </div>
+                      </dl>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
+                        <span className="text-[#526E77]">Amount due</span>
+                        <span className="font-bold text-[#086477] text-base">
+                          {feeDetails.formattedPayable}
+                        </span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between pt-1 border-t border-[#C5E2E5]">
-                      <dt className="text-[#526E77]">Amount</dt>
-                      <dd className="font-bold text-[#086477] text-base">{formattedFee}</dd>
+
+                    {canSubmitOnline ? (
+                      <p className="text-xs text-[#526E77] leading-relaxed">
+                        {config.payment.bankTransfer.instruction}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[#92400E] font-medium leading-relaxed">
+                        Online enrollment is coming soon. Payment instructions and submission will
+                        activate once backend verification is live.
+                      </p>
+                    )}
+
+                    <div>
+                      <label
+                        htmlFor="bankTransactionReference"
+                        className="block text-sm font-semibold text-[#172E35] mb-1.5"
+                      >
+                        Bank Transaction Reference{" "}
+                        <span className="text-rose-700" aria-hidden="true">
+                          *
+                        </span>
+                      </label>
+                      <input
+                        id="bankTransactionReference"
+                        type="text"
+                        required
+                        value={state.bankTransactionReference}
+                        onChange={(e) => {
+                          setErrors({});
+                          setState((prev) => ({
+                            ...prev,
+                            bankTransactionReference: e.target.value,
+                          }));
+                        }}
+                        placeholder="Enter your bank transaction reference"
+                        aria-invalid={Boolean(errors.bankTransactionReference)}
+                        aria-describedby={
+                          errors.bankTransactionReference
+                            ? "bankTransactionReference-error"
+                            : "bankTransactionReference-hint"
+                        }
+                        className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm font-mono text-[#172E35] placeholder:text-[#8AA4AB] placeholder:font-sans focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
+                      />
+                      <p
+                        id="bankTransactionReference-hint"
+                        className="mt-1.5 text-xs text-[#526E77]"
+                      >
+                        Enter the reference or receipt number issued by your bank.
+                      </p>
+                      {errors.bankTransactionReference && (
+                        <p
+                          id="bankTransactionReference-error"
+                          role="alert"
+                          className="mt-1.5 text-xs text-rose-700 font-medium"
+                        >
+                          {errors.bankTransactionReference}
+                        </p>
+                      )}
                     </div>
-                  </dl>
-                </div>
+                  </div>
+                )}
 
-                {/* Transfer Reference Input */}
-                <div>
-                  <label
-                    htmlFor="transferReference"
-                    className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                  >
-                    Transfer reference
-                  </label>
-                  <input
-                    id="transferReference"
-                    type="text"
-                    value={state.transferReference}
-                    onChange={(e) => {
-                      setErrors({});
-                      setState((prev) => ({ ...prev, transferReference: e.target.value }));
-                    }}
-                    placeholder="Enter the reference from your bank"
-                    className="w-full px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
-                  />
-                  {errors.transferReference && (
-                    <p className="mt-1.5 text-xs text-rose-600 font-medium">
-                      {errors.transferReference}
-                    </p>
-                  )}
-                </div>
+                {submitError && (
+                  <p role="alert" className="text-xs text-rose-700 font-medium">
+                    {submitError}
+                  </p>
+                )}
 
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center justify-between gap-4 pt-2">
                   <button
                     type="button"
-                    onClick={() => setStep("payment_method")}
-                    className="text-sm font-semibold text-[#086477] hover:underline cursor-pointer"
+                    onClick={() => {
+                      setErrors({});
+                      setSubmitError("");
+                      setIsQrModalOpen(false);
+                      setStep("review");
+                    }}
+                    className="min-h-[44px] px-2 text-sm font-semibold text-[#086477] hover:underline cursor-pointer"
                   >
-                    Change method
+                    Back
                   </button>
                   <button
                     type="button"
-                    onClick={handleSubmitBankReference}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-[#086477]"
+                    disabled={isSubmitting || !canSubmitOnline}
+                    aria-disabled={isSubmitting || !canSubmitOnline}
+                    onClick={handleSubmitPaymentApplication}
+                    className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
+                      isSubmitting || !canSubmitOnline
+                        ? "bg-[#9BB7BE] text-white cursor-not-allowed"
+                        : "bg-[#086477] hover:bg-[#06505F] text-white cursor-pointer"
+                    }`}
                   >
-                    <span>Submit reference</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>
+                      {canSubmitOnline ? "Submit application" : "Submission disabled (coming soon)"}
+                    </span>
+                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
             )}
 
             {/* ======================================================== */}
-            {/* OUTCOME: PENDING VERIFICATION (Bank Transfer)             */}
+            {/* OUTCOME: APPLICATION IN PROCESS                          */}
             {/* ======================================================== */}
             {step === "pending_verification" && (
               <div className="space-y-6">
-                {/* Pending Verification Badge */}
-                <div>
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D97706]" aria-hidden="true" />
-                    Pending verification
+                    Application in process
                   </span>
                 </div>
 
-                {/* Application Card */}
+                {/* LNA Application ID & Copy Card */}
+                <div className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-5 shadow-2xs space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477]">
+                      LNA Application ID
+                    </span>
+                    <span className="text-[11px] text-[#526E77]">
+                      Separate from your payment reference
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-[#C5E2E5] rounded-xl px-4 py-3">
+                    <span
+                      data-testid="application-id-value"
+                      className="font-mono font-bold text-lg sm:text-xl text-[#086477] tracking-wide break-all"
+                    >
+                      {state.applicationReference}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyApplicationId}
+                      aria-label={
+                        copiedRef ? "Copied LNA Application ID" : "Copy LNA Application ID"
+                      }
+                      className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                    >
+                      {copiedRef ? (
+                        <>
+                          <Check className="w-4 h-4" aria-hidden="true" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" aria-hidden="true" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div role="status" aria-live="polite" className="sr-only">
+                    {copiedRef ? `Copied ${state.applicationReference}` : ""}
+                  </div>
+                </div>
+
+                {/* Application Summary Card */}
                 <div className="border border-[#E5ECEE] bg-white rounded-xl p-5 shadow-2xs">
                   <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477] block mb-3">
                     YOUR APPLICATION
                   </span>
                   <dl className="space-y-2.5 text-xs sm:text-sm">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
+                      <dt className="text-[#526E77]">Applicant</dt>
+                      <dd className="font-semibold text-[#172E35] text-right">{state.fullName}</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Program</dt>
-                      <dd className="font-semibold text-[#172E35]">{selectedCourse?.title}</dd>
+                      <dd className="font-semibold text-[#172E35] text-right">
+                        {selectedCourse?.title}
+                      </dd>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Batch</dt>
-                      <dd className="font-semibold text-[#172E35]">{selectedBatch?.name}</dd>
+                      <dd className="font-semibold text-[#172E35] text-right">
+                        {selectedBatch?.name}
+                      </dd>
                     </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-[#E5ECEE]">
-                      <dt className="text-[#526E77]">Reference</dt>
-                      <dd className="font-bold font-mono text-[#086477]">
-                        {state.applicationReference}
+                    <div className="flex items-center justify-between gap-4">
+                      <dt className="text-[#526E77]">Payment method</dt>
+                      <dd className="font-semibold text-[#172E35] text-right">
+                        {formatPaymentMethodLabel(state.paymentMethod)}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 pt-2 border-t border-[#E5ECEE]">
+                      <dt className="text-[#526E77]">Amount due</dt>
+                      <dd className="font-bold text-[#172E35] text-right">
+                        {feeDetails.formattedPayable}
                       </dd>
                     </div>
                   </dl>
                 </div>
 
-                <p className="text-xs sm:text-sm text-[#526E77]">
-                  You&apos;ll receive an update when the transfer has been reviewed.
+                <p className="text-xs sm:text-sm text-[#526E77] leading-relaxed">
+                  Enrollment is confirmed after staff verify the payment. Use your LNA Application
+                  ID and the email or phone number from this form on the status page anytime.
                 </p>
 
-                {/* Actions */}
-                <div className="flex items-center gap-4 pt-2">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
+                  <Link
+                    href={statusHref}
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                  >
+                    <span>Check application status</span>
+                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                  </Link>
                   <Link
                     href="/#courses"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs"
+                    className="inline-flex items-center min-h-[44px] px-3 py-2 text-xs sm:text-sm font-semibold text-[#086477] hover:underline"
                   >
-                    <span>Back to programs</span>
-                    <ArrowRight className="w-4 h-4" />
+                    Back to programs
                   </Link>
                   <a
                     href="mailto:admissions@lnabd.org"
-                    className="text-xs sm:text-sm font-semibold text-[#086477] hover:underline"
+                    className="inline-flex items-center min-h-[44px] px-2 py-2 text-xs sm:text-sm font-semibold text-[#526E77] hover:text-[#086477] hover:underline"
                   >
                     Contact admissions
                   </a>
@@ -1201,114 +1735,102 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
             )}
 
             {/* ======================================================== */}
-            {/* OUTCOME: PAYMENT FAILED (Retry / Change Method)          */}
-            {/* ======================================================== */}
-            {step === "payment_failed" && (
-              <div className="space-y-6">
-                {/* Alert Box */}
-                <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 shadow-2xs">
-                  <h4 className="font-semibold text-sm text-rose-800 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-600" />
-                    Payment failed
-                  </h4>
-                  <p className="text-xs text-rose-700 mt-1">
-                    Try bKash again or choose another available payment method.
-                  </p>
-                </div>
-
-                {/* Summary */}
-                <dl className="space-y-2 text-xs sm:text-sm border-t border-b border-[#E5ECEE] py-3">
-                  <div className="flex items-center justify-between">
-                    <dt className="text-[#526E77]">Amount due</dt>
-                    <dd className="font-bold text-[#172E35]">{formattedFee}</dd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-[#526E77]">Application</dt>
-                    <dd className="font-mono font-semibold text-[#526E77]">
-                      {state.applicationReference}
-                    </dd>
-                  </div>
-                </dl>
-
-                {/* Actions */}
-                <div className="flex items-center gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowBkashModal(true)}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs"
-                  >
-                    <span>Try bKash again</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStep("payment_method")}
-                    className="text-xs sm:text-sm font-semibold text-[#086477] hover:underline cursor-pointer"
-                  >
-                    Change method
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ======================================================== */}
-            {/* OUTCOME: CONFIRMED (Paid or Free Registration)            */}
+            {/* OUTCOME: CONFIRMED                                       */}
             {/* ======================================================== */}
             {step === "confirmed" && (
               <div className="space-y-6">
-                {/* Confirmed Badge */}
                 <div>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0]">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" aria-hidden="true" />
-                    Confirmed
+                    Enrollment confirmed
                   </span>
                 </div>
 
-                {/* Enrollment Details Card */}
+                <div className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-5 shadow-2xs space-y-3">
+                  <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477] block">
+                    LNA Application ID
+                  </span>
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-[#C5E2E5] rounded-xl px-4 py-3">
+                    <span
+                      data-testid="application-id-value"
+                      className="font-mono font-bold text-lg sm:text-xl text-[#086477] tracking-wide break-all"
+                    >
+                      {state.applicationReference}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyApplicationId}
+                      aria-label={
+                        copiedRef ? "Copied LNA Application ID" : "Copy LNA Application ID"
+                      }
+                      className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+                    >
+                      {copiedRef ? (
+                        <>
+                          <Check className="w-4 h-4" aria-hidden="true" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" aria-hidden="true" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="border border-[#E5ECEE] bg-white rounded-xl p-5 shadow-2xs">
                   <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477] block mb-3">
                     YOUR ENROLLMENT
                   </span>
                   <dl className="space-y-2.5 text-xs sm:text-sm">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Program</dt>
-                      <dd className="font-semibold text-[#172E35]">{selectedCourse?.title}</dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-[#526E77]">Batch</dt>
-                      <dd className="font-semibold text-[#172E35]">{selectedBatch?.name}</dd>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-[#E5ECEE]">
-                      <dt className="text-[#526E77]">Reference</dt>
-                      <dd className="font-bold font-mono text-[#086477]">
-                        {state.applicationReference}
+                      <dd className="font-semibold text-[#172E35] text-right">
+                        {selectedCourse?.title}
                       </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <dt className="text-[#526E77]">Batch</dt>
+                      <dd className="font-semibold text-[#172E35] text-right">
+                        {selectedBatch?.name}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 pt-2 border-t border-[#E5ECEE]">
+                      <dt className="text-[#526E77]">Fee</dt>
+                      <dd className="font-bold text-[#086477]">{feeDetails.formattedPayable}</dd>
                     </div>
                   </dl>
                 </div>
 
                 <p className="text-xs sm:text-sm text-[#526E77]">
-                  Check your email for the program details and what to do next.
+                  Your seat in this cohort is confirmed.
                 </p>
 
-                {/* Actions */}
-                <div className="flex items-center gap-4 pt-2">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
+                  <Link
+                    href={statusHref}
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs"
+                  >
+                    <span>Check application status</span>
+                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                  </Link>
                   <Link
                     href="/#courses"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs"
+                    className="inline-flex items-center min-h-[44px] px-3 py-2 text-xs sm:text-sm font-semibold text-[#086477] hover:underline"
                   >
-                    <span>Back to programs</span>
-                    <ArrowRight className="w-4 h-4" />
+                    Back to programs
                   </Link>
                   <a
                     href="mailto:admissions@lnabd.org"
-                    className="text-xs sm:text-sm font-semibold text-[#086477] hover:underline"
+                    className="inline-flex items-center min-h-[44px] px-2 py-2 text-xs sm:text-sm font-semibold text-[#526E77] hover:text-[#086477] hover:underline"
                   >
                     Contact admissions
                   </a>
                 </div>
 
-                {/* Mobile Bottom Photo Crop on Confirmed Screen */}
+                {/* Mobile Bottom Photo Crop */}
                 <div className="lg:hidden pt-4">
                   <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-xs bg-[#EBF3F5]">
                     <Image
@@ -1325,131 +1847,153 @@ export function EnrollmentView({ courses, batches, config }: EnrollmentViewProps
           </div>
 
           {/* ========================================================== */}
-          {/* RIGHT COLUMN: Editorial Photo Panel (Desktop)             */}
+          {/* RIGHT COLUMN: Dedicated bKash QR Showcase or Photo Panel   */}
           {/* ========================================================== */}
           <div className="hidden lg:block lg:col-span-6 xl:col-span-6 sticky top-28">
-            <div className="relative w-full h-[580px] xl:h-[620px] rounded-2xl overflow-hidden shadow-md bg-[#0F2930]">
-              {/* Photo Asset (switches to confirmation photo on confirmed) */}
-              <Image
-                src={
-                  isConfirmationPhoto
-                    ? "/images/enrollment/lna-enrollment-confirmation-1120.webp"
-                    : "/images/enrollment/lna-enrollment-workshop-1120.webp"
-                }
-                alt={
-                  isConfirmationPhoto
-                    ? "Confirmed cohort members discussing session takeaways"
-                    : "Interactive workshop participants engaged in discussion"
-                }
-                fill
-                priority
-                sizes="(max-width: 1024px) 50vw, 680px"
-                className="object-cover"
-              />
-
-              {/* Dark Gradient Overlay at Bottom */}
+            {showDesktopBkashRightPanel ? (
               <div
-                className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none"
-                aria-hidden="true"
-              />
+                data-testid="desktop-bkash-qr-panel"
+                className="w-full min-h-[580px] xl:min-h-[620px] rounded-2xl border border-[#C5E2E5] bg-white shadow-md p-6 xl:p-8 flex flex-col justify-between gap-5"
+              >
+                <div className="flex items-start justify-between gap-4 border-b border-[#E5ECEE] pb-4">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#086477] block">
+                      OFFICIAL PAYMENT QR
+                    </span>
+                    <h2 className="font-serif font-bold text-xl text-[#172E35] mt-0.5">
+                      {config.payment.bkash.merchantName}
+                    </h2>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
+                      Amount due
+                    </span>
+                    <span className="font-bold text-lg text-[#086477]">
+                      {feeDetails.formattedPayable}
+                    </span>
+                  </div>
+                </div>
 
-              {/* Bottom Caption Container */}
-              <div className="absolute inset-x-0 bottom-0 p-8 text-white z-10">
-                <div className="w-full h-px bg-white/25 mb-3" aria-hidden="true" />
-                <span className="text-xs uppercase font-bold tracking-wider text-white/80 block mb-1">
-                  LEAD NATION ACADEMY
-                </span>
-                <p className="text-sm sm:text-base font-medium text-white/95 leading-snug">
-                  {isConfirmationPhoto
-                    ? "See you in the next session."
-                    : "Learn alongside people who share your goals."}
-                </p>
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <button
+                    type="button"
+                    data-testid="bkash-qr-desktop-trigger"
+                    onClick={() => setIsQrModalOpen(true)}
+                    aria-label="Open enlarged bKash Merchant QR popup"
+                    className="rounded-2xl border border-[#D5E2E5] bg-[#FAFDFE] hover:border-[#086477] hover:bg-[#F3F9FA] p-4 xl:p-5 transition-all cursor-pointer flex flex-col items-center justify-center group shadow-2xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                  >
+                    <img
+                      src={config.payment.bkash.qrImageSrc}
+                      alt={`${config.payment.bkash.qrImageAlt} (desktop view)`}
+                      width={612}
+                      height={780}
+                      className="w-[300px] xl:w-[350px] h-auto rounded-xl"
+                    />
+                    <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#086477] group-hover:underline">
+                      <ZoomIn className="w-4 h-4" aria-hidden="true" />
+                      <span>Click QR to enlarge</span>
+                    </span>
+                  </button>
+                </div>
+
+                <div className="rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+                  <span className="text-[#526E77]">Merchant number</span>
+                  <span className="font-mono font-bold text-[#172E35]">
+                    {config.payment.bkash.merchantNumber}
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="relative w-full h-[580px] xl:h-[620px] rounded-2xl overflow-hidden shadow-md bg-[#0F2930]">
+                <Image
+                  src={
+                    isConfirmationPhoto
+                      ? "/images/enrollment/lna-enrollment-confirmation-1120.webp"
+                      : "/images/enrollment/lna-enrollment-workshop-1120.webp"
+                  }
+                  alt={
+                    isConfirmationPhoto
+                      ? "Confirmed cohort members discussing session takeaways"
+                      : "Interactive workshop participants engaged in discussion"
+                  }
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 50vw, 680px"
+                  className="object-cover"
+                />
+
+                <div
+                  className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none"
+                  aria-hidden="true"
+                />
+
+                <div className="absolute inset-x-0 bottom-0 p-8 text-white z-10">
+                  <div className="w-full h-px bg-white/25 mb-3" aria-hidden="true" />
+                  <span className="text-xs uppercase font-bold tracking-wider text-white/80 block mb-1">
+                    LEAD NATION ACADEMY
+                  </span>
+                  <p className="text-sm sm:text-base font-medium text-white/95 leading-snug">
+                    {isConfirmationPhoto
+                      ? "See you in the next session."
+                      : "Learn alongside people who share your goals."}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ============================================================ */}
-      {/* SIMULATED BKASH CHECKOUT MODAL                               */}
-      {/* ============================================================ */}
-      {showBkashModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="bkash-dialog-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-200"
-        >
-          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-[#D5E2E5] animate-in zoom-in-95 duration-200">
-            {/* bKash Header Bar */}
-            <div className="bg-[#E2136E] text-white p-5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="font-bold tracking-tight text-lg">bKash Payment Gateway</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowBkashModal(false)}
-                className="text-white/80 hover:text-white p-1 rounded-lg cursor-pointer"
-                aria-label="Close payment dialog"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      {/* Enlarged Official bKash Merchant QR Popup */}
+      {isPaymentStep && state.paymentMethod === "bkash" && config.payment.bkash.enabled && (
+        <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
+          <DialogContent
+            data-testid="bkash-qr-popup-dialog"
+            className="w-[calc(100vw-2rem)] max-w-[440px] bg-white border-[#C5E2E5] p-5 sm:p-6"
+          >
+            <DialogHeader className="pr-8">
+              <DialogTitle className="font-serif text-lg sm:text-xl text-[#172E35]">
+                bKash Merchant QR
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-[#526E77]">
+                {config.payment.bkash.merchantName} ·{" "}
+                <span className="font-mono font-semibold text-[#172E35]">
+                  {config.payment.bkash.merchantNumber}
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="bg-white rounded-2xl border border-[#D5E2E5] p-2 sm:p-3 flex items-center justify-center">
+              <img
+                src={config.payment.bkash.qrImageSrc}
+                alt={`${config.payment.bkash.qrImageAlt} (enlarged popup)`}
+                width={612}
+                height={780}
+                className="w-full max-w-[360px] sm:max-w-[390px] max-h-[60vh] object-contain mx-auto rounded-lg"
+              />
             </div>
 
-            {/* Merchant Details */}
-            <div className="p-6 space-y-4">
-              <div className="bg-[#FDF2F7] border border-[#FBCFE8] p-4 rounded-xl space-y-2">
-                <div className="flex items-center justify-between text-xs text-[#526E77]">
-                  <span>Merchant</span>
-                  <span className="font-semibold text-[#172E35]">Lead Nation Academy Ltd.</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-[#526E77]">
-                  <span>Invoice / Ref</span>
-                  <span className="font-mono font-semibold text-[#172E35]">
-                    {state.applicationReference}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-[#FBCFE8] text-sm">
-                  <span className="font-semibold text-[#172E35]">Amount</span>
-                  <span className="font-bold text-[#E2136E] text-base">{formattedFee}</span>
-                </div>
-              </div>
-
-              <div className="text-xs text-[#526E77] text-center leading-relaxed">
-                Development simulation mode (Rule R8 / ADR 0009). Choose an outcome to verify the
-                payment verification and failure retry flow.
-              </div>
-
-              <div className="space-y-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={handleBkashSimulateSuccess}
-                  className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-2"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Simulate Payment Success (Verify)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleBkashSimulateFailure}
-                  className="w-full py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-2"
-                >
-                  <X className="w-4 h-4" />
-                  <span>Simulate Payment Failure (Retry Flow)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowBkashModal(false)}
-                  className="w-full py-2.5 text-xs font-semibold text-[#526E77] hover:text-[#172E35] cursor-pointer"
-                >
-                  Cancel and return
-                </button>
-              </div>
+            <div className="rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] px-4 py-3 flex items-center justify-between gap-4 text-xs sm:text-sm">
+              <span className="text-[#526E77]">Amount due</span>
+              <span className="font-bold text-[#086477]">{feeDetails.formattedPayable}</span>
             </div>
-          </div>
-        </div>
+
+            {!canSubmitOnline && (
+              <p className="text-xs text-[#92400E] font-medium">
+                Online enrollment is coming soon. Payment instructions and submission will activate
+                once backend verification is live.
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsQrModalOpen(false)}
+              className="w-full min-h-[44px] px-4 py-2.5 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+            >
+              Close
+            </button>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
