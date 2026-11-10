@@ -4,8 +4,12 @@ import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import { X, ExternalLink } from "lucide-react";
 import type { Mentor } from "@/lib/content";
-import { getMentorAvatar } from "@/lib/mentors";
-import { CompanyLogo } from "./company-logo";
+import {
+  formatMentorRoleWithCompany,
+  getMentorAvatar,
+  getMentorCompanyLogos,
+} from "@/lib/mentors";
+import { CompanyLogo, OfficialCompanyLogo } from "./company-logo";
 
 export interface MentorQuickViewModalProps {
   mentor: Mentor;
@@ -59,6 +63,9 @@ export function MentorQuickViewModal({ mentor, onClose }: MentorQuickViewModalPr
   }, [onClose]);
 
   const avatarSrc = getMentorAvatar(mentor);
+  const companyLogos = getMentorCompanyLogos(mentor);
+  const fallbackHistoryLogos =
+    companyLogos.length === 0 ? (mentor.careerHistory ?? []) : [];
   const expertiseList = mentor.expertise || [
     "Growth Strategy",
     "Go-to-Market",
@@ -98,16 +105,13 @@ export function MentorQuickViewModal({ mentor, onClose }: MentorQuickViewModalPr
             <div className="flex-1 min-w-0">
               <h3
                 id="quick-view-mentor-name"
-                className="text-lg sm:text-xl font-bold font-serif text-[#172E35] tracking-tight truncate"
+                className="text-base sm:text-lg font-bold font-serif text-[#172E35] tracking-tight leading-snug"
               >
                 {mentor.name}
               </h3>
-              <p className="text-xs font-semibold text-[#526E77] mt-0.5 leading-snug">
-                {mentor.role}
+              <p className="text-xs sm:text-[13px] font-semibold text-[#526E77] mt-0.5 leading-snug">
+                {formatMentorRoleWithCompany(mentor)}
               </p>
-              {mentor.organization && (
-                <p className="text-[11px] text-[#526E77]/80 truncate">{mentor.organization}</p>
-              )}
 
               {/* Complete biography */}
               <p className="text-xs sm:text-[13px] text-[#526E77] leading-relaxed mt-2.5">
@@ -129,20 +133,30 @@ export function MentorQuickViewModal({ mentor, onClose }: MentorQuickViewModalPr
         </div>
 
         {/* Companies & Experience Section */}
-        {mentor.careerHistory && mentor.careerHistory.length > 0 && (
+        {(companyLogos.length > 0 || fallbackHistoryLogos.length > 0) && (
           <div className="mt-5 pt-4 border-t border-[#E5ECEE]">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#526E77] block mb-2">
               Companies &amp; Experience
             </span>
             <div className="flex flex-wrap items-center gap-4">
-              {mentor.careerHistory.map((item, idx) => (
-                <CompanyLogo
-                  key={idx}
-                  name={item.company}
-                  logoIcon={item.logoIcon}
-                  className="text-[#172E35]"
-                />
-              ))}
+              {companyLogos.length > 0
+                ? companyLogos.map((logo) => (
+                    <OfficialCompanyLogo
+                      key={logo.src}
+                      src={logo.src}
+                      alt={logo.alt}
+                      size="modal"
+                      compact={companyLogos.length > 1}
+                    />
+                  ))
+                : fallbackHistoryLogos.map((item, idx) => (
+                    <CompanyLogo
+                      key={idx}
+                      name={item.company}
+                      logoIcon={item.logoIcon}
+                      className="text-[#172E35]"
+                    />
+                  ))}
             </div>
           </div>
         )}

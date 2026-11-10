@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within, act } from "@testing-library/react";
 import { MentorsSection } from "./mentors-section";
 import { MentorQuickViewProvider } from "./mentor-quick-view-context";
+import { OfficialCompanyLogo } from "./company-logo";
 import type { Mentor } from "@/lib/content";
 
 const mockMentors: Mentor[] = [
@@ -184,11 +185,18 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
     expect(screen.getAllByText("Marcus Reed").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Lena Chen").length).toBeGreaterThanOrEqual(1);
 
-    // Company logos rendered
-    expect(screen.getAllByText("airbnb").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Microsoft").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Vellum").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("StrideWorks").length).toBeGreaterThanOrEqual(1);
+    // Role with company renders cleanly instead of standalone title
+    expect(screen.getAllByText("Head of People at Airbnb").length).toBeGreaterThanOrEqual(1);
+
+    // Company logos rendered in logo-only mode (accessible role="img", no visible duplicate label text)
+    expect(screen.getAllByRole("img", { name: "airbnb", hidden: true }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("img", { name: "Microsoft", hidden: true }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("img", { name: "Vellum", hidden: true }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("img", { name: "StrideWorks", hidden: true }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("airbnb")).toBeNull();
+    expect(screen.queryByText("Microsoft")).toBeNull();
+    expect(screen.queryByText("Vellum")).toBeNull();
+    expect(screen.queryByText("StrideWorks")).toBeNull();
   });
 
   it("navigates forward and backward using carousel arrow controls and shows position counter", () => {
@@ -426,5 +434,194 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("renders role-with-company titles and official logo-only corporate marks for LNA mentors", () => {
+    const officialMentors: Mentor[] = [
+      {
+        id: "mentor-mir-hasib",
+        name: "Mir Hasib Mahmud",
+        role: "CEO",
+        organization: "Lead Nation Academy",
+        bio: "CEO & Co-founder of Lead Nation Academy and corporate strategist.",
+        portraitSrc: "/images/mentors/mir-hasib.png",
+        categories: ["Leadership & Career"],
+        expertise: ["Workplace Communication"],
+        careerHistory: [
+          { company: "Lead Nation Academy", role: "CEO & Co-founder" },
+          { company: "Goyara Ltd", role: "CBO" },
+        ],
+        order: 1,
+        isPlaceholder: false,
+        published: true,
+        provenance: {
+          class: "A",
+          verified: true,
+          source: "Test",
+          verifiedBy: "Executive Team",
+          verifiedOn: "2026-11-09",
+        },
+      },
+      {
+        id: "mentor-gm-kamrul",
+        name: "G M Kamrul Hassan",
+        role: "CEO",
+        organization: "IGLOO",
+        bio: "CEO at IGLOO with decades of executive leadership.",
+        portraitSrc: "/images/mentors/gm-kamrul.png",
+        categories: ["Marketing & Sales"],
+        expertise: ["Sales Strategy"],
+        careerHistory: [{ company: "IGLOO", role: "CEO" }],
+        order: 2,
+        isPlaceholder: false,
+        published: true,
+        provenance: {
+          class: "A",
+          verified: true,
+          source: "Test",
+          verifiedBy: "Executive Team",
+          verifiedOn: "2026-11-09",
+        },
+      },
+      {
+        id: "mentor-sayeda-salma",
+        name: "Sayeda Umme Salma",
+        role: "MD & CEO",
+        organization: "BrandGear Limited",
+        bio: "Managing Director & CEO of BrandGear Limited.",
+        portraitSrc: "/images/mentors/sayeda-salma.png",
+        categories: ["Marketing & Sales"],
+        expertise: ["Brand Architecture"],
+        careerHistory: [{ company: "BrandGear Limited", role: "MD & CEO" }],
+        order: 3,
+        isPlaceholder: false,
+        published: true,
+        provenance: {
+          class: "A",
+          verified: true,
+          source: "Test",
+          verifiedBy: "Executive Team",
+          verifiedOn: "2026-11-09",
+        },
+      },
+      {
+        id: "mentor-zia-ashraf",
+        name: "Zia Ashraf",
+        role: "COO",
+        organization: "Chaldal PLC",
+        bio: "Co-founder & COO at Chaldal PLC.",
+        portraitSrc: "/images/mentors/zia-ashraf.png",
+        categories: ["Operations & Management"],
+        expertise: ["Customer Experience"],
+        careerHistory: [{ company: "Chaldal PLC", role: "COO" }],
+        order: 4,
+        isPlaceholder: false,
+        published: true,
+        provenance: {
+          class: "A",
+          verified: true,
+          source: "Test",
+          verifiedBy: "Executive Team",
+          verifiedOn: "2026-11-09",
+        },
+      },
+      {
+        id: "mentor-syed-himyanuddin-ahmed",
+        name: "Syed Himyanuddin Ahmed",
+        role: "Senior Associate Administrator, Administrator’s Office Division",
+        organization: "Nagad Ltd.",
+        bio: "Senior Associate Administrator at Nagad Ltd.",
+        portraitSrc: "/images/mentors/syed-himyanuddin-ahmed.png",
+        categories: ["Operations & Management"],
+        expertise: ["Corporate Administration"],
+        careerHistory: [
+          {
+            company: "Nagad Ltd.",
+            role: "Senior Associate Administrator, Administrator’s Office Division",
+          },
+        ],
+        order: 5,
+        isPlaceholder: false,
+        published: true,
+        provenance: {
+          class: "A",
+          verified: true,
+          source: "Test",
+          verifiedBy: "Executive Team",
+          verifiedOn: "2026-11-09",
+        },
+      },
+    ];
+
+    render(
+      <MentorQuickViewProvider>
+        <MentorsSection mentors={officialMentors} initialMentorId="mentor-mir-hasib" />
+      </MentorQuickViewProvider>
+    );
+
+    // Role displays with organization instead of bare title
+    expect(screen.getByText("CEO at Lead Nation Academy")).toBeDefined();
+    expect(screen.getByText("CEO at IGLOO")).toBeDefined();
+    expect(screen.getByText("MD & CEO at BrandGear Limited")).toBeDefined();
+    expect(screen.getByText("COO at Chaldal PLC")).toBeDefined();
+    expect(
+      screen.getByText("Senior Associate Administrator, Administrator’s Office Division at Nagad Ltd.")
+    ).toBeDefined();
+    expect(screen.queryByText(/^CEO$/)).toBeNull();
+
+    // Official corporate logo images render with clean alt attributes and no plain-text company names
+    const lnaLogos = screen.getAllByRole("img", { name: "Lead Nation Academy", hidden: true });
+    expect(lnaLogos.some((el) => el.getAttribute("src") === "/images/brand/logo.png")).toBe(true);
+    const goyaraLogos = screen.getAllByRole("img", { name: "Goyara Ltd", hidden: true });
+    expect(goyaraLogos.some((el) => el.getAttribute("src") === "/images/partners/goyara.png")).toBe(
+      true
+    );
+    const iglooLogos = screen.getAllByRole("img", { name: "IGLOO", hidden: true });
+    expect(iglooLogos.some((el) => el.getAttribute("src") === "/images/partners/igloo.png")).toBe(
+      true
+    );
+    const brandgearLogos = screen.getAllByRole("img", { name: "BrandGear Limited", hidden: true });
+    expect(
+      brandgearLogos.some((el) => el.getAttribute("src") === "/images/partners/brandgear.png")
+    ).toBe(true);
+    const chaldalLogos = screen.getAllByRole("img", { name: "Chaldal PLC", hidden: true });
+    expect(
+      chaldalLogos.some((el) => el.getAttribute("src") === "/images/internships/chaldal.png")
+    ).toBe(true);
+    const nagadLogos = screen.getAllByRole("img", { name: "Nagad Ltd.", hidden: true });
+    expect(nagadLogos.some((el) => el.getAttribute("src") === "/images/partners/nagad.png")).toBe(
+      true
+    );
+
+    // Standalone company names should NOT appear in the card footer strip
+    expect(screen.queryByText("Goyara Ltd")).toBeNull();
+    expect(screen.queryByText("BrandGear Limited")).toBeNull();
+    expect(screen.queryByText("Chaldal PLC")).toBeNull();
+    expect(screen.queryByText("Nagad Ltd.")).toBeNull();
+
+    // Quick-view modal also displays role-with-company and official corporate logos
+    fireEvent.click(screen.getByRole("button", { name: /open quick view for mir hasib mahmud/i }));
+    const modal = screen.getByRole("dialog");
+    expect(within(modal).getByText("CEO at Lead Nation Academy")).toBeDefined();
+    expect(within(modal).getByRole("img", { name: "Lead Nation Academy" })).toBeDefined();
+    expect(within(modal).getByRole("img", { name: "Goyara Ltd" })).toBeDefined();
+  });
+
+  it("applies recognizable calibrated heights for hero, card, and modal OfficialCompanyLogo sizes", () => {
+    render(
+      <div>
+        <OfficialCompanyLogo src="/images/partners/brandgear.png" alt="BrandGear Hero" size="hero" />
+        <OfficialCompanyLogo src="/images/partners/nagad.png" alt="Nagad Hero" size="hero" />
+        <OfficialCompanyLogo src="/images/partners/igloo.png" alt="IGLOO Hero" size="hero" />
+        <OfficialCompanyLogo src="/images/brand/logo.png" alt="LNA Card" size="card" />
+        <OfficialCompanyLogo src="/images/partners/nagad.png" alt="Nagad Modal" size="modal" />
+      </div>
+    );
+
+    expect(screen.getByRole("img", { name: "BrandGear Hero" }).className).toContain("h-[92px]");
+    expect(screen.getByRole("img", { name: "Nagad Hero" }).className).toContain("h-[48px]");
+    expect(screen.getByRole("img", { name: "IGLOO Hero" }).className).toContain("h-8 sm:h-9");
+    expect(screen.getByRole("img", { name: "LNA Card" }).className).toContain("h-10 sm:h-11");
+    expect(screen.getByRole("img", { name: "Nagad Modal" }).className).toContain("h-[66px]");
   });
 });

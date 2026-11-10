@@ -21,6 +21,7 @@ import {
 import type { Course, Batch, Mentor } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
 import { getMentorAvatar, getMentorCompanyLogo } from "@/lib/mentors";
+import { OfficialCompanyLogo } from "@/components/home/company-logo";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -650,11 +651,10 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                           if (companyLogo) {
                             return (
                               <div className="flex items-center sm:border-l sm:border-[#E5ECEE] sm:pl-4 shrink-0">
-                                <img
+                                <OfficialCompanyLogo
                                   src={companyLogo.src}
                                   alt={companyLogo.alt}
-                                  title={companyLogo.alt}
-                                  className="h-6 sm:h-7 max-w-35 w-auto object-contain select-none"
+                                  size="modal"
                                 />
                               </div>
                             );

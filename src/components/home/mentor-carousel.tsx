@@ -4,8 +4,12 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import type { Mentor } from "@/lib/content";
-import { getMentorAvatar } from "@/lib/mentors";
-import { CompanyLogo } from "./company-logo";
+import {
+  formatMentorRoleWithCompany,
+  getMentorAvatar,
+  getMentorCompanyLogos,
+} from "@/lib/mentors";
+import { CompanyLogo, OfficialCompanyLogo } from "./company-logo";
 import { useMentorQuickView } from "./mentor-quick-view-context";
 
 export interface MentorCarouselProps {
@@ -351,7 +355,7 @@ export function MentorCarousel({
       {/* 1. Symmetrical 5-Card Layered 3D Carousel Deck */}
       <div
         style={{ perspective: 1400 }}
-        className="relative h-[415px] sm:h-[435px] xl:h-[455px] w-full flex items-center justify-center overflow-visible"
+        className="relative h-[420px] sm:h-[440px] xl:h-[460px] w-full flex items-center justify-center overflow-visible"
       >
         {mentors.map((mentor, index) => {
           const slot = getSlot(index);
@@ -460,6 +464,11 @@ export function MentorCarousel({
               : "transform 750ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 750ms ease, filter 750ms ease";
 
           const avatarSrc = getMentorAvatar(mentor, index);
+          const companyLogos = getMentorCompanyLogos(mentor);
+          const fallbackHistoryLogos =
+            companyLogos.length === 0
+              ? (mentor.careerHistory?.filter((item) => Boolean(item.logoIcon)).slice(0, 2) ?? [])
+              : [];
 
           return (
             <div
@@ -485,10 +494,10 @@ export function MentorCarousel({
                 filter: filterStyle,
                 transition: transitionStyle,
               }}
-              className={`absolute top-2 w-[225px] sm:w-[240px] xl:w-[250px] h-[390px] sm:h-[415px] xl:h-[435px] rounded-3xl overflow-hidden cursor-pointer bg-[#FAF9F6] border border-white/70 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] will-change-transform ${visibilityClass} ${shadowClass}`}
+              className={`absolute top-2 w-[230px] sm:w-[248px] xl:w-[260px] h-[400px] sm:h-[420px] xl:h-[440px] rounded-3xl overflow-hidden cursor-pointer bg-[#FAF9F6] border border-white/70 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] will-change-transform ${visibilityClass} ${shadowClass}`}
             >
               {/* Upper Portion: Fully Opaque Portrait with subtle specular glass sheen */}
-              <div className="relative h-[255px] sm:h-[275px] xl:h-[295px] w-full bg-[#053A45] overflow-hidden">
+              <div className="relative h-[240px] sm:h-[255px] xl:h-[270px] w-full bg-[#053A45] overflow-hidden">
                 <Image
                   src={avatarSrc}
                   alt={mentor.name}
@@ -527,28 +536,43 @@ export function MentorCarousel({
               </div>
 
               {/* Lower Portion: Solid Cream-White Glass Foundation (100% Opaque) */}
-              <div className="p-3.5 sm:p-4 xl:p-4.5 flex flex-col justify-between h-[135px] sm:h-[140px] bg-[#FAF9F6] border-t border-white/50">
-                <div>
-                  <h3 className="text-sm sm:text-base xl:text-lg font-bold font-serif text-[#172E35] tracking-tight truncate">
+              <div className="px-3.5 py-3 sm:px-4 sm:py-3.5 flex flex-col justify-between gap-2 h-[160px] sm:h-[165px] xl:h-[170px] bg-[#FAF9F6] border-t border-white/50">
+                <div className="min-w-0">
+                  <h3 className="text-[13px] sm:text-sm xl:text-[15px] font-bold font-serif text-[#172E35] tracking-tight leading-snug line-clamp-2">
                     {mentor.name}
                   </h3>
-                  <p className="text-[11px] sm:text-xs font-semibold text-[#526E77] mt-0.5 truncate">
-                    {mentor.role}
+                  <p className="text-[10.5px] sm:text-[11px] font-medium text-[#526E77] mt-0.5 leading-[1.35] line-clamp-3">
+                    {formatMentorRoleWithCompany(mentor)}
                   </p>
                 </div>
 
-                {/* Company Logos */}
-                {mentor.careerHistory && mentor.careerHistory.length > 0 && (
-                  <div className="pt-2 border-t border-[#E5ECEE] flex items-center gap-3">
-                    {mentor.careerHistory.slice(0, 2).map((item, idx) => (
-                      <CompanyLogo
-                        key={idx}
-                        name={item.company}
-                        logoIcon={item.logoIcon}
-                        className="text-[#172E35]"
+                {/* Company Logos Only (Official Corporate Marks) */}
+                {companyLogos.length > 0 ? (
+                  <div className="pt-2 border-t border-[#E5ECEE] flex items-center gap-3 min-h-[42px] sm:min-h-[46px]">
+                    {companyLogos.slice(0, 2).map((logo) => (
+                      <OfficialCompanyLogo
+                        key={logo.src}
+                        src={logo.src}
+                        alt={logo.alt}
+                        size="card"
+                        compact={companyLogos.length > 1}
                       />
                     ))}
                   </div>
+                ) : (
+                  fallbackHistoryLogos.length > 0 && (
+                    <div className="pt-2 border-t border-[#E5ECEE] flex items-center gap-3 min-h-[42px] sm:min-h-[46px]">
+                      {fallbackHistoryLogos.map((item, idx) => (
+                        <CompanyLogo
+                          key={idx}
+                          name={item.company}
+                          logoIcon={item.logoIcon}
+                          iconOnly
+                          className="text-[#172E35]"
+                        />
+                      ))}
+                    </div>
+                  )
                 )}
               </div>
             </div>
