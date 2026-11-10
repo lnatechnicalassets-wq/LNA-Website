@@ -4,8 +4,12 @@ import React from "react";
 import Image from "next/image";
 import { X, ExternalLink } from "lucide-react";
 import type { Mentor } from "@/lib/content";
-import { getMentorAvatar } from "@/lib/mentors";
-import { CompanyLogo } from "./company-logo";
+import {
+  formatMentorRoleWithCompany,
+  getMentorAvatar,
+  getMentorCompanyLogos,
+} from "@/lib/mentors";
+import { CompanyLogo, OfficialCompanyLogo } from "./company-logo";
 
 export interface MentorQuickViewPanelProps {
   mentor: Mentor;
@@ -19,6 +23,9 @@ export function MentorQuickViewPanel({
   className = "",
 }: MentorQuickViewPanelProps) {
   const avatarSrc = getMentorAvatar(mentor);
+  const companyLogos = getMentorCompanyLogos(mentor);
+  const fallbackHistoryLogos =
+    companyLogos.length === 0 ? (mentor.careerHistory ?? []) : [];
   const expertiseList = mentor.expertise || [
     "Growth Strategy",
     "Go-to-Market",
@@ -48,11 +55,11 @@ export function MentorQuickViewPanel({
 
           {/* Details */}
           <div className="flex-1 min-w-0">
-            <h4 className="text-lg xl:text-xl font-bold font-serif text-[#172E35] tracking-tight truncate">
+            <h4 className="text-base xl:text-lg font-bold font-serif text-[#172E35] tracking-tight leading-snug">
               {mentor.name}
             </h4>
             <p className="text-xs font-semibold text-[#526E77] mt-0.5 leading-snug">
-              {mentor.role}
+              {formatMentorRoleWithCompany(mentor)}
             </p>
             <p className="text-xs text-[#526E77] leading-relaxed mt-2 line-clamp-3">{mentor.bio}</p>
           </div>
@@ -70,20 +77,30 @@ export function MentorQuickViewPanel({
       </div>
 
       {/* Companies & Experience Section */}
-      {mentor.careerHistory && mentor.careerHistory.length > 0 && (
+      {(companyLogos.length > 0 || fallbackHistoryLogos.length > 0) && (
         <div className="mt-4 pt-3.5 border-t border-[#E5ECEE]">
           <span className="text-[10px] font-bold uppercase tracking-wider text-[#526E77] block mb-2">
             Companies &amp; Experience
           </span>
           <div className="flex flex-wrap items-center gap-4">
-            {mentor.careerHistory.map((item, idx) => (
-              <CompanyLogo
-                key={idx}
-                name={item.company}
-                logoIcon={item.logoIcon}
-                className="text-[#172E35]"
-              />
-            ))}
+            {companyLogos.length > 0
+              ? companyLogos.map((logo) => (
+                  <OfficialCompanyLogo
+                    key={logo.src}
+                    src={logo.src}
+                    alt={logo.alt}
+                    size="modal"
+                    compact={companyLogos.length > 1}
+                  />
+                ))
+              : fallbackHistoryLogos.map((item, idx) => (
+                  <CompanyLogo
+                    key={idx}
+                    name={item.company}
+                    logoIcon={item.logoIcon}
+                    className="text-[#172E35]"
+                  />
+                ))}
           </div>
         </div>
       )}

@@ -459,6 +459,43 @@ const NewsArticleSchema = z.object({
   provenance: ProvenanceSchema,
 });
 
+const ProgramQuestionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  type: z.enum(["text", "select", "textarea"]),
+  placeholder: z.string().optional(),
+  options: z.array(z.string().min(1)).optional(),
+  required: z.boolean(),
+});
+
+const EnrollmentConfigSchema = z.object({
+  programQuestions: z.record(z.array(ProgramQuestionSchema)),
+  payment: z.object({
+    submissionEnabled: z.boolean().default(false),
+    bkash: z.object({
+      enabled: z.boolean(),
+      merchantName: z.string().min(1),
+      merchantNumber: z.string().min(1),
+      qrImageSrc: z.string().min(1),
+      qrImageAlt: z.string().min(1),
+      instruction: z.string().min(1),
+    }),
+    bankTransfer: z.object({
+      enabled: z.boolean(),
+      instruction: z.string().min(1),
+      bankDetails: z
+        .object({
+          bankName: z.string().min(1),
+          accountName: z.string().min(1),
+          accountNumber: z.string().min(1),
+          branch: z.string().min(1).optional(),
+          routingNumber: z.string().min(1).optional(),
+        })
+        .nullable(),
+    }),
+  }),
+});
+
 function readJson(relPath) {
   const fullPath = path.join(contentDir, relPath);
   if (!fs.existsSync(fullPath)) {
@@ -624,6 +661,24 @@ export function validateAllContent() {
     const news = readJson("news/articles.json");
     scanForSecrets(news.raw, "news/articles.json");
     z.array(NewsArticleSchema).parse(news.data);
+  }
+
+  // 5. Enrollment configuration
+  console.log("  → Validating content/enrollment/config.json...");
+  const enrollmentConfig = readJson("enrollment/config.json");
+  scanForSecrets(enrollmentConfig.raw, "enrollment/config.json");
+  const parsedEnrollmentConfig = EnrollmentConfigSchema.parse(enrollmentConfig.data);
+  if (parsedEnrollmentConfig.payment.bkash.qrImageSrc.startsWith("/")) {
+    const qrAssetPath = path.join(
+      rootDir,
+      "public",
+      parsedEnrollmentConfig.payment.bkash.qrImageSrc.slice(1)
+    );
+    if (!fs.existsSync(qrAssetPath)) {
+      throw new Error(
+        `Missing bKash QR asset referenced by content/enrollment/config.json: ${parsedEnrollmentConfig.payment.bkash.qrImageSrc}`
+      );
+    }
   }
 
   console.log(

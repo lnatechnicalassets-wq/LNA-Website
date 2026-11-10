@@ -20,12 +20,7 @@
         "label": "Current professional phase",
         "type": "select",
         "placeholder": "Select your current phase",
-        "options": [
-          "Undergraduate",
-          "Graduating soon",
-          "Recent graduate",
-          "Working professional"
-        ],
+        "options": ["Undergraduate", "Graduating soon", "Recent graduate", "Working professional"],
         "required": true
       },
       {
@@ -38,17 +33,22 @@
     ]
   },
   "payment": {
+    "submissionEnabled": false,
     "bkash": {
-      "enabled": true
+      "enabled": true,
+      "merchantName": "Lead Nation Academy",
+      "merchantNumber": "0158 1799 666",
+      "qrImageSrc": "/images/payments/lna-bkash-merchant-qr.png",
+      "qrImageAlt": "Lead Nation Academy official bKash Merchant QR code",
+      "instruction": "Scan the official LNA bKash Merchant QR code, pay the exact amount due, and enter your bKash Transaction ID below."
     },
     "bankTransfer": {
       "enabled": true,
+      "instruction": "Transfer the exact amount due to the official Lead Nation Academy bank account below, then enter your bank-issued Transaction Reference.",
       "bankDetails": {
-        "bankName": "City Bank",
-        "accountName": "Lead Nation Academy Ltd.",
-        "accountNumber": "1503 8291 0001",
-        "branch": "Dhanmondi Branch, Dhaka",
-        "routingNumber": "225272654"
+        "bankName": "Mutual Trust Bank PLC",
+        "accountName": "Lead Nation Academy - LNA",
+        "accountNumber": "130100052843"
       }
     }
   }

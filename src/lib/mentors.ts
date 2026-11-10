@@ -9,7 +9,7 @@ const mentorAvatars: Record<string, string> = {
   "mentor-anubhab-rahman": "/images/mentors/anubhab-rahman-v3.png",
   "mentor-md-manik-hossain": "/images/mentors/md-manik-hossain.png",
   "mentor-manik-hossain": "/images/mentors/md-manik-hossain.png",
-  "mentor-mir-hasib": "/images/mentors/mir-hasib-v3.png",
+  "mentor-mir-hasib": "/images/mentors/mir-hasib.png",
 
   // IRGP Mentors (10)
   "mentor-shahnawaj-chowdhury": "/images/mentors/shahnawaj-chowdhury.png",
@@ -123,6 +123,26 @@ export function getCourseMentorRoster(
   return [];
 }
 
+export interface MentorCompanyLogo {
+  src: string;
+  alt: string;
+}
+
+/**
+ * Formats mentor designation together with organization (e.g., "CEO at Lead Nation Academy").
+ */
+export function formatMentorRoleWithCompany(mentor: {
+  role?: string;
+  organization?: string;
+}): string {
+  const role = (mentor.role || "").trim();
+  const org = (mentor.organization || "").trim();
+  if (!role) return org;
+  if (!org) return role;
+  if (role.toLowerCase().includes(org.toLowerCase())) return role;
+  return `${role} at ${org}`;
+}
+
 /**
  * Resolve verified official company logo for mentor organization.
  * Used across homepage hero slides and course details pages.
@@ -131,7 +151,7 @@ export function getCourseMentorRoster(
 export function getMentorCompanyLogo(mentor: {
   id?: string;
   organization?: string;
-}): { src: string; alt: string } | null {
+}): MentorCompanyLogo | null {
   const org = (mentor.organization || "").toLowerCase();
   const id = mentor.id || "";
 
@@ -262,4 +282,37 @@ export function getMentorCompanyLogo(mentor: {
 
   // Omit logo if official verified asset is unavailable
   return null;
+}
+
+/**
+ * Resolves all verified official company logos associated with a mentor's career history,
+ * preserving order and deduplicating repeated assets, with fallback to primary organization.
+ */
+export function getMentorCompanyLogos(mentor: {
+  id?: string;
+  organization?: string;
+  careerHistory?: { company: string }[];
+}): MentorCompanyLogo[] {
+  const results: MentorCompanyLogo[] = [];
+  const seenSrc = new Set<string>();
+
+  if (Array.isArray(mentor.careerHistory) && mentor.careerHistory.length > 0) {
+    for (const item of mentor.careerHistory) {
+      if (!item.company) continue;
+      const logo = getMentorCompanyLogo({ organization: item.company });
+      if (logo && !seenSrc.has(logo.src)) {
+        seenSrc.add(logo.src);
+        results.push(logo);
+      }
+    }
+  }
+
+  if (results.length === 0) {
+    const primaryLogo = getMentorCompanyLogo(mentor);
+    if (primaryLogo) {
+      results.push(primaryLogo);
+    }
+  }
+
+  return results;
 }

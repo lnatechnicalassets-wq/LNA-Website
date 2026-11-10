@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { Course, HeroSlide as HeroSlideType, Mentor } from "@/lib/content";
 import { getMentorAvatar, getMentorCompanyLogo, getCourseMentorRoster } from "@/lib/mentors";
+import { OfficialCompanyLogo } from "../company-logo";
 
 export interface HeroSlideProps {
   slide: HeroSlideType;
@@ -18,20 +19,13 @@ export interface HeroSlideProps {
 }
 
 /**
- * Render approved company logo at original aspect ratio directly below mentor name.
+ * Render approved company logo at recognizable calibrated size directly below mentor name.
  * If verified logo asset is missing, leave slot empty and provide accessible screen-reader name.
  */
 function renderMentorCompanyLogo(mentor: Mentor) {
   const logo = getMentorCompanyLogo(mentor);
   if (logo) {
-    return (
-      <img
-        src={logo.src}
-        alt={logo.alt}
-        title={logo.alt}
-        className="h-3.5 sm:h-4 w-auto object-contain select-none"
-      />
-    );
+    return <OfficialCompanyLogo src={logo.src} alt={logo.alt} size="hero" />;
   }
 
   // Missing verified logo asset: leave slot empty and provide accessible company name
@@ -304,7 +298,7 @@ export function HeroSlide({
                         <span className="text-[10px] sm:text-[10.5px] text-[#526E77] truncate leading-tight">
                           {mentor.role}
                         </span>
-                        <div className="h-4 sm:h-4.5 flex items-center">
+                        <div className="h-8 sm:h-9 mt-0.5 flex items-center">
                           {renderMentorCompanyLogo(mentor)}
                         </div>
                       </div>
@@ -478,7 +472,7 @@ export function HeroSlide({
                       <span className="text-[11px] sm:text-[11.5px] font-bold text-[#172E35] truncate leading-tight group-hover:text-[#086477] transition-colors">
                         {mentor.name}
                       </span>
-                      <div className="h-4 sm:h-4.5 flex items-center">
+                      <div className="h-8 sm:h-9 mt-0.5 flex items-center">
                         {renderMentorCompanyLogo(mentor)}
                       </div>
                     </div>

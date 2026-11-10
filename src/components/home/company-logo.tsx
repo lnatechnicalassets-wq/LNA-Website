@@ -275,7 +275,12 @@ export function CompanyLogo({
   const isBcg = iconKey === "bcg";
 
   return (
-    <div className={`inline-flex items-center gap-1.5 ${className}`}>
+    <div
+      role={iconOnly ? "img" : undefined}
+      aria-label={iconOnly ? name : undefined}
+      title={iconOnly ? name : undefined}
+      className={`inline-flex items-center gap-1.5 ${className}`}
+    >
       {renderIcon()}
       {!iconOnly && !isBcg && (
         <span
@@ -287,5 +292,156 @@ export function CompanyLogo({
         </span>
       )}
     </div>
+  );
+}
+
+export interface OfficialCompanyLogoProps {
+  src: string;
+  alt: string;
+  size?: "hero" | "card" | "modal";
+  compact?: boolean;
+}
+
+/**
+ * Renders verified corporate logo assets with per-asset sizing calibration
+ * so padded or wide marks remain clearly visible and recognizable.
+ */
+export function OfficialCompanyLogo({
+  src,
+  alt,
+  size = "card",
+  compact = false,
+}: OfficialCompanyLogoProps) {
+  const isHero = size === "hero";
+  const isModal = size === "modal";
+
+  // BrandGear PNG has ~76% vertical whitespace around its centered wordmark
+  if (src.includes("brandgear.png")) {
+    return (
+      <span
+        className={`inline-flex items-center overflow-hidden shrink-0 ${
+          isHero ? "h-8 sm:h-9" : isModal ? "h-10 sm:h-11" : "h-9 sm:h-10"
+        }`}
+      >
+        <img
+          src={src}
+          alt={alt}
+          title={alt}
+          className={`w-auto max-w-none object-contain select-none ${
+            isHero
+              ? "h-[92px] sm:h-[104px]"
+              : isModal
+                ? "h-[112px] sm:h-[124px]"
+                : "h-[104px] sm:h-[116px]"
+          }`}
+        />
+      </span>
+    );
+  }
+
+  // Nagad PNG has 50% vertical whitespace centered around its mark
+  if (src.includes("nagad.png")) {
+    return (
+      <span
+        className={`inline-flex items-center overflow-hidden shrink-0 ${
+          isHero ? "h-8 sm:h-9" : isModal ? "h-10 sm:h-11" : "h-9 sm:h-10"
+        }`}
+      >
+        <img
+          src={src}
+          alt={alt}
+          title={alt}
+          className={`w-auto max-w-none object-contain select-none ${
+            isHero
+              ? "h-[48px] sm:h-[56px]"
+              : isModal
+                ? "h-[66px] sm:h-[74px]"
+                : "h-[60px] sm:h-[68px]"
+          }`}
+        />
+      </span>
+    );
+  }
+
+  let imgClass = isHero ? "h-6.5 sm:h-7.5 max-w-[130px]" : "h-8 sm:h-9 max-w-[155px]";
+  if (src.includes("eastern-bank.png")) {
+    imgClass = isHero
+      ? "h-5.5 sm:h-6 max-w-[140px] sm:max-w-[175px]"
+      : isModal
+        ? "h-7 sm:h-8 max-w-[200px]"
+        : "h-6.5 sm:h-7.5 max-w-[190px]";
+  } else if (src.includes("ecourier.png")) {
+    imgClass = isHero
+      ? "h-5.5 sm:h-6.5 max-w-[135px] sm:max-w-[160px]"
+      : isModal
+        ? "h-7.5 sm:h-8 max-w-[190px]"
+        : "h-7 sm:h-7.5 max-w-[180px]";
+  } else if (src.includes("chaldal.png")) {
+    imgClass = isHero
+      ? "h-6.5 sm:h-7.5 max-w-[135px] sm:max-w-[155px]"
+      : isModal
+        ? "h-8 sm:h-9 max-w-[175px]"
+        : "h-7.5 sm:h-8.5 max-w-[165px]";
+  } else if (src.includes("goyara.png")) {
+    imgClass = compact
+      ? "h-6.5 sm:h-7 max-w-[115px]"
+      : isHero
+        ? "h-6 sm:h-6.5 max-w-[125px]"
+        : isModal
+          ? "h-7.5 sm:h-8.5 max-w-[165px]"
+          : "h-7.5 sm:h-8.5 max-w-[155px]";
+  } else if (src.includes("brand/logo.png")) {
+    imgClass = compact
+      ? "h-9 sm:h-10 max-w-[48px]"
+      : isHero
+        ? "h-8 sm:h-9 max-w-[50px]"
+        : isModal
+          ? "h-10.5 sm:h-11.5 max-w-[60px]"
+          : "h-10 sm:h-11 max-w-[56px]";
+  } else if (src.includes("igloo.png")) {
+    imgClass = isHero
+      ? "h-8 sm:h-9 max-w-[105px]"
+      : isModal
+        ? "h-10 sm:h-11 max-w-[135px]"
+        : "h-9.5 sm:h-10.5 max-w-[130px]";
+  } else if (src.includes("modhumoti-bank.png")) {
+    imgClass = isHero
+      ? "h-7 sm:h-8 max-w-[135px] sm:max-w-[155px]"
+      : isModal
+        ? "h-9 sm:h-10 max-w-[175px]"
+        : "h-8.5 sm:h-9.5 max-w-[165px]";
+  } else if (src.includes("sheba.png")) {
+    imgClass = isHero
+      ? "h-7.5 sm:h-8.5 max-w-[115px]"
+      : isModal
+        ? "h-9.5 sm:h-10.5 max-w-[140px]"
+        : "h-9 sm:h-10 max-w-[135px]";
+  } else if (src.includes("axentec.png")) {
+    imgClass = isHero
+      ? "h-7 sm:h-7.5 max-w-[125px] rounded-xs"
+      : isModal
+        ? "h-8.5 sm:h-9.5 max-w-[155px] rounded-xs"
+        : "h-8 sm:h-9 max-w-[145px] rounded-xs";
+  } else if (src.includes("ucb.svg")) {
+    imgClass = isHero
+      ? "h-7 sm:h-7.5 max-w-[125px]"
+      : isModal
+        ? "h-9 sm:h-10 max-w-[155px]"
+        : "h-8.5 sm:h-9.5 max-w-[145px]";
+  } else if (src.includes("shohoz.svg")) {
+    imgClass = isHero
+      ? "h-6.5 sm:h-7.5 max-w-[125px]"
+      : isModal
+        ? "h-8.5 sm:h-9.5 max-w-[150px]"
+        : "h-8 sm:h-9 max-w-[140px]";
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      title={alt}
+      className={`${imgClass} w-auto object-contain select-none shrink-0`}
+    />
   );
 }
