@@ -4,27 +4,25 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Check, ChevronDown, Copy, AlertCircle, Search, ZoomIn } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  Copy,
+  AlertCircle,
+  Search,
+  Lock,
+  RefreshCw,
+} from "lucide-react";
 import type { Course, Batch } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import type {
   EnrollmentConfig,
+  EnrollmentOutcomeSummary,
   EnrollmentStep,
   EnrollmentState,
-  PaymentMethod,
 } from "@/lib/enrollment/types";
-import {
-  formatPaymentMethodLabel,
-  isValidBdPhone,
-  type ApplicationStatusValue,
-} from "@/lib/enrollment/status";
+import { formatPaymentMethodLabel, isValidBdPhone } from "@/lib/enrollment/status";
 
 export interface EnrollmentSubmissionPayload {
   courseId: string;
@@ -33,39 +31,111 @@ export interface EnrollmentSubmissionPayload {
   email: string;
   whatsapp: string;
   answers: Record<string, string>;
-  paymentMethod: PaymentMethod | "free";
-  transactionReference?: string;
 }
 
-export interface EnrollmentSubmissionResponse {
+export interface EnrollmentCheckoutResponse {
+  isFree: boolean;
   applicationReference: string;
-  status: ApplicationStatusValue;
+  status: "confirmed" | "pending";
+  checkoutUrl?: string;
+  holdExpiresAt?: string | null;
+  outcomeToken?: string;
+}
+
+export interface RetryCheckoutResponse {
+  applicationReference: string;
+  checkoutUrl: string;
+  holdExpiresAt?: string | null;
+  outcomeToken?: string;
 }
 
 export interface EnrollmentViewProps {
   courses: Course[];
   batches: Batch[];
   config: EnrollmentConfig;
-  onSubmitApplication?: (
+  checkoutMode?: "closed" | "mock" | "live";
+  initialOutcome?: EnrollmentOutcomeSummary | null;
+  invalidOutcomeNotice?: boolean;
+  onStartCheckout?: (
     payload: EnrollmentSubmissionPayload
-  ) => EnrollmentSubmissionResponse | Promise<EnrollmentSubmissionResponse>;
+  ) => EnrollmentCheckoutResponse | Promise<EnrollmentCheckoutResponse>;
+  onRetryCheckout?: (payload: {
+    applicationReference: string;
+    outcomeToken: string;
+  }) => RetryCheckoutResponse | Promise<RetryCheckoutResponse>;
+  onRedirectToCheckout?: (url: string) => void;
+}
+
+async function defaultStartCheckout(
+  payload: EnrollmentSubmissionPayload
+): Promise<EnrollmentCheckoutResponse> {
+  const res = await fetch("/api/enrollments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = (await res.json().catch(() => null)) as
+    | (EnrollmentCheckoutResponse & { ok?: boolean; message?: string })
+    | null;
+  if (!res.ok || !data || data.ok === false) {
+    throw new Error(
+      data?.message || "Unable to submit your application right now. Please try again."
+    );
+  }
+  return data;
+}
+
+async function defaultRetryCheckout(payload: {
+  applicationReference: string;
+  outcomeToken: string;
+}): Promise<RetryCheckoutResponse> {
+  const res = await fetch("/api/enrollments/retry", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = (await res.json().catch(() => null)) as
+    | (RetryCheckoutResponse & { ok?: boolean; message?: string })
+    | null;
+  if (!res.ok || !data || data.ok === false) {
+    throw new Error(
+      data?.message || "Unable to restart bKash checkout right now. Please try again."
+    );
+  }
+  return data;
+}
+
+function getInitialStepFromOutcome(outcome?: EnrollmentOutcomeSummary | null): EnrollmentStep {
+  if (!outcome) return "program";
+  switch (outcome.outcome) {
+    case "confirmed":
+      return "confirmed";
+    case "review_hold":
+      return "review_hold";
+    case "failed":
+    case "cancelled":
+      return "payment_failed";
+    default:
+      return "pending_verification";
+  }
 }
 
 export function EnrollmentView({
   courses,
   batches,
   config,
-  onSubmitApplication,
+  checkoutMode = "closed",
+  initialOutcome = null,
+  invalidOutcomeNotice = false,
+  onStartCheckout,
+  onRetryCheckout,
+  onRedirectToCheckout,
 }: EnrollmentViewProps) {
   const searchParams = useSearchParams();
 
   const initialCourseId = searchParams.get("course") || searchParams.get("program") || "";
   const initialBatchId = searchParams.get("batch") || "";
-  const defaultPaymentMethod: PaymentMethod = config.payment.bkash.enabled
-    ? "bkash"
-    : "bank_transfer";
-
-  const canSubmitOnline = Boolean(config.payment.submissionEnabled && onSubmitApplication);
+  const canSubmitOnline = Boolean(config.payment.submissionEnabled && checkoutMode !== "closed");
 
   const publishedCourses = useMemo(
     () => courses.filter((c) => c.status === "published"),
@@ -79,19 +149,19 @@ export function EnrollmentView({
     email: "",
     whatsapp: "",
     answers: {},
-    paymentMethod: defaultPaymentMethod,
-    bkashTransactionId: "",
-    bankTransactionReference: "",
-    applicationReference: "",
-    isFree: false,
+    paymentMethod: "bkash",
+    applicationReference: initialOutcome?.applicationReference ?? "",
+    isFree: initialOutcome ? initialOutcome.paymentMethod === "free" : false,
   });
 
-  const [step, setStep] = useState<EnrollmentStep>("program");
+  const [step, setStep] = useState<EnrollmentStep>(() => getInitialStepFromOutcome(initialOutcome));
+  const [outcomeSummary, setOutcomeSummary] = useState<EnrollmentOutcomeSummary | null>(
+    initialOutcome
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showAnswersExpanded, setShowAnswersExpanded] = useState(false);
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -129,16 +199,19 @@ export function EnrollmentView({
     }
   }, [initialCourseId, initialBatchId, availableBatches, state.batchId]);
 
-  // Rule R5: All price math uses integer poisha; zero float arithmetic.
+  // Rule R5: All price display uses integer poisha; zero float arithmetic.
   const feeDetails = useMemo(() => {
+    const formatBdt = (poisha: number) =>
+      poisha === 0 ? "Free" : formatPoishaToBDT(poisha).replace("৳", "BDT ");
+
     if (!selectedBatch) {
       return {
         basePoisha: 0,
-        payablePoisha: 0,
+        payablePoisha: outcomeSummary?.payablePoisha ?? 0,
         hasDiscount: false,
-        isFree: false,
+        isFree: outcomeSummary ? outcomeSummary.paymentMethod === "free" : false,
         formattedBase: "BDT 0",
-        formattedPayable: "BDT 0",
+        formattedPayable: outcomeSummary ? formatBdt(outcomeSummary.payablePoisha) : "BDT 0",
       };
     }
 
@@ -149,9 +222,6 @@ export function EnrollmentView({
       selectedBatch.discountFeePoisha < selectedBatch.feePoisha;
     const isFreeBatch = payablePoisha === 0;
 
-    const formatBdt = (poisha: number) =>
-      poisha === 0 ? "Free" : formatPoishaToBDT(poisha).replace("৳", "BDT ");
-
     return {
       basePoisha,
       payablePoisha,
@@ -160,14 +230,27 @@ export function EnrollmentView({
       formattedBase: formatBdt(basePoisha),
       formattedPayable: formatBdt(payablePoisha),
     };
-  }, [selectedBatch]);
+  }, [selectedBatch, outcomeSummary]);
 
   const isFree = feeDetails.isFree;
+
+  const selectedBatchSeatsRemaining = useMemo(() => {
+    if (!selectedBatch) return 0;
+    return Math.max(0, selectedBatch.capacity - selectedBatch.enrolledCount);
+  }, [selectedBatch]);
 
   const programQuestions = useMemo(() => {
     if (!state.courseId) return [];
     return config.programQuestions[state.courseId] || [];
   }, [config.programQuestions, state.courseId]);
+
+  const navigateToCheckout = (url: string) => {
+    if (onRedirectToCheckout) {
+      onRedirectToCheckout(url);
+      return;
+    }
+    window.location.assign(url);
+  };
 
   const handleProgramChange = (newCourseId: string) => {
     setErrors({});
@@ -192,6 +275,8 @@ export function EnrollmentView({
       newErrors.batchId = "No open batches are available for this program.";
     } else if (!state.batchId) {
       newErrors.batchId = "Please select an available batch.";
+    } else if (selectedBatch && selectedBatchSeatsRemaining <= 0) {
+      newErrors.batchId = "This batch is currently full.";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -249,6 +334,54 @@ export function EnrollmentView({
     setStep("review");
   };
 
+  const handleSubmitEnrollment = async () => {
+    if (!canSubmitOnline || !selectedCourse || !selectedBatch) {
+      return;
+    }
+
+    setErrors({});
+    setSubmitError("");
+    setIsSubmitting(true);
+    try {
+      const startFn = onStartCheckout ?? defaultStartCheckout;
+      const response = await startFn({
+        courseId: selectedCourse.id,
+        batchId: selectedBatch.id,
+        fullName: state.fullName.trim(),
+        email: state.email.trim(),
+        whatsapp: state.whatsapp.trim(),
+        answers: state.answers,
+      });
+
+      setCopiedRef(false);
+      setState((prev) => ({
+        ...prev,
+        applicationReference: response.applicationReference,
+        isFree: response.isFree,
+      }));
+
+      if (response.isFree) {
+        setStep("confirmed");
+        return;
+      }
+
+      if (response.checkoutUrl) {
+        navigateToCheckout(response.checkoutUrl);
+        return;
+      }
+
+      setStep("pending_verification");
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to submit your application right now. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleContinueFromReview = async () => {
     setErrors({});
     setSubmitError("");
@@ -258,113 +391,50 @@ export function EnrollmentView({
       return;
     }
 
-    if (!canSubmitOnline || !onSubmitApplication || !selectedCourse || !selectedBatch) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await onSubmitApplication({
-        courseId: selectedCourse.id,
-        batchId: selectedBatch.id,
-        fullName: state.fullName.trim(),
-        email: state.email.trim(),
-        whatsapp: state.whatsapp.trim(),
-        answers: state.answers,
-        paymentMethod: "free",
-      });
-      setCopiedRef(false);
-      setState((prev) => ({
-        ...prev,
-        applicationReference: response.applicationReference,
-        isFree: true,
-      }));
-      setStep(response.status === "Enrollment confirmed" ? "confirmed" : "pending_verification");
-    } catch {
-      setSubmitError("Unable to submit your application right now. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    await handleSubmitEnrollment();
   };
 
-  const handleSelectPaymentMethod = (method: PaymentMethod) => {
-    setErrors({});
-    setSubmitError("");
-    if (method !== "bkash") {
-      setIsQrModalOpen(false);
-    }
-    setState((prev) => ({ ...prev, paymentMethod: method }));
-  };
-
-  const handleSubmitPaymentApplication = async () => {
-    if (!canSubmitOnline || !onSubmitApplication || !selectedCourse || !selectedBatch) {
+  const handleRetryPayment = async () => {
+    if (!outcomeSummary?.outcomeToken || !outcomeSummary.applicationReference) {
       return;
     }
-
-    const newErrors: Record<string, string> = {};
-    const submittedRef =
-      state.paymentMethod === "bkash"
-        ? state.bkashTransactionId.trim()
-        : state.bankTransactionReference.trim();
-
-    if (state.paymentMethod === "bkash") {
-      if (!submittedRef) {
-        newErrors.bkashTransactionId = "Please enter your bKash Transaction ID.";
-      } else if (submittedRef.length < 4) {
-        newErrors.bkashTransactionId =
-          "Please enter a valid bKash Transaction ID (at least 4 characters).";
-      }
-    } else {
-      if (!submittedRef) {
-        newErrors.bankTransactionReference = "Please enter your bank transaction reference.";
-      } else if (submittedRef.length < 4) {
-        newErrors.bankTransactionReference =
-          "Please enter a valid bank transaction reference (at least 4 characters).";
-      }
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setErrors({});
     setSubmitError("");
     setIsSubmitting(true);
     try {
-      const response = await onSubmitApplication({
-        courseId: selectedCourse.id,
-        batchId: selectedBatch.id,
-        fullName: state.fullName.trim(),
-        email: state.email.trim(),
-        whatsapp: state.whatsapp.trim(),
-        answers: state.answers,
-        paymentMethod: state.paymentMethod,
-        transactionReference: submittedRef,
+      const retryFn = onRetryCheckout ?? defaultRetryCheckout;
+      const res = await retryFn({
+        applicationReference: outcomeSummary.applicationReference,
+        outcomeToken: outcomeSummary.outcomeToken,
       });
-
-      setIsQrModalOpen(false);
-      setCopiedRef(false);
-      setState((prev) => ({
-        ...prev,
-        applicationReference: response.applicationReference,
-        isFree: false,
-      }));
-      setStep(response.status === "Enrollment confirmed" ? "confirmed" : "pending_verification");
-    } catch {
-      setSubmitError("Unable to submit your application right now. Please try again.");
+      setOutcomeSummary((prev) =>
+        prev
+          ? {
+              ...prev,
+              outcomeToken: res.outcomeToken ?? prev.outcomeToken,
+              holdExpiresAt: res.holdExpiresAt ?? prev.holdExpiresAt,
+            }
+          : prev
+      );
+      navigateToCheckout(res.checkoutUrl);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to restart bKash checkout right now. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCopyApplicationId = async () => {
-    if (!state.applicationReference) {
+    const refToCopy = state.applicationReference || outcomeSummary?.applicationReference;
+    if (!refToCopy) {
       return;
     }
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(state.applicationReference);
+        await navigator.clipboard.writeText(refToCopy);
         setCopiedRef(true);
       } else {
         setCopiedRef(true);
@@ -382,10 +452,12 @@ export function EnrollmentView({
   };
 
   const isPaymentStep = step === "payment";
-  const isCompletedStep = step === "confirmed" || step === "pending_verification";
-  const isConfirmationPhoto = isCompletedStep;
-  const showDesktopBkashRightPanel =
-    isPaymentStep && state.paymentMethod === "bkash" && config.payment.bkash.enabled;
+  const isCompletedStep =
+    step === "confirmed" ||
+    step === "pending_verification" ||
+    step === "review_hold" ||
+    step === "payment_failed";
+  const isConfirmationPhoto = step === "confirmed" || step === "pending_verification";
 
   const formatStartDate = (dateStr?: string) => {
     if (!dateStr) return "Upcoming";
@@ -402,18 +474,17 @@ export function EnrollmentView({
     }
   };
 
-  const statusHref = state.applicationReference
-    ? `/status?ref=${encodeURIComponent(state.applicationReference)}`
+  const activeReference = state.applicationReference || outcomeSummary?.applicationReference || "";
+  const statusHref = activeReference
+    ? `/status?ref=${encodeURIComponent(activeReference)}`
     : "/status";
-
-  const bankDetails = config.payment.bankTransfer.bankDetails;
+  const summaryCourseTitle = selectedCourse?.title ?? outcomeSummary?.courseTitle ?? "";
+  const summaryBatchName = selectedBatch?.name ?? outcomeSummary?.batchName ?? "";
+  const summaryPaymentMethod = outcomeSummary?.paymentMethod ?? (isFree ? "free" : "bkash");
 
   return (
     <div className="w-full bg-[#F6FAFA] text-[#172E35] min-h-screen py-8 sm:py-12 lg:py-16">
       <div className="max-w-7xl xl:max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
-        {/* ============================================================ */}
-        {/* MOBILE TOP SHALLOW PHOTO (Entry Screen only)                 */}
-        {/* ============================================================ */}
         {step === "program" && (
           <div className="lg:hidden mb-8 relative w-full aspect-[2/1] rounded-2xl overflow-hidden shadow-xs bg-[#EBF3F5]">
             <Image
@@ -428,15 +499,11 @@ export function EnrollmentView({
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 xl:gap-20 items-start">
-          {/* ========================================================== */}
-          {/* LEFT COLUMN: Form & Navigation Flow                       */}
-          {/* ========================================================== */}
           <div className="lg:col-span-6 xl:col-span-6 flex flex-col justify-start min-w-0">
             <span className="text-xs font-bold uppercase tracking-widest text-[#086477] mb-2">
               PROGRAM ENROLLMENT
             </span>
 
-            {/* Dynamic Headline & Subtitle */}
             <div className="mb-6 sm:mb-8">
               {step === "program" && (
                 <>
@@ -480,7 +547,7 @@ export function EnrollmentView({
                   <p className="text-sm sm:text-base text-[#526E77]">
                     {isFree
                       ? "Check your details before confirming your free registration."
-                      : "Check your details before continuing to payment."}
+                      : "Check your details before continuing to bKash Checkout."}
                   </p>
                 </>
               )}
@@ -488,10 +555,11 @@ export function EnrollmentView({
               {step === "payment" && (
                 <>
                   <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2">
-                    Complete your payment.
+                    Continue to bKash Checkout.
                   </h1>
                   <p className="text-sm sm:text-base text-[#526E77]">
-                    Review the payable amount and payment details for bKash or Bank Transfer.
+                    Review the payable fee and proceed to authorize your payment on hosted bKash
+                    Checkout.
                   </p>
                 </>
               )}
@@ -502,8 +570,32 @@ export function EnrollmentView({
                     Application in process.
                   </h1>
                   <p className="text-sm sm:text-base text-[#526E77]">
-                    We received your payment details. Save your separate LNA Application ID below to
-                    track your verification progress.
+                    Your application and seat hold are recorded while your bKash payment is being
+                    verified.
+                  </p>
+                </>
+              )}
+
+              {step === "review_hold" && (
+                <>
+                  <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2">
+                    Payment under review.
+                  </h1>
+                  <p className="text-sm sm:text-base text-[#526E77]">
+                    We saved your application, and staff will verify your transaction details before
+                    seat activation.
+                  </p>
+                </>
+              )}
+
+              {step === "payment_failed" && (
+                <>
+                  <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2">
+                    Payment not completed.
+                  </h1>
+                  <p className="text-sm sm:text-base text-[#526E77]">
+                    Your application is saved and your temporary seat reservation stays intact until
+                    its expiry window.
                   </p>
                 </>
               )}
@@ -511,18 +603,33 @@ export function EnrollmentView({
               {step === "confirmed" && (
                 <>
                   <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2">
-                    {isFree ? "You're registered." : "You're enrolled."}
+                    {summaryPaymentMethod === "free" ? "You're registered." : "You're enrolled."}
                   </h1>
                   <p className="text-sm sm:text-base text-[#526E77]">
-                    {isFree
+                    {summaryPaymentMethod === "free"
                       ? "Your place in the workshop is confirmed."
-                      : "Your payment was verified and your place is confirmed."}
+                      : "Your bKash payment was verified server-side and your seat is confirmed."}
                   </p>
                 </>
               )}
             </div>
 
-            {/* Online enrollment coming soon notice when submission is disabled */}
+            {invalidOutcomeNotice && step === "program" && (
+              <div
+                role="alert"
+                className="mb-6 p-4 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-xs sm:text-sm text-[#991B1B] flex items-start gap-2.5"
+              >
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                <div>
+                  The payment verification link is invalid or has expired. Check your application on{" "}
+                  <Link href="/status" className="underline font-semibold">
+                    the status page
+                  </Link>{" "}
+                  or start a fresh application below.
+                </div>
+              </div>
+            )}
+
             {!canSubmitOnline && !isCompletedStep && (
               <div
                 role="status"
@@ -536,14 +643,13 @@ export function EnrollmentView({
                 <div>
                   <div className="font-bold text-[#92400E]">Online enrollment is coming soon</div>
                   <p className="text-xs text-[#78350F] mt-0.5 leading-relaxed">
-                    Online payment instructions and application submission are disabled until
-                    backend verification opens.
+                    Hosted bKash Checkout and online application submission remain closed until
+                    production verification completes.
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Returning Applicant Link (Entry Screen) */}
             {step === "program" && (
               <div className="mb-6 p-3.5 sm:p-4 rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[#172E35]">
@@ -560,7 +666,6 @@ export function EnrollmentView({
               </div>
             )}
 
-            {/* Progress Step Indicator (Form stages) */}
             {!isCompletedStep && (
               <div className="mb-8">
                 {isPaymentStep ? (
@@ -580,7 +685,7 @@ export function EnrollmentView({
                     <div>
                       <div className="h-1 rounded-full bg-[#086477] mb-2" />
                       <span className="text-[11px] sm:text-xs font-bold text-[#172E35]">
-                        04 Payment
+                        04 bKash Checkout
                       </span>
                     </div>
                   </div>
@@ -648,7 +753,6 @@ export function EnrollmentView({
               </div>
             )}
 
-            {/* Selected Program Summary Card */}
             {selectedCourse && selectedBatch && step !== "program" && !isCompletedStep && (
               <div className="mb-6 p-4 rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] flex items-center justify-between gap-3 shadow-2xs">
                 <div className="min-w-0">
@@ -662,7 +766,6 @@ export function EnrollmentView({
                   onClick={() => {
                     setErrors({});
                     setSubmitError("");
-                    setIsQrModalOpen(false);
                     setStep("program");
                   }}
                   className="shrink-0 min-h-[44px] px-2 text-xs sm:text-sm font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#086477]"
@@ -672,9 +775,7 @@ export function EnrollmentView({
               </div>
             )}
 
-            {/* ======================================================== */}
-            {/* STEP 1: PROGRAM & BATCH SELECTION                        */}
-            {/* ======================================================== */}
+            {/* STEP 1: PROGRAM & BATCH SELECTION */}
             {step === "program" && (
               <div className="space-y-6">
                 <div>
@@ -693,7 +794,11 @@ export function EnrollmentView({
                       aria-describedby={errors.courseId ? "program-select-error" : undefined}
                       className="w-full min-h-[44px] appearance-none px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs cursor-pointer pr-10"
                     >
-                      <option value="">Select a program</option>
+                      <option value="">
+                        {publishedCourses.length > 0
+                          ? "Select a program"
+                          : "No published programs available"}
+                      </option>
                       {publishedCourses.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.title}
@@ -764,6 +869,10 @@ export function EnrollmentView({
                   {selectedBatch && (
                     <p className="mt-2 text-xs font-medium text-[#526E77]">
                       Starts {formatStartDate(selectedBatch.startDate)} |{" "}
+                      {selectedBatchSeatsRemaining > 0
+                        ? `${selectedBatchSeatsRemaining} seats left`
+                        : "Batch full"}{" "}
+                      |{" "}
                       {feeDetails.hasDiscount && (
                         <span className="line-through mr-1.5 text-[#8AA4AB]">
                           {feeDetails.formattedBase}
@@ -820,9 +929,7 @@ export function EnrollmentView({
               </div>
             )}
 
-            {/* ======================================================== */}
-            {/* STEP 2: APPLICANT DETAILS                                */}
-            {/* ======================================================== */}
+            {/* STEP 2: APPLICANT DETAILS */}
             {step === "details" && (
               <div className="space-y-5">
                 <div>
@@ -947,9 +1054,7 @@ export function EnrollmentView({
               </div>
             )}
 
-            {/* ======================================================== */}
-            {/* STEP 2b: PROGRAM-SPECIFIC QUESTIONS                      */}
-            {/* ======================================================== */}
+            {/* STEP 2b: PROGRAM-SPECIFIC QUESTIONS */}
             {step === "questions" && (
               <div className="space-y-5">
                 {programQuestions.map((q) => {
@@ -1101,9 +1206,7 @@ export function EnrollmentView({
               </div>
             )}
 
-            {/* ======================================================== */}
-            {/* STEP 3: REVIEW APPLICATION                               */}
-            {/* ======================================================== */}
+            {/* STEP 3: REVIEW APPLICATION */}
             {step === "review" && (
               <div className="space-y-6">
                 <div className="border border-[#E5ECEE] bg-white rounded-xl p-5 shadow-2xs">
@@ -1166,7 +1269,6 @@ export function EnrollmentView({
                   )}
                 </div>
 
-                {/* Amount Due Bar */}
                 <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-white border border-[#E5ECEE]">
                   <span className="text-sm font-semibold text-[#172E35]">Amount due</span>
                   <div className="text-right">
@@ -1188,7 +1290,15 @@ export function EnrollmentView({
                 )}
 
                 <p className="text-xs text-[#526E77]">
-                  By continuing, you agree to the enrollment terms.
+                  By continuing, you agree to the enrollment{" "}
+                  <Link href="/terms" className="underline text-[#086477]">
+                    terms
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="underline text-[#086477]">
+                    privacy policy
+                  </Link>
+                  .
                 </p>
 
                 <div className="flex items-center justify-between pt-2">
@@ -1221,7 +1331,9 @@ export function EnrollmentView({
                     <span>
                       {isFree
                         ? canSubmitOnline
-                          ? "Confirm registration"
+                          ? isSubmitting
+                            ? "Confirming..."
+                            : "Confirm registration"
                           : "Online enrollment is coming soon"
                         : "Continue to payment"}
                     </span>
@@ -1231,12 +1343,9 @@ export function EnrollmentView({
               </div>
             )}
 
-            {/* ======================================================== */}
-            {/* STEP 4: PAYMENT METHOD, DETAILS & REFERENCE (Paid)       */}
-            {/* ======================================================== */}
+            {/* STEP 4: HOSTED BKASH CHECKOUT CONFIRMATION (Paid; Bank Transfer Disabled) */}
             {step === "payment" && (
               <div className="space-y-6">
-                {/* Amount Due Card (Always visible regardless of selected payment method) */}
                 <div className="p-4 rounded-xl bg-white border border-[#C5E2E5] shadow-2xs flex items-center justify-between gap-4">
                   <div>
                     <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477] block">
@@ -1245,7 +1354,7 @@ export function EnrollmentView({
                     <span className="text-xs text-[#526E77]">
                       {feeDetails.hasDiscount
                         ? "Discounted cohort fee applied"
-                        : "Payable course fee"}
+                        : "Server-verified cohort fee (BDT)"}
                     </span>
                   </div>
                   <div className="text-right">
@@ -1263,313 +1372,61 @@ export function EnrollmentView({
                   </div>
                 </div>
 
-                {/* Method Selection */}
-                <fieldset className="space-y-3">
-                  <legend className="text-sm font-semibold text-[#172E35] mb-1">
-                    Choose payment method
-                  </legend>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {config.payment.bkash.enabled && (
-                      <label
-                        htmlFor="method-bkash"
-                        className={`flex items-start gap-3 p-4 min-h-[44px] rounded-xl border transition-all cursor-pointer ${
-                          state.paymentMethod === "bkash"
-                            ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
-                            : "bg-white border-[#D5E2E5] hover:border-[#BCE1E5]"
-                        }`}
-                      >
-                        <input
-                          id="method-bkash"
-                          type="radio"
-                          name="paymentMethod"
-                          value="bkash"
-                          checked={state.paymentMethod === "bkash"}
-                          onChange={() => handleSelectPaymentMethod("bkash")}
-                          className="mt-1 h-4 w-4 text-[#086477] focus:ring-[#086477] cursor-pointer"
-                        />
-                        <div>
-                          <div className="font-bold text-sm text-[#172E35]">bKash</div>
-                          <div className="text-xs text-[#526E77] mt-0.5">
-                            Pay using bKash Merchant QR
-                          </div>
-                        </div>
-                      </label>
-                    )}
-
-                    {config.payment.bankTransfer.enabled && (
-                      <label
-                        htmlFor="method-bank"
-                        className={`flex items-start gap-3 p-4 min-h-[44px] rounded-xl border transition-all cursor-pointer ${
-                          state.paymentMethod === "bank_transfer"
-                            ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
-                            : "bg-white border-[#D5E2E5] hover:border-[#BCE1E5]"
-                        }`}
-                      >
-                        <input
-                          id="method-bank"
-                          type="radio"
-                          name="paymentMethod"
-                          value="bank_transfer"
-                          checked={state.paymentMethod === "bank_transfer"}
-                          onChange={() => handleSelectPaymentMethod("bank_transfer")}
-                          className="mt-1 h-4 w-4 text-[#086477] focus:ring-[#086477] cursor-pointer"
-                        />
-                        <div>
-                          <div className="font-bold text-sm text-[#172E35]">Bank Transfer</div>
-                          <div className="text-xs text-[#526E77] mt-0.5">
-                            Transfer to LNA receiving bank account
-                          </div>
-                        </div>
-                      </label>
-                    )}
-                  </div>
-                </fieldset>
-
-                {/* Active Payment Panel & Reference Input */}
-                {state.paymentMethod === "bkash" && config.payment.bkash.enabled && (
-                  <div className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-4 sm:p-5 space-y-5 shadow-2xs">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477]">
-                        BKASH MERCHANT QR
+                <div
+                  data-testid="hosted-bkash-checkout-panel"
+                  className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-5 space-y-4 shadow-2xs"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider uppercase text-[#086477]">
+                      <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>HOSTED BKASH CHECKOUT</span>
+                    </span>
+                    {checkoutMode === "mock" && (
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                        Mock Gateway Mode (Dev)
                       </span>
-                      <button
-                        type="button"
-                        data-testid="bkash-qr-enlarge-button"
-                        onClick={() => setIsQrModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg bg-white border border-[#C5E2E5] hover:border-[#086477] text-xs font-semibold text-[#086477] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                      >
-                        <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" />
-                        <span>Enlarge QR</span>
-                      </button>
-                    </div>
-
-                    {/* Mobile / Tablet generous scannable QR trigger (hidden on lg where dedicated right panel is shown) */}
-                    <div className="lg:hidden flex flex-col items-center">
-                      <button
-                        type="button"
-                        data-testid="bkash-qr-inline-trigger"
-                        onClick={() => setIsQrModalOpen(true)}
-                        aria-label="Enlarge bKash Merchant QR code"
-                        className="w-full max-w-[270px] sm:max-w-[300px] bg-white p-2 sm:p-2.5 rounded-2xl border border-[#C5E2E5] hover:border-[#086477] shadow-2xs flex flex-col items-center justify-center transition-all cursor-pointer group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                      >
-                        <img
-                          src={config.payment.bkash.qrImageSrc}
-                          alt={config.payment.bkash.qrImageAlt}
-                          width={612}
-                          height={780}
-                          className="w-full h-auto rounded-xl"
-                        />
-                        <span className="mt-2.5 mb-1 inline-flex items-center gap-1.5 text-xs font-semibold text-[#086477] group-hover:underline">
-                          <ZoomIn className="w-3.5 h-3.5" aria-hidden="true" />
-                          <span>Tap QR to open full size</span>
-                        </span>
-                      </button>
-                    </div>
-
-                    <div className="space-y-3 min-w-0">
-                      <dl className="space-y-1.5 text-xs sm:text-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <dt className="text-[#526E77]">Merchant</dt>
-                          <dd className="font-semibold text-[#172E35]">
-                            {config.payment.bkash.merchantName}
-                          </dd>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <dt className="text-[#526E77]">Merchant number</dt>
-                          <dd className="font-semibold font-mono text-[#172E35]">
-                            {config.payment.bkash.merchantNumber}
-                          </dd>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#C5E2E5]">
-                          <dt className="text-[#526E77]">Amount due</dt>
-                          <dd className="font-bold text-[#086477]">
-                            {feeDetails.formattedPayable}
-                          </dd>
-                        </div>
-                      </dl>
-                      {canSubmitOnline ? (
-                        <p className="text-xs text-[#526E77] leading-relaxed">
-                          {config.payment.bkash.instruction}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-[#92400E] font-medium leading-relaxed">
-                          Online enrollment is coming soon. Payment instructions and submission will
-                          activate once backend verification is live.
-                        </p>
-                      )}
-                      <p className="hidden lg:block text-xs text-[#526E77]">
-                        Scan the large QR displayed on the right panel, or click{" "}
-                        <button
-                          type="button"
-                          onClick={() => setIsQrModalOpen(true)}
-                          className="font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer"
-                        >
-                          Enlarge QR
-                        </button>{" "}
-                        to open it in a popup.
-                      </p>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="bkashTransactionId"
-                        className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                      >
-                        bKash Transaction ID{" "}
-                        <span className="text-rose-700" aria-hidden="true">
-                          *
-                        </span>
-                      </label>
-                      <input
-                        id="bkashTransactionId"
-                        type="text"
-                        required
-                        value={state.bkashTransactionId}
-                        onChange={(e) => {
-                          setErrors({});
-                          setState((prev) => ({ ...prev, bkashTransactionId: e.target.value }));
-                        }}
-                        placeholder="Enter your bKash Transaction ID"
-                        aria-invalid={Boolean(errors.bkashTransactionId)}
-                        aria-describedby={
-                          errors.bkashTransactionId
-                            ? "bkashTransactionId-error"
-                            : "bkashTransactionId-hint"
-                        }
-                        className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm font-mono text-[#172E35] placeholder:text-[#8AA4AB] placeholder:font-sans focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
-                      />
-                      <p id="bkashTransactionId-hint" className="mt-1.5 text-xs text-[#526E77]">
-                        Enter the bKash Transaction ID (TrxID) shown after payment.
-                      </p>
-                      {errors.bkashTransactionId && (
-                        <p
-                          id="bkashTransactionId-error"
-                          role="alert"
-                          className="mt-1.5 text-xs text-rose-700 font-medium"
-                        >
-                          {errors.bkashTransactionId}
-                        </p>
-                      )}
-                    </div>
+                    )}
                   </div>
-                )}
 
-                {state.paymentMethod === "bank_transfer" && config.payment.bankTransfer.enabled && (
-                  <div className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-5 space-y-5 shadow-2xs">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477]">
-                        BANK ACCOUNT DETAILS
+                  <p className="text-xs sm:text-sm text-[#172E35] leading-relaxed">
+                    {canSubmitOnline
+                      ? config.payment.bkash.instruction
+                      : "Online enrollment is coming soon. Hosted bKash Checkout activates once production verification completes."}
+                  </p>
+
+                  <ul className="space-y-2 text-xs text-[#526E77]">
+                    <li className="flex items-start gap-2">
+                      <Check
+                        className="w-4 h-4 text-[#086477] shrink-0 mt-0.5"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        Your application record and a 30-minute temporary seat hold are saved before
+                        redirection.
                       </span>
-                    </div>
-
-                    {bankDetails ? (
-                      <dl className="space-y-2 text-xs sm:text-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <dt className="text-[#526E77]">Bank name</dt>
-                          <dd className="font-semibold text-[#172E35]">{bankDetails.bankName}</dd>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <dt className="text-[#526E77]">Account name</dt>
-                          <dd className="font-semibold text-[#172E35]">
-                            {bankDetails.accountName}
-                          </dd>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <dt className="text-[#526E77]">Account number</dt>
-                          <dd className="font-semibold font-mono text-[#172E35]">
-                            {bankDetails.accountNumber}
-                          </dd>
-                        </div>
-                        {bankDetails.branch && (
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <dt className="text-[#526E77]">Branch</dt>
-                            <dd className="font-semibold text-[#172E35]">{bankDetails.branch}</dd>
-                          </div>
-                        )}
-                        {bankDetails.routingNumber && (
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <dt className="text-[#526E77]">Routing number</dt>
-                            <dd className="font-semibold font-mono text-[#172E35]">
-                              {bankDetails.routingNumber}
-                            </dd>
-                          </div>
-                        )}
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#C5E2E5]">
-                          <dt className="text-[#526E77]">Amount due</dt>
-                          <dd className="font-bold text-[#086477] text-base">
-                            {feeDetails.formattedPayable}
-                          </dd>
-                        </div>
-                      </dl>
-                    ) : (
-                      <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
-                        <span className="text-[#526E77]">Amount due</span>
-                        <span className="font-bold text-[#086477] text-base">
-                          {feeDetails.formattedPayable}
-                        </span>
-                      </div>
-                    )}
-
-                    {canSubmitOnline ? (
-                      <p className="text-xs text-[#526E77] leading-relaxed">
-                        {config.payment.bankTransfer.instruction}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-[#92400E] font-medium leading-relaxed">
-                        Online enrollment is coming soon. Payment instructions and submission will
-                        activate once backend verification is live.
-                      </p>
-                    )}
-
-                    <div>
-                      <label
-                        htmlFor="bankTransactionReference"
-                        className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                      >
-                        Bank Transaction Reference{" "}
-                        <span className="text-rose-700" aria-hidden="true">
-                          *
-                        </span>
-                      </label>
-                      <input
-                        id="bankTransactionReference"
-                        type="text"
-                        required
-                        value={state.bankTransactionReference}
-                        onChange={(e) => {
-                          setErrors({});
-                          setState((prev) => ({
-                            ...prev,
-                            bankTransactionReference: e.target.value,
-                          }));
-                        }}
-                        placeholder="Enter your bank transaction reference"
-                        aria-invalid={Boolean(errors.bankTransactionReference)}
-                        aria-describedby={
-                          errors.bankTransactionReference
-                            ? "bankTransactionReference-error"
-                            : "bankTransactionReference-hint"
-                        }
-                        className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm font-mono text-[#172E35] placeholder:text-[#8AA4AB] placeholder:font-sans focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check
+                        className="w-4 h-4 text-[#086477] shrink-0 mt-0.5"
+                        aria-hidden="true"
                       />
-                      <p
-                        id="bankTransactionReference-hint"
-                        className="mt-1.5 text-xs text-[#526E77]"
-                      >
-                        Enter the reference or receipt number issued by your bank.
-                      </p>
-                      {errors.bankTransactionReference && (
-                        <p
-                          id="bankTransactionReference-error"
-                          role="alert"
-                          className="mt-1.5 text-xs text-rose-700 font-medium"
-                        >
-                          {errors.bankTransactionReference}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
+                      <span>
+                        bKash PIN and OTP verification stay strictly inside the official bKash
+                        interface.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check
+                        className="w-4 h-4 text-[#086477] shrink-0 mt-0.5"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        Confirmation happens only after LNA verifies the transaction server-side
+                        with bKash.
+                      </span>
+                    </li>
+                  </ul>
+                </div>
 
                 {submitError && (
                   <p role="alert" className="text-xs text-rose-700 font-medium">
@@ -1583,7 +1440,6 @@ export function EnrollmentView({
                     onClick={() => {
                       setErrors({});
                       setSubmitError("");
-                      setIsQrModalOpen(false);
                       setStep("review");
                     }}
                     className="min-h-[44px] px-2 text-sm font-semibold text-[#086477] hover:underline cursor-pointer"
@@ -1594,7 +1450,7 @@ export function EnrollmentView({
                     type="button"
                     disabled={isSubmitting || !canSubmitOnline}
                     aria-disabled={isSubmitting || !canSubmitOnline}
-                    onClick={handleSubmitPaymentApplication}
+                    onClick={handleSubmitEnrollment}
                     className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
                       isSubmitting || !canSubmitOnline
                         ? "bg-[#9BB7BE] text-white cursor-not-allowed"
@@ -1602,7 +1458,11 @@ export function EnrollmentView({
                     }`}
                   >
                     <span>
-                      {canSubmitOnline ? "Submit application" : "Submission disabled (coming soon)"}
+                      {!canSubmitOnline
+                        ? "Online enrollment is coming soon"
+                        : isSubmitting
+                          ? "Redirecting to bKash..."
+                          : "Continue to bKash Checkout"}
                     </span>
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </button>
@@ -1610,26 +1470,94 @@ export function EnrollmentView({
               </div>
             )}
 
-            {/* ======================================================== */}
-            {/* OUTCOME: APPLICATION IN PROCESS                          */}
-            {/* ======================================================== */}
-            {step === "pending_verification" && (
+            {/* OUTCOME: PAYMENT FAILED OR CANCELLED (SEAT HOLD PRESERVED) */}
+            {step === "payment_failed" && (
+              <div className="space-y-6">
+                <div
+                  role="alert"
+                  data-testid="payment-failed-alert"
+                  className="p-4 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-xs sm:text-sm text-[#991B1B] flex items-start gap-2.5"
+                >
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <div className="font-bold">
+                      {outcomeSummary?.outcome === "cancelled"
+                        ? "bKash checkout was cancelled"
+                        : "bKash payment failed or was declined"}
+                    </div>
+                    <p className="mt-1 leading-relaxed">
+                      Your application is saved under{" "}
+                      <span className="font-mono font-bold">{activeReference}</span>. Your seat hold
+                      has not been released yet so you can retry payment cleanly.
+                    </p>
+                  </div>
+                </div>
+
+                {submitError && (
+                  <p role="alert" className="text-xs text-rose-700 font-medium">
+                    {submitError}
+                  </p>
+                )}
+
+                <div className="border border-[#E5ECEE] bg-white rounded-xl p-5 shadow-2xs space-y-2 text-xs sm:text-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-[#526E77]">Program</span>
+                    <span className="font-semibold text-[#172E35] text-right">
+                      {summaryCourseTitle}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-[#526E77]">Batch</span>
+                    <span className="font-semibold text-[#172E35] text-right">
+                      {summaryBatchName}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 pt-2 border-t border-[#E5ECEE]">
+                    <span className="text-[#526E77]">Payable fee</span>
+                    <span className="font-bold text-[#086477]">{feeDetails.formattedPayable}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
+                  {outcomeSummary?.canRetry && canSubmitOnline && (
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleRetryPayment}
+                      className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs disabled:opacity-60"
+                    >
+                      <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                      <span>{isSubmitting ? "Restarting checkout..." : "Retry bKash payment"}</span>
+                    </button>
+                  )}
+
+                  <Link
+                    href={statusHref}
+                    className="inline-flex items-center min-h-[44px] px-3 py-2 text-xs sm:text-sm font-semibold text-[#086477] hover:underline"
+                  >
+                    Check application status
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* OUTCOME: APPLICATION IN PROCESS / PENDING VERIFICATION / REVIEW HOLD */}
+            {(step === "pending_verification" || step === "review_hold") && (
               <div className="space-y-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D97706]" aria-hidden="true" />
-                    Application in process
+                    {step === "review_hold" ? "Under manual review" : "Application in process"}
                   </span>
                 </div>
 
-                {/* LNA Application ID & Copy Card */}
                 <div className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-5 shadow-2xs space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477]">
                       LNA Application ID
                     </span>
                     <span className="text-[11px] text-[#526E77]">
-                      Separate from your payment reference
+                      Keep this ID to check status later
                     </span>
                   </div>
 
@@ -1638,7 +1566,7 @@ export function EnrollmentView({
                       data-testid="application-id-value"
                       className="font-mono font-bold text-lg sm:text-xl text-[#086477] tracking-wide break-all"
                     >
-                      {state.applicationReference}
+                      {activeReference}
                     </span>
 
                     <button
@@ -1647,7 +1575,7 @@ export function EnrollmentView({
                       aria-label={
                         copiedRef ? "Copied LNA Application ID" : "Copy LNA Application ID"
                       }
-                      className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                      className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
                     >
                       {copiedRef ? (
                         <>
@@ -1662,42 +1590,33 @@ export function EnrollmentView({
                       )}
                     </button>
                   </div>
-
-                  <div role="status" aria-live="polite" className="sr-only">
-                    {copiedRef ? `Copied ${state.applicationReference}` : ""}
-                  </div>
                 </div>
 
-                {/* Application Summary Card */}
                 <div className="border border-[#E5ECEE] bg-white rounded-xl p-5 shadow-2xs">
                   <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477] block mb-3">
                     YOUR APPLICATION
                   </span>
                   <dl className="space-y-2.5 text-xs sm:text-sm">
                     <div className="flex items-center justify-between gap-4">
-                      <dt className="text-[#526E77]">Applicant</dt>
-                      <dd className="font-semibold text-[#172E35] text-right">{state.fullName}</dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Program</dt>
                       <dd className="font-semibold text-[#172E35] text-right">
-                        {selectedCourse?.title}
+                        {summaryCourseTitle}
                       </dd>
                     </div>
                     <div className="flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Batch</dt>
                       <dd className="font-semibold text-[#172E35] text-right">
-                        {selectedBatch?.name}
+                        {summaryBatchName}
                       </dd>
                     </div>
                     <div className="flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Payment method</dt>
                       <dd className="font-semibold text-[#172E35] text-right">
-                        {formatPaymentMethodLabel(state.paymentMethod)}
+                        {formatPaymentMethodLabel(summaryPaymentMethod)}
                       </dd>
                     </div>
                     <div className="flex items-center justify-between gap-4 pt-2 border-t border-[#E5ECEE]">
-                      <dt className="text-[#526E77]">Amount due</dt>
+                      <dt className="text-[#526E77]">Payable amount</dt>
                       <dd className="font-bold text-[#172E35] text-right">
                         {feeDetails.formattedPayable}
                       </dd>
@@ -1706,14 +1625,15 @@ export function EnrollmentView({
                 </div>
 
                 <p className="text-xs sm:text-sm text-[#526E77] leading-relaxed">
-                  Enrollment is confirmed after staff verify the payment. Use your LNA Application
-                  ID and the email or phone number from this form on the status page anytime.
+                  {step === "review_hold"
+                    ? "Our team is verifying the transaction details reported by the gateway. Please do not submit a duplicate payment."
+                    : "Gateway confirmation is still processing. Check your application status anytime with your LNA Application ID."}
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
                   <Link
                     href={statusHref}
-                    className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs"
                   >
                     <span>Check application status</span>
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -1724,19 +1644,11 @@ export function EnrollmentView({
                   >
                     Back to programs
                   </Link>
-                  <a
-                    href="mailto:admissions@lnabd.org"
-                    className="inline-flex items-center min-h-[44px] px-2 py-2 text-xs sm:text-sm font-semibold text-[#526E77] hover:text-[#086477] hover:underline"
-                  >
-                    Contact admissions
-                  </a>
                 </div>
               </div>
             )}
 
-            {/* ======================================================== */}
-            {/* OUTCOME: CONFIRMED                                       */}
-            {/* ======================================================== */}
+            {/* OUTCOME: CONFIRMED */}
             {step === "confirmed" && (
               <div className="space-y-6">
                 <div>
@@ -1747,15 +1659,20 @@ export function EnrollmentView({
                 </div>
 
                 <div className="border border-[#C5E2E5] bg-[#EBF5F6] rounded-xl p-5 shadow-2xs space-y-3">
-                  <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477] block">
-                    LNA Application ID
-                  </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477]">
+                      LNA Application ID
+                    </span>
+                    <span className="text-[11px] text-[#526E77]">
+                      Keep this ID to verify status anytime
+                    </span>
+                  </div>
                   <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-[#C5E2E5] rounded-xl px-4 py-3">
                     <span
                       data-testid="application-id-value"
                       className="font-mono font-bold text-lg sm:text-xl text-[#086477] tracking-wide break-all"
                     >
-                      {state.applicationReference}
+                      {activeReference}
                     </span>
                     <button
                       type="button"
@@ -1788,13 +1705,19 @@ export function EnrollmentView({
                     <div className="flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Program</dt>
                       <dd className="font-semibold text-[#172E35] text-right">
-                        {selectedCourse?.title}
+                        {summaryCourseTitle}
                       </dd>
                     </div>
                     <div className="flex items-center justify-between gap-4">
                       <dt className="text-[#526E77]">Batch</dt>
                       <dd className="font-semibold text-[#172E35] text-right">
-                        {selectedBatch?.name}
+                        {summaryBatchName}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <dt className="text-[#526E77]">Payment method</dt>
+                      <dd className="font-semibold text-[#172E35] text-right">
+                        {formatPaymentMethodLabel(summaryPaymentMethod)}
                       </dd>
                     </div>
                     <div className="flex items-center justify-between gap-4 pt-2 border-t border-[#E5ECEE]">
@@ -1805,7 +1728,8 @@ export function EnrollmentView({
                 </div>
 
                 <p className="text-xs sm:text-sm text-[#526E77]">
-                  Your seat in this cohort is confirmed.
+                  Your seat in this cohort is confirmed. Save your LNA Application ID and use Check
+                  application status anytime to verify your enrollment.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
@@ -1830,7 +1754,6 @@ export function EnrollmentView({
                   </a>
                 </div>
 
-                {/* Mobile Bottom Photo Crop */}
                 <div className="lg:hidden pt-4">
                   <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-xs bg-[#EBF3F5]">
                     <Image
@@ -1846,155 +1769,46 @@ export function EnrollmentView({
             )}
           </div>
 
-          {/* ========================================================== */}
-          {/* RIGHT COLUMN: Dedicated bKash QR Showcase or Photo Panel   */}
-          {/* ========================================================== */}
+          {/* RIGHT COLUMN: Editorial Photo Panel */}
           <div className="hidden lg:block lg:col-span-6 xl:col-span-6 sticky top-28">
-            {showDesktopBkashRightPanel ? (
+            <div className="relative w-full h-[580px] xl:h-[620px] rounded-2xl overflow-hidden shadow-md bg-[#0F2930]">
+              <Image
+                src={
+                  isConfirmationPhoto
+                    ? "/images/enrollment/lna-enrollment-confirmation-1120.webp"
+                    : "/images/enrollment/lna-enrollment-workshop-1120.webp"
+                }
+                alt={
+                  isConfirmationPhoto
+                    ? "Confirmed cohort members discussing session takeaways"
+                    : "Interactive workshop participants engaged in discussion"
+                }
+                fill
+                priority
+                sizes="(max-width: 1024px) 50vw, 680px"
+                className="object-cover"
+              />
+
               <div
-                data-testid="desktop-bkash-qr-panel"
-                className="w-full min-h-[580px] xl:min-h-[620px] rounded-2xl border border-[#C5E2E5] bg-white shadow-md p-6 xl:p-8 flex flex-col justify-between gap-5"
-              >
-                <div className="flex items-start justify-between gap-4 border-b border-[#E5ECEE] pb-4">
-                  <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#086477] block">
-                      OFFICIAL PAYMENT QR
-                    </span>
-                    <h2 className="font-serif font-bold text-xl text-[#172E35] mt-0.5">
-                      {config.payment.bkash.merchantName}
-                    </h2>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
-                      Amount due
-                    </span>
-                    <span className="font-bold text-lg text-[#086477]">
-                      {feeDetails.formattedPayable}
-                    </span>
-                  </div>
-                </div>
+                className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none"
+                aria-hidden="true"
+              />
 
-                <div className="flex-1 flex flex-col items-center justify-center">
-                  <button
-                    type="button"
-                    data-testid="bkash-qr-desktop-trigger"
-                    onClick={() => setIsQrModalOpen(true)}
-                    aria-label="Open enlarged bKash Merchant QR popup"
-                    className="rounded-2xl border border-[#D5E2E5] bg-[#FAFDFE] hover:border-[#086477] hover:bg-[#F3F9FA] p-4 xl:p-5 transition-all cursor-pointer flex flex-col items-center justify-center group shadow-2xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                  >
-                    <img
-                      src={config.payment.bkash.qrImageSrc}
-                      alt={`${config.payment.bkash.qrImageAlt} (desktop view)`}
-                      width={612}
-                      height={780}
-                      className="w-[300px] xl:w-[350px] h-auto rounded-xl"
-                    />
-                    <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#086477] group-hover:underline">
-                      <ZoomIn className="w-4 h-4" aria-hidden="true" />
-                      <span>Click QR to enlarge</span>
-                    </span>
-                  </button>
-                </div>
-
-                <div className="rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
-                  <span className="text-[#526E77]">Merchant number</span>
-                  <span className="font-mono font-bold text-[#172E35]">
-                    {config.payment.bkash.merchantNumber}
-                  </span>
-                </div>
+              <div className="absolute inset-x-0 bottom-0 p-8 text-white z-10">
+                <div className="w-full h-px bg-white/25 mb-3" aria-hidden="true" />
+                <span className="text-xs uppercase font-bold tracking-wider text-white/80 block mb-1">
+                  LEAD NATION ACADEMY
+                </span>
+                <p className="text-sm sm:text-base font-medium text-white/95 leading-snug">
+                  {isConfirmationPhoto
+                    ? "See you in the next session."
+                    : "Learn alongside people who share your goals."}
+                </p>
               </div>
-            ) : (
-              <div className="relative w-full h-[580px] xl:h-[620px] rounded-2xl overflow-hidden shadow-md bg-[#0F2930]">
-                <Image
-                  src={
-                    isConfirmationPhoto
-                      ? "/images/enrollment/lna-enrollment-confirmation-1120.webp"
-                      : "/images/enrollment/lna-enrollment-workshop-1120.webp"
-                  }
-                  alt={
-                    isConfirmationPhoto
-                      ? "Confirmed cohort members discussing session takeaways"
-                      : "Interactive workshop participants engaged in discussion"
-                  }
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 50vw, 680px"
-                  className="object-cover"
-                />
-
-                <div
-                  className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none"
-                  aria-hidden="true"
-                />
-
-                <div className="absolute inset-x-0 bottom-0 p-8 text-white z-10">
-                  <div className="w-full h-px bg-white/25 mb-3" aria-hidden="true" />
-                  <span className="text-xs uppercase font-bold tracking-wider text-white/80 block mb-1">
-                    LEAD NATION ACADEMY
-                  </span>
-                  <p className="text-sm sm:text-base font-medium text-white/95 leading-snug">
-                    {isConfirmationPhoto
-                      ? "See you in the next session."
-                      : "Learn alongside people who share your goals."}
-                  </p>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Enlarged Official bKash Merchant QR Popup */}
-      {isPaymentStep && state.paymentMethod === "bkash" && config.payment.bkash.enabled && (
-        <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
-          <DialogContent
-            data-testid="bkash-qr-popup-dialog"
-            className="w-[calc(100vw-2rem)] max-w-[440px] bg-white border-[#C5E2E5] p-5 sm:p-6"
-          >
-            <DialogHeader className="pr-8">
-              <DialogTitle className="font-serif text-lg sm:text-xl text-[#172E35]">
-                bKash Merchant QR
-              </DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm text-[#526E77]">
-                {config.payment.bkash.merchantName} ·{" "}
-                <span className="font-mono font-semibold text-[#172E35]">
-                  {config.payment.bkash.merchantNumber}
-                </span>
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="bg-white rounded-2xl border border-[#D5E2E5] p-2 sm:p-3 flex items-center justify-center">
-              <img
-                src={config.payment.bkash.qrImageSrc}
-                alt={`${config.payment.bkash.qrImageAlt} (enlarged popup)`}
-                width={612}
-                height={780}
-                className="w-full max-w-[360px] sm:max-w-[390px] max-h-[60vh] object-contain mx-auto rounded-lg"
-              />
-            </div>
-
-            <div className="rounded-xl bg-[#EBF5F6] border border-[#C5E2E5] px-4 py-3 flex items-center justify-between gap-4 text-xs sm:text-sm">
-              <span className="text-[#526E77]">Amount due</span>
-              <span className="font-bold text-[#086477]">{feeDetails.formattedPayable}</span>
-            </div>
-
-            {!canSubmitOnline && (
-              <p className="text-xs text-[#92400E] font-medium">
-                Online enrollment is coming soon. Payment instructions and submission will activate
-                once backend verification is live.
-              </p>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setIsQrModalOpen(false)}
-              className="w-full min-h-[44px] px-4 py-2.5 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-            >
-              Close
-            </button>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }

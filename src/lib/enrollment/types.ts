@@ -48,7 +48,30 @@ export type EnrollmentStep =
   | "review"
   | "payment"
   | "pending_verification"
+  | "review_hold"
+  | "payment_failed"
   | "confirmed";
+
+export type EnrollmentOutcomeType =
+  | "confirmed"
+  | "pending"
+  | "review_hold"
+  | "failed"
+  | "cancelled"
+  | "invalid";
+
+export interface EnrollmentOutcomeSummary {
+  outcome: EnrollmentOutcomeType;
+  applicationReference: string;
+  courseTitle: string;
+  batchName: string;
+  payablePoisha: number;
+  paymentMethod: "bkash" | "free" | "bank_transfer";
+  status: string;
+  holdExpiresAt: string | null;
+  canRetry: boolean;
+  outcomeToken: string;
+}
 
 export interface EnrollmentState {
   courseId: string;
@@ -58,8 +81,6 @@ export interface EnrollmentState {
   whatsapp: string;
   answers: Record<string, string>;
   paymentMethod: PaymentMethod;
-  bkashTransactionId: string;
-  bankTransactionReference: string;
   applicationReference: string;
   isFree: boolean;
 }

@@ -19,10 +19,33 @@ export interface StatusLookupViewProps {
   ) => SafeStatusLookupResult | null | Promise<SafeStatusLookupResult | null>;
 }
 
+async function defaultApiStatusLookup(
+  query: StatusLookupQuery
+): Promise<SafeStatusLookupResult | null> {
+  const res = await fetch("/api/status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  const data = (await res.json().catch(() => null)) as {
+    ok?: boolean;
+    found?: boolean;
+    result?: SafeStatusLookupResult | null;
+    message?: string;
+  } | null;
+
+  if (!res.ok || !data || data.ok === false) {
+    throw new Error(data?.message || "Unable to check application status right now.");
+  }
+
+  return data.found && data.result ? data.result : null;
+}
+
 export function StatusLookupView({ enabled = false, onLookup }: StatusLookupViewProps) {
   const searchParams = useSearchParams();
   const refParam = searchParams.get("ref") || "";
-  const isLookupAvailable = Boolean(enabled && onLookup);
+  const activeLookup = onLookup ?? defaultApiStatusLookup;
+  const isLookupAvailable = Boolean(enabled);
 
   const [applicationId, setApplicationId] = useState<string>(() =>
     refParam ? normalizeApplicationRef(refParam) : ""
@@ -54,7 +77,7 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!isLookupAvailable || !onLookup) {
+    if (!isLookupAvailable) {
       return;
     }
 
@@ -85,17 +108,21 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
     setIsSearching(true);
 
     try {
-      const matched = await onLookup({
+      const matched = await activeLookup({
         applicationId: trimmedRef,
         verificationType,
         contactValue: trimmedContact,
       });
       setHasSearched(true);
       setResult(matched);
-    } catch {
+    } catch (err) {
       setHasSearched(false);
       setResult(null);
-      setLookupError("Unable to check application status right now. Please try again shortly.");
+      setLookupError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to check application status right now. Please try again shortly."
+      );
     } finally {
       setIsSearching(false);
     }
@@ -360,6 +387,22 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
                         />
                         Enrollment confirmed
                       </span>
+                    ) : result.status === "Reservation expired" ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F1F5F9] text-[#475569] border border-[#CBD5E1]">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full bg-[#64748B]"
+                          aria-hidden="true"
+                        />
+                        Reservation expired
+                      </span>
+                    ) : result.status === "Cancelled" ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full bg-[#DC2626]"
+                          aria-hidden="true"
+                        />
+                        Cancelled
+                      </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
                         <span
@@ -382,8 +425,12 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
                   </h2>
                   <p className="text-xs sm:text-sm text-[#526E77] leading-relaxed">
                     {result.status === "Enrollment confirmed"
-                      ? "Your payment has been verified and your seat in this batch is confirmed."
-                      : "Your payment reference has been received. Enrollment is confirmed after staff verify the payment."}
+                      ? "Your enrollment in this cohort is confirmed."
+                      : result.status === "Reservation expired"
+                        ? "The temporary seat reservation window for this unpaid application expired before payment completed."
+                        : result.status === "Cancelled"
+                          ? "This enrollment application has been cancelled."
+                          : "Your application is saved and currently awaiting payment completion or server verification."}
                   </p>
                 </div>
 

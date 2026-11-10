@@ -3,6 +3,7 @@ import { getNavigationConfig, getOrganizationConfig } from "@/lib/content";
 import { SkipLink } from "./skip-link";
 import { SiteHeader } from "./site-header";
 import { SiteFooter } from "./site-footer";
+import { PublicChromeGate } from "./public-chrome-gate";
 
 export interface PublicShellProps {
   children: React.ReactNode;
@@ -27,16 +28,15 @@ export function PublicShell({
       {/* WCAG 2.2 AA Skip Link */}
       <SkipLink targetId="main-content" />
 
-      {/* Reusable Header with Sticky Nav & Mobile Drawer */}
-      <SiteHeader navigation={navigation} organization={organization} />
-
-      {/* Main Content Landmark */}
-      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
-        {children}
-      </main>
-
-      {/* Reusable Multi-Column Footer */}
-      <SiteFooter navigation={navigation} organization={organization} />
+      <PublicChromeGate
+        header={<SiteHeader navigation={navigation} organization={organization} />}
+        footer={<SiteFooter navigation={navigation} organization={organization} />}
+      >
+        {/* Main Content Landmark */}
+        <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
+          {children}
+        </main>
+      </PublicChromeGate>
     </div>
   );
 }

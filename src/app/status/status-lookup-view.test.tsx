@@ -231,4 +231,50 @@ describe("StatusLookupView (/status)", () => {
     expect(unknownText).toBe(mismatchText);
     expect(mismatchText).toMatch(/check your LNA Application ID and your email or phone number/i);
   });
+
+  it("calls POST /api/status by default when enabled and onLookup prop is omitted", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        found: true,
+        result: {
+          applicationReference: "LNA-ABCD-EFGH",
+          fullName: "Farhana Akter",
+          courseTitle: "MTO Readiness Program",
+          batchName: "MTO Readiness Cohort 1",
+          paymentMethod: "bkash",
+          status: "Enrollment confirmed",
+        },
+      }),
+    });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      render(<StatusLookupView enabled />);
+
+      fireEvent.change(screen.getByLabelText(/LNA Application ID/i), {
+        target: { value: "LNA-ABCD-EFGH" },
+      });
+      fireEvent.change(screen.getByRole("textbox", { name: /Email address/i }), {
+        target: { value: "farhana@example.com" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Check application status/i }));
+
+      await waitFor(() => expect(screen.getByTestId("status-result-card")).toBeDefined());
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/status",
+        expect.objectContaining({ method: "POST" })
+      );
+      expect(screen.getByText("Farhana Akter")).toBeDefined();
+      expect(
+        within(screen.getByTestId("status-result-card")).getByRole("heading", {
+          name: /Enrollment confirmed/i,
+        })
+      ).toBeDefined();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });

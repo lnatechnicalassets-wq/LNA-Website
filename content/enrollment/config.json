@@ -40,16 +40,12 @@
       "merchantNumber": "0158 1799 666",
       "qrImageSrc": "/images/payments/lna-bkash-merchant-qr.png",
       "qrImageAlt": "Lead Nation Academy official bKash Merchant QR code",
-      "instruction": "Scan the official LNA bKash Merchant QR code, pay the exact amount due, and enter your bKash Transaction ID below."
+      "instruction": "Pay securely through hosted bKash Checkout. Your application and 30-minute seat hold are saved before redirection."
     },
     "bankTransfer": {
-      "enabled": true,
-      "instruction": "Transfer the exact amount due to the official Lead Nation Academy bank account below, then enter your bank-issued Transaction Reference.",
-      "bankDetails": {
-        "bankName": "Mutual Trust Bank PLC",
-        "accountName": "Lead Nation Academy - LNA",
-        "accountNumber": "130100052843"
-      }
+      "enabled": false,
+      "instruction": "Bank transfer is disabled for this release.",
+      "bankDetails": null
     }
   }
 }
