@@ -439,7 +439,7 @@ const NewsArticleSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1),
   excerpt: z.string().min(1),
-  category: z.enum(["Partnerships", "Invitations", "Program updates", "Community"]),
+  category: z.enum(["Partnerships", "Program updates"]),
   publishedAt: z.string(),
   updatedAt: z.string().optional(),
   author: z.string().default("LNA Team"),
