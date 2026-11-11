@@ -1,5 +1,197 @@
 import type { Mentor } from "@/lib/content";
 
+export type MentorSortOption = "featured" | "order" | "name-asc" | "org-asc";
+
+export interface MentorSortChoice {
+  id: MentorSortOption;
+  label: string;
+}
+
+export const MENTOR_SORT_OPTIONS: MentorSortChoice[] = [
+  { id: "featured", label: "Featured" },
+  { id: "order", label: "Program Order" },
+  { id: "name-asc", label: "Name (A-Z)" },
+  { id: "org-asc", label: "Company (A-Z)" },
+];
+
+export interface MentorCategorySummary {
+  id: string;
+  name: string;
+  count: number;
+}
+
+const CANONICAL_CATEGORY_PRIORITY: Record<string, number> = {
+  "Leadership & Career": 1,
+  "Operations & Management": 2,
+  "Marketing & Sales": 3,
+  "Communication & Influence": 4,
+  "Entrepreneurship & Strategy": 5,
+  "Technology & AI": 6,
+  "Financial Analysis": 7,
+};
+
+/**
+ * Derives non-zero category tabs dynamically from actual mentor records
+ * so zero-count placeholder tabs never appear in the UI.
+ */
+export function getMentorCategoriesWithCounts(mentors: Mentor[]): MentorCategorySummary[] {
+  const counts = new Map<string, number>();
+
+  for (const mentor of mentors) {
+    const seenForMentor = new Set<string>();
+    for (const rawCategory of mentor.categories ?? []) {
+      const category = rawCategory.trim();
+      if (!category || seenForMentor.has(category)) continue;
+      seenForMentor.add(category);
+      counts.set(category, (counts.get(category) ?? 0) + 1);
+    }
+  }
+
+  const dynamicCategories: MentorCategorySummary[] = Array.from(counts.entries())
+    .filter(([, count]) => count > 0)
+    .map(([category, count]) => ({
+      id: category,
+      name: category,
+      count,
+    }))
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      const prioA = CANONICAL_CATEGORY_PRIORITY[a.name] ?? 999;
+      const prioB = CANONICAL_CATEGORY_PRIORITY[b.name] ?? 999;
+      if (prioA !== prioB) return prioA - prioB;
+      return a.name.localeCompare(b.name, "en");
+    });
+
+  return [{ id: "all", name: "All Mentors", count: mentors.length }, ...dynamicCategories];
+}
+
+/**
+ * Normalizes primary organization names so sister/parenthetical variants
+ * (e.g. "Axentec PLC" and "Axentec PLC (a Robi Axiata company)") group cleanly
+ * when interleaving companies in Featured order.
+ */
+export function normalizeOrganizationGroupKey(organization?: string): string {
+  const raw = (organization || "").trim().toLowerCase();
+  if (!raw) return "unknown";
+  const withoutParens = raw.replace(/\([^)]*\)/g, "").trim();
+  const base = withoutParens
+    .replace(/\b(ltd\.?|limited|plc\.?|inc\.?|com)\b/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  return base || raw;
+}
+
+/**
+ * Sorts mentors by the active user-selected criterion.
+ * "featured" interleaves distinct organizations by canonical `order` so
+ * first-screen views highlight organizational diversity without dropping order hierarchy.
+ */
+export function sortMentors(mentors: Mentor[], sortBy: MentorSortOption = "featured"): Mentor[] {
+  const byCanonicalOrder = [...mentors].sort((a, b) => {
+    const orderDiff = (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER);
+    if (orderDiff !== 0) return orderDiff;
+    return a.name.localeCompare(b.name, "en");
+  });
+
+  if (sortBy === "order") {
+    return byCanonicalOrder;
+  }
+
+  if (sortBy === "name-asc") {
+    return [...mentors].sort((a, b) => {
+      const nameDiff = a.name.localeCompare(b.name, "en");
+      if (nameDiff !== 0) return nameDiff;
+      return (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER);
+    });
+  }
+
+  if (sortBy === "org-asc") {
+    return [...mentors].sort((a, b) => {
+      const orgDiff = a.organization.localeCompare(b.organization, "en");
+      if (orgDiff !== 0) return orgDiff;
+      return a.name.localeCompare(b.name, "en");
+    });
+  }
+
+  // "featured": round-robin across organizations while honoring canonical order
+  const orgQueues = new Map<string, Mentor[]>();
+  const orgSequence: string[] = [];
+
+  for (const mentor of byCanonicalOrder) {
+    const orgKey = normalizeOrganizationGroupKey(mentor.organization);
+    let queue = orgQueues.get(orgKey);
+    if (!queue) {
+      queue = [];
+      orgQueues.set(orgKey, queue);
+      orgSequence.push(orgKey);
+    }
+    queue.push(mentor);
+  }
+
+  const interleaved: Mentor[] = [];
+  let addedInPass = true;
+  while (addedInPass) {
+    addedInPass = false;
+    for (const orgKey of orgSequence) {
+      const queue = orgQueues.get(orgKey);
+      if (queue && queue.length > 0) {
+        const nextMentor = queue.shift();
+        if (nextMentor) {
+          interleaved.push(nextMentor);
+          addedInPass = true;
+        }
+      }
+    }
+  }
+
+  return interleaved;
+}
+
+export interface FilterMentorsOptions {
+  category?: string;
+  query?: string;
+}
+
+export function filterMentors(
+  mentors: Mentor[],
+  { category = "all", query = "" }: FilterMentorsOptions = {}
+): Mentor[] {
+  let list = mentors;
+
+  if (category && category !== "all") {
+    list = list.filter((m) => (m.categories ?? []).some((c) => c.trim() === category));
+  }
+
+  const normalizedQuery = query.toLowerCase().trim();
+  if (normalizedQuery) {
+    list = list.filter((m) => {
+      const matchName = m.name.toLowerCase().includes(normalizedQuery);
+      const matchRole = m.role.toLowerCase().includes(normalizedQuery);
+      const matchOrg = m.organization.toLowerCase().includes(normalizedQuery);
+      const matchBio = m.bio.toLowerCase().includes(normalizedQuery);
+      const matchCategory = m.categories?.some((c) => c.toLowerCase().includes(normalizedQuery));
+      const matchExpertise = m.expertise?.some((e) => e.toLowerCase().includes(normalizedQuery));
+      const matchCompanyHistory = m.careerHistory?.some(
+        (c) =>
+          c.company.toLowerCase().includes(normalizedQuery) ||
+          (c.role ? c.role.toLowerCase().includes(normalizedQuery) : false)
+      );
+
+      return (
+        matchName ||
+        matchRole ||
+        matchOrg ||
+        matchBio ||
+        Boolean(matchCategory) ||
+        Boolean(matchExpertise) ||
+        Boolean(matchCompanyHistory)
+      );
+    });
+  }
+
+  return list;
+}
+
 const mentorAvatars: Record<string, string> = {
   // MTO Mentors (5)
   "mentor-mohammad-salekeen-ibrahim": "/images/mentors/mohammad-salekeen-ibrahim.png",
@@ -49,14 +241,14 @@ const defaultCourseMentorIds: Record<string, string[]> = {
     "mentor-md-manik-hossain",
     "mentor-mir-hasib",
   ],
-  "mto": [
+  mto: [
     "mentor-mohammad-salekeen-ibrahim",
     "mentor-syed-himyanuddin-ahmed",
     "mentor-anubhab-rahman",
     "mentor-md-manik-hossain",
     "mentor-mir-hasib",
   ],
-  "irgp": [
+  irgp: [
     "mentor-shahnawaj-chowdhury",
     "mentor-gm-kamrul",
     "mentor-istiaque-bhuiyan",
@@ -85,9 +277,7 @@ export function getCourseMentorRoster(
 
   // 1. Direct array of mentor IDs
   if (Array.isArray(courseOrId)) {
-    return courseOrId
-      .map((id) => mentorMap.get(id))
-      .filter((m): m is Mentor => Boolean(m));
+    return courseOrId.map((id) => mentorMap.get(id)).filter((m): m is Mentor => Boolean(m));
   }
 
   // 2. Course object with mentorIds array
@@ -115,9 +305,7 @@ export function getCourseMentorRoster(
   }
 
   if (targetMentorIds) {
-    return targetMentorIds
-      .map((id) => mentorMap.get(id))
-      .filter((m): m is Mentor => Boolean(m));
+    return targetMentorIds.map((id) => mentorMap.get(id)).filter((m): m is Mentor => Boolean(m));
   }
 
   return [];
@@ -270,10 +458,7 @@ export function getMentorCompanyLogo(mentor: {
   }
 
   // 13. Shohoz.com (Talat Rahim)
-  if (
-    id === "mentor-talat-rahim" ||
-    org.includes("shohoz")
-  ) {
+  if (id === "mentor-talat-rahim" || org.includes("shohoz")) {
     return {
       src: "/images/partners/shohoz.svg",
       alt: mentor.organization || "Shohoz.com",

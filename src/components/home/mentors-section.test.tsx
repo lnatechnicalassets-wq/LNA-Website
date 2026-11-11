@@ -4,6 +4,11 @@ import { render, screen, fireEvent, within, act } from "@testing-library/react";
 import { MentorsSection } from "./mentors-section";
 import { MentorQuickViewProvider } from "./mentor-quick-view-context";
 import { OfficialCompanyLogo } from "./company-logo";
+import {
+  getMentorCategoriesWithCounts,
+  normalizeOrganizationGroupKey,
+  sortMentors,
+} from "@/lib/mentors";
 import type { Mentor } from "@/lib/content";
 
 const mockMentors: Mentor[] = [
@@ -133,18 +138,267 @@ const mockMentors: Mentor[] = [
   },
 ];
 
+const officialMentors: Mentor[] = [
+  {
+    id: "mentor-mohammad-salekeen-ibrahim",
+    name: "Mohammad Salekeen Ibrahim",
+    role: "Head of Asset, Retail & SME Banking",
+    organization: "Eastern Bank PLC",
+    bio: "Head of Asset, Retail & SME Banking at Eastern Bank PLC.",
+    portraitSrc: "/images/mentors/mohammad-salekeen-ibrahim.png",
+    categories: ["Financial Analysis", "Leadership & Career", "Operations & Management"],
+    expertise: ["Retail & SME Banking", "Asset Management"],
+    careerHistory: [{ company: "Eastern Bank PLC", role: "Head of Asset, Retail & SME Banking" }],
+    order: 1,
+    isPlaceholder: false,
+    published: true,
+    provenance: {
+      class: "A",
+      verified: true,
+      source: "Official MTO Faculty Reference",
+      verifiedBy: "Executive Team",
+      verifiedOn: "2026-11-09",
+    },
+  },
+  {
+    id: "mentor-syed-himyanuddin-ahmed",
+    name: "Syed Himyanuddin Ahmed",
+    role: "Senior Associate Administrator, Administrator’s Office Division",
+    organization: "Nagad Ltd.",
+    bio: "Senior Associate Administrator at Nagad Ltd.",
+    portraitSrc: "/images/mentors/syed-himyanuddin-ahmed.png",
+    categories: ["Operations & Management", "Leadership & Career"],
+    expertise: ["Corporate Administration", "Institutional Governance"],
+    careerHistory: [
+      {
+        company: "Nagad Ltd.",
+        role: "Senior Associate Administrator, Administrator’s Office Division",
+      },
+    ],
+    order: 2,
+    isPlaceholder: false,
+    published: true,
+    provenance: {
+      class: "A",
+      verified: true,
+      source: "Official MTO Faculty Reference",
+      verifiedBy: "Executive Team",
+      verifiedOn: "2026-11-09",
+    },
+  },
+  {
+    id: "mentor-anubhab-rahman",
+    name: "Anubhab Rahman",
+    role: "Chief Human Resources Officer, Human Resources Division",
+    organization: "Nagad Ltd.",
+    bio: "Chief Human Resources Officer at Nagad Ltd.",
+    portraitSrc: "/images/mentors/anubhab-rahman-v3.png",
+    categories: ["Leadership & Career", "Operations & Management"],
+    expertise: ["Human Resources Strategy", "Executive Recruitment"],
+    careerHistory: [{ company: "Nagad Ltd.", role: "CHRO" }],
+    order: 3,
+    isPlaceholder: false,
+    published: true,
+    provenance: {
+      class: "A",
+      verified: true,
+      source: "Official MTO Faculty Reference",
+      verifiedBy: "Executive Team",
+      verifiedOn: "2026-11-09",
+    },
+  },
+  {
+    id: "mentor-md-manik-hossain",
+    name: "Md. Manik Hossain",
+    role: "Head of HR Strategy & OD, Human Resources Division",
+    organization: "Nagad Ltd.",
+    bio: "Head of HR Strategy & OD at Nagad Ltd.",
+    portraitSrc: "/images/mentors/md-manik-hossain.png",
+    categories: ["Leadership & Career", "Operations & Management"],
+    expertise: ["HR Strategy", "Organizational Design"],
+    careerHistory: [{ company: "Nagad Ltd.", role: "Head of HR Strategy & OD" }],
+    order: 4,
+    isPlaceholder: false,
+    published: true,
+    provenance: {
+      class: "A",
+      verified: true,
+      source: "Official MTO Faculty Reference",
+      verifiedBy: "Executive Team",
+      verifiedOn: "2026-11-09",
+    },
+  },
+  {
+    id: "mentor-mir-hasib",
+    name: "Mir Hasib Mahmud",
+    role: "CEO",
+    organization: "Lead Nation Academy",
+    bio: "CEO & Co-founder of Lead Nation Academy and corporate strategist.",
+    portraitSrc: "/images/mentors/mir-hasib.png",
+    categories: ["Leadership & Career"],
+    expertise: ["Workplace Communication"],
+    careerHistory: [
+      { company: "Lead Nation Academy", role: "CEO & Co-founder" },
+      { company: "Goyara Ltd", role: "CBO" },
+    ],
+    order: 5,
+    isPlaceholder: false,
+    published: true,
+    provenance: {
+      class: "A",
+      verified: true,
+      source: "Test",
+      verifiedBy: "Executive Team",
+      verifiedOn: "2026-11-09",
+    },
+  },
+  {
+    id: "mentor-gm-kamrul",
+    name: "G M Kamrul Hassan",
+    role: "CEO",
+    organization: "IGLOO",
+    bio: "CEO at IGLOO with decades of executive leadership.",
+    portraitSrc: "/images/mentors/gm-kamrul.png",
+    categories: ["Marketing & Sales"],
+    expertise: ["Sales Strategy"],
+    careerHistory: [{ company: "IGLOO", role: "CEO" }],
+    order: 6,
+    isPlaceholder: false,
+    published: true,
+    provenance: {
+      class: "A",
+      verified: true,
+      source: "Test",
+      verifiedBy: "Executive Team",
+      verifiedOn: "2026-11-09",
+    },
+  },
+  {
+    id: "mentor-zia-ashraf",
+    name: "Zia Ashraf",
+    role: "COO",
+    organization: "Chaldal PLC",
+    bio: "Co-founder & COO at Chaldal PLC.",
+    portraitSrc: "/images/mentors/zia-ashraf.png",
+    categories: ["Operations & Management"],
+    expertise: ["Customer Experience"],
+    careerHistory: [{ company: "Chaldal PLC", role: "COO" }],
+    order: 7,
+    isPlaceholder: false,
+    published: true,
+    provenance: {
+      class: "A",
+      verified: true,
+      source: "Test",
+      verifiedBy: "Executive Team",
+      verifiedOn: "2026-11-09",
+    },
+  },
+  {
+    id: "mentor-sayeda-salma",
+    name: "Sayeda Umme Salma",
+    role: "MD & CEO",
+    organization: "BrandGear Limited",
+    bio: "Managing Director & CEO of BrandGear Limited.",
+    portraitSrc: "/images/mentors/sayeda-salma.png",
+    categories: ["Marketing & Sales"],
+    expertise: ["Brand Architecture"],
+    careerHistory: [{ company: "BrandGear Limited", role: "MD & CEO" }],
+    order: 8,
+    isPlaceholder: false,
+    published: true,
+    provenance: {
+      class: "A",
+      verified: true,
+      source: "Test",
+      verifiedBy: "Executive Team",
+      verifiedOn: "2026-11-09",
+    },
+  },
+];
+
+describe("Mentor sorting and dynamic categories", () => {
+  it("derives non-zero dynamic categories without 0-count placeholders", () => {
+    const categories = getMentorCategoriesWithCounts(officialMentors);
+
+    expect(categories[0]).toEqual({ id: "all", name: "All Mentors", count: 8 });
+    expect(categories.every((c) => c.count > 0)).toBe(true);
+    expect(categories.some((c) => c.name === "Design & UX")).toBe(false);
+    expect(categories.some((c) => c.name === "Business & Leadership")).toBe(false);
+  });
+
+  it("interleaves duplicate organizations in featured order while honoring explicit sorts", () => {
+    expect(normalizeOrganizationGroupKey("Axentec PLC (a Robi Axiata company)")).toBe("axentec");
+    expect(normalizeOrganizationGroupKey("Axentec PLC")).toBe("axentec");
+
+    const featured = sortMentors(officialMentors, "featured");
+    // Diverse orgs first (Eastern Bank -> Nagad -> Lead Nation -> IGLOO -> Chaldal)
+    expect(featured.slice(0, 5).map((m) => m.id)).toEqual([
+      "mentor-mohammad-salekeen-ibrahim",
+      "mentor-syed-himyanuddin-ahmed",
+      "mentor-mir-hasib",
+      "mentor-gm-kamrul",
+      "mentor-zia-ashraf",
+    ]);
+
+    const byOrder = sortMentors(officialMentors, "order");
+    expect(byOrder.slice(0, 4).map((m) => m.id)).toEqual([
+      "mentor-mohammad-salekeen-ibrahim",
+      "mentor-syed-himyanuddin-ahmed",
+      "mentor-anubhab-rahman",
+      "mentor-md-manik-hossain",
+    ]);
+
+    const byName = sortMentors(officialMentors, "name-asc");
+    expect(byName[0]?.name).toBe("Anubhab Rahman");
+
+    const byOrg = sortMentors(officialMentors, "org-asc");
+    expect(byOrg[0]?.organization).toBe("BrandGear Limited");
+  });
+});
+
 describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
-  it("renders category filters with dynamic counts and search input", () => {
+  it("renders dynamic non-zero category tabs (no 0-count pills), sort selector, and search input", () => {
     render(
       <MentorQuickViewProvider>
-        <MentorsSection mentors={mockMentors} />
+        <MentorsSection mentors={officialMentors} />
       </MentorQuickViewProvider>
     );
 
-    // Category buttons
-    expect(screen.getByRole("tab", { name: /all mentors/i })).toBeDefined();
-    expect(screen.getByRole("tab", { name: /technology & ai/i })).toBeDefined();
-    expect(screen.getByRole("tab", { name: /business & leadership/i })).toBeDefined();
+    const tabs = within(
+      screen.getByRole("tablist", { name: /filter mentors by category/i })
+    ).getAllByRole("tab");
+
+    expect(tabs.map((t) => t.textContent)).toEqual([
+      "All Mentors8",
+      "Leadership & Career5",
+      "Operations & Management5",
+      "Marketing & Sales2",
+      "Financial Analysis1",
+    ]);
+
+    expect(screen.queryByRole("tab", { name: /design & ux/i })).toBeNull();
+    expect(screen.queryByRole("tab", { name: /business & leadership/i })).toBeNull();
+    expect(screen.queryByText(/^0$/)).toBeNull();
+
+    // Sort selector allows switching Featured -> Program Order / Name / Company
+    const sortSelect = screen.getByRole("combobox", { name: /sort mentors/i });
+    const cardIds = () =>
+      screen.getAllByTestId("mentor-card").map((el) => el.getAttribute("data-mentor-id"));
+    expect(cardIds().slice(0, 4)).toEqual([
+      "mentor-mohammad-salekeen-ibrahim",
+      "mentor-syed-himyanuddin-ahmed",
+      "mentor-mir-hasib",
+      "mentor-gm-kamrul",
+    ]);
+
+    fireEvent.change(sortSelect, { target: { value: "order" } });
+    expect(cardIds().slice(0, 4)).toEqual([
+      "mentor-mohammad-salekeen-ibrahim",
+      "mentor-syed-himyanuddin-ahmed",
+      "mentor-anubhab-rahman",
+      "mentor-md-manik-hossain",
+    ]);
 
     // Search field
     const searchInput = screen.getByPlaceholderText(/search mentors, company or expertise/i);
@@ -158,41 +412,51 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
       </MentorQuickViewProvider>
     );
 
-    // Eyebrow and Heading
-    expect(screen.getByText(/our mentors/i)).toBeDefined();
+    expect(screen.getByText(/^our mentors$/i)).toBeDefined();
     expect(screen.getByRole("heading", { level: 2, name: /meet our mentors/i })).toBeDefined();
-
-    // Three highlights matching reference
     expect(screen.getByText(/industry experts/i)).toBeDefined();
     expect(screen.getByText(/real-world experience/i)).toBeDefined();
     expect(screen.getByText(/global perspective/i)).toBeDefined();
-
-    // Find a Mentor button
     expect(screen.getByRole("button", { name: /find a mentor/i })).toBeDefined();
   });
 
-  it("renders 5 visible layered cards in carousel with company logos", () => {
+  it("renders 5 visible layered cards in carousel with explicit Info buttons and icon-only company marks", () => {
     render(
       <MentorQuickViewProvider>
         <MentorsSection mentors={mockMentors} />
       </MentorQuickViewProvider>
     );
 
-    // All 5 mentors rendered in card deck
     expect(screen.getAllByText("Nadia Islam").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Ethan Park").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Riya Sharma").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Marcus Reed").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Lena Chen").length).toBeGreaterThanOrEqual(1);
 
+    // Info buttons replace ambiguous '+' triggers
+    expect(screen.getAllByText(/^Info$/).length).toBe(5);
+    expect(screen.getByRole("button", { name: /view mentor info for nadia islam/i })).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /view mentor info for riya sharma/i, hidden: true })
+    ).toBeDefined();
+    expect(screen.queryByRole("button", { name: /open quick view/i, hidden: true })).toBeNull();
+
     // Role with company renders cleanly instead of standalone title
     expect(screen.getAllByText("Head of People at Airbnb").length).toBeGreaterThanOrEqual(1);
 
-    // Company logos rendered in logo-only mode (accessible role="img", no visible duplicate label text)
-    expect(screen.getAllByRole("img", { name: "airbnb", hidden: true }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByRole("img", { name: "Microsoft", hidden: true }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByRole("img", { name: "Vellum", hidden: true }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByRole("img", { name: "StrideWorks", hidden: true }).length).toBeGreaterThanOrEqual(1);
+    // Company logos rendered in logo-only mode
+    expect(
+      screen.getAllByRole("img", { name: "airbnb", hidden: true }).length
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByRole("img", { name: "Microsoft", hidden: true }).length
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByRole("img", { name: "Vellum", hidden: true }).length
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByRole("img", { name: "StrideWorks", hidden: true }).length
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("airbnb")).toBeNull();
     expect(screen.queryByText("Microsoft")).toBeNull();
     expect(screen.queryByText("Vellum")).toBeNull();
@@ -206,7 +470,6 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
       </MentorQuickViewProvider>
     );
 
-    // Position indicator showing 03 / 05 Mentors (Riya is initially centered)
     expect(screen.getByText(/03 \/ 05 mentors/i)).toBeDefined();
 
     const nextBtn = screen.getByRole("button", { name: /next mentor/i });
@@ -215,10 +478,7 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
     expect(nextBtn).toBeDefined();
     expect(prevBtn).toBeDefined();
 
-    // Advance to next mentor
     fireEvent.click(nextBtn);
-
-    // Return to previous mentor
     fireEvent.click(prevBtn);
   });
 
@@ -229,21 +489,16 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
       </MentorQuickViewProvider>
     );
 
-    // Click HR & Operations category
     const hrTab = screen.getByRole("tab", { name: /hr & operations/i });
     fireEvent.click(hrTab);
-
-    // Nadia Islam should be present
     expect(screen.getAllByText("Nadia Islam").length).toBeGreaterThanOrEqual(1);
 
-    // Search for a keyword
     const searchInput = screen.getByPlaceholderText(/search mentors, company or expertise/i);
     fireEvent.change(searchInput, { target: { value: "Nadia" } });
-
     expect(screen.getAllByText("Nadia Islam").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("opens one consistent centered quick-view modal across all viewports and never renders a side-floating panel", () => {
+  it("opens one consistent centered quick-view modal via Info button across all viewports and never renders a side-floating panel", () => {
     for (const testWidth of [390, 768, 1440, 1920, 2560]) {
       const originalInnerWidth = window.innerWidth;
       Object.defineProperty(window, "innerWidth", {
@@ -259,13 +514,11 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
           </MentorQuickViewProvider>
         );
 
-        // Click active card plus button
-        const plusBtn = screen.getByRole("button", {
-          name: /open quick view for riya sharma/i,
+        const infoBtn = screen.getByRole("button", {
+          name: /view mentor info for riya sharma/i,
         });
-        fireEvent.click(plusBtn);
+        fireEvent.click(infoBtn);
 
-        // Centered modal dialog opens
         const modal = screen.getByRole("dialog");
         expect(modal).toBeDefined();
         expect(within(modal).getAllByText("Riya Sharma").length).toBeGreaterThanOrEqual(1);
@@ -273,10 +526,8 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
           within(modal).getByText(/Growth leader with 15\+ years of experience/i)
         ).toBeDefined();
 
-        // Ensure NO side-floating panel is rendered on any viewport
         expect(screen.queryByRole("region", { name: /featured mentor spotlight/i })).toBeNull();
 
-        // Close button dismisses modal
         const closeBtn = within(modal).getByRole("button", { name: /close mentor details/i });
         fireEvent.click(closeBtn);
 
@@ -300,16 +551,11 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
     );
 
     const nextBtn = screen.getByRole("button", { name: /next mentor/i });
-    expect(nextBtn).toBeDefined();
-
-    // Perform 20 rapid clicks
     for (let i = 0; i < 20; i++) {
       fireEvent.click(nextBtn);
     }
 
-    // Carousel remains responsive and displays a valid index
-    const counter = screen.getByText(/\d{2} \/ 05 mentors/i);
-    expect(counter).toBeDefined();
+    expect(screen.getByText(/\d{2} \/ 05 mentors/i)).toBeDefined();
   });
 
   it("does not render a visible pause button and provides accessible keyboard interaction", () => {
@@ -319,18 +565,16 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
       </MentorQuickViewProvider>
     );
 
-    // Pause button is completely removed from the UI per approved spec
     expect(screen.queryByRole("button", { name: /pause/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /start autoplay rotation/i })).toBeNull();
 
-    // Carousel container handles keyboard navigation
     const carousel = screen.getByRole("region", { name: /executive mentors carousel/i });
     fireEvent.keyDown(carousel, { key: "ArrowRight" });
     fireEvent.keyDown(carousel, { key: "ArrowLeft" });
     fireEvent.keyDown(carousel, { key: " " });
   });
 
-  it("rotates mentors automatically at 4-second intervals and resumes after manual navigation", () => {
+  it("rotates mentors automatically at 2-second intervals and resumes after manual navigation", () => {
     vi.useFakeTimers();
     try {
       render(
@@ -339,45 +583,46 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
         </MentorQuickViewProvider>
       );
 
-      // Initially Riya Sharma (03 / 05)
       expect(screen.getByText(/03 \/ 05 mentors/i)).toBeDefined();
 
-      // Fast-forward past entrance reveal (1300ms)
+      // Should not rotate before initial 1250ms post-settle hold completes
       act(() => {
-        vi.advanceTimersByTime(1400);
+        vi.advanceTimersByTime(1100);
       });
+      expect(screen.getByText(/03 \/ 05 mentors/i)).toBeDefined();
 
-      // Advance 4000ms idle display time + remaining transition
+      // First advance completes at 1250ms (since jsdom has no IntersectionObserver reveal delay)
       act(() => {
-        vi.advanceTimersByTime(4800);
+        vi.advanceTimersByTime(200);
       });
-
-      // Should advance to Marcus Reed (04 / 05)
       expect(screen.getByText(/04 \/ 05 mentors/i)).toBeDefined();
 
-      // Advance another 750ms transition + 4000ms idle display time
+      // Subsequent rotations happen at exact 2-second (2000ms = 750ms transition + 1250ms hold) intervals
       act(() => {
-        vi.advanceTimersByTime(4800);
+        vi.advanceTimersByTime(1900);
       });
+      expect(screen.getByText(/04 \/ 05 mentors/i)).toBeDefined();
 
-      // Should advance to Lena Chen (05 / 05)
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
       expect(screen.getByText(/05 \/ 05 mentors/i)).toBeDefined();
 
-      // Manual Next click navigates immediately
+      // Manual click triggers immediate update and starts a fresh 2-second cycle
       const nextBtn = screen.getByRole("button", { name: /next mentor/i });
       act(() => {
         fireEvent.click(nextBtn);
       });
-
-      // Immediately wraps to Nadia Islam (01 / 05)
       expect(screen.getByText(/01 \/ 05 mentors/i)).toBeDefined();
 
-      // Resumes automatic rotation after 750ms transition + 4000ms display time
       act(() => {
-        vi.advanceTimersByTime(4800);
+        vi.advanceTimersByTime(1900);
       });
+      expect(screen.getByText(/01 \/ 05 mentors/i)).toBeDefined();
 
-      // Advances to Ethan Park (02 / 05)
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
       expect(screen.getByText(/02 \/ 05 mentors/i)).toBeDefined();
     } finally {
       vi.useRealTimers();
@@ -393,42 +638,34 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
         </MentorQuickViewProvider>
       );
 
-      // Settle reveal
       act(() => {
-        vi.advanceTimersByTime(1400);
+        vi.advanceTimersByTime(500);
       });
       expect(screen.getByText(/03 \/ 05 mentors/i)).toBeDefined();
 
-      // Open modal
-      const plusBtn = screen.getByRole("button", {
-        name: /open quick view for riya sharma/i,
+      const infoBtn = screen.getByRole("button", {
+        name: /view mentor info for riya sharma/i,
       });
       act(() => {
-        fireEvent.click(plusBtn);
+        fireEvent.click(infoBtn);
       });
 
       const modal = screen.getByRole("dialog");
       expect(modal).toBeDefined();
 
-      // Advance timers by 10 seconds while modal is open
       act(() => {
         vi.advanceTimersByTime(10000);
       });
-
-      // Carousel must remain paused on Riya Sharma (03 / 05)
       expect(screen.getByText(/03 \/ 05 mentors/i)).toBeDefined();
 
-      // Close modal
       const closeBtn = within(modal).getByRole("button", { name: /close mentor details/i });
       act(() => {
         fireEvent.click(closeBtn);
       });
-
       expect(screen.queryByRole("dialog")).toBeNull();
 
-      // After closing, advancing 750ms + 4000ms resumes rotation
       act(() => {
-        vi.advanceTimersByTime(4800);
+        vi.advanceTimersByTime(1300);
       });
       expect(screen.getByText(/04 \/ 05 mentors/i)).toBeDefined();
     } finally {
@@ -437,139 +674,23 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
   });
 
   it("renders role-with-company titles and official logo-only corporate marks for LNA mentors", () => {
-    const officialMentors: Mentor[] = [
-      {
-        id: "mentor-mir-hasib",
-        name: "Mir Hasib Mahmud",
-        role: "CEO",
-        organization: "Lead Nation Academy",
-        bio: "CEO & Co-founder of Lead Nation Academy and corporate strategist.",
-        portraitSrc: "/images/mentors/mir-hasib.png",
-        categories: ["Leadership & Career"],
-        expertise: ["Workplace Communication"],
-        careerHistory: [
-          { company: "Lead Nation Academy", role: "CEO & Co-founder" },
-          { company: "Goyara Ltd", role: "CBO" },
-        ],
-        order: 1,
-        isPlaceholder: false,
-        published: true,
-        provenance: {
-          class: "A",
-          verified: true,
-          source: "Test",
-          verifiedBy: "Executive Team",
-          verifiedOn: "2026-11-09",
-        },
-      },
-      {
-        id: "mentor-gm-kamrul",
-        name: "G M Kamrul Hassan",
-        role: "CEO",
-        organization: "IGLOO",
-        bio: "CEO at IGLOO with decades of executive leadership.",
-        portraitSrc: "/images/mentors/gm-kamrul.png",
-        categories: ["Marketing & Sales"],
-        expertise: ["Sales Strategy"],
-        careerHistory: [{ company: "IGLOO", role: "CEO" }],
-        order: 2,
-        isPlaceholder: false,
-        published: true,
-        provenance: {
-          class: "A",
-          verified: true,
-          source: "Test",
-          verifiedBy: "Executive Team",
-          verifiedOn: "2026-11-09",
-        },
-      },
-      {
-        id: "mentor-sayeda-salma",
-        name: "Sayeda Umme Salma",
-        role: "MD & CEO",
-        organization: "BrandGear Limited",
-        bio: "Managing Director & CEO of BrandGear Limited.",
-        portraitSrc: "/images/mentors/sayeda-salma.png",
-        categories: ["Marketing & Sales"],
-        expertise: ["Brand Architecture"],
-        careerHistory: [{ company: "BrandGear Limited", role: "MD & CEO" }],
-        order: 3,
-        isPlaceholder: false,
-        published: true,
-        provenance: {
-          class: "A",
-          verified: true,
-          source: "Test",
-          verifiedBy: "Executive Team",
-          verifiedOn: "2026-11-09",
-        },
-      },
-      {
-        id: "mentor-zia-ashraf",
-        name: "Zia Ashraf",
-        role: "COO",
-        organization: "Chaldal PLC",
-        bio: "Co-founder & COO at Chaldal PLC.",
-        portraitSrc: "/images/mentors/zia-ashraf.png",
-        categories: ["Operations & Management"],
-        expertise: ["Customer Experience"],
-        careerHistory: [{ company: "Chaldal PLC", role: "COO" }],
-        order: 4,
-        isPlaceholder: false,
-        published: true,
-        provenance: {
-          class: "A",
-          verified: true,
-          source: "Test",
-          verifiedBy: "Executive Team",
-          verifiedOn: "2026-11-09",
-        },
-      },
-      {
-        id: "mentor-syed-himyanuddin-ahmed",
-        name: "Syed Himyanuddin Ahmed",
-        role: "Senior Associate Administrator, Administrator’s Office Division",
-        organization: "Nagad Ltd.",
-        bio: "Senior Associate Administrator at Nagad Ltd.",
-        portraitSrc: "/images/mentors/syed-himyanuddin-ahmed.png",
-        categories: ["Operations & Management"],
-        expertise: ["Corporate Administration"],
-        careerHistory: [
-          {
-            company: "Nagad Ltd.",
-            role: "Senior Associate Administrator, Administrator’s Office Division",
-          },
-        ],
-        order: 5,
-        isPlaceholder: false,
-        published: true,
-        provenance: {
-          class: "A",
-          verified: true,
-          source: "Test",
-          verifiedBy: "Executive Team",
-          verifiedOn: "2026-11-09",
-        },
-      },
-    ];
-
     render(
       <MentorQuickViewProvider>
         <MentorsSection mentors={officialMentors} initialMentorId="mentor-mir-hasib" />
       </MentorQuickViewProvider>
     );
 
-    // Role displays with organization instead of bare title
     expect(screen.getByText("CEO at Lead Nation Academy")).toBeDefined();
     expect(screen.getByText("CEO at IGLOO")).toBeDefined();
     expect(screen.getByText("MD & CEO at BrandGear Limited")).toBeDefined();
     expect(screen.getByText("COO at Chaldal PLC")).toBeDefined();
     expect(
-      screen.getByText("Senior Associate Administrator, Administrator’s Office Division at Nagad Ltd.")
+      screen.getByText(
+        "Senior Associate Administrator, Administrator’s Office Division at Nagad Ltd."
+      )
     ).toBeDefined();
     expect(screen.queryByText(/^CEO$/)).toBeNull();
 
-    // Official corporate logo images render with clean alt attributes and no plain-text company names
     const lnaLogos = screen.getAllByRole("img", { name: "Lead Nation Academy", hidden: true });
     expect(lnaLogos.some((el) => el.getAttribute("src") === "/images/brand/logo.png")).toBe(true);
     const goyaraLogos = screen.getAllByRole("img", { name: "Goyara Ltd", hidden: true });
@@ -593,14 +714,12 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
       true
     );
 
-    // Standalone company names should NOT appear in the card footer strip
     expect(screen.queryByText("Goyara Ltd")).toBeNull();
     expect(screen.queryByText("BrandGear Limited")).toBeNull();
     expect(screen.queryByText("Chaldal PLC")).toBeNull();
     expect(screen.queryByText("Nagad Ltd.")).toBeNull();
 
-    // Quick-view modal also displays role-with-company and official corporate logos
-    fireEvent.click(screen.getByRole("button", { name: /open quick view for mir hasib mahmud/i }));
+    fireEvent.click(screen.getByRole("button", { name: /view mentor info for mir hasib mahmud/i }));
     const modal = screen.getByRole("dialog");
     expect(within(modal).getByText("CEO at Lead Nation Academy")).toBeDefined();
     expect(within(modal).getByRole("img", { name: "Lead Nation Academy" })).toBeDefined();
@@ -610,7 +729,11 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
   it("applies recognizable calibrated heights for hero, card, and modal OfficialCompanyLogo sizes", () => {
     render(
       <div>
-        <OfficialCompanyLogo src="/images/partners/brandgear.png" alt="BrandGear Hero" size="hero" />
+        <OfficialCompanyLogo
+          src="/images/partners/brandgear.png"
+          alt="BrandGear Hero"
+          size="hero"
+        />
         <OfficialCompanyLogo src="/images/partners/nagad.png" alt="Nagad Hero" size="hero" />
         <OfficialCompanyLogo src="/images/partners/igloo.png" alt="IGLOO Hero" size="hero" />
         <OfficialCompanyLogo src="/images/brand/logo.png" alt="LNA Card" size="card" />
