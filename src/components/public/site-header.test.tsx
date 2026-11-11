@@ -49,10 +49,13 @@ const mockOrg: Organization = {
 };
 
 describe("SiteHeader Component (WCAG 2.2 AA)", () => {
-  it("renders banner landmark and organization branding", () => {
+  it("renders banner landmark and complete official logo lockup", () => {
     render(<SiteHeader navigation={mockNav} organization={mockOrg} />);
     expect(screen.getByRole("banner")).toBeDefined();
     expect(screen.getByRole("link", { name: /Lead Nation Academy Home/i })).toBeDefined();
+    const logoImg = screen.getByRole("img", { name: "Lead Nation Academy" });
+    expect(logoImg.getAttribute("src")).toBe("/images/brand/logo.png");
+    expect(logoImg.getAttribute("src")).not.toBe("/images/brand/logo-crest.png");
   });
 
   it("renders desktop navigation links and CTA", () => {

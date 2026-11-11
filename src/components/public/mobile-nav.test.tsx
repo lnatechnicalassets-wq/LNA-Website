@@ -49,7 +49,7 @@ describe("MobileNav Component", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("renders drawer dialog with nav items and organization details when open is true", () => {
+  it("renders drawer dialog with complete official logo, nav items, and organization details when open is true", () => {
     render(
       <MobileNav
         open={true}
@@ -60,10 +60,15 @@ describe("MobileNav Component", () => {
       />
     );
     expect(screen.getByRole("dialog")).toBeDefined();
+    const logoImg = screen.getByRole("img", { name: "Lead Nation Academy" });
+    expect(logoImg.getAttribute("src")).toBe("/images/brand/logo.png");
+    expect(logoImg.getAttribute("src")).not.toBe("/images/brand/logo-crest.png");
     expect(screen.getByRole("link", { name: "Courses" })).toBeDefined();
     expect(screen.getByRole("link", { name: "About" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Enroll Now" })).toBeDefined();
-    expect(screen.getByText("+880 1700-000000")).toBeDefined();
+    const phoneLink = screen.getByRole("link", { name: "+880 1700-000000" });
+    expect(phoneLink.getAttribute("href")).toBe("tel:+8801700000000");
+    expect(screen.getByText("Road 27, Dhaka 1209")).toBeDefined();
   });
 
   it("calls onOpenChange(false) when close button is clicked", () => {

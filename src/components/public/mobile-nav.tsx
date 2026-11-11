@@ -65,10 +65,16 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
               <Link
                 href="/"
                 onClick={() => onOpenChange(false)}
-                className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                className="inline-flex items-center shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
                 aria-label={`${organization?.name || "Lead Nation Academy"} Home`}
               >
-                <DemoLogo size="sm" showTagline={false} showDemoBadge={false} />
+                <DemoLogo
+                  variant="full"
+                  size="sm"
+                  name={organization?.name}
+                  showTagline={false}
+                  showDemoBadge={false}
+                />
               </Link>
               <DialogPrimitive.Close
                 className="rounded-lg p-2 text-text-muted hover:text-primary-900 hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
@@ -126,16 +132,27 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
             <div className="pt-6 border-t border-border-subtle space-y-3 text-xs text-text-secondary">
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-accent-600 shrink-0" aria-hidden="true" />
-                <span>{organization.phone}</span>
+                <a
+                  href={`tel:${organization.phone.replace(/[^\d+]/g, "")}`}
+                  className="hover:text-primary-900 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 rounded"
+                >
+                  {organization.phone}
+                </a>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-accent-600 shrink-0" aria-hidden="true" />
-                <span>{organization.email}</span>
+                <a
+                  href={`mailto:${organization.email}`}
+                  className="hover:text-primary-900 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 rounded"
+                >
+                  {organization.email}
+                </a>
               </div>
               <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-accent-600 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>
                   {organization.address.street}, {organization.address.city}
+                  {organization.address.postalCode ? ` ${organization.address.postalCode}` : ""}
                 </span>
               </div>
             </div>
