@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Calendar, Clock, MapPin, Layers, Users } from "lucide-react";
+import { ArrowRight, Calendar, Check, Clock, MapPin } from "lucide-react";
 import type { Course, Batch, Mentor } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
 import { getMentorAvatar } from "@/lib/mentors";
+import { Badge } from "@/components/ui/badge";
 import { useMentorQuickView } from "./mentor-quick-view-context";
 
 export interface CourseCardProps {
@@ -17,6 +18,56 @@ export interface CourseCardProps {
   onSelect?: (course: Course, batch?: Batch, mentors?: Mentor[]) => void;
 }
 
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+function formatBatchStartDate(isoDate?: string): string | null {
+  if (!isoDate) return null;
+  const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return isoDate;
+  const year = match[1];
+  const monthIdx = Number.parseInt(match[2], 10) - 1;
+  const day = Number.parseInt(match[3], 10);
+  const monthName = MONTH_NAMES[monthIdx];
+  if (!monthName || Number.isNaN(day)) return isoDate;
+  return `${monthName} ${day}, ${year}`;
+}
+
+function formatCompactVenue(rawVenue?: string): string {
+  if (!rawVenue) return "Offline Campus";
+  const parts = rawVenue
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length <= 2) return parts.join(", ");
+  return `${parts[0]}, ${parts[1]}`;
+}
+
+function formatMentorOrganizations(mentors: Mentor[]): string {
+  const uniqueOrgs: string[] = [];
+  for (const mentor of mentors) {
+    const org = mentor.organization?.trim();
+    if (org && !uniqueOrgs.includes(org)) {
+      uniqueOrgs.push(org);
+    }
+  }
+  if (uniqueOrgs.length === 0) return "Industry Practitioners";
+  if (uniqueOrgs.length <= 2) return uniqueOrgs.join(" & ");
+  return `${uniqueOrgs[0]}, ${uniqueOrgs[1]} & more`;
+}
+
 export function CourseCard({
   course,
   batch,
@@ -25,165 +76,149 @@ export function CourseCard({
   onSelect: _onSelect,
 }: CourseCardProps) {
   const { openQuickView } = useMentorQuickView();
-  const [isHovered, setIsHovered] = useState(false);
 
-  const isIrgp = course.id === "irgp";
-  const isCompleted = batch?.status === "completed" || isIrgp;
-  const isMto = course.id === "mto-readiness" || course.id === "mto";
+  const isCompleted = batch?.status === "completed" || course.id === "irgp";
+  const isOpenForEnrollment = !isCompleted && batch?.status === "open_for_enrollment";
 
   // Financial calculation via integer poisha (Rule R5)
-  const feePoisha = batch?.feePoisha ?? 3000000;
+  const feePoisha = batch?.feePoisha;
   const discountFeePoisha = batch?.discountFeePoisha;
+  const hasDiscount =
+    feePoisha !== undefined && discountFeePoisha !== undefined && discountFeePoisha < feePoisha;
   const effectiveFeePoisha = discountFeePoisha ?? feePoisha;
 
-  const statusLabel = isCompleted ? "Completed" : "Upcoming";
+  const remainingSeats = batch ? Math.max(0, batch.capacity - batch.enrolledCount) : null;
+  const formattedStartDate = formatBatchStartDate(batch?.startDate);
+  const compactVenue = formatCompactVenue(course.venue || batch?.venue);
+  const scheduleText = batch?.scheduleDescription || `${course.modules.length} Modules`;
+  const outcomes = course.learningOutcomes.slice(0, 3);
   const courseHref = `/courses/${course.id}`;
 
-  // Resolve metadata display matching reference image
-  let metaItem1 = {
-    icon: Calendar,
-    text: batch?.scheduleDescription?.includes("Weeks")
-      ? "8 Weeks"
-      : `${course.modules.length * 2} Weeks`,
-  };
-  let metaItem2 = {
-    icon: MapPin,
-    text: "Offline · Dhanmondi",
-  };
+  const visibleMentors = mentors.length > 5 ? mentors.slice(0, 4) : mentors;
+  const hiddenMentorCount = Math.max(0, mentors.length - visibleMentors.length);
 
-  if (isMto) {
-    metaItem1 = { icon: Calendar, text: "16 Sessions" };
-    metaItem2 = { icon: Clock, text: "1.5h each" };
-  } else if (isIrgp) {
-    metaItem1 = { icon: Layers, text: "10 focus areas" };
-    metaItem2 = { icon: Users, text: "8 industry mentors" };
+  let statusText = "Upcoming";
+  let statusVariant: "success" | "primary" | "default" = "primary";
+
+  if (isCompleted) {
+    statusVariant = "success";
+    statusText = batch?.batchNumber ? `Completed · Cohort ${batch.batchNumber}` : "Completed";
+  } else if (isOpenForEnrollment) {
+    statusVariant = "primary";
+    if (remainingSeats !== null && remainingSeats <= 0) {
+      statusText = "Batch Full";
+    } else {
+      statusText = batch?.batchNumber ? `Open · Cohort ${batch.batchNumber}` : "Open";
+    }
+  } else if (batch?.batchNumber) {
+    statusText = `Upcoming · Cohort ${batch.batchNumber}`;
   }
 
-  const Icon1 = metaItem1.icon;
-  const Icon2 = metaItem2.icon;
-
-  const mentorCount = mentors.length;
-
   return (
-    <div
+    <article
       data-testid="course-card"
       data-course-id={course.id}
-      data-mentor-count={mentorCount}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onFocus={() => setIsHovered(true)}
-      onBlur={() => setIsHovered(false)}
-      className={`group relative flex flex-col justify-between h-116.25 w-full max-w-82.5 rounded-2xl p-6 overflow-hidden transition-all duration-200 ease-out select-none mx-auto ${
-        isHovered
-          ? "bg-[#086477] text-white shadow-xl border border-[#086477]"
-          : "bg-white text-[#172E35] border border-[#E2ECEE] shadow-xs hover:border-[#086477]/40 hover:shadow-md"
-      }`}
+      data-mentor-count={mentors.length}
+      className={`group relative flex flex-col justify-between h-full w-full rounded-2xl bg-surface-card border shadow-xs transition-all duration-200 overflow-hidden ${
+        isOpenForEnrollment
+          ? "border-border-default hover:border-primary"
+          : "border-border-subtle hover:border-border-strong"
+      } hover:shadow-lg`}
     >
-      {/* Primary Accessible Link stretching across entire card */}
+      {/* Top Editorial Accent Strip */}
+      <div
+        aria-hidden="true"
+        className={`h-1.5 w-full shrink-0 transition-colors duration-200 ${
+          isOpenForEnrollment ? "bg-primary" : "bg-border-default group-hover:bg-primary"
+        }`}
+      />
+
+      {/* Primary Accessible Card Link */}
       <Link
         href={courseHref}
-        className="absolute inset-0 z-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#086477] focus-visible:ring-offset-2 rounded-2xl cursor-pointer"
+        className="absolute inset-0 z-0 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 cursor-pointer"
         aria-label={`View ${course.title} details`}
       />
 
-      {/* Top Row: Category & Status Badge */}
-      <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 pointer-events-none">
-        <span
-          className={`text-[11px] font-bold uppercase tracking-wider whitespace-nowrap shrink-0 transition-colors duration-200 ${
-            isHovered ? "text-[#C5E2E5]" : "text-[#086477]"
-          }`}
-        >
-          {course.category}
-        </span>
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 transition-all duration-200 ${
-            isHovered
-              ? "border border-white/60 text-white bg-transparent"
-              : isCompleted
-                ? "bg-[#D1FAE5] text-[#065F46]"
-                : "bg-[#E8F3F5] text-[#086477]"
-          }`}
-        >
-          {statusLabel}
-        </span>
-      </div>
+      {/* Card Body */}
+      <div className="relative z-10 flex-1 flex flex-col p-6 pointer-events-none">
+        {/* Top Row: Category & Status Badge */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-primary">
+            {course.category}
+          </span>
+          <Badge
+            variant={statusVariant}
+            dot
+            className="rounded-full normal-case tracking-normal px-2.5 py-1 text-xs"
+          >
+            {statusText}
+          </Badge>
+        </div>
 
-      {/* Course Title */}
-      <div className="relative z-10 mt-3 shrink-0 pointer-events-none">
-        <h3
-          className={`text-[21px] sm:text-[22px] font-bold tracking-tight leading-tight min-h-14 transition-colors duration-200 ${
-            isHovered ? "text-white" : "text-[#172E35]"
-          }`}
-        >
+        {/* Title & Subtitle */}
+        <h3 className="mt-3.5 text-xl sm:text-[22px] font-bold tracking-tight leading-snug text-text-primary group-hover:text-primary transition-colors">
           {course.title}
         </h3>
-      </div>
+        <p className="mt-1.5 text-sm text-text-secondary leading-relaxed">
+          {course.subtitle || course.summary}
+        </p>
 
-      {/* Middle Section: Swaps between Normal View and "MEET YOUR MENTORS" on Hover */}
-      <div className="relative z-10 flex-1 flex flex-col justify-between my-2 overflow-hidden pointer-events-none">
-        {/* Normal State View */}
-        <div
-          className={`flex-1 flex flex-col justify-between transition-all duration-200 ${
-            isHovered ? "opacity-0 pointer-events-none absolute inset-0" : "opacity-100 relative"
-          }`}
-        >
-          {/* Subtitle / Summary */}
-          <p className="text-[14px] text-[#526E77] leading-snug line-clamp-2 min-h-9.5">
-            {course.subtitle || course.summary}
-          </p>
+        {/* Structured Metadata Pills */}
+        <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-text-primary">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-base border border-border-subtle">
+            <Calendar className="w-3.5 h-3.5 text-primary shrink-0" aria-hidden="true" />
+            <span>{scheduleText}</span>
+          </span>
 
-          {/* Metadata Row */}
-          <div className="flex items-center gap-4 text-[13px] text-[#526E77] my-2">
-            <div className="flex items-center gap-1.5">
-              <Icon1 className="w-4 h-4 text-[#086477] shrink-0" strokeWidth={1.75} />
-              <span className="font-medium text-[#172E35]">{metaItem1.text}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Icon2 className="w-4 h-4 text-[#086477] shrink-0" strokeWidth={1.75} />
-              <span className="font-medium text-[#172E35]">{metaItem2.text}</span>
-            </div>
-          </div>
+          {!isCompleted && formattedStartDate && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-base border border-border-subtle">
+              <Clock className="w-3.5 h-3.5 text-primary shrink-0" aria-hidden="true" />
+              <span>Starts {formattedStartDate}</span>
+            </span>
+          )}
 
-          {/* Normal State Mentors Row */}
-          <div className="mt-auto pt-2 pointer-events-auto">
-            {isIrgp ? (
-              /* IRGP 2x4 Grid */
-              <div className="grid grid-cols-4 gap-2 w-max" aria-label="IRGP Faculty">
-                {mentors.slice(0, 8).map((mentor, idx) => {
-                  const avatar = getMentorAvatar(mentor, idx);
-                  return (
-                    <button
-                      key={mentor.id}
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openQuickView(mentor);
-                      }}
-                      className="relative z-20 w-8 h-8 rounded-full overflow-hidden bg-[#E8F3F5] ring-2 ring-white shadow-xs cursor-pointer hover:scale-110 transition-transform"
-                      title={`${mentor.name} — ${mentor.role}`}
-                    >
-                      <Image
-                        src={avatar}
-                        alt={mentor.name}
-                        fill
-                        sizes="32px"
-                        className="object-cover object-top"
-                      />
-                    </button>
-                  );
-                })}
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-base border border-border-subtle max-w-full"
+            title={course.venue || batch?.venue}
+          >
+            <MapPin className="w-3.5 h-3.5 text-primary shrink-0" aria-hidden="true" />
+            <span className="truncate">{compactVenue}</span>
+          </span>
+        </div>
+
+        {/* Curriculum Outcomes */}
+        {outcomes.length > 0 && (
+          <ul className="mt-5 space-y-2 text-xs sm:text-sm text-text-secondary">
+            {outcomes.map((outcome, idx) => (
+              <li key={idx} className="flex items-start gap-2 leading-snug">
+                <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                <span>{outcome}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Labeled Mentor Strip (Always visible, 44px mobile touch targets) */}
+        {mentors.length > 0 && (
+          <div className="mt-auto pt-6">
+            <div className="pt-4 border-t border-border-subtle flex flex-wrap items-center justify-between gap-3 pointer-events-auto">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-text-primary">
+                  {mentors.length} {mentors.length === 1 ? "Industry Mentor" : "Industry Mentors"}
+                </p>
+                <p className="text-xs text-text-secondary truncate max-w-[220px]">
+                  {formatMentorOrganizations(mentors)}
+                </p>
               </div>
-            ) : (
-              /* Regular Mentors Horizontal Row */
+
               <div
-                className="flex items-center gap-2"
-                aria-label={`Assigned faculty: ${mentors.map((m) => m.name).join(", ")}`}
+                className="flex items-center -space-x-2"
+                role="group"
+                aria-label={`${course.title} mentors`}
               >
-                {mentors.map((mentor, idx) => {
+                {visibleMentors.map((mentor, idx) => {
                   const avatar = getMentorAvatar(mentor, idx);
-                  const sizeClass =
-                    mentorCount <= 2 ? "w-11 h-11" : mentorCount === 3 ? "w-10 h-10" : "w-9 h-9";
                   return (
                     <button
                       key={mentor.id}
@@ -193,7 +228,8 @@ export function CourseCard({
                         e.stopPropagation();
                         openQuickView(mentor);
                       }}
-                      className={`relative z-20 ${sizeClass} rounded-full overflow-hidden bg-[#E8F3F5] ring-2 ring-white shadow-xs cursor-pointer hover:scale-110 transition-transform`}
+                      className="relative z-20 w-11 h-11 rounded-full overflow-hidden bg-primary-50 ring-2 ring-surface-card shadow-xs cursor-pointer hover:scale-110 hover:z-30 transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                      aria-label={`View mentor profile: ${mentor.name}, ${mentor.role}`}
                       title={`${mentor.name} — ${mentor.role}`}
                     >
                       <Image
@@ -206,142 +242,73 @@ export function CourseCard({
                     </button>
                   );
                 })}
+                {hiddenMentorCount > 0 && (
+                  <span
+                    className="relative z-10 inline-flex items-center justify-center w-11 h-11 rounded-full bg-surface-muted text-text-primary text-xs font-semibold ring-2 ring-surface-card"
+                    aria-label={`${hiddenMentorCount} more mentors`}
+                  >
+                    +{hiddenMentorCount}
+                  </span>
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
-
-        {/* Hover State: MEET YOUR MENTORS Showcase */}
-        <div
-          className={`flex-1 flex flex-col items-center justify-center transition-all duration-200 pointer-events-auto ${
-            isHovered ? "opacity-100 relative" : "opacity-0 pointer-events-none absolute inset-0"
-          }`}
-        >
-          <span className="text-[11px] font-bold uppercase tracking-widest text-[#C5E2E5] text-center mb-3">
-            MEET YOUR MENTORS
-          </span>
-
-          {isIrgp ? (
-            /* IRGP 2x4 Grid in Hover */
-            <div className="grid grid-cols-4 gap-2.5">
-              {mentors.slice(0, 8).map((mentor, idx) => {
-                const avatar = getMentorAvatar(mentor, idx);
-                return (
-                  <button
-                    key={mentor.id}
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      openQuickView(mentor);
-                    }}
-                    className="relative z-20 w-9 h-9 rounded-full overflow-hidden bg-white/20 ring-2 ring-white/95 shadow-md cursor-pointer hover:scale-115 transition-transform"
-                    title={`${mentor.name} — ${mentor.role}`}
-                  >
-                    <Image
-                      src={avatar}
-                      alt={mentor.name}
-                      fill
-                      sizes="36px"
-                      className="object-cover object-top"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            /* Responsive row for 2, 3, 5 mentors */
-            <div
-              className={`flex items-center justify-center ${
-                mentorCount <= 3 ? "gap-3 sm:gap-4" : "gap-2"
-              }`}
-            >
-              {mentors.map((mentor, idx) => {
-                const avatar = getMentorAvatar(mentor, idx);
-                const sizeClass =
-                  mentorCount <= 2 ? "w-16 h-16" : mentorCount === 3 ? "w-14 h-14" : "w-11 h-11";
-                return (
-                  <button
-                    key={mentor.id}
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      openQuickView(mentor);
-                    }}
-                    className={`relative z-20 ${sizeClass} rounded-full overflow-hidden bg-white/20 ring-2 ring-white/95 shadow-md cursor-pointer hover:scale-110 transition-transform`}
-                    title={`${mentor.name} — ${mentor.role}`}
-                  >
-                    <Image
-                      src={avatar}
-                      alt={mentor.name}
-                      fill
-                      sizes="64px"
-                      className="object-cover object-top"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Fine Horizontal Divider */}
-      <div
-        className={`relative z-10 w-full h-px my-2 transition-colors duration-200 pointer-events-none ${
-          isHovered ? "bg-white/20" : "bg-[#E5ECEE]"
-        }`}
-      />
-
-      {/* Bottom Bar: Price/Story & Circular Arrow Button */}
-      <div className="relative z-10 flex items-center justify-between pt-1 shrink-0 pointer-events-none">
+      {/* Bottom Action Footer */}
+      <div className="relative z-10 px-6 py-4 bg-surface-base border-t border-border-subtle flex items-center justify-between gap-4 pointer-events-none">
         <div>
           {isCompleted ? (
-            <span
-              className={`text-lg font-bold tracking-tight transition-colors duration-200 ${
-                isHovered ? "text-white" : "text-[#172E35]"
-              }`}
-            >
-              Program Story
-            </span>
-          ) : (
-            <div className="flex items-baseline gap-2">
-              <span
-                className={`text-xl font-bold tracking-tight transition-colors duration-200 ${
-                  isHovered ? "text-white" : "text-[#172E35]"
-                }`}
-              >
-                {formatPoishaToBDT(effectiveFeePoisha).replace("৳", "BDT ")}
+            <>
+              <span className="block text-xs text-text-secondary">Cohort Milestone</span>
+              <span className="text-base font-bold tracking-tight text-text-primary">
+                {batch?.enrolledCount
+                  ? `${batch.enrolledCount} Graduates · Cohort ${batch.batchNumber}`
+                  : "Completed Cohort"}
               </span>
-              {discountFeePoisha && (
-                <span
-                  className={`text-xs line-through transition-colors duration-200 ${
-                    isHovered ? "text-white/60" : "text-[#526E77]"
-                  }`}
-                >
-                  {formatPoishaToBDT(feePoisha).replace("৳", "BDT ")}
+            </>
+          ) : effectiveFeePoisha !== undefined ? (
+            <>
+              <span className="block text-xs text-text-secondary">Program Fee</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold tracking-tight text-text-primary">
+                  {effectiveFeePoisha === 0
+                    ? "Free"
+                    : formatPoishaToBDT(effectiveFeePoisha).replace("৳", "BDT ")}
                 </span>
-              )}
-            </div>
+                {hasDiscount && feePoisha !== undefined && (
+                  <span className="text-xs line-through text-text-secondary">
+                    {formatPoishaToBDT(feePoisha).replace("৳", "BDT ")}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="block text-xs text-text-secondary">Program Fee</span>
+              <span className="text-base font-bold tracking-tight text-text-primary">
+                Details Inside
+              </span>
+            </>
           )}
         </div>
 
-        {/* Circular Arrow Button */}
-        <div
+        <span
           aria-hidden="true"
-          className={`flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 ${
-            isHovered
-              ? "bg-white text-[#086477] border-white shadow-sm"
-              : "border-[#D5E2E5] text-[#172E35] group-hover:border-[#086477] group-hover:text-[#086477]"
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors shrink-0 ${
+            isCompleted
+              ? "bg-surface-card border border-border-default text-text-primary group-hover:border-primary group-hover:text-primary"
+              : "bg-primary text-text-inverse group-hover:bg-primary-600 shadow-xs"
           }`}
         >
+          <span>{isCompleted ? "Program Story" : "Explore Program"}</span>
           <ArrowRight
             className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5"
             strokeWidth={2}
           />
-        </div>
+        </span>
       </div>
-    </div>
+    </article>
   );
 }

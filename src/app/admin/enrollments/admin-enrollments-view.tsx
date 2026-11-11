@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, Filter, Inbox, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { AdminPortalHeader } from "@/components/admin/admin-portal-header";
 import {
@@ -68,10 +69,34 @@ export function AdminEnrollmentsView({
   currentSearch,
   currentStatus,
 }: AdminEnrollmentsViewProps) {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState<string>(currentSearch);
+  const [statusFilter, setStatusFilter] = useState<string>(currentStatus);
+
+  useEffect(() => {
+    setSearchQuery(currentSearch);
+  }, [currentSearch]);
+
+  useEffect(() => {
+    setStatusFilter(currentStatus);
+  }, [currentStatus]);
+
   const totalPages = Math.max(1, Math.ceil(list.totalCount / list.pageSize));
   const hasFilters = Boolean(currentSearch || currentStatus);
+  const showResetControl = hasFilters || searchQuery !== "" || statusFilter !== "";
   const startIndex = list.totalCount === 0 ? 0 : (list.page - 1) * list.pageSize + 1;
   const endIndex = Math.min(list.totalCount, list.page * list.pageSize);
+
+  const handleFilterSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    router.push(buildFilterHref(searchQuery.trim(), statusFilter, 1));
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("");
+    router.push("/admin/enrollments");
+  };
 
   return (
     <div className="min-h-screen bg-surface-base text-text-primary flex flex-col">
@@ -100,9 +125,10 @@ export function AdminEnrollmentsView({
             <form
               method="GET"
               action="/admin/enrollments"
+              onSubmit={handleFilterSubmit}
               className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
             >
-              <div className="sm:col-span-6 space-y-1.5">
+              <div className="sm:col-span-12 lg:col-span-5 space-y-1.5">
                 <label
                   htmlFor="admin-enrollment-search"
                   className="block text-xs sm:text-sm font-semibold text-primary-900"
@@ -111,21 +137,22 @@ export function AdminEnrollmentsView({
                 </label>
                 <div className="relative">
                   <Search
-                    className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                    className="w-4 h-4 text-text-secondary absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                     aria-hidden="true"
                   />
                   <input
                     id="admin-enrollment-search"
                     name="q"
                     type="search"
-                    defaultValue={currentSearch}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="LNA ID, name, email, or phone..."
-                    className="flex h-11 w-full rounded-lg border border-border-default bg-surface-base pl-9 pr-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 focus-visible:border-primary-600"
+                    className="flex h-11 w-full rounded-lg border border-[#73939C] bg-surface-base pl-9 pr-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 focus-visible:border-primary-600"
                   />
                 </div>
               </div>
 
-              <div className="sm:col-span-3 space-y-1.5">
+              <div className="sm:col-span-6 lg:col-span-3 space-y-1.5">
                 <label
                   htmlFor="admin-enrollment-status"
                   className="block text-xs sm:text-sm font-semibold text-primary-900"
@@ -135,8 +162,9 @@ export function AdminEnrollmentsView({
                 <select
                   id="admin-enrollment-status"
                   name="status"
-                  defaultValue={currentStatus}
-                  className="flex h-11 w-full rounded-lg border border-border-default bg-surface-base px-3 py-2 text-sm text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 focus-visible:border-primary-600"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="flex h-11 w-full rounded-lg border border-[#73939C] bg-surface-base px-3 py-2 text-sm text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 focus-visible:border-primary-600"
                 >
                   {STATUS_OPTIONS.map((opt) => (
                     <option key={opt.value || "all"} value={opt.value}>
@@ -146,18 +174,19 @@ export function AdminEnrollmentsView({
                 </select>
               </div>
 
-              <div className="sm:col-span-3 flex flex-wrap items-center gap-2">
+              <div className="sm:col-span-6 lg:col-span-4 flex flex-wrap items-center gap-2">
                 <Button type="submit" variant="primary" size="md" className="min-h-[44px] flex-1">
                   <Filter className="w-4 h-4" aria-hidden="true" />
                   <span>Filter</span>
                 </Button>
-                {hasFilters && (
-                  <Link
-                    href="/admin/enrollments"
-                    className="inline-flex items-center justify-center min-h-[44px] px-3 rounded-lg border border-border-default text-xs sm:text-sm font-semibold text-primary-900 hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                {showResetControl && (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg border border-[#73939C] text-xs sm:text-sm font-semibold text-primary-900 hover:bg-surface-muted transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
                   >
                     Reset
-                  </Link>
+                  </button>
                 )}
               </div>
             </form>
@@ -183,7 +212,11 @@ export function AdminEnrollmentsView({
                 <div className="pt-2">
                   <Link
                     href="/admin/enrollments"
-                    className="inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-lg bg-primary-800 text-text-inverse text-xs sm:text-sm font-semibold hover:bg-primary-700 transition-colors"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatusFilter("");
+                    }}
+                    className="inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-lg bg-primary-800 text-text-inverse text-xs sm:text-sm font-semibold hover:bg-primary-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
                   >
                     Clear search & filters
                   </Link>
@@ -194,7 +227,7 @@ export function AdminEnrollmentsView({
         ) : (
           <>
             {/* Desktop Table */}
-            <Card className="hidden md:block overflow-hidden">
+            <Card className="hidden lg:block overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <caption className="sr-only">
@@ -235,7 +268,7 @@ export function AdminEnrollmentsView({
                           <div className="flex flex-col items-start gap-1">
                             <Link
                               href={`/admin/enrollments/${encodeURIComponent(item.id)}`}
-                              className="font-mono font-bold text-xs sm:text-sm text-primary-800 hover:underline focus-visible:outline-2 focus-visible:outline-primary-600 rounded"
+                              className="font-mono font-bold text-xs sm:text-sm text-primary-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 rounded"
                             >
                               {item.publicRef}
                             </Link>
@@ -250,7 +283,7 @@ export function AdminEnrollmentsView({
                         <td className="py-3.5 px-4 min-w-[200px]">
                           <div className="font-semibold text-primary-900">{item.fullName}</div>
                           <div className="text-xs text-text-secondary break-all">{item.email}</div>
-                          <div className="text-xs text-text-muted">{item.phone}</div>
+                          <div className="text-xs text-text-secondary">{item.phone}</div>
                         </td>
 
                         <td className="py-3.5 px-4 min-w-[200px]">
@@ -283,7 +316,8 @@ export function AdminEnrollmentsView({
                         <td className="py-3.5 px-4 whitespace-nowrap text-right">
                           <Link
                             href={`/admin/enrollments/${encodeURIComponent(item.id)}`}
-                            className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg border border-border-default text-xs font-semibold text-primary-900 hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                            aria-label={`View details for ${item.publicRef} (${item.fullName})`}
+                            className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg border border-[#73939C] text-xs font-semibold text-primary-900 hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
                           >
                             <Eye className="w-3.5 h-3.5 text-primary-800" aria-hidden="true" />
                             <span>View</span>
@@ -296,8 +330,8 @@ export function AdminEnrollmentsView({
               </div>
             </Card>
 
-            {/* Mobile Stacked Cards */}
-            <div className="md:hidden space-y-3">
+            {/* Mobile & Tablet Stacked Cards */}
+            <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-3">
               {list.items.map((item) => (
                 <Card key={item.id}>
                   <CardContent className="p-4 space-y-3">
@@ -318,7 +352,7 @@ export function AdminEnrollmentsView({
                     <div>
                       <div className="font-semibold text-sm text-primary-900">{item.fullName}</div>
                       <div className="text-xs text-text-secondary break-all">{item.email}</div>
-                      <div className="text-xs text-text-muted">{item.phone}</div>
+                      <div className="text-xs text-text-secondary">{item.phone}</div>
                     </div>
 
                     <div className="text-xs text-text-secondary border-t border-border-subtle pt-2.5 space-y-1">
@@ -334,12 +368,13 @@ export function AdminEnrollmentsView({
                     </div>
 
                     <div className="pt-1 flex items-center justify-between gap-3">
-                      <span className="text-[11px] text-text-muted">
+                      <span className="text-[11px] text-text-secondary">
                         {formatDhakaTimestamp(item.createdAt)}
                       </span>
                       <Link
                         href={`/admin/enrollments/${encodeURIComponent(item.id)}`}
-                        className="inline-flex items-center gap-1.5 min-h-[44px] px-4 py-2 rounded-lg bg-primary-800 text-text-inverse text-xs font-semibold hover:bg-primary-700 transition-colors"
+                        aria-label={`View details for ${item.publicRef} (${item.fullName})`}
+                        className="inline-flex items-center gap-1.5 min-h-[44px] px-4 py-2 rounded-lg bg-primary-800 text-text-inverse text-xs font-semibold hover:bg-primary-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
                       >
                         <Eye className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>View details</span>
@@ -363,13 +398,16 @@ export function AdminEnrollmentsView({
                   {list.page > 1 ? (
                     <Link
                       href={buildFilterHref(currentSearch, currentStatus, list.page - 1)}
-                      className="inline-flex items-center gap-1 min-h-[44px] px-3.5 rounded-lg border border-border-default bg-surface-card text-primary-900 font-semibold hover:bg-surface-muted transition-colors"
+                      className="inline-flex items-center gap-1 min-h-[44px] px-3.5 rounded-lg border border-[#73939C] bg-surface-card text-primary-900 font-semibold hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
                     >
                       <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                       <span>Previous</span>
                     </Link>
                   ) : (
-                    <span className="inline-flex items-center gap-1 min-h-[44px] px-3.5 rounded-lg border border-border-subtle bg-surface-muted text-text-muted opacity-60 cursor-not-allowed">
+                    <span
+                      aria-disabled="true"
+                      className="inline-flex items-center gap-1 min-h-[44px] px-3.5 rounded-lg border border-[#94B0B8] bg-[#E2ECEF] text-[#3B555E] font-medium cursor-not-allowed"
+                    >
                       <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                       <span>Previous</span>
                     </span>
@@ -382,13 +420,16 @@ export function AdminEnrollmentsView({
                   {list.page < totalPages ? (
                     <Link
                       href={buildFilterHref(currentSearch, currentStatus, list.page + 1)}
-                      className="inline-flex items-center gap-1 min-h-[44px] px-3.5 rounded-lg border border-border-default bg-surface-card text-primary-900 font-semibold hover:bg-surface-muted transition-colors"
+                      className="inline-flex items-center gap-1 min-h-[44px] px-3.5 rounded-lg border border-[#73939C] bg-surface-card text-primary-900 font-semibold hover:bg-surface-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
                     >
                       <span>Next</span>
                       <ChevronRight className="w-4 h-4" aria-hidden="true" />
                     </Link>
                   ) : (
-                    <span className="inline-flex items-center gap-1 min-h-[44px] px-3.5 rounded-lg border border-border-subtle bg-surface-muted text-text-muted opacity-60 cursor-not-allowed">
+                    <span
+                      aria-disabled="true"
+                      className="inline-flex items-center gap-1 min-h-[44px] px-3.5 rounded-lg border border-[#94B0B8] bg-[#E2ECEF] text-[#3B555E] font-medium cursor-not-allowed"
+                    >
                       <span>Next</span>
                       <ChevronRight className="w-4 h-4" aria-hidden="true" />
                     </span>
@@ -402,4 +443,3 @@ export function AdminEnrollmentsView({
     </div>
   );
 }
-

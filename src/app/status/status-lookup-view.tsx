@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, AlertCircle, Search, Mail, Phone } from "lucide-react";
 import {
   formatPaymentMethodLabel,
+  isValidBdPhone,
   normalizeApplicationRef,
   type SafeStatusLookupResult,
   type StatusLookupQuery,
@@ -60,6 +61,8 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [lookupError, setLookupError] = useState<string>("");
   const [result, setResult] = useState<SafeStatusLookupResult | null>(null);
+  const appIdInputRef = useRef<HTMLInputElement | null>(null);
+  const contactInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (refParam) {
@@ -69,6 +72,9 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
 
   const handleVerificationTypeChange = (nextType: VerificationContactType) => {
     setVerificationType(nextType);
+    if (nextType !== verificationType) {
+      setContactValue("");
+    }
     setFieldErrors((prev) => ({ ...prev, contactValue: undefined }));
     setHasSearched(false);
     setLookupError("");
@@ -87,12 +93,19 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
 
     if (!trimmedRef) {
       nextErrors.applicationId = "Please enter your LNA Application ID.";
+    } else if (trimmedRef.length < 4) {
+      nextErrors.applicationId = "Please enter a valid LNA Application ID (at least 4 characters).";
     }
+
     if (!trimmedContact) {
       nextErrors.contactValue =
         verificationType === "email"
           ? "Please enter the email address from your application."
           : "Please enter the phone number from your application.";
+    } else if (verificationType === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedContact)) {
+      nextErrors.contactValue = "Please enter a valid email address.";
+    } else if (verificationType === "phone" && !isValidBdPhone(trimmedContact)) {
+      nextErrors.contactValue = "Please enter a valid 11-digit Bangladeshi phone number.";
     }
 
     if (nextErrors.applicationId || nextErrors.contactValue) {
@@ -100,6 +113,13 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
       setHasSearched(false);
       setLookupError("");
       setResult(null);
+      requestAnimationFrame(() => {
+        if (nextErrors.applicationId) {
+          appIdInputRef.current?.focus();
+        } else if (nextErrors.contactValue) {
+          contactInputRef.current?.focus();
+        }
+      });
       return;
     }
 
@@ -179,6 +199,57 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
               noValidate
               className="bg-white border border-[#E5ECEE] rounded-2xl p-5 sm:p-8 shadow-2xs space-y-6"
             >
+              {(fieldErrors.applicationId || fieldErrors.contactValue) && (
+                <div
+                  role="region"
+                  aria-labelledby="status-error-summary-heading"
+                  data-testid="status-error-summary"
+                  className="p-4 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-xs sm:text-sm text-[#991B1B]"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle
+                      className="w-4 h-4 shrink-0 mt-0.5 text-[#991B1B]"
+                      aria-hidden="true"
+                    />
+                    <div className="space-y-1.5">
+                      <h2 id="status-error-summary-heading" className="font-bold text-[#991B1B]">
+                        Please review the highlighted fields
+                      </h2>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        {fieldErrors.applicationId && (
+                          <li>
+                            <a
+                              href="#status-application-id"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                appIdInputRef.current?.focus();
+                              }}
+                              className="underline font-semibold hover:text-[#7F1D1D] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#991B1B] rounded"
+                            >
+                              {fieldErrors.applicationId}
+                            </a>
+                          </li>
+                        )}
+                        {fieldErrors.contactValue && (
+                          <li>
+                            <a
+                              href="#status-contact-value"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                contactInputRef.current?.focus();
+                              }}
+                              className="underline font-semibold hover:text-[#7F1D1D] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#991B1B] rounded"
+                            >
+                              {fieldErrors.contactValue}
+                            </a>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* LNA Application ID */}
               <div>
                 <label
@@ -191,8 +262,11 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
                   </span>
                 </label>
                 <input
+                  ref={appIdInputRef}
                   id="status-application-id"
                   type="text"
+                  autoComplete="off"
+                  spellCheck={false}
                   required
                   value={applicationId}
                   onChange={(e) => {
@@ -201,12 +275,13 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
                   }}
                   placeholder="LNA-XXXX-XXXX"
                   aria-invalid={Boolean(fieldErrors.applicationId)}
-                  aria-describedby={
-                    fieldErrors.applicationId
-                      ? "status-application-id-error"
-                      : "status-application-id-hint"
-                  }
-                  className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm font-mono uppercase text-[#172E35] placeholder:text-[#8AA4AB] placeholder:normal-case placeholder:font-sans focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
+                  aria-describedby={[
+                    fieldErrors.applicationId ? "status-application-id-error" : null,
+                    "status-application-id-hint",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm font-mono uppercase text-[#172E35] placeholder:text-[#526E77] placeholder:normal-case placeholder:font-sans focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
                 />
                 <p id="status-application-id-hint" className="mt-1.5 text-xs text-[#526E77]">
                   Enter the LNA Application ID issued after submitting your enrollment form.
@@ -233,7 +308,7 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
                     className={`flex items-center gap-3 p-3.5 min-h-[44px] rounded-xl border transition-all cursor-pointer ${
                       verificationType === "email"
                         ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
-                        : "bg-white border-[#D5E2E5] hover:border-[#BCE1E5]"
+                        : "bg-white border-[#73939C] hover:border-[#086477]"
                     }`}
                   >
                     <input
@@ -254,7 +329,7 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
                     className={`flex items-center gap-3 p-3.5 min-h-[44px] rounded-xl border transition-all cursor-pointer ${
                       verificationType === "phone"
                         ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
-                        : "bg-white border-[#D5E2E5] hover:border-[#BCE1E5]"
+                        : "bg-white border-[#73939C] hover:border-[#086477]"
                     }`}
                   >
                     <input
@@ -284,8 +359,11 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
                   </span>
                 </label>
                 <input
+                  ref={contactInputRef}
                   id="status-contact-value"
                   type={verificationType === "email" ? "email" : "tel"}
+                  autoComplete={verificationType === "email" ? "email" : "tel"}
+                  inputMode={verificationType === "email" ? "email" : "tel"}
                   required
                   value={contactValue}
                   onChange={(e) => {
@@ -294,10 +372,13 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
                   }}
                   placeholder={verificationType === "email" ? "name@example.com" : "01XXXXXXXXX"}
                   aria-invalid={Boolean(fieldErrors.contactValue)}
-                  aria-describedby={
-                    fieldErrors.contactValue ? "status-contact-error" : "status-contact-hint"
-                  }
-                  className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#D5E2E5] text-sm text-[#172E35] placeholder:text-[#8AA4AB] focus:outline-none focus:border-[#086477] focus:ring-1 focus:ring-[#086477] shadow-2xs"
+                  aria-describedby={[
+                    fieldErrors.contactValue ? "status-contact-error" : null,
+                    "status-contact-hint",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
                 />
                 <p id="status-contact-hint" className="mt-1.5 text-xs text-[#526E77]">
                   {verificationType === "email"
@@ -326,21 +407,26 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
                   type="submit"
                   disabled={!isLookupAvailable || isSearching}
                   aria-disabled={!isLookupAvailable || isSearching}
+                  aria-busy={isSearching ? "true" : undefined}
                   className={`inline-flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px] px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
                     !isLookupAvailable || isSearching
-                      ? "bg-[#9BB7BE] text-white cursor-not-allowed"
+                      ? "bg-[#E2ECEF] text-[#3B555E] border border-[#94B0B8] cursor-not-allowed"
                       : "bg-[#086477] hover:bg-[#06505F] text-white cursor-pointer"
                   }`}
                 >
                   <Search className="w-4 h-4" aria-hidden="true" />
                   <span>
-                    {isLookupAvailable ? "Check application status" : "Status lookup coming soon"}
+                    {!isLookupAvailable
+                      ? "Status lookup coming soon"
+                      : isSearching
+                        ? "Checking status..."
+                        : "Check application status"}
                   </span>
                 </button>
 
                 <Link
                   href="/enroll"
-                  className="inline-flex items-center min-h-[44px] text-xs sm:text-sm font-semibold text-[#086477] hover:underline"
+                  className="inline-flex items-center min-h-[44px] px-1 rounded text-xs sm:text-sm font-semibold text-[#086477] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                 >
                   Back to enrollment →
                 </Link>
@@ -496,9 +582,9 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
             </div>
 
             <div className="bg-white border border-[#E5ECEE] rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col gap-3">
-              <h3 className="font-serif font-bold text-lg text-[#172E35]">
+              <h2 className="font-serif font-bold text-lg text-[#172E35]">
                 Need assistance from LNA admissions?
-              </h3>
+              </h2>
               <p className="text-xs sm:text-sm text-[#526E77] leading-relaxed">
                 If you have questions about upcoming cohorts or enrollment opening dates, contact
                 our admissions desk or review available programs.
@@ -506,14 +592,14 @@ export function StatusLookupView({ enabled = false, onLookup }: StatusLookupView
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 <Link
                   href="/enroll"
-                  className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white text-xs sm:text-sm font-semibold transition-colors"
+                  className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white text-xs sm:text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                 >
                   <span>Go to enrollment</span>
                   <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </Link>
                 <a
                   href="mailto:admissions@lnabd.org"
-                  className="inline-flex items-center min-h-[44px] px-2 text-xs sm:text-sm font-semibold text-[#086477] hover:underline"
+                  className="inline-flex items-center min-h-[44px] px-2 rounded text-xs sm:text-sm font-semibold text-[#086477] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                 >
                   Contact admissions
                 </a>
