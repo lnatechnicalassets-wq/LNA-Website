@@ -70,7 +70,7 @@ export function CourseDetailsModal({
             </div>
             <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-xs">
               <MapPin className="w-4 h-4 text-[#C5E2E5]" />
-              <span>Offline • Dhanmondi, Dhaka</span>
+              <span>Offline • {batch?.venue || course.venue}</span>
             </div>
             {!isCompleted && (
               <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-xs font-semibold">
@@ -182,7 +182,7 @@ export function CourseDetailsModal({
             {isCompleted ? (
               <span>This cohort concluded successfully. Review our active programs.</span>
             ) : (
-              <span>Limited seats available. Offline enrollment at Dhanmondi campus.</span>
+              <span>In-person offline sessions in Dhaka. Venue confirmed upon admission.</span>
             )}
           </div>
 

@@ -3,12 +3,12 @@
   "title": "Get in Touch",
   "description": "Send questions about registration, class schedule, program details, fees, and general support. Our team will be happy to assist you.",
   "email": "info@lnabd.org",
-  "phone": "+8801581799666",
-  "phoneDisplay": "+880 1581-799666",
+  "phone": "+8801326760702",
+  "phoneDisplay": "+880 1326-760702",
   "officeAddress": {
-    "line1": "Plot 06, Tejgaon Industrial Area",
-    "line2": "Dhanmondi Executive Campus Venue",
-    "city": "Dhaka",
+    "line1": "Level-5, House-57",
+    "line2": "Road No. 11, Banani",
+    "city": "Dhaka 1213",
     "country": "Bangladesh"
   },
   "officeHours": "Saturday – Thursday: 9:00 AM – 6:00 PM",
@@ -62,7 +62,7 @@
   ],
   "visibility": {
     "showEmail": true,
-    "showPhone": false,
+    "showPhone": true,
     "showAddress": true,
     "showHours": true,
     "showOfficeVisual": true
@@ -70,8 +70,8 @@
   "provenance": {
     "class": "A",
     "verified": true,
-    "source": "WordPress lnabdorg_wp955.sql (Privacy Policy ID 1177, Terms ID 1168)",
-    "verifiedBy": "Content Migration",
-    "verifiedOn": "2026-11-09"
+    "source": "Official Lead Nation Academy office address and contact phone provided by project owner",
+    "verifiedBy": "Project Owner",
+    "verifiedOn": "2026-11-11"
   }
 }

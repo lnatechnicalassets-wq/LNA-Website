@@ -13,7 +13,7 @@ export function ContactInfo({ config }: ContactInfoProps) {
   return (
     <div className="w-full bg-white rounded-3xl border border-teal-100/90 shadow-[0_20px_50px_-15px_rgba(8,100,119,0.12)] p-6 sm:p-7 flex flex-col justify-between overflow-hidden">
       {/* Contact Channels List */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-5">
         {/* Email Address */}
         {visibility.showEmail && config.email && (
           <div className="flex items-start gap-3.5">
@@ -104,8 +104,7 @@ export function ContactInfo({ config }: ContactInfoProps) {
             </div>
           </div>
           <p className="mt-2 text-[11px] text-text-muted text-center sm:text-left leading-tight">
-            Illustrative executive learning space • Exact campus venue confirmed upon cohort
-            admission
+            Illustrative executive learning space • Training venue confirmed upon cohort admission
           </p>
         </div>
       )}

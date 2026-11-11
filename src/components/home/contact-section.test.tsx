@@ -122,4 +122,31 @@ describe("ContactSection (Section 7: Contact Us)", () => {
     expect(screen.queryByText(/schedule an appointment/i)).toBeNull();
     expect(screen.queryByText(/frequently asked questions/i)).toBeNull();
   });
+
+  it("renders Banani office address and visible clickable phone when showPhone is true", () => {
+    render(
+      <ContactSection
+        config={{
+          ...mockContactConfig,
+          phone: "+8801326760702",
+          phoneDisplay: "+880 1326-760702",
+          officeAddress: {
+            line1: "Level-5, House-57",
+            line2: "Road No. 11, Banani",
+            city: "Dhaka 1213",
+            country: "Bangladesh",
+          },
+          visibility: {
+            ...mockContactConfig.visibility,
+            showPhone: true,
+          },
+        }}
+      />
+    );
+
+    expect(screen.getByText(/Level-5, House-57, Road No\. 11, Banani/i)).toBeDefined();
+    expect(screen.getByText(/Dhaka 1213, Bangladesh/i)).toBeDefined();
+    const phoneLink = screen.getByRole("link", { name: "+880 1326-760702" });
+    expect(phoneLink.getAttribute("href")).toBe("tel:+8801326760702");
+  });
 });

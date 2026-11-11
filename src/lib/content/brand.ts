@@ -68,7 +68,8 @@ let cachedBrand: BrandConfig | null = null;
  * Components must import this helper instead of accessing /content directly (Rule R4).
  */
 export function getBrandConfig(): BrandConfig {
-  if (cachedBrand) {
+  const cacheEnabled = process.env.NODE_ENV !== "development";
+  if (cacheEnabled && cachedBrand) {
     return cachedBrand;
   }
 
@@ -81,6 +82,8 @@ export function getBrandConfig(): BrandConfig {
   const parsedJson = JSON.parse(raw);
   const validated = BrandConfigSchema.parse(parsedJson);
 
-  cachedBrand = validated;
+  if (cacheEnabled) {
+    cachedBrand = validated;
+  }
   return validated;
 }

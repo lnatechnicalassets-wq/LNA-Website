@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, ArrowUp, Mail, MapPin } from "lucide-react";
+import { ArrowRight, ArrowUp, Mail, MapPin, Phone } from "lucide-react";
 import type { NavigationConfig, Organization } from "@/lib/content";
 
 export interface SiteFooterProps {
@@ -20,6 +20,13 @@ export interface SiteFooterProps {
 export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
   const currentYear = new Date().getFullYear();
   const orgEmail = organization?.email || "info@lnabd.org";
+  const orgPhone = organization?.phone;
+  const orgPhoneHref = orgPhone ? `tel:${orgPhone.replace(/[^\d+]/g, "")}` : null;
+  const orgAddress = organization?.address
+    ? `${organization.address.street}, ${organization.address.city}${
+        organization.address.postalCode ? ` ${organization.address.postalCode}` : ""
+      }`
+    : null;
 
   const handleNavClick = (href: string) => (e: React.MouseEvent) => {
     if (
@@ -229,7 +236,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
             />
 
             {/* Get in touch Column */}
-            <div className="min-w-[170px] sm:min-w-[180px]">
+            <div className="min-w-[190px] sm:min-w-[210px] max-w-[260px]">
               <h3 className="font-serif text-xl sm:text-2xl font-bold text-white mb-5 sm:mb-6 tracking-tight">
                 Get in touch
               </h3>
@@ -253,10 +260,23 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
                     <span>{orgEmail}</span>
                   </a>
                 </li>
-                <li className="inline-flex items-center gap-3 text-[#D4E8EB]">
-                  <MapPin className="w-4 h-4 text-[#C5E2E5] shrink-0" strokeWidth={1.8} />
-                  <span>Dhanmondi, Dhaka</span>
-                </li>
+                {orgPhone && orgPhoneHref && (
+                  <li>
+                    <a
+                      href={orgPhoneHref}
+                      className="inline-flex items-center gap-3 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <Phone className="w-4 h-4 text-[#C5E2E5] shrink-0" strokeWidth={1.8} />
+                      <span>{orgPhone}</span>
+                    </a>
+                  </li>
+                )}
+                {orgAddress && (
+                  <li className="inline-flex items-start gap-3 text-[#D4E8EB]">
+                    <MapPin className="w-4 h-4 text-[#C5E2E5] shrink-0 mt-1" strokeWidth={1.8} />
+                    <span>{orgAddress}</span>
+                  </li>
+                )}
               </ul>
             </div>
           </div>

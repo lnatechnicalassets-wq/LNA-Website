@@ -28,7 +28,8 @@ let cachedOrg: Organization | null = null;
  * Components must import this helper instead of accessing /content directly (Rule R4).
  */
 export function getOrganizationConfig(): Organization {
-  if (cachedOrg) {
+  const cacheEnabled = process.env.NODE_ENV !== "development";
+  if (cacheEnabled && cachedOrg) {
     return cachedOrg;
   }
 
@@ -41,6 +42,8 @@ export function getOrganizationConfig(): Organization {
   const parsed = JSON.parse(raw);
   const validated = OrganizationSchema.parse(parsed);
 
-  cachedOrg = validated;
+  if (cacheEnabled) {
+    cachedOrg = validated;
+  }
   return validated;
 }

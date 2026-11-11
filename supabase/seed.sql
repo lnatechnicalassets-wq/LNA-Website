@@ -77,7 +77,7 @@ VALUES (
     }
   ]$json$::jsonb,
   'offline',
-  'LNA Executive Campus, Dhanmondi, Dhaka',
+  'Designated Executive Venue, Dhaka',
   'published',
   true,
   $json${
@@ -165,7 +165,7 @@ FROM (
       750000::bigint,
       NULL::bigint,
       'open_for_enrollment',
-      'LNA Executive Campus, Dhanmondi, Dhaka',
+      'Designated Executive Venue, Dhaka',
       $json${
         "class": "B",
         "verified": false,
@@ -190,7 +190,7 @@ FROM (
       0::bigint,
       NULL::bigint,
       'completed',
-      'LNA Executive Campus, Dhanmondi, Dhaka',
+      'AIUB – Institute of Continuing Education (ICE), Banani, Dhaka',
       $json${
         "class": "B",
         "verified": false,
