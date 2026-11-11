@@ -40,7 +40,7 @@ export default function RefundPolicyPage() {
               1. Seat Holds &amp; Capacity
             </h2>
             <p>
-              Due to physical classroom capacity limits in our Dhanmondi executive classrooms, seat
+              Due to limited cohort capacity for our in-person executive sessions in Dhaka, seat
               allocations are reserved strictly upon confirmed fee payment.
             </p>
           </section>

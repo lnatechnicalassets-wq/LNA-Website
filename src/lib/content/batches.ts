@@ -29,3 +29,33 @@ export const BatchSchema = z
   });
 
 export type Batch = z.infer<typeof BatchSchema>;
+
+export type BatchPricingSummary = Pick<Batch, "feePoisha" | "discountFeePoisha">;
+export type BatchAvailabilitySummary = Pick<Batch, "status" | "capacity" | "enrolledCount">;
+
+/**
+ * Computes payable fee in integer poisha matching Postgres start_enrollment()
+ * (`coalesce(discount_fee_poisha, fee_poisha)`) without floating-point math (Rule R5).
+ */
+export function getBatchPayablePoisha(batch: BatchPricingSummary): number {
+  return batch.discountFeePoisha ?? batch.feePoisha;
+}
+
+export function hasBatchDiscount(batch: BatchPricingSummary): boolean {
+  return batch.discountFeePoisha !== undefined && batch.discountFeePoisha < batch.feePoisha;
+}
+
+export function getBatchRemainingSeats(batch: BatchAvailabilitySummary): number {
+  return Math.max(0, batch.capacity - batch.enrolledCount);
+}
+
+/**
+ * Shared cohort availability check aligned with server start_enrollment() gates:
+ * only cohorts in `open_for_enrollment` status with at least one unreserved seat can accept applications.
+ */
+export function canBatchAcceptApplications(
+  batch: BatchAvailabilitySummary | null | undefined
+): boolean {
+  if (!batch) return false;
+  return batch.status === "open_for_enrollment" && getBatchRemainingSeats(batch) > 0;
+}

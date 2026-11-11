@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -17,44 +17,83 @@ import {
   Minus,
   ArrowRight,
   Building,
+  AlertCircle,
 } from "lucide-react";
-import type { Course, Batch, Mentor } from "@/lib/content";
+import {
+  canBatchAcceptApplications,
+  getBatchPayablePoisha,
+  getBatchRemainingSeats,
+  hasBatchDiscount,
+  type Batch,
+} from "@/lib/content/batches";
+import type { Course, Mentor } from "@/lib/content";
 import { formatPoishaToBDT } from "@/lib/money";
 import { getMentorAvatar, getMentorCompanyLogo } from "@/lib/mentors";
 import { OfficialCompanyLogo } from "@/components/home/company-logo";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
 
 export interface CourseDetailViewProps {
   course: Course;
   batch?: Batch;
   mentors: Mentor[];
+  submissionEnabled?: boolean;
 }
 
 type TabType = "overview" | "curriculum" | "mentors";
 
-export function CourseDetailView({ course, batch, mentors }: CourseDetailViewProps) {
+const COURSE_TABS: Array<{ id: TabType; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "curriculum", label: "Curriculum" },
+  { id: "mentors", label: "Mentors" },
+];
+
+export function CourseDetailView({
+  course,
+  batch,
+  mentors,
+  submissionEnabled = false,
+}: CourseDetailViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
     "0": true, // first module open by default
   });
-  const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false);
+  const tabListRef = useRef<HTMLDivElement | null>(null);
+  const tabRefs = useRef<Record<TabType, HTMLButtonElement | null>>({
+    overview: null,
+    curriculum: null,
+    mentors: null,
+  });
 
   const isMto = course.id === "mto-readiness" || course.id === "mto";
   const isIrgp = course.id === "irgp";
   const isCompleted = isIrgp || batch?.status === "completed";
 
-  // Financial calculations via integer poisha (Rule R5)
-  const feePoisha = batch?.feePoisha ?? (isMto ? 750000 : 0);
-  const formattedFee = formatPoishaToBDT(feePoisha).replace("৳", "BDT ");
+  // Financial calculations via integer poisha aligned with server start_enrollment() (Rule R5)
+  const formatBdt = (poisha: number) =>
+    poisha === 0 ? "Free" : formatPoishaToBDT(poisha).replace("৳", "BDT ");
+
+  const hasBatchFee = batch !== undefined;
+  const baseFeePoisha = batch?.feePoisha ?? 0;
+  const payablePoisha = batch ? getBatchPayablePoisha(batch) : 0;
+  const hasDiscount = batch ? hasBatchDiscount(batch) : false;
+  const formattedBaseFee = formatBdt(baseFeePoisha);
+  const formattedPayableFee = hasBatchFee ? formatBdt(payablePoisha) : "Fee announced soon";
+
+  // Batch & checkout availability gates
+  const remainingSeats = batch ? getBatchRemainingSeats(batch) : 0;
+  const isBatchOpen = canBatchAcceptApplications(batch);
+  const isBatchFull = Boolean(
+    batch && batch.status === "open_for_enrollment" && remainingSeats <= 0
+  );
+  const canEnroll = Boolean(!isCompleted && submissionEnabled && isBatchOpen);
+
+  const scheduleSummary =
+    batch?.scheduleDescription || (isMto ? "16 sessions · 1.5h each" : "10 focus areas");
+  const mentorCountLabel =
+    mentors.length > 0
+      ? `${mentors.length} industry mentor${mentors.length === 1 ? "" : "s"}`
+      : isMto
+        ? "5 industry mentors"
+        : "8 industry mentors";
 
   // Banner and captions
   const bannerSrc = isMto
@@ -74,6 +113,42 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
     }));
   };
 
+  const switchTabAndFocus = (nextTab: TabType, shouldScroll = false) => {
+    setActiveTab(nextTab);
+    if (shouldScroll && tabListRef.current) {
+      const prefersReducedMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      tabListRef.current.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    }
+    requestAnimationFrame(() => {
+      tabRefs.current[nextTab]?.focus();
+    });
+  };
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, currentIdx: number) => {
+    let nextIdx: number | null = null;
+    if (event.key === "ArrowRight") {
+      nextIdx = (currentIdx + 1) % COURSE_TABS.length;
+    } else if (event.key === "ArrowLeft") {
+      nextIdx = (currentIdx - 1 + COURSE_TABS.length) % COURSE_TABS.length;
+    } else if (event.key === "Home") {
+      nextIdx = 0;
+    } else if (event.key === "End") {
+      nextIdx = COURSE_TABS.length - 1;
+    }
+
+    if (nextIdx !== null) {
+      event.preventDefault();
+      const targetTab = COURSE_TABS[nextIdx].id;
+      setActiveTab(targetTab);
+      tabRefs.current[targetTab]?.focus();
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -84,6 +159,261 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
       .toUpperCase();
   };
 
+  const availabilityBadge = (() => {
+    if (isCompleted) {
+      return {
+        label: "Completed Program · IRGP",
+        className: "bg-[#E8F3F5] text-[#086477] border-[#086477]/25",
+      };
+    }
+    if (isBatchFull) {
+      return {
+        label: "Batch Full",
+        className: "bg-[#FEF2F2] text-[#991B1B] border-[#FECACA]",
+      };
+    }
+    if (!isBatchOpen) {
+      return {
+        label: batch?.status === "upcoming" ? "Upcoming Cohort" : "Enrollment Closed",
+        className: "bg-[#F0F5F6] text-[#3D5A62] border-[#C5DDE0]",
+      };
+    }
+    if (!submissionEnabled) {
+      return {
+        label: "Online enrollment is coming soon",
+        className: "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]",
+      };
+    }
+    return {
+      label: "Open for Enrollment",
+      className: "bg-[#DCFCE7] text-[#166534] border-[#BBF7D0]",
+    };
+  })();
+
+  const renderUnavailableEnrollmentNotice = (variant: "mobile" | "desktop") => {
+    const title = isBatchFull
+      ? "Batch Full"
+      : !isBatchOpen
+        ? batch?.status === "upcoming"
+          ? "Upcoming Cohort"
+          : "Enrollment Closed"
+        : "Online enrollment is coming soon";
+
+    const description = isBatchFull
+      ? "All seats in this cohort are currently confirmed or held. Check back for upcoming cohorts."
+      : !isBatchOpen
+        ? "This cohort is not currently accepting online applications."
+        : "Hosted bKash Checkout activates once production gateway verification completes.";
+
+    return (
+      <div
+        role="status"
+        data-testid={variant === "desktop" ? "course-enrollment-unavailable" : undefined}
+        className="rounded-xl bg-[#F6FAFA] border border-[#C5DDE0] p-4 space-y-2.5"
+      >
+        <div className="flex items-start gap-2.5">
+          <AlertCircle className="h-4 w-4 text-[#92400E] shrink-0 mt-0.5" aria-hidden="true" />
+          <div>
+            <p className="text-xs sm:text-sm font-bold text-[#172E35]">{title}</p>
+            <p className="text-xs text-[#526E77] mt-0.5 leading-relaxed">{description}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          {!submissionEnabled && (
+            <Link
+              href="/status"
+              className="inline-flex items-center min-h-[44px] px-1 text-xs font-semibold text-[#086477] underline underline-offset-2 hover:text-[#064654] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+            >
+              Check application status
+            </Link>
+          )}
+          <Link
+            href="/#courses"
+            className="inline-flex items-center min-h-[44px] px-1 text-xs font-semibold text-[#086477] underline underline-offset-2 hover:text-[#064654] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+          >
+            Explore programs
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSummaryCard = (variant: "mobile" | "desktop") => {
+    const isDesktop = variant === "desktop";
+
+    return (
+      <div className="bg-white rounded-2xl border border-[#E5ECEE] p-6 sm:p-7 shadow-xs">
+        {isCompleted ? (
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
+              PROGRAM STATUS
+            </span>
+            <p className="text-2xl font-bold font-serif text-[#086477] my-2">Completed Cohort</p>
+
+            <div className="space-y-2.5 text-xs sm:text-[13px] text-[#526E77] my-4">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-[#086477] shrink-0" aria-hidden="true" />
+                <span>10 focus areas</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-[#086477] shrink-0" aria-hidden="true" />
+                <span>{mentorCountLabel}</span>
+              </div>
+              {isDesktop && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-[#086477] shrink-0" aria-hidden="true" />
+                  <span>100% completed cohort</span>
+                </div>
+              )}
+            </div>
+
+            <Link
+              href="/#reviews"
+              className="w-full min-h-[44px] text-center py-3.5 px-4 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs shadow-xs inline-flex items-center justify-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+            >
+              <span>Explore Learner Reviews</span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+
+            {isDesktop && (
+              <>
+                <div className="w-full h-px bg-[#E5ECEE] my-6" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#172E35] mb-3">
+                  Program at a glance
+                </h3>
+                <div className="space-y-3 text-xs text-[#526E77]">
+                  <div>
+                    <span className="font-semibold text-[#172E35] block">Format</span>
+                    <span>Comprehensive Graduate Readiness</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[#172E35] block">Focus</span>
+                    <span>Cross-sector functional literacy</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[#172E35] block">Faculty</span>
+                    <span>8 senior corporate directors</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[#172E35] block">Outcome</span>
+                    <span>Practical readiness for corporate roles</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77]">
+                {hasDiscount ? "PROGRAM FEE · DISCOUNTED" : "PROGRAM FEE"}
+              </span>
+              {canEnroll && batch?.batchNumber && (
+                <span className="text-[11px] font-semibold text-[#166534] bg-[#DCFCE7] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
+                  Cohort {batch.batchNumber}
+                </span>
+              )}
+            </div>
+
+            <div className="my-2 flex flex-wrap items-baseline gap-2.5">
+              {hasDiscount && (
+                <span className="text-base sm:text-lg font-semibold line-through text-[#526E77]">
+                  <span className="sr-only">Original fee: </span>
+                  {formattedBaseFee}
+                </span>
+              )}
+              <p
+                data-testid={isDesktop ? "course-payable-fee" : undefined}
+                className="text-3xl font-extrabold text-[#172E35]"
+              >
+                {formattedPayableFee}
+              </p>
+            </div>
+
+            {hasDiscount && (
+              <p className="text-xs font-semibold text-[#086477] mb-3">
+                Cohort discount applied ({batch?.name})
+              </p>
+            )}
+
+            <div className="space-y-2.5 text-xs sm:text-[13px] text-[#526E77] my-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-[#086477] shrink-0" aria-hidden="true" />
+                <span>{scheduleSummary}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Building className="h-4 w-4 text-[#086477] shrink-0" aria-hidden="true" />
+                <span>{batch?.venue || course.venue}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-[#086477] shrink-0" aria-hidden="true" />
+                <span>{mentorCountLabel}</span>
+              </div>
+            </div>
+
+            {canEnroll ? (
+              <Link
+                href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}
+                className="w-full min-h-[44px] py-3.5 px-4 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs inline-flex items-center justify-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+              >
+                <span>Enroll in {course.title}</span>
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            ) : (
+              renderUnavailableEnrollmentNotice(variant)
+            )}
+
+            {isDesktop && (
+              <>
+                <div className="w-full h-px bg-[#E5ECEE] my-6" />
+
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#172E35] mb-3">
+                  Program at a glance
+                </h3>
+                <div className="space-y-3 text-xs text-[#526E77]">
+                  <div className="flex items-start gap-2">
+                    <Calendar
+                      className="h-4 w-4 text-[#086477] shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <span className="font-semibold text-[#172E35] block">Format</span>
+                      <span>Live, cohort-based offline learning</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Building
+                      className="h-4 w-4 text-[#086477] shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <span className="font-semibold text-[#172E35] block">Focus</span>
+                      <span>{course.category}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Layers className="h-4 w-4 text-[#086477] shrink-0 mt-0.5" aria-hidden="true" />
+                    <div>
+                      <span className="font-semibold text-[#172E35] block">Curriculum</span>
+                      <span>{course.learningOutcomes.length} practical capability areas</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Award className="h-4 w-4 text-[#086477] shrink-0 mt-0.5" aria-hidden="true" />
+                    <div>
+                      <span className="font-semibold text-[#172E35] block">Cohort Status</span>
+                      <span>{availabilityBadge.label}</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full bg-[#F6FAFA] text-[#172E35] min-h-screen py-8 sm:py-10 lg:py-12">
       <div className="max-w-7xl xl:max-w-340 mx-auto px-4 sm:px-6 lg:px-8">
@@ -92,6 +422,9 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
         {/* ============================================================ */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 pb-2">
           <div className="flex flex-col items-start">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[#086477] mb-1">
+              {course.category}
+            </span>
             <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-serif font-bold tracking-tight text-[#172E35] leading-tight">
               {course.title}
             </h1>
@@ -101,20 +434,21 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
           </div>
 
           <div className="shrink-0">
-            {isCompleted ? (
-              <div className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold tracking-wider uppercase bg-[#E8F3F5] text-[#086477] border border-[#086477]/25 shadow-2xs">
-                <span>COMPLETED PROGRAM · IRGP</span>
-              </div>
-            ) : (
-              <Link href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}>
-                <Button
-                  variant="primary"
-                  className="rounded-full px-6 py-2.5 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-xs sm:text-sm shadow-sm transition-all duration-200 inline-flex items-center gap-2 cursor-pointer"
-                >
-                  <span>Enroll in {course.title}</span>
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
+            {canEnroll ? (
+              <Link
+                href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}
+                className="min-h-[44px] rounded-full px-6 py-2.5 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-xs sm:text-sm shadow-sm transition-colors duration-200 inline-flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+              >
+                <span>Enroll in {course.title}</span>
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
+            ) : (
+              <span
+                data-testid="course-enrollment-status-pill"
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold tracking-wider uppercase border shadow-2xs ${availabilityBadge.className}`}
+              >
+                <span>{availabilityBadge.label}</span>
+              </span>
             )}
           </div>
         </div>
@@ -142,52 +476,56 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
         {/* 3. COMPACT METADATA ROW                                      */}
         {/* ============================================================ */}
         <div className="my-6 bg-white rounded-xl border border-[#E5ECEE] shadow-2xs p-4 sm:p-5">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 divide-y lg:divide-y-0 lg:divide-x divide-[#E5ECEE]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-0 lg:divide-x divide-[#E5ECEE]">
             {isMto ? (
               <>
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-[#086477] shrink-0" />
-                  <span className="text-xs sm:text-sm font-bold text-[#172E35]">16 sessions</span>
-                </div>
-                <div className="flex items-center gap-3 pt-3 lg:pt-0 lg:pl-6">
-                  <Clock className="h-5 w-5 text-[#086477] shrink-0" />
-                  <span className="text-xs sm:text-sm font-bold text-[#172E35]">1.5h each</span>
-                </div>
-                <div className="flex items-center gap-3 pt-3 lg:pt-0 lg:pl-6">
-                  <Layers className="h-5 w-5 text-[#086477] shrink-0" />
+                <div className="flex items-center gap-3 lg:pr-6">
+                  <Calendar className="h-5 w-5 text-[#086477] shrink-0" aria-hidden="true" />
                   <span className="text-xs sm:text-sm font-bold text-[#172E35]">
-                    8 essential skills
+                    {batch?.scheduleDescription || "16 sessions"}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 pt-3 lg:pt-0 lg:pl-6">
-                  <Users className="h-5 w-5 text-[#086477] shrink-0" />
+                <div className="flex items-center gap-3 lg:px-6">
+                  <Clock className="h-5 w-5 text-[#086477] shrink-0" aria-hidden="true" />
                   <span className="text-xs sm:text-sm font-bold text-[#172E35]">
-                    5 industry mentors
+                    Offline cohort · 1.5h each
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 lg:px-6">
+                  <Layers className="h-5 w-5 text-[#086477] shrink-0" aria-hidden="true" />
+                  <span className="text-xs sm:text-sm font-bold text-[#172E35]">
+                    {course.learningOutcomes.length} core skills
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 lg:pl-6">
+                  <Users className="h-5 w-5 text-[#086477] shrink-0" aria-hidden="true" />
+                  <span className="text-xs sm:text-sm font-bold text-[#172E35]">
+                    {mentorCountLabel}
                   </span>
                 </div>
               </>
             ) : (
               <>
-                <div className="flex items-center gap-3">
-                  <Layers className="h-5 w-5 text-[#086477] shrink-0" />
+                <div className="flex items-center gap-3 lg:pr-6">
+                  <Layers className="h-5 w-5 text-[#086477] shrink-0" aria-hidden="true" />
                   <span className="text-xs sm:text-sm font-bold text-[#172E35]">
                     10 focus areas
                   </span>
                 </div>
-                <div className="flex items-center gap-3 pt-3 lg:pt-0 lg:pl-6">
-                  <Users className="h-5 w-5 text-[#086477] shrink-0" />
+                <div className="flex items-center gap-3 lg:px-6">
+                  <Users className="h-5 w-5 text-[#086477] shrink-0" aria-hidden="true" />
                   <span className="text-xs sm:text-sm font-bold text-[#172E35]">
-                    8 industry mentors
+                    {mentorCountLabel}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 pt-3 lg:pt-0 lg:pl-6">
-                  <CheckCircle2 className="h-5 w-5 text-[#086477] shrink-0" />
+                <div className="flex items-center gap-3 lg:px-6">
+                  <CheckCircle2 className="h-5 w-5 text-[#086477] shrink-0" aria-hidden="true" />
                   <span className="text-xs sm:text-sm font-bold text-[#172E35]">
                     100% completed cohort
                   </span>
                 </div>
-                <div className="flex items-center gap-3 pt-3 lg:pt-0 lg:pl-6">
-                  <Award className="h-5 w-5 text-[#086477] shrink-0" />
+                <div className="flex items-center gap-3 lg:pl-6">
+                  <Award className="h-5 w-5 text-[#086477] shrink-0" aria-hidden="true" />
                   <span className="text-xs sm:text-sm font-bold text-[#172E35]">
                     Placement support
                   </span>
@@ -200,70 +538,7 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
         {/* ============================================================ */}
         {/* MOBILE / TABLET ONLY: Course Summary Card Placed Before Tabs */}
         {/* ============================================================ */}
-        <div className="block lg:hidden mb-8">
-          <div className="bg-white rounded-2xl border border-[#E5ECEE] p-6 shadow-xs">
-            {isCompleted ? (
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
-                  PROGRAM STATUS
-                </span>
-                <p className="text-2xl font-bold font-serif text-[#086477] my-2">
-                  Completed Cohort
-                </p>
-                <div className="space-y-2 text-xs sm:text-sm text-[#526E77] mb-4">
-                  <div className="flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-[#086477]" />
-                    <span>10 focus areas</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-[#086477]" />
-                    <span>8 industry mentors</span>
-                  </div>
-                </div>
-                <Link
-                  href="/#reviews"
-                  className="w-full text-center py-3 px-4 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs shadow-xs inline-flex items-center justify-center gap-2 transition-colors"
-                >
-                  <span>Explore Learner Reviews</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            ) : (
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
-                  PROGRAM FEE
-                </span>
-                <p className="text-3xl font-extrabold text-[#172E35] my-2">{formattedFee}</p>
-                <div className="space-y-2 text-xs sm:text-sm text-[#526E77] mb-5">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-[#086477]" />
-                    <span>16 sessions</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-[#086477]" />
-                    <span>1.5h each</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-[#086477]" />
-                    <span>5 industry mentors</span>
-                  </div>
-                </div>
-                <Link
-                  href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}
-                  className="w-full"
-                >
-                  <Button
-                    variant="primary"
-                    className="w-full py-3.5 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>Enroll in {course.title}</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
+        <div className="block lg:hidden mb-8">{renderSummaryCard("mobile")}</div>
 
         {/* ============================================================ */}
         {/* 4. TWO-COLUMN LAYOUT (Left Tabs 70% | Right Summary 30%)     */}
@@ -272,60 +547,40 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
           {/* ========================================================== */}
           {/* LEFT COLUMN: TABS (Overview, Curriculum, Mentors)          */}
           {/* ========================================================== */}
-          <div className="lg:col-span-8 bg-white rounded-2xl border border-[#E5ECEE] p-6 sm:p-8 shadow-xs">
+          <div className="lg:col-span-8 bg-white rounded-2xl border border-[#E5ECEE] p-6 sm:p-8 shadow-xs min-w-0">
             {/* Accessible Tab List */}
             <div
+              ref={tabListRef}
               role="tablist"
               aria-label="Course details navigation"
-              className="flex items-center gap-2 border-b border-[#E5ECEE] pb-3 mb-6"
+              className="flex items-center gap-2 overflow-x-auto border-b border-[#E5ECEE] pb-3 pt-1 px-1 mb-6 scroll-mt-24"
             >
-              <button
-                type="button"
-                role="tab"
-                id="tab-overview"
-                aria-selected={activeTab === "overview"}
-                aria-controls="panel-overview"
-                onClick={() => setActiveTab("overview")}
-                className={`px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === "overview"
-                    ? "bg-[#D9EDF0] text-[#086477] font-bold border border-[#A4D1D6] shadow-2xs"
-                    : "text-[#526E77] hover:text-[#172E35] hover:bg-[#F6FAFA]"
-                }`}
-              >
-                Overview
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                id="tab-curriculum"
-                aria-selected={activeTab === "curriculum"}
-                aria-controls="panel-curriculum"
-                onClick={() => setActiveTab("curriculum")}
-                className={`px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === "curriculum"
-                    ? "bg-[#D9EDF0] text-[#086477] font-bold border border-[#A4D1D6] shadow-2xs"
-                    : "text-[#526E77] hover:text-[#172E35] hover:bg-[#F6FAFA]"
-                }`}
-              >
-                Curriculum
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                id="tab-mentors"
-                aria-selected={activeTab === "mentors"}
-                aria-controls="panel-mentors"
-                onClick={() => setActiveTab("mentors")}
-                className={`px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-                  activeTab === "mentors"
-                    ? "bg-[#D9EDF0] text-[#086477] font-bold border border-[#A4D1D6] shadow-2xs"
-                    : "text-[#526E77] hover:text-[#172E35] hover:bg-[#F6FAFA]"
-                }`}
-              >
-                Mentors
-              </button>
+              {COURSE_TABS.map((tab, idx) => {
+                const isSelected = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    ref={(el) => {
+                      tabRefs.current[tab.id] = el;
+                    }}
+                    type="button"
+                    role="tab"
+                    id={`tab-${tab.id}`}
+                    aria-selected={isSelected}
+                    aria-controls={`panel-${tab.id}`}
+                    tabIndex={isSelected ? 0 : -1}
+                    onClick={() => setActiveTab(tab.id)}
+                    onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                    className={`min-h-[44px] px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
+                      isSelected
+                        ? "bg-[#D9EDF0] text-[#086477] font-bold border border-[#A4D1D6] shadow-2xs"
+                        : "text-[#526E77] hover:text-[#172E35] hover:bg-[#F6FAFA]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* TAB PANEL 1: OVERVIEW */}
@@ -421,7 +676,7 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div className="p-4 rounded-xl bg-[#F6FAFA] border border-[#E5ECEE] flex flex-col items-start">
                       <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] text-[#086477] flex items-center justify-center mb-2.5">
-                        <BookOpen className="h-4 w-4" />
+                        <BookOpen className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <h4 className="font-bold text-xs sm:text-sm text-[#172E35]">Learn</h4>
                       <p className="text-[11.5px] sm:text-xs text-[#526E77] mt-1 leading-relaxed">
@@ -431,7 +686,7 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
 
                     <div className="p-4 rounded-xl bg-[#F6FAFA] border border-[#E5ECEE] flex flex-col items-start">
                       <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] text-[#086477] flex items-center justify-center mb-2.5">
-                        <Settings className="h-4 w-4" />
+                        <Settings className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <h4 className="font-bold text-xs sm:text-sm text-[#172E35]">Apply</h4>
                       <p className="text-[11.5px] sm:text-xs text-[#526E77] mt-1 leading-relaxed">
@@ -441,7 +696,7 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
 
                     <div className="p-4 rounded-xl bg-[#F6FAFA] border border-[#E5ECEE] flex flex-col items-start">
                       <div className="w-8 h-8 rounded-lg bg-[#E0F3F5] text-[#086477] flex items-center justify-center mb-2.5">
-                        <RefreshCw className="h-4 w-4" />
+                        <RefreshCw className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <h4 className="font-bold text-xs sm:text-sm text-[#172E35]">Reflect</h4>
                       <p className="text-[11.5px] sm:text-xs text-[#526E77] mt-1 leading-relaxed">
@@ -454,11 +709,11 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                 <div className="pt-2">
                   <button
                     type="button"
-                    onClick={() => setActiveTab("curriculum")}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#086477] hover:underline cursor-pointer"
+                    onClick={() => switchTabAndFocus("curriculum", true)}
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-2 -ml-2 rounded-lg text-xs sm:text-sm font-bold text-[#086477] hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                   >
                     <span>Explore the learning plan</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -478,9 +733,9 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                       Your learning plan
                     </h2>
                     <div className="flex items-center gap-1.5 text-xs text-[#526E77] mt-1">
-                      <Clock className="h-3.5 w-3.5 text-[#086477]" />
+                      <Clock className="h-3.5 w-3.5 text-[#086477]" aria-hidden="true" />
                       <span>
-                        {isMto ? "16 sessions · 1.5h each" : "10 focus areas · 8 industry mentors"}
+                        {isMto ? `${scheduleSummary}` : `10 focus areas · ${mentorCountLabel}`}
                       </span>
                     </div>
                   </div>
@@ -494,18 +749,25 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                   {course.modules.length > 0 ? (
                     course.modules.map((mod, idx) => {
                       const isExpanded = Boolean(expandedModules[String(idx)]);
+                      const triggerId = `module-trigger-${mod.id}`;
+                      const panelId = `module-panel-${mod.id}`;
+
                       return (
                         <div
                           key={mod.id}
-                          className="rounded-xl border border-[#E5ECEE] overflow-hidden bg-white shadow-2xs"
+                          className="rounded-xl border border-[#E5ECEE] bg-white shadow-2xs"
                         >
                           <button
                             type="button"
+                            id={triggerId}
                             onClick={() => toggleModule(String(idx))}
                             aria-expanded={isExpanded}
-                            className="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-[#F6FAFA] transition-colors cursor-pointer"
+                            aria-controls={panelId}
+                            className={`w-full min-h-[44px] p-4 flex items-center justify-between gap-3 text-left hover:bg-[#F6FAFA] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
+                              isExpanded ? "rounded-t-xl" : "rounded-xl"
+                            }`}
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
                               <span className="font-bold text-xs sm:text-sm text-[#086477]">
                                 {String(idx + 1).padStart(2, "0")}
                               </span>
@@ -520,21 +782,29 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                                 {mod.duration}
                               </span>
                               {isExpanded ? (
-                                <Minus className="h-4 w-4 text-[#086477]" />
+                                <Minus className="h-4 w-4 text-[#086477]" aria-hidden="true" />
                               ) : (
-                                <Plus className="h-4 w-4 text-[#526E77]" />
+                                <Plus className="h-4 w-4 text-[#526E77]" aria-hidden="true" />
                               )}
                             </div>
                           </button>
 
                           {isExpanded && (
-                            <div className="p-4 bg-[#EAF5F7] border-t border-[#D5E5E8] space-y-2">
+                            <div
+                              id={panelId}
+                              role="region"
+                              aria-labelledby={triggerId}
+                              className="p-4 rounded-b-xl bg-[#EAF5F7] border-t border-[#D5E5E8] space-y-2"
+                            >
                               {mod.topics.map((topic, tIdx) => (
                                 <div
                                   key={tIdx}
                                   className="flex items-center gap-2 text-xs text-[#172E35]"
                                 >
-                                  <Clock className="h-3.5 w-3.5 text-[#086477] shrink-0" />
+                                  <Clock
+                                    className="h-3.5 w-3.5 text-[#086477] shrink-0"
+                                    aria-hidden="true"
+                                  />
                                   <span className="font-medium">{topic}</span>
                                 </div>
                               ))}
@@ -580,11 +850,11 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                 <div className="pt-2">
                   <button
                     type="button"
-                    onClick={() => setActiveTab("mentors")}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#086477] hover:underline cursor-pointer"
+                    onClick={() => switchTabAndFocus("mentors", true)}
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-2 -ml-2 rounded-lg text-xs sm:text-sm font-bold text-[#086477] hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                   >
                     <span>Meet the mentors behind the program</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -612,7 +882,7 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                   {mentors.map((mentor, idx) => {
                     const avatarSrc = getMentorAvatar(mentor, idx);
                     const initials = getInitials(mentor.name);
-                    const orgDisplay = mentor.organization.split(",")[0].trim();
+                    const companyLogo = getMentorCompanyLogo(mentor);
 
                     return (
                       <div
@@ -646,21 +916,15 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                           </div>
                         </div>
 
-                        {(() => {
-                          const companyLogo = getMentorCompanyLogo(mentor);
-                          if (companyLogo) {
-                            return (
-                              <div className="flex items-center sm:border-l sm:border-[#E5ECEE] sm:pl-4 shrink-0">
-                                <OfficialCompanyLogo
-                                  src={companyLogo.src}
-                                  alt={companyLogo.alt}
-                                  size="modal"
-                                />
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
+                        {companyLogo && (
+                          <div className="flex items-center sm:border-l sm:border-[#E5ECEE] sm:pl-4 shrink-0">
+                            <OfficialCompanyLogo
+                              src={companyLogo.src}
+                              alt={companyLogo.alt}
+                              size="modal"
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -676,11 +940,11 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
                   </p>
                   <button
                     type="button"
-                    onClick={() => setActiveTab("curriculum")}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#086477] hover:underline mt-3 cursor-pointer"
+                    onClick={() => switchTabAndFocus("curriculum", true)}
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-2 -ml-2 mt-2 rounded-lg text-xs sm:text-sm font-bold text-[#086477] hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                   >
                     <span>View the curriculum</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -691,136 +955,7 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
           {/* RIGHT COLUMN: STICKY COURSE SUMMARY CARD (Desktop)         */}
           {/* ========================================================== */}
           <div className="hidden lg:block lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-            <div className="bg-white rounded-2xl border border-[#E5ECEE] p-6 sm:p-7 shadow-xs">
-              {isCompleted ? (
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
-                    PROGRAM STATUS
-                  </span>
-                  <p className="text-2xl font-bold font-serif text-[#086477] my-2">
-                    Completed Cohort
-                  </p>
-
-                  <div className="space-y-2.5 text-xs sm:text-[13px] text-[#526E77] my-4">
-                    <div className="flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-[#086477] shrink-0" />
-                      <span>10 focus areas</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-[#086477] shrink-0" />
-                      <span>8 industry mentors</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-[#086477] shrink-0" />
-                      <span>100% completed cohort</span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href="/#reviews"
-                    className="w-full text-center py-3.5 px-4 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs shadow-xs inline-flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                  >
-                    <span>Explore Learner Reviews</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-
-                  <div className="w-full h-px bg-[#E5ECEE] my-6" />
-
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#172E35] mb-3">
-                    Program at a glance
-                  </h3>
-                  <div className="space-y-3 text-xs text-[#526E77]">
-                    <div>
-                      <span className="font-semibold text-[#172E35] block">Format</span>
-                      <span>Comprehensive Graduate Readiness</span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-[#172E35] block">Focus</span>
-                      <span>Cross-sector functional literacy</span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-[#172E35] block">Faculty</span>
-                      <span>8 senior corporate directors</span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-[#172E35] block">Outcome</span>
-                      <span>Practical readiness for corporate roles</span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
-                    PROGRAM FEE
-                  </span>
-                  <p className="text-3xl font-extrabold text-[#172E35] my-2">{formattedFee}</p>
-
-                  <div className="space-y-2.5 text-xs sm:text-[13px] text-[#526E77] my-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-[#086477] shrink-0" />
-                      <span>16 sessions</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-[#086477] shrink-0" />
-                      <span>1.5h each</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-[#086477] shrink-0" />
-                      <span>5 industry mentors</span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}
-                    className="w-full"
-                  >
-                    <Button
-                      variant="primary"
-                      className="w-full py-3.5 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <span>Enroll in {course.title}</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-
-                  <div className="w-full h-px bg-[#E5ECEE] my-6" />
-
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#172E35] mb-3">
-                    Program at a glance
-                  </h3>
-                  <div className="space-y-3 text-xs text-[#526E77]">
-                    <div className="flex items-start gap-2">
-                      <Calendar className="h-4 w-4 text-[#086477] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-[#172E35] block">Format</span>
-                        <span>Live, cohort-based learning</span>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Building className="h-4 w-4 text-[#086477] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-[#172E35] block">Focus</span>
-                        <span>Workplace-relevant MTO skills</span>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Layers className="h-4 w-4 text-[#086477] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-[#172E35] block">Skills</span>
-                        <span>8 essential professional skills</span>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Award className="h-4 w-4 text-[#086477] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-[#172E35] block">Outcome</span>
-                        <span>Readiness for MTO opportunities</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            {renderSummaryCard("desktop")}
           </div>
         </div>
 
@@ -839,86 +974,13 @@ export function CourseDetailView({ course, batch, mentors }: CourseDetailViewPro
 
           <Link
             href="/#courses"
-            className="shrink-0 px-6 py-3 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs inline-flex items-center gap-2 transition-colors"
+            className="shrink-0 min-h-[44px] px-6 py-3 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs inline-flex items-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
           >
             <span>Explore our programs</span>
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
       </div>
-
-      {/* ============================================================ */}
-      {/* 6. ACCESSIBLE ENROLLMENT DETAILS DIALOG                       */}
-      {/* ============================================================ */}
-      <Dialog open={isEnrollDialogOpen} onOpenChange={setIsEnrollDialogOpen}>
-        <DialogContent className="max-w-md bg-white rounded-2xl p-6 sm:p-7 border border-[#E5ECEE]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-serif font-bold text-[#172E35]">
-              Enroll in {course.title}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-[#526E77] mt-1">
-              Batch information and offline enrollment reservation.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="my-4 space-y-3 bg-[#F6FAFA] p-4 rounded-xl border border-[#E5ECEE] text-xs">
-            <div className="flex justify-between">
-              <span className="text-[#526E77]">Batch Name:</span>
-              <span className="font-bold text-[#172E35]">{batch?.name || "Cohort 1"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#526E77]">Schedule:</span>
-              <span className="font-bold text-[#172E35]">
-                {batch?.scheduleDescription || "16 Sessions (1.5h each)"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#526E77]">Start Date:</span>
-              <span className="font-bold text-[#172E35]">
-                {batch?.startDate ? "December 1, 2026" : "Upcoming"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#526E77]">Campus Venue:</span>
-              <span className="font-bold text-[#172E35]">{course.venue || "Dhanmondi, Dhaka"}</span>
-            </div>
-            <div className="flex justify-between pt-2 border-t border-[#E5ECEE]">
-              <span className="font-bold text-[#172E35]">Tuition Fee:</span>
-              <span className="font-bold text-[#086477] text-sm">{formattedFee}</span>
-            </div>
-          </div>
-
-          <p className="text-xs text-[#526E77] leading-relaxed">
-            Offline cohorts have strictly capped capacity. To reserve your seat and confirm
-            enrollment, please reach out to our Dhanmondi campus admissions desk at{" "}
-            <a href="mailto:info@lnabd.org" className="text-[#086477] font-bold underline">
-              info@lnabd.org
-            </a>{" "}
-            or call{" "}
-            <a href="tel:+8801700000000" className="text-[#086477] font-bold underline">
-              +880 1700-000000
-            </a>
-            .
-          </p>
-
-          <DialogFooter className="mt-5 flex items-center justify-end gap-2.5">
-            <DialogClose asChild>
-              <button
-                type="button"
-                className="px-4 py-2 text-xs font-semibold text-[#526E77] hover:text-[#172E35] rounded-lg transition-colors cursor-pointer"
-              >
-                Close
-              </button>
-            </DialogClose>
-            <a
-              href="mailto:info@lnabd.org?subject=Enrollment%20Inquiry%20-%20MTO%20Readiness%20Program"
-              className="px-5 py-2 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs shadow-xs transition-colors"
-            >
-              Contact Admissions
-            </a>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

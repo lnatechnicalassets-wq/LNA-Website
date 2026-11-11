@@ -53,10 +53,16 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
         {/* Logo Brand Lockup */}
         <Link
           href="/"
-          className="flex items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+          className="flex items-center shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
           aria-label={`${organization.name} Home`}
         >
-          <DemoLogo size="md" showTagline={false} showDemoBadge={false} />
+          <DemoLogo
+            variant="full"
+            size="md"
+            name={organization.name}
+            showTagline={false}
+            showDemoBadge={false}
+          />
         </Link>
 
         {/* Desktop Navigation Links */}

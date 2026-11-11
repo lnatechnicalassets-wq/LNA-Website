@@ -14,7 +14,7 @@ import {
 export const metadata = {
   title: "Lead Nation Academy | Professional Education in Bangladesh",
   description:
-    "Premium offline executive development masterclasses and leadership programs in Dhanmondi, Dhaka. Designed for directors, C-level executives, and enterprise leaders.",
+    "Premium offline executive development masterclasses and leadership programs in Dhaka, Bangladesh. Designed for directors, C-level executives, and enterprise leaders.",
 };
 
 export default async function HomePage() {

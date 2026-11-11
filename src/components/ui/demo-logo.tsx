@@ -21,7 +21,7 @@ export interface BrandLogoProps {
  */
 export function BrandLogo({
   size = "md",
-  variant = "crest",
+  variant = "full",
   inverted = false,
   showText = true,
   showTagline = false,
@@ -36,11 +36,11 @@ export function BrandLogo({
     lg: "h-14 sm:h-16 w-auto",
   }[size];
 
-  // Dimensions for full logo graphic
+  // Dimensions for full logo graphic (circular crest + LEAD NATION ACADEMY + bottom rule & bag)
   const fullDimensions = {
-    sm: "h-9 w-auto",
-    md: "h-12 sm:h-13 w-auto",
-    lg: "h-16 sm:h-20 w-auto",
+    sm: "h-[52px] w-auto",
+    md: "h-[54px] sm:h-[68px] w-auto",
+    lg: "h-20 sm:h-24 w-auto",
   }[size];
 
   const textClasses = {
@@ -51,11 +51,16 @@ export function BrandLogo({
 
   if (variant === "full") {
     return (
-      <div className={`inline-flex items-center ${className}`} data-testid="demo-logo-container">
+      <div
+        className={`inline-flex items-center shrink-0 ${className}`}
+        data-testid="demo-logo-container"
+      >
         <img
           src={inverted ? "/images/brand/logo-white.png" : "/images/brand/logo.png"}
           alt={name}
-          className={`${fullDimensions} object-contain select-none`}
+          width={406}
+          height={425}
+          className={`${fullDimensions} object-contain shrink-0 select-none`}
         />
       </div>
     );

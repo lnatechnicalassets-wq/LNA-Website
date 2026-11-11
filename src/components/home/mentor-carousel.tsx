@@ -2,32 +2,32 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import type { Mentor } from "@/lib/content";
-import {
-  formatMentorRoleWithCompany,
-  getMentorAvatar,
-  getMentorCompanyLogos,
-} from "@/lib/mentors";
+import { formatMentorRoleWithCompany, getMentorAvatar, getMentorCompanyLogos } from "@/lib/mentors";
 import { CompanyLogo, OfficialCompanyLogo } from "./company-logo";
 import { useMentorQuickView } from "./mentor-quick-view-context";
+
+const CARD_TRANSITION_MS = 750;
+const DEFAULT_AUTOPLAY_INTERVAL_MS = 2000;
 
 export interface MentorCarouselProps {
   mentors: Mentor[];
   onSelectMentor?: (mentor: Mentor) => void;
   initialMentorId?: string;
-  autoplayDisplayMs?: number;
+  autoplayIntervalMs?: number;
   isSearchActive?: boolean;
 }
 
 export function MentorCarousel({
   mentors,
   onSelectMentor,
-  initialMentorId = "mentor-leadership-lead",
-  autoplayDisplayMs = 4000,
+  initialMentorId,
+  autoplayIntervalMs = DEFAULT_AUTOPLAY_INTERVAL_MS,
   isSearchActive = false,
 }: MentorCarouselProps) {
   const defaultIndex = useMemo(() => {
+    if (!initialMentorId) return 0;
     const foundIdx = mentors.findIndex((m) => m.id === initialMentorId);
     return foundIdx >= 0 ? foundIdx : 0;
   }, [mentors, initialMentorId]);
@@ -56,12 +56,11 @@ export function MentorCarousel({
   const total = mentors.length;
   const activeMentor = mentors[activeIndex] || mentors[0];
 
-  // Reset activeIndex whenever mentors list changes (filtering/search)
+  // Reset activeIndex whenever mentors list changes (filtering/search/sort)
   useEffect(() => {
-    const foundIdx = mentors.findIndex((m) => m.id === initialMentorId);
-    setActiveIndex(foundIdx >= 0 ? foundIdx : 0);
-    lastNavTimeRef.current = Date.now() - 750;
-  }, [mentors, initialMentorId]);
+    setActiveIndex(defaultIndex);
+    lastNavTimeRef.current = Date.now() - CARD_TRANSITION_MS;
+  }, [defaultIndex, mentors]);
 
   // Sync active mentor to quick view context
   useEffect(() => {
@@ -95,7 +94,7 @@ export function MentorCarousel({
       setIsInViewport(true);
       setRevealState("settled");
       hasRevealedRef.current = true;
-      lastNavTimeRef.current = Date.now() - 750;
+      lastNavTimeRef.current = Date.now() - CARD_TRANSITION_MS;
       return;
     }
 
@@ -109,12 +108,12 @@ export function MentorCarousel({
           hasRevealedRef.current = true;
           if (prefersReducedMotion) {
             setRevealState("settled");
-            lastNavTimeRef.current = Date.now() - 750;
+            lastNavTimeRef.current = Date.now() - CARD_TRANSITION_MS;
           } else {
             setRevealState("revealing");
             revealTimerRef.current = setTimeout(() => {
               setRevealState("settled");
-              lastNavTimeRef.current = Date.now() - 750;
+              lastNavTimeRef.current = Date.now() - CARD_TRANSITION_MS;
             }, 1300);
           }
         }
@@ -207,15 +206,16 @@ export function MentorCarousel({
     }
   }, []);
 
-  // Schedule autoplay: 750ms transition + 4000ms display hold time
+  // Schedule autoplay: 750ms transition + 1250ms post-transition hold = 2000ms total cycle
   const scheduleAutoplay = useCallback(() => {
     clearAutoplayTimers();
 
     if (!isAutoplayEligible) return;
 
-    // The 4-second timer must begin after the previous transition finishes (750ms)
+    // Wait for any active 750ms slide transition to settle, then hold for the remaining cycle time
     const elapsed = Date.now() - lastNavTimeRef.current;
-    const remainingTransition = Math.max(0, 750 - elapsed);
+    const remainingTransition = Math.max(0, CARD_TRANSITION_MS - elapsed);
+    const postTransitionHoldMs = Math.max(0, autoplayIntervalMs - CARD_TRANSITION_MS);
 
     transitionTimerRef.current = setTimeout(() => {
       if (!isAutoplayEligible) return;
@@ -223,9 +223,9 @@ export function MentorCarousel({
       autoplayTimerRef.current = setTimeout(() => {
         if (!isAutoplayEligible) return;
         goToNext(false);
-      }, autoplayDisplayMs);
+      }, postTransitionHoldMs);
     }, remainingTransition);
-  }, [clearAutoplayTimers, isAutoplayEligible, autoplayDisplayMs, goToNext]);
+  }, [clearAutoplayTimers, isAutoplayEligible, autoplayIntervalMs, goToNext]);
 
   // Synchronize autoplay scheduling
   useEffect(() => {
@@ -473,6 +473,8 @@ export function MentorCarousel({
           return (
             <div
               key={mentor.id}
+              data-testid="mentor-card"
+              data-mentor-id={mentor.id}
               role="group"
               aria-roledescription="slide"
               aria-label={`${index + 1} of ${total}: ${mentor.name}`}
@@ -513,7 +515,7 @@ export function MentorCarousel({
                   className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/20 via-white/5 to-transparent pointer-events-none"
                 />
 
-                {/* Plus quick-view button on all visible cards */}
+                {/* Explicit Info button replacing ambiguous '+' icon */}
                 {isVisible && (
                   <button
                     type="button"
@@ -523,14 +525,15 @@ export function MentorCarousel({
                     }}
                     onMouseEnter={() => setIsHoveringControl(true)}
                     onMouseLeave={() => setIsHoveringControl(false)}
-                    aria-label={`Open quick view for ${mentor.name}`}
-                    className={`absolute top-3.5 right-3.5 rounded-full border border-white/60 backdrop-blur-xs flex items-center justify-center text-white transition-all shadow-xs group cursor-pointer ${
+                    aria-label={`View mentor info for ${mentor.name}`}
+                    className={`absolute top-3 right-3 inline-flex items-center gap-1 rounded-full border backdrop-blur-xs font-semibold transition-all shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
                       isActive
-                        ? "w-7 h-7 bg-white/40 hover:bg-white/60 ring-1 ring-white/50"
-                        : "w-6 h-6 bg-white/25 hover:bg-white/45"
+                        ? "px-2.5 py-1 text-[11px] bg-white/90 hover:bg-white text-[#086477] border-white ring-1 ring-white/50"
+                        : "px-2 py-0.5 text-[10px] bg-white/80 hover:bg-white text-[#086477] border-white/75"
                     }`}
                   >
-                    <Plus className="h-3.5 w-3.5 transition-transform duration-300 group-hover:rotate-90" />
+                    <Info className="h-3 w-3 shrink-0" aria-hidden="true" />
+                    <span>Info</span>
                   </button>
                 )}
               </div>
@@ -638,7 +641,7 @@ export function MentorCarousel({
         {/* Divider */}
         <span className="w-px h-4 bg-white/30 mx-1" aria-hidden="true" />
 
-        {/* Compact Position Indicator: e.g. 06 / 80 Mentors */}
+        {/* Compact Position Indicator: e.g. 03 / 15 Mentors */}
         <span className="text-xs sm:text-sm font-semibold tracking-wide text-white">
           {String(activeIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")} Mentors
         </span>

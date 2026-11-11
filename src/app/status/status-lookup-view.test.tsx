@@ -277,4 +277,44 @@ describe("StatusLookupView (/status)", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  it("renders accessible error summary, validates format, and focuses the first invalid input", () => {
+    const rafSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 1;
+      });
+    const lookupSpy = vi.fn();
+
+    try {
+      render(<StatusLookupView enabled onLookup={lookupSpy} />);
+
+      // Submit empty -> focuses Application ID input
+      fireEvent.click(screen.getByRole("button", { name: /Check application status/i }));
+      expect(screen.getByTestId("status-error-summary")).toBeDefined();
+      expect(document.activeElement).toBe(screen.getByLabelText(/LNA Application ID/i));
+      expect(lookupSpy).not.toHaveBeenCalled();
+
+      // Fill valid ref, submit invalid email -> focuses contact input
+      fireEvent.change(screen.getByLabelText(/LNA Application ID/i), {
+        target: { value: "LNA-MTO1-2026" },
+      });
+      fireEvent.change(screen.getByRole("textbox", { name: /Email address/i }), {
+        target: { value: "bad-email" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Check application status/i }));
+      expect(document.activeElement).toBe(screen.getByRole("textbox", { name: /Email address/i }));
+      expect(screen.getByRole("alert").textContent).toMatch(/Please enter a valid email address/i);
+      expect(lookupSpy).not.toHaveBeenCalled();
+
+      // Switching radio from Email to Phone clears stale email text
+      fireEvent.click(screen.getByRole("radio", { name: /Use Phone/i }));
+      expect(
+        (screen.getByRole("textbox", { name: /Phone number/i }) as HTMLInputElement).value
+      ).toBe("");
+    } finally {
+      rafSpy.mockRestore();
+    }
+  });
 });

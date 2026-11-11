@@ -1,13 +1,16 @@
 import React from "react";
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { AdminEnrollmentsView } from "./admin-enrollments-view";
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
 
+const pushMock = vi.fn();
+const refreshMock = vi.fn();
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: vi.fn(),
-    refresh: vi.fn(),
+    push: pushMock,
+    refresh: refreshMock,
   }),
 }));
 
@@ -20,7 +23,33 @@ const SAMPLE_STAFF: VerifiedStaffContext = {
   fullName: "LNA Super Admin",
 };
 
+const SAMPLE_RECORD = {
+  id: "enr-uuid-1",
+  publicRef: "LNA-2M4K-9P7Q",
+  fullName: "Nadia Sultana",
+  email: "nadia@example.com",
+  phone: "01711223344",
+  courseSlug: "mto-readiness",
+  courseTitle: "MTO Readiness Program",
+  batchSlug: "batch-mto-2026-01",
+  batchName: "MTO Readiness Cohort 1",
+  paymentMethod: "bkash" as const,
+  paymentStatus: "validated",
+  status: "confirmed",
+  payablePoisha: 550000,
+  currency: "BDT",
+  holdExpiresAt: null,
+  confirmedAt: "2026-11-11T00:00:00Z",
+  createdAt: "2026-11-10T23:45:00Z",
+  isDevFixture: false,
+};
+
 describe("AdminEnrollmentsView (/admin/enrollments)", () => {
+  beforeEach(() => {
+    pushMock.mockReset();
+    refreshMock.mockReset();
+  });
+
   afterEach(() => {
     cleanup();
   });
@@ -112,5 +141,96 @@ describe("AdminEnrollmentsView (/admin/enrollments)", () => {
     expect(screen.getByTestId("admin-enrollments-empty")).toBeDefined();
     expect(screen.getByText(/No matching enrollment records/i)).toBeDefined();
     expect(screen.getByRole("link", { name: /Clear search & filters/i })).toBeDefined();
+  });
+
+  it("clears visible search and status controls on Reset and navigates back to unfiltered results", () => {
+    const { rerender } = render(
+      <AdminEnrollmentsView
+        staff={SAMPLE_STAFF}
+        currentSearch="nadia"
+        currentStatus="confirmed"
+        list={{
+          totalCount: 1,
+          page: 1,
+          pageSize: 20,
+          items: [SAMPLE_RECORD],
+        }}
+      />
+    );
+
+    const searchInput = screen.getByLabelText(/Search applications/i) as HTMLInputElement;
+    const statusSelect = screen.getByLabelText(/Status filter/i) as HTMLSelectElement;
+    expect(searchInput.value).toBe("nadia");
+    expect(statusSelect.value).toBe("confirmed");
+
+    // Edit controls further, then click Reset
+    fireEvent.change(searchInput, { target: { value: "tariq" } });
+    fireEvent.change(statusSelect, { target: { value: "pending" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /^Reset$/i }));
+
+    expect(searchInput.value).toBe("");
+    expect(statusSelect.value).toBe("");
+    expect(pushMock).toHaveBeenCalledWith("/admin/enrollments");
+
+    // Server re-renders with unfiltered defaults and list
+    rerender(
+      <AdminEnrollmentsView
+        staff={SAMPLE_STAFF}
+        currentSearch=""
+        currentStatus=""
+        list={{
+          totalCount: 2,
+          page: 1,
+          pageSize: 20,
+          items: [
+            SAMPLE_RECORD,
+            {
+              ...SAMPLE_RECORD,
+              id: "enr-uuid-2",
+              publicRef: "LNA-8K3N-4W2P",
+              fullName: "Tariqul Hasan",
+              email: "tariq@example.com",
+            },
+          ],
+        }}
+      />
+    );
+
+    expect((screen.getByLabelText(/Search applications/i) as HTMLInputElement).value).toBe("");
+    expect((screen.getByLabelText(/Status filter/i) as HTMLSelectElement).value).toBe("");
+    expect(screen.queryByRole("button", { name: /^Reset$/i })).toBeNull();
+    expect(screen.getAllByText("Tariqul Hasan").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByRole("link", {
+        name: /View details for LNA-2M4K-9P7Q \(Nadia Sultana\)/i,
+      }).length
+    ).toBeGreaterThanOrEqual(1);
+  });
+
+  it("navigates with encoded query parameters when Filter is submitted", () => {
+    render(
+      <AdminEnrollmentsView
+        staff={SAMPLE_STAFF}
+        currentSearch=""
+        currentStatus=""
+        list={{
+          totalCount: 25,
+          page: 1,
+          pageSize: 20,
+          items: [SAMPLE_RECORD],
+        }}
+      />
+    );
+
+    const searchInput = screen.getByLabelText(/Search applications/i) as HTMLInputElement;
+    const statusSelect = screen.getByLabelText(/Status filter/i) as HTMLSelectElement;
+
+    fireEvent.change(searchInput, { target: { value: "  LNA-2M4K  " } });
+    fireEvent.change(statusSelect, { target: { value: "confirmed" } });
+    fireEvent.click(screen.getByRole("button", { name: /Filter/i }));
+
+    expect(pushMock).toHaveBeenCalledWith("/admin/enrollments?q=LNA-2M4K&status=confirmed");
+    expect(screen.getByText("Previous").parentElement?.getAttribute("aria-disabled")).toBe("true");
   });
 });

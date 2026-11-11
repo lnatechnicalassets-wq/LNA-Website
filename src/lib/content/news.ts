@@ -1,13 +1,7 @@
 import { z } from "zod";
 import { ProvenanceSchema } from "./provenance";
 
-export const NEWS_CATEGORIES = [
-  "All updates",
-  "Partnerships",
-  "Invitations",
-  "Program updates",
-  "Community",
-] as const;
+export const NEWS_CATEGORIES = ["All updates", "Partnerships", "Program updates"] as const;
 
 export type NewsCategory = (typeof NEWS_CATEGORIES)[number];
 
@@ -47,7 +41,7 @@ export const NewsArticleSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1),
   excerpt: z.string().min(1),
-  category: z.enum(["Partnerships", "Invitations", "Program updates", "Community"]),
+  category: z.enum(["Partnerships", "Program updates"]),
   publishedAt: z.string(), // ISO date "2026-11-04"
   updatedAt: z.string().optional(),
   author: z.string().default("LNA Team"),

@@ -108,7 +108,9 @@ export function EventsSection({ events }: EventsSectionProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-accent shrink-0" />
-                    <span className="truncate">Dhanmondi, Dhaka</span>
+                    <span className="truncate" title={featuredEvent.venue}>
+                      {featuredEvent.venue}
+                    </span>
                   </div>
                 </div>
 
@@ -147,7 +149,7 @@ export function EventsSection({ events }: EventsSectionProps) {
                     <span>{event.date}</span>
                   </div>
                   <span className="text-[11px] text-accent-300 font-medium">
-                    {event.deliveryMode === "offline" ? "In-Person • Dhanmondi" : "Seminar"}
+                    {event.deliveryMode === "offline" ? "In-Person • Dhaka" : "Seminar"}
                   </span>
                 </div>
 
@@ -159,7 +161,9 @@ export function EventsSection({ events }: EventsSectionProps) {
                     <Clock className="h-3.5 w-3.5 text-accent" />
                     <span>{event.time}</span>
                   </div>
-                  <span className="text-accent-300">Venue: Dhanmondi Campus</span>
+                  <span className="text-accent-300 truncate max-w-[220px]" title={event.venue}>
+                    {event.venue}
+                  </span>
                 </div>
               </div>
             ))}

@@ -4,11 +4,7 @@ import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import { X, ExternalLink } from "lucide-react";
 import type { Mentor } from "@/lib/content";
-import {
-  formatMentorRoleWithCompany,
-  getMentorAvatar,
-  getMentorCompanyLogos,
-} from "@/lib/mentors";
+import { formatMentorRoleWithCompany, getMentorAvatar, getMentorCompanyLogos } from "@/lib/mentors";
 import { CompanyLogo, OfficialCompanyLogo } from "./company-logo";
 
 export interface MentorQuickViewModalProps {
@@ -22,7 +18,8 @@ export function MentorQuickViewModal({ mentor, onClose }: MentorQuickViewModalPr
 
   useEffect(() => {
     // Save previously focused element to restore focus on close
-    previouslyFocusedElement.current = document.activeElement as HTMLElement;
+    previouslyFocusedElement.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     // Lock background scroll
     const originalOverflow = document.body.style.overflow;
@@ -58,20 +55,16 @@ export function MentorQuickViewModal({ mentor, onClose }: MentorQuickViewModalPr
     return () => {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
-      previouslyFocusedElement.current?.focus();
+      if (previouslyFocusedElement.current?.isConnected) {
+        previouslyFocusedElement.current.focus();
+      }
     };
   }, [onClose]);
 
   const avatarSrc = getMentorAvatar(mentor);
   const companyLogos = getMentorCompanyLogos(mentor);
-  const fallbackHistoryLogos =
-    companyLogos.length === 0 ? (mentor.careerHistory ?? []) : [];
-  const expertiseList = mentor.expertise || [
-    "Growth Strategy",
-    "Go-to-Market",
-    "Scaling Teams",
-    "Corporate Governance",
-  ];
+  const fallbackHistoryLogos = companyLogos.length === 0 ? (mentor.careerHistory ?? []) : [];
+  const expertiseList = mentor.expertise ?? [];
 
   return (
     <div
@@ -162,21 +155,23 @@ export function MentorQuickViewModal({ mentor, onClose }: MentorQuickViewModalPr
         )}
 
         {/* Expertise Tags */}
-        <div className="mt-4 pt-3.5 border-t border-[#E5ECEE]">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#526E77] block mb-2">
-            Expertise
-          </span>
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            {expertiseList.map((tag, idx) => (
-              <span
-                key={idx}
-                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#E8F2F4] text-[#086477]"
-              >
-                {tag}
-              </span>
-            ))}
+        {expertiseList.length > 0 && (
+          <div className="mt-4 pt-3.5 border-t border-[#E5ECEE]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#526E77] block mb-2">
+              Expertise
+            </span>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {expertiseList.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#E8F2F4] text-[#086477]"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Action Button: View on LinkedIn */}
         <div className="mt-6 flex items-center justify-between gap-3">

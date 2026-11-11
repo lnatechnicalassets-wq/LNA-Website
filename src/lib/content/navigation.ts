@@ -38,7 +38,8 @@ let cachedNav: NavigationConfig | null = null;
  * Components must import this helper instead of accessing /content directly (Rule R4).
  */
 export function getNavigationConfig(): NavigationConfig {
-  if (cachedNav) {
+  const cacheEnabled = process.env.NODE_ENV !== "development";
+  if (cacheEnabled && cachedNav) {
     return cachedNav;
   }
 
@@ -51,6 +52,8 @@ export function getNavigationConfig(): NavigationConfig {
   const parsed = JSON.parse(raw);
   const validated = NavigationConfigSchema.parse(parsed);
 
-  cachedNav = validated;
+  if (cacheEnabled) {
+    cachedNav = validated;
+  }
   return validated;
 }

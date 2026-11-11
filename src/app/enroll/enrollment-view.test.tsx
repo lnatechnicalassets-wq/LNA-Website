@@ -238,7 +238,7 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
     vi.restoreAllMocks();
   });
 
-  it("shows a returning-applicant /status link and 'Online enrollment is coming soon' banner in closed mode", () => {
+  it("shows 'Online enrollment is coming soon' and /status link before asking for personal details when closed", () => {
     render(
       <EnrollmentView
         courses={testCourses}
@@ -253,17 +253,45 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
     expect(screen.getByTestId("online-enrollment-coming-soon").textContent).toMatch(
       /Online enrollment is coming soon/i
     );
+
+    // Closed-enrollment gate must appear before collecting personal information
+    expect(screen.queryByLabelText(/Full name/i)).toBeNull();
+    expect(screen.queryByLabelText(/Email address/i)).toBeNull();
+    expect(screen.queryByLabelText(/WhatsApp \/ Phone number/i)).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Continue$/i })).toBeNull();
+
+    const closedBtn = screen.getByRole("button", {
+      name: /Online enrollment is coming soon/i,
+    }) as HTMLButtonElement;
+    expect(closedBtn.disabled).toBe(true);
   });
 
-  it("renders hosted bKash Checkout without manual QR, Transaction ID, or Bank Transfer fields and disables CTA when closed", () => {
-    navigateToPaidPaymentStep(createOfficialConfig(false), {
+  it("renders selected cohort fee preview from URL params in closed mode without opening personal form fields", () => {
+    mockSearchParams = new URLSearchParams("course=mto-readiness&batch=batch-mto-discounted");
+    render(
+      <EnrollmentView
+        courses={testCourses}
+        batches={testBatches}
+        config={createOfficialConfig(false)}
+        checkoutMode="closed"
+      />
+    );
+
+    expect(screen.getByTestId("online-enrollment-coming-soon")).toBeDefined();
+    expect(screen.getByText("MTO Readiness Program")).toBeDefined();
+    expect(screen.getByText("MTO Early Bird Cohort")).toBeDefined();
+    expect(screen.getByText("BDT 5,500")).toBeDefined();
+    expect(screen.getByText("BDT 7,500")).toBeDefined();
+    expect(screen.queryByLabelText(/Full name/i)).toBeNull();
+  });
+
+  it("renders hosted bKash Checkout with discounted payable poisha and zero manual QR/TrxID/Bank Transfer fields in open checkout mode", () => {
+    navigateToPaidPaymentStep(createOfficialConfig(true), {
       batchId: "batch-mto-discounted",
-      checkoutMode: "closed",
+      checkoutMode: "mock",
     });
 
-    expect(screen.getByTestId("online-enrollment-coming-soon").textContent).toMatch(
-      /Online enrollment is coming soon/i
-    );
+    expect(screen.queryByTestId("online-enrollment-coming-soon")).toBeNull();
     expect(screen.getByTestId("payment-amount-due").textContent).toBe("BDT 5,500");
     expect(screen.getByTestId("hosted-bkash-checkout-panel")).toBeDefined();
 
@@ -275,39 +303,9 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
     expect(screen.queryByText(/Mutual Trust Bank PLC/i)).toBeNull();
 
     const submitBtn = screen.getByRole("button", {
-      name: /Online enrollment is coming soon/i,
+      name: /Continue to bKash Checkout/i,
     }) as HTMLButtonElement;
-    expect(submitBtn.disabled).toBe(true);
-  });
-
-  it("disables free cohort registration button in closed mode", () => {
-    render(
-      <EnrollmentView
-        courses={testCourses}
-        batches={testBatches}
-        config={createOfficialConfig(false)}
-        checkoutMode="closed"
-      />
-    );
-
-    fireEvent.change(screen.getByLabelText("Program"), {
-      target: { value: "career-planning-workshop" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
-
-    fireEvent.change(screen.getByLabelText(/Full name/i), { target: { value: "Kamal Uddin" } });
-    fireEvent.change(screen.getByLabelText(/Email address/i), {
-      target: { value: "kamal@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText(/WhatsApp \/ Phone number/i), {
-      target: { value: "01811223344" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
-
-    const confirmBtn = screen.getByRole("button", {
-      name: /Online enrollment is coming soon/i,
-    }) as HTMLButtonElement;
-    expect(confirmBtn.disabled).toBe(true);
+    expect(submitBtn.disabled).toBe(false);
   });
 
   it("starts hosted bKash Checkout and redirects in mock mode without asking for a manual transaction reference", async () => {
@@ -506,5 +504,96 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
       screen.getByRole("link", { name: /Check application status/i }).getAttribute("href")
     ).toBe("/status?ref=LNA-CONF-2026");
     expect(document.body.textContent).not.toMatch(/confirmation email/i);
+  });
+
+  it("applies URL course/batch preselection once and preserves subsequent learner changes", () => {
+    mockSearchParams = new URLSearchParams("course=mto-readiness&batch=batch-mto-2026-01");
+    const { rerender } = render(
+      <EnrollmentView
+        courses={testCourses}
+        batches={testBatches}
+        config={createOfficialConfig(true)}
+        checkoutMode="mock"
+      />
+    );
+
+    const programSelect = screen.getByLabelText("Program") as HTMLSelectElement;
+    const batchSelect = screen.getByLabelText("Batch") as HTMLSelectElement;
+    expect(programSelect.value).toBe("mto-readiness");
+    expect(batchSelect.value).toBe("batch-mto-2026-01");
+
+    // Learner switches batch to discounted cohort
+    fireEvent.change(batchSelect, { target: { value: "batch-mto-discounted" } });
+    expect(batchSelect.value).toBe("batch-mto-discounted");
+
+    // Learner clears batch back to placeholder
+    fireEvent.change(batchSelect, { target: { value: "" } });
+    expect(batchSelect.value).toBe("");
+
+    // Re-render must NOT snap selection back to URL batch
+    rerender(
+      <EnrollmentView
+        courses={[...testCourses]}
+        batches={[...testBatches]}
+        config={createOfficialConfig(true)}
+        checkoutMode="mock"
+      />
+    );
+    expect((screen.getByLabelText("Batch") as HTMLSelectElement).value).toBe("");
+
+    // Learner switches to another course
+    fireEvent.change(screen.getByLabelText("Program"), {
+      target: { value: "career-planning-workshop" },
+    });
+    expect((screen.getByLabelText("Program") as HTMLSelectElement).value).toBe(
+      "career-planning-workshop"
+    );
+    expect((screen.getByLabelText("Batch") as HTMLSelectElement).value).toBe("batch-free-2026-01");
+  });
+
+  it("renders accessible error summary and focuses the first invalid field on validation failure", async () => {
+    const rafSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 1;
+      });
+
+    try {
+      render(
+        <EnrollmentView
+          courses={testCourses}
+          batches={testBatches}
+          config={createOfficialConfig(true)}
+          checkoutMode="mock"
+        />
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
+      expect(screen.getByTestId("enrollment-error-summary")).toBeDefined();
+      expect(document.activeElement).toBe(screen.getByLabelText("Program"));
+
+      // Advance to Step 2
+      fireEvent.change(screen.getByLabelText("Program"), { target: { value: "mto-readiness" } });
+      fireEvent.change(screen.getByLabelText("Batch"), { target: { value: "batch-mto-2026-01" } });
+      fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
+
+      // Submit empty Step 2 -> focuses Full name
+      fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
+      expect(screen.getByTestId("enrollment-error-summary")).toBeDefined();
+      expect(document.activeElement).toBe(screen.getByLabelText(/Full name/i));
+
+      // Fill Full name, submit invalid email -> focuses Email address
+      fireEvent.change(screen.getByLabelText(/Full name/i), {
+        target: { value: "Samira Rahman" },
+      });
+      fireEvent.change(screen.getByLabelText(/Email address/i), {
+        target: { value: "not-an-email" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
+      expect(document.activeElement).toBe(screen.getByLabelText(/Email address/i));
+    } finally {
+      rafSpy.mockRestore();
+    }
   });
 });

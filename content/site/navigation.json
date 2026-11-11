@@ -31,7 +31,7 @@
       {
         "label": "News",
         "href": "/news",
-        "description": "Invitations, partnerships, and moments from LNA"
+        "description": "Partnerships, program updates, and moments from LNA"
       },
       {
         "label": "Contact Us",
@@ -68,7 +68,8 @@
         "links": [
           { "label": "Contact Us", "href": "/#contact" },
           { "label": "info@lnabd.org", "href": "mailto:info@lnabd.org" },
-          { "label": "Dhanmondi, Dhaka", "href": "/#contact" }
+          { "label": "+880 1326-760702", "href": "tel:+8801326760702" },
+          { "label": "Banani, Dhaka 1213", "href": "/#contact" }
         ]
       }
     ],

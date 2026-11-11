@@ -21,8 +21,12 @@ export function NewsArchiveView({ initialArticles }: NewsArchiveViewProps) {
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  // Read state from URL search params
-  const activeCategory = (searchParams.get("category") as NewsCategory) || "All updates";
+  // Read state from URL search params, falling back if a removed category is passed
+  const rawCategoryParam = searchParams.get("category");
+  const activeCategory: NewsCategory =
+    rawCategoryParam && NEWS_CATEGORIES.includes(rawCategoryParam as NewsCategory)
+      ? (rawCategoryParam as NewsCategory)
+      : "All updates";
   const searchQueryParam = searchParams.get("search") || "";
   const pageParam = parseInt(searchParams.get("page") || "1", 10);
   const currentPage = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
@@ -187,7 +191,7 @@ export function NewsArchiveView({ initialArticles }: NewsArchiveViewProps) {
             News &amp; Updates
           </h1>
           <p className="text-base sm:text-lg text-[#526E77] max-w-2xl">
-            Invitations, partnerships, and moments from LNA.
+            Partnerships, program updates, and moments from LNA.
           </p>
         </div>
 
@@ -203,6 +207,7 @@ export function NewsArchiveView({ initialArticles }: NewsArchiveViewProps) {
                 <button
                   key={cat}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => handleCategorySelect(cat)}
                   className={`px-4 py-2 rounded-full text-xs sm:text-[13px] font-semibold whitespace-nowrap transition-all cursor-pointer shadow-2xs focus-visible:outline-2 focus-visible:outline-[#086477] ${
                     isSelected

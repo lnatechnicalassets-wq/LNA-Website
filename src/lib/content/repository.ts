@@ -89,9 +89,14 @@ export class JsonContentRepository
     this.contentDir = contentDir;
   }
 
+  private isCacheEnabled(): boolean {
+    return process.env.NODE_ENV !== "development";
+  }
+
   // --- Courses ---
   async getAllCourses(): Promise<Course[]> {
-    if (this.cachedCourses) return this.cachedCourses;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedCourses) return this.cachedCourses;
 
     const coursesFile = path.join(this.contentDir, "catalog", "courses.json");
     if (!fs.existsSync(coursesFile)) return [];
@@ -100,7 +105,9 @@ export class JsonContentRepository
     const parsed = JSON.parse(raw);
     const validated = z.array(CourseSchema).parse(parsed);
 
-    this.cachedCourses = validated;
+    if (cacheEnabled) {
+      this.cachedCourses = validated;
+    }
     return validated;
   }
 
@@ -116,7 +123,8 @@ export class JsonContentRepository
 
   // --- Batches ---
   async getAllBatches(): Promise<Batch[]> {
-    if (this.cachedBatches) return this.cachedBatches;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedBatches) return this.cachedBatches;
 
     const batchesFile = path.join(this.contentDir, "catalog", "batches.json");
     if (!fs.existsSync(batchesFile)) return [];
@@ -125,7 +133,9 @@ export class JsonContentRepository
     const parsed = JSON.parse(raw);
     const validated = z.array(BatchSchema).parse(parsed);
 
-    this.cachedBatches = validated;
+    if (cacheEnabled) {
+      this.cachedBatches = validated;
+    }
     return validated;
   }
 
@@ -146,7 +156,8 @@ export class JsonContentRepository
 
   // --- Home ---
   async getHeroSlides(): Promise<HeroSlide[]> {
-    if (this.cachedHeroSlides) return this.cachedHeroSlides;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedHeroSlides) return this.cachedHeroSlides;
 
     const file = path.join(this.contentDir, "home", "hero-slides.json");
     if (!fs.existsSync(file)) return [];
@@ -156,12 +167,15 @@ export class JsonContentRepository
     const validated = z.array(HeroSlideSchema).parse(parsed);
     const sorted = validated.sort((a, b) => a.order - b.order);
 
-    this.cachedHeroSlides = sorted;
+    if (cacheEnabled) {
+      this.cachedHeroSlides = sorted;
+    }
     return sorted;
   }
 
   async getSections(): Promise<HomeSectionItem[]> {
-    if (this.cachedSections) return this.cachedSections.sections;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedSections) return this.cachedSections.sections;
 
     const file = path.join(this.contentDir, "home", "sections.json");
     if (!fs.existsSync(file)) return [];
@@ -171,12 +185,15 @@ export class JsonContentRepository
     const validated = HomeSectionsSchema.parse(parsed);
     const sorted = validated.sections.sort((a, b) => a.order - b.order);
 
-    this.cachedSections = { ...validated, sections: sorted };
+    if (cacheEnabled) {
+      this.cachedSections = { ...validated, sections: sorted };
+    }
     return sorted;
   }
 
   async getImpactFigures(options?: { verifiedOnly?: boolean }): Promise<ImpactFigure[]> {
-    let figures = this.cachedImpactFigures;
+    const cacheEnabled = this.isCacheEnabled();
+    let figures = cacheEnabled ? this.cachedImpactFigures : null;
 
     if (!figures) {
       const file = path.join(this.contentDir, "home", "impact-figures.json");
@@ -187,7 +204,9 @@ export class JsonContentRepository
       const validated = z.array(ImpactFigureSchema).parse(parsed);
       const sorted = validated.sort((a, b) => a.order - b.order);
 
-      this.cachedImpactFigures = sorted;
+      if (cacheEnabled) {
+        this.cachedImpactFigures = sorted;
+      }
       figures = sorted;
     }
 
@@ -202,7 +221,8 @@ export class JsonContentRepository
   }
 
   async getPartners(): Promise<Partner[]> {
-    if (this.cachedPartners) return this.cachedPartners;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedPartners) return this.cachedPartners;
 
     const file = path.join(this.contentDir, "home", "partners.json");
     if (!fs.existsSync(file)) return [];
@@ -212,12 +232,15 @@ export class JsonContentRepository
     const validated = z.array(PartnerSchema).parse(parsed);
     const sorted = validated.sort((a, b) => a.order - b.order);
 
-    this.cachedPartners = sorted;
+    if (cacheEnabled) {
+      this.cachedPartners = sorted;
+    }
     return sorted;
   }
 
   async getEvents(): Promise<Event[]> {
-    if (this.cachedEvents) return this.cachedEvents;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedEvents) return this.cachedEvents;
 
     const file = path.join(this.contentDir, "home", "events.json");
     if (!fs.existsSync(file)) return [];
@@ -227,12 +250,15 @@ export class JsonContentRepository
     const validated = z.array(EventSchema).parse(parsed);
     const sorted = validated.sort((a, b) => a.order - b.order);
 
-    this.cachedEvents = sorted;
+    if (cacheEnabled) {
+      this.cachedEvents = sorted;
+    }
     return sorted;
   }
 
   async getMentors(): Promise<Mentor[]> {
-    if (this.cachedMentors) return this.cachedMentors;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedMentors) return this.cachedMentors;
 
     const file = path.join(this.contentDir, "home", "mentors.json");
     if (!fs.existsSync(file)) return [];
@@ -242,7 +268,9 @@ export class JsonContentRepository
     const validated = z.array(MentorSchema).parse(parsed);
     const sorted = validated.sort((a, b) => a.order - b.order);
 
-    this.cachedMentors = sorted;
+    if (cacheEnabled) {
+      this.cachedMentors = sorted;
+    }
     return sorted;
   }
 
@@ -252,7 +280,8 @@ export class JsonContentRepository
   }
 
   async getReviews(): Promise<Review[]> {
-    if (this.cachedReviews) return this.cachedReviews;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedReviews) return this.cachedReviews;
 
     const file = path.join(this.contentDir, "home", "reviews.json");
     if (!fs.existsSync(file)) return [];
@@ -262,12 +291,15 @@ export class JsonContentRepository
     const validated = z.array(ReviewSchema).parse(parsed);
     const sorted = validated.sort((a, b) => a.order - b.order);
 
-    this.cachedReviews = sorted;
+    if (cacheEnabled) {
+      this.cachedReviews = sorted;
+    }
     return sorted;
   }
 
   async getIrgpData(): Promise<IrgpData> {
-    if (this.cachedIrgpData) return this.cachedIrgpData;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedIrgpData) return this.cachedIrgpData;
 
     const file = path.join(this.contentDir, "home", "irgp.json");
     if (!fs.existsSync(file)) {
@@ -278,12 +310,15 @@ export class JsonContentRepository
     const parsed = JSON.parse(raw);
     const validated = IrgpDataSchema.parse(parsed);
 
-    this.cachedIrgpData = validated;
+    if (cacheEnabled) {
+      this.cachedIrgpData = validated;
+    }
     return validated;
   }
 
   async getFaqs(): Promise<FaqItem[]> {
-    if (this.cachedFaqs) return this.cachedFaqs;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedFaqs) return this.cachedFaqs;
 
     const file = path.join(this.contentDir, "home", "faqs.json");
     if (!fs.existsSync(file)) return [];
@@ -293,12 +328,15 @@ export class JsonContentRepository
     const validated = z.array(FaqItemSchema).parse(parsed);
     const sorted = validated.filter((item) => item.published).sort((a, b) => a.order - b.order);
 
-    this.cachedFaqs = sorted;
+    if (cacheEnabled) {
+      this.cachedFaqs = sorted;
+    }
     return sorted;
   }
 
   async getContactConfig(): Promise<ContactConfig> {
-    if (this.cachedContactConfig) return this.cachedContactConfig;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedContactConfig) return this.cachedContactConfig;
 
     const file = path.join(this.contentDir, "home", "contact.json");
     if (!fs.existsSync(file)) {
@@ -309,12 +347,15 @@ export class JsonContentRepository
     const parsed = JSON.parse(raw);
     const validated = ContactConfigSchema.parse(parsed);
 
-    this.cachedContactConfig = validated;
+    if (cacheEnabled) {
+      this.cachedContactConfig = validated;
+    }
     return validated;
   }
 
   async getInternships(): Promise<Internship[]> {
-    if (this.cachedInternships) return this.cachedInternships;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedInternships) return this.cachedInternships;
 
     const file = path.join(this.contentDir, "home", "internships.json");
     if (!fs.existsSync(file)) return [];
@@ -324,13 +365,16 @@ export class JsonContentRepository
     const validated = z.array(InternshipSchema).parse(parsed);
     const sorted = validated.filter((item) => item.published).sort((a, b) => a.order - b.order);
 
-    this.cachedInternships = sorted;
+    if (cacheEnabled) {
+      this.cachedInternships = sorted;
+    }
     return sorted;
   }
 
   // --- News & Updates ---
   async getAllArticles(): Promise<NewsArticle[]> {
-    if (this.cachedArticles) return this.cachedArticles;
+    const cacheEnabled = this.isCacheEnabled();
+    if (cacheEnabled && this.cachedArticles) return this.cachedArticles;
 
     const file = path.join(this.contentDir, "news", "articles.json");
     if (!fs.existsSync(file)) return [];
@@ -339,7 +383,9 @@ export class JsonContentRepository
     const parsed = JSON.parse(raw);
     const validated = z.array(NewsArticleSchema).parse(parsed);
 
-    this.cachedArticles = validated;
+    if (cacheEnabled) {
+      this.cachedArticles = validated;
+    }
     return validated;
   }
 

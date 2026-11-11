@@ -5,10 +5,10 @@ import { NewsArchiveView } from "./news-archive-view";
 
 export const metadata: Metadata = {
   title: "News & Updates — Lead Nation Academy",
-  description: "Invitations, partnerships, and moments from Lead Nation Academy.",
+  description: "Partnerships, program updates, and moments from Lead Nation Academy.",
   openGraph: {
     title: "News & Updates — Lead Nation Academy",
-    description: "Invitations, partnerships, and moments from Lead Nation Academy.",
+    description: "Partnerships, program updates, and moments from Lead Nation Academy.",
   },
 };
 

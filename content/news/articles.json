@@ -161,52 +161,5 @@
       "verifiedBy": "Content Migration",
       "verifiedOn": "2026-11-09"
     }
-  },
-  {
-    "id": "news-connecting-learning-with-industry",
-    "slug": "connecting-learning-with-industry",
-    "title": "Connecting learning with industry",
-    "excerpt": "A collaborative conversation about how practical learning can bridge the gap between classroom knowledge and real workplace expectations.",
-    "category": "Community",
-    "publishedAt": "2026-11-04",
-    "author": "LNA Team",
-    "readTime": "4 min read",
-    "coverImage": "/images/irgp-gallery-discussion.jpg",
-    "coverImageAlt": "Roundtable discussion on industry skills and workplace readiness",
-    "featured": false,
-    "status": "published",
-    "blocks": [
-      {
-        "type": "paragraph",
-        "text": "A collaborative conversation that explored how practical learning can bridge the gap between classroom knowledge and real workplace expectations. The discussion also highlighted the value of professional communication, analytical thinking, and consistent mentorship in preparing learners for meaningful career opportunities."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "The conversation",
-        "id": "the-conversation"
-      },
-      {
-        "type": "paragraph",
-        "text": "The session brought together industry perspectives and learning experiences to discuss what learners need to thrive in today's work environment. Participants shared views on how practical exposure adds context to academic learning, builds confidence, and helps learners understand real-world workflows."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "What we explored",
-        "id": "what-we-explored"
-      },
-      {
-        "type": "paragraph",
-        "text": "The discussion focused on three key areas. First, practical learning, such as hands-on activities and real-world problem solving, which helps build job-ready skills. Second, professional communication, including clear, respectful, and goal-oriented collaboration in a team setting. Third, analytical thinking, which enables learners to break down problems, evaluate options, and make informed decisions."
-      }
-    ],
-    "provenance": {
-      "class": "A",
-      "verified": true,
-      "source": "LNA Community Dialogues",
-      "verifiedBy": "Content Migration",
-      "verifiedOn": "2026-11-09"
-    }
   }
 ]

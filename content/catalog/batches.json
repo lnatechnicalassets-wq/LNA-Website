@@ -12,7 +12,7 @@
     "seatHoldDurationMinutes": 30,
     "feePoisha": 750000,
     "status": "open_for_enrollment",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "venue": "Designated Executive Venue, Dhaka",
     "provenance": {
       "class": "B",
       "verified": false,
@@ -34,7 +34,7 @@
     "seatHoldDurationMinutes": 30,
     "feePoisha": 0,
     "status": "completed",
-    "venue": "LNA Executive Campus, Dhanmondi, Dhaka",
+    "venue": "AIUB – Institute of Continuing Education (ICE), Banani, Dhaka",
     "provenance": {
       "class": "B",
       "verified": false,

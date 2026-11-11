@@ -13,8 +13,20 @@ import {
   ArrowRight,
   TrendingUp,
   X,
+  MessageSquare,
+  Rocket,
+  Landmark,
+  ArrowUpDown,
+  ChevronDown,
 } from "lucide-react";
 import type { Mentor } from "@/lib/content";
+import {
+  MENTOR_SORT_OPTIONS,
+  filterMentors,
+  getMentorCategoriesWithCounts,
+  sortMentors,
+  type MentorSortOption,
+} from "@/lib/mentors";
 import { MentorCarousel } from "./mentor-carousel";
 
 export interface MentorsSectionProps {
@@ -22,72 +34,73 @@ export interface MentorsSectionProps {
   initialMentorId?: string;
 }
 
-interface CategoryConfig {
-  id: string;
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
+function getCategoryIcon(
+  categoryId: string
+): React.ComponentType<{ className?: string; "aria-hidden"?: boolean }> {
+  switch (categoryId) {
+    case "all":
+      return Users;
+    case "Leadership & Career":
+    case "Business & Leadership":
+      return Briefcase;
+    case "Operations & Management":
+    case "HR & Operations":
+      return Layers;
+    case "Marketing & Sales":
+    case "Marketing & Growth":
+      return BarChart3;
+    case "Communication & Influence":
+      return MessageSquare;
+    case "Entrepreneurship & Strategy":
+      return Rocket;
+    case "Technology & AI":
+      return Cpu;
+    case "Financial Analysis":
+    case "Finance & Banking":
+      return Landmark;
+    case "Design & UX":
+      return PenTool;
+    default:
+      return UserCheck;
+  }
 }
 
-const CATEGORIES: CategoryConfig[] = [
-  { id: "all", name: "All Mentors", icon: Users },
-  { id: "Business & Leadership", name: "Business & Leadership", icon: Briefcase },
-  { id: "Finance & Banking", name: "Finance & Banking", icon: Layers },
-  { id: "Technology & AI", name: "Technology & AI", icon: Cpu },
-  { id: "Design & UX", name: "Design & UX", icon: PenTool },
-  { id: "Marketing & Growth", name: "Marketing & Growth", icon: BarChart3 },
-  { id: "HR & Operations", name: "HR & Operations", icon: UserCheck },
-];
-
-export function MentorsSection({
-  mentors,
-  initialMentorId = "mentor-leadership-lead",
-}: MentorsSectionProps) {
+export function MentorsSection({ mentors, initialMentorId }: MentorsSectionProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortBy, setSortBy] = useState<MentorSortOption>("featured");
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
 
-  // Dynamic category counts derived from actual mentor records
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: mentors.length };
-    CATEGORIES.forEach((cat) => {
-      if (cat.id !== "all") counts[cat.id] = 0;
-    });
-    mentors.forEach((m) => {
-      (m.categories || []).forEach((c) => {
-        if (counts[c] !== undefined) {
-          counts[c]++;
-        }
-      });
-    });
-    return counts;
-  }, [mentors]);
+  const publishedMentors = useMemo(() => mentors.filter((m) => m.published !== false), [mentors]);
 
-  // Combined category and search filtering
+  // Dynamic non-zero category tabs derived strictly from actual mentor records
+  const categories = useMemo(
+    () => getMentorCategoriesWithCounts(publishedMentors),
+    [publishedMentors]
+  );
+
+  // Fall back to "all" if active category is no longer present in dataset
+  const activeCategory = useMemo(() => {
+    if (selectedCategory === "all") return "all";
+    return categories.some((c) => c.id === selectedCategory) ? selectedCategory : "all";
+  }, [categories, selectedCategory]);
+
+  // Combined category filter, keyword search, and explicit sorting
   const filteredMentors = useMemo(() => {
-    let list = mentors;
-    if (selectedCategory !== "all") {
-      list = list.filter((m) => m.categories?.includes(selectedCategory));
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter((m) => {
-        const matchName = m.name.toLowerCase().includes(q);
-        const matchRole = m.role.toLowerCase().includes(q);
-        const matchOrg = m.organization.toLowerCase().includes(q);
-        const matchBio = m.bio.toLowerCase().includes(q);
-        const matchExp = m.expertise?.some((e) => e.toLowerCase().includes(q));
-        const matchCompany = m.careerHistory?.some((c) => c.company.toLowerCase().includes(q));
-        return matchName || matchRole || matchOrg || matchBio || matchExp || matchCompany;
-      });
-    }
-    return list;
-  }, [mentors, selectedCategory, searchQuery]);
+    const filtered = filterMentors(publishedMentors, {
+      category: activeCategory,
+      query: searchQuery,
+    });
+    return sortMentors(filtered, sortBy);
+  }, [publishedMentors, activeCategory, searchQuery, sortBy]);
 
   const handleFindMentor = () => {
     const inputEl = document.getElementById("mentor-search-input");
     if (inputEl instanceof HTMLInputElement) {
       inputEl.focus();
-      inputEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (typeof inputEl.scrollIntoView === "function") {
+        inputEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     }
   };
 
@@ -162,20 +175,19 @@ export function MentorsSection({
 
       <div className="relative z-10 max-w-7xl xl:max-w-[1360px] 2xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* ============================================================== */}
-        {/* UPPER BAR: Category Filters & Search Field                     */}
+        {/* UPPER BAR: Dynamic Non-Zero Category Filters + Search & Sort   */}
         {/* ============================================================== */}
         <div className="mb-10 sm:mb-12 lg:mb-14">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6">
-            {/* Category Pills (2-Row Wrap on Desktop [4 + 3], Scrollable on Mobile) */}
+            {/* Category Pills (Derived Dynamically from Non-Zero Categories) */}
             <div
-              className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto lg:overflow-visible lg:flex-wrap pb-2 lg:pb-0 scrollbar-none max-w-full lg:max-w-[820px] xl:max-w-[840px] scroll-smooth"
+              className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto lg:overflow-visible lg:flex-wrap pb-2 lg:pb-0 scrollbar-none max-w-full lg:max-w-[820px] xl:max-w-[880px] scroll-smooth"
               role="tablist"
               aria-label="Filter mentors by category"
             >
-              {CATEGORIES.map((cat) => {
-                const IconComponent = cat.icon;
-                const count = categoryCounts[cat.id] ?? 0;
-                const isActive = selectedCategory === cat.id;
+              {categories.map((cat) => {
+                const IconComponent = getCategoryIcon(cat.id);
+                const isActive = activeCategory === cat.id;
 
                 return (
                   <button
@@ -191,6 +203,7 @@ export function MentorsSection({
                     }`}
                   >
                     <IconComponent
+                      aria-hidden={true}
                       className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-white" : "text-[#526E77]"}`}
                     />
                     <span>{cat.name}</span>
@@ -199,37 +212,66 @@ export function MentorsSection({
                         isActive ? "bg-[#0B7F96] text-white" : "bg-[#F0F4F5] text-[#526E77]"
                       }`}
                     >
-                      {count}
+                      {cat.count}
                     </span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Compact Search Field aligned with Row 2 on Desktop */}
-            <div className="relative flex items-center w-full lg:w-72 xl:w-80 shrink-0">
-              <Search className="absolute left-3.5 h-4 w-4 text-[#526E77] pointer-events-none" />
-              <input
-                id="mentor-search-input"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-                placeholder="Search mentors, company or expertise..."
-                aria-label="Search mentors by name, company, designation or expertise"
-                className="w-full pl-10 pr-9 py-2.5 rounded-full bg-white text-[#172E35] placeholder:text-[#526E77]/80 text-xs sm:text-[13px] font-medium border border-[#E5ECEE] shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-[#086477] focus:border-transparent transition-all"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  aria-label="Clear search query"
-                  className="absolute right-3 p-1 rounded-full text-[#526E77] hover:text-[#172E35] hover:bg-[#F0F4F5] transition-colors"
+            {/* Search Input & Compact Sort Pill on Desktop Right */}
+            <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2.5 w-full lg:w-72 xl:w-80 shrink-0">
+              <div className="relative flex items-center sm:w-48 lg:w-auto lg:self-end shrink-0">
+                <ArrowUpDown
+                  className="absolute left-3.5 h-3.5 w-3.5 text-[#526E77] pointer-events-none"
+                  aria-hidden="true"
+                />
+                <label htmlFor="mentor-sort-select" className="sr-only">
+                  Sort mentors
+                </label>
+                <select
+                  id="mentor-sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as MentorSortOption)}
+                  aria-label="Sort mentors"
+                  className="appearance-none w-full pl-9 pr-8 py-2 rounded-full bg-white text-[#172E35] text-xs font-semibold border border-[#E5ECEE] shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-[#086477] cursor-pointer"
                 >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
+                  {MENTOR_SORT_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      Sort: {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="absolute right-3 h-3.5 w-3.5 text-[#526E77] pointer-events-none"
+                  aria-hidden="true"
+                />
+              </div>
+
+              <div className="relative flex items-center flex-1 lg:flex-none lg:w-full">
+                <Search className="absolute left-3.5 h-4 w-4 text-[#526E77] pointer-events-none" />
+                <input
+                  id="mentor-search-input"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  placeholder="Search mentors, company or expertise..."
+                  aria-label="Search mentors by name, company, designation or expertise"
+                  className="w-full pl-10 pr-9 py-2.5 rounded-full bg-white text-[#172E35] placeholder:text-[#526E77]/80 text-xs sm:text-[13px] font-medium border border-[#E5ECEE] shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-[#086477] focus:border-transparent transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Clear search query"
+                    className="absolute right-3 p-1 rounded-full text-[#526E77] hover:text-[#172E35] hover:bg-[#F0F4F5] transition-colors cursor-pointer"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

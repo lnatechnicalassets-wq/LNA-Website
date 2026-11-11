@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ArrowLeft, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getOrganizationConfig } from "@/lib/content";
 
 export const metadata = {
   title: "Privacy Policy | Lead Nation Academy",
@@ -10,6 +11,9 @@ export const metadata = {
 };
 
 export default function PrivacyPage() {
+  const org = getOrganizationConfig();
+  const phoneHref = `tel:${org.phone.replace(/[^\d+]/g, "")}`;
+
   return (
     <div className="min-h-screen bg-[#F6FAFA] text-[#172E35] py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-10">
@@ -283,19 +287,27 @@ export default function PrivacyPage() {
               personal data, please contact:
             </p>
             <div className="bg-white rounded-xl p-5 border border-[#CCECEE] space-y-1 text-sm">
-              <p className="font-semibold text-[#172E35]">Lead Nation Academy (LNA)</p>
-              <p>Plot 06, Tejgaon Industrial Area, Dhaka - 1208, Bangladesh</p>
+              <p className="font-semibold text-[#172E35]">
+                {org.name} ({org.shortName})
+              </p>
+              <p>
+                {org.address.street}, {org.address.city} - {org.address.postalCode},{" "}
+                {org.address.country}
+              </p>
               <p>
                 <strong>Email:</strong>{" "}
-                <a href="mailto:info@lnabd.org" className="text-[#086477] underline">
-                  info@lnabd.org
+                <a href={`mailto:${org.email}`} className="text-[#086477] underline">
+                  {org.email}
                 </a>
               </p>
               <p>
-                <strong>Phone:</strong> +880 1581-799666
+                <strong>Phone:</strong>{" "}
+                <a href={phoneHref} className="text-[#086477] underline">
+                  {org.phone}
+                </a>
               </p>
               <p>
-                <strong>Website:</strong> www.lnabd.org
+                <strong>Website:</strong> www.{org.domain}
               </p>
             </div>
           </section>
