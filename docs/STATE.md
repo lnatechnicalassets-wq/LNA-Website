@@ -30,6 +30,28 @@
 
 ## 2. Completed Tasks
 
+### Edit existing courses and batches (`task/p8-catalog-edit`)
+
+- **Scope:** Super Admins can edit course title, subtitle, category, summary, description and venue, and batch name, dates, schedule, venue, capacity and BDT fees. Edits use the Supabase catalog. The public homepage still reads its JSON catalog.
+- **Implementation:** Catalog edit forms and protected server action call `supabase/migrations/20261112100000_admin_catalog_edit.sql`. The RPC checks the actor and record revision, locks the record, enforces the batch seat floor and commits the update and audit entry together.
+- **Verification:** Production build, lint, content validation, 34 focused tests, and 11 catalog pgTAP assertions passed. Database tests used a local PGlite Supabase fixture. Fixture Chromium saves passed on both forms and axe reported zero violations at 390 and 1440 CSS pixels. Full Vitest reproduced the same eight existing failures in the prior catalog baseline. Repository formatting flagged 14 files outside the patch.
+- **Deployment:** Apply the catalog edit migration to the target Supabase project before trying a save. Record creation, publishing controls and the homepage catalog switch are pending.
+
+### Staff course and batch inventory (`task/p8-catalog-inventory`)
+
+- **Scope:** Staff can search and filter Supabase course and batch records, including draft and archived statuses. Batch cards show course, dates, venue, capacity, list fee, and discounted fee when present.
+- **Files:** `src/app/admin/catalog/[section]/page.tsx`, `src/server/admin/catalog.ts`, `src/lib/admin-catalog.ts`, sidebar link configuration, and affected tests.
+- **Access:** Both views use the existing Super Admin session and MFA guard. Catalog reads run on the server.
+- **Verification:** TypeScript, targeted ESLint, and 22 admin tests passed. Local Chromium with fixture staff and catalog data verified guest redirect, filter submission, Reset, and both views at 390 and 1440 CSS pixels. Axe reported zero violations in those four views.
+- **Next:** Implement the catalog authoring workflow with validated mutations, publishing, and audit events.
+
+### Admin portal navigation (`task/p8-admin-sidebar`)
+
+- **Scope:** Added a staff-only `/admin` Overview and a shared navigation shell for Overview, Admissions, and application details. The desktop sidebar and mobile drawer use the same menu. The active destination is marked, and the drawer supports keyboard dismissal and focus return.
+- **Files:** `src/lib/admin-navigation.ts` holds the navigation structure and copy. `src/components/admin/admin-portal-shell.tsx` replaces the previous admin header. The Overview and two enrollment views use the shared shell.
+- **Verification:** On base `2d31d95`, TypeScript, targeted ESLint, and all 18 admin tests passed, including the latest Admissions filter and Reset tests. The sidebar's earlier local Chromium audit used a staff fixture and found zero axe violations on desktop Overview and Admissions, mobile Overview, and the open drawer.
+- **Next:** Add Website Builder, Finance, Emails, and Reports links when their protected pages are ready.
+
 ### Navbar & Favicon Complete Official Logo Lockup (`task/enrollment-bkash-superadmin`)
 - **SRS IDs Covered:** FR-PUB-001, FR-PUB-002, NFR-A11Y-01, NFR-CMP-01, Rule R2, Rule R3, Rule R4, Rule R7, Rule R11, Rule R12, Rule R14, Rule R19
 - **Deliverables:**
