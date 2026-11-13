@@ -4,12 +4,13 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, Filter, Inbox, ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import { AdminPortalHeader } from "@/components/admin/admin-portal-header";
+import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import {
   EnrollmentStatusBadge,
   PaymentStatusBadge,
 } from "@/components/admin/enrollment-status-badge";
 import { Badge, Button, Card, CardContent } from "@/components/ui";
+import { adminPaths } from "@/lib/admin-navigation";
 import { formatPaymentMethodLabel } from "@/lib/enrollment/status";
 import { formatPoishaToBDT } from "@/lib/money";
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
@@ -99,9 +100,7 @@ export function AdminEnrollmentsView({
   };
 
   return (
-    <div className="min-h-screen bg-surface-base text-text-primary flex flex-col">
-      <AdminPortalHeader staff={staff} />
-
+    <AdminPortalShell staff={staff} currentPath={adminPaths.admissions}>
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 flex-1">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-1">
@@ -440,6 +439,6 @@ export function AdminEnrollmentsView({
           </>
         )}
       </div>
-    </div>
+    </AdminPortalShell>
   );
 }
