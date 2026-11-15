@@ -1,4 +1,4 @@
-import React from "react";
+import React, { cache } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -14,6 +14,10 @@ import { CourseDetailView } from "./course-detail-view";
 
 export const dynamic = "force-dynamic";
 
+const getCourseDetailCatalog = cache(() =>
+  getPublicCatalogFromSupabase().catch(() => ({ courses: [], batches: [] }))
+);
+
 interface CoursePageProps {
   params: Promise<{ slug: string }>;
 }
@@ -27,7 +31,11 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: CoursePageProps): Promise<Metadata> {
   const { slug } = await params;
   const courseRepo = getCourseRepository();
-  const course = await courseRepo.getCourseById(slug);
+  const [liveCatalog, repoCourse] = await Promise.all([
+    getCourseDetailCatalog(),
+    courseRepo.getCourseById(slug),
+  ]);
+  const course = liveCatalog.courses.find((item) => item.id === slug) ?? repoCourse;
 
   if (!course || course.status !== "published") {
     return {
@@ -48,7 +56,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
   const homeRepo = getHomeRepository();
 
   const [liveCatalog, repoCourse, repoBatches, allMentors] = await Promise.all([
-    getPublicCatalogFromSupabase().catch(() => ({ courses: [], batches: [] })),
+    getCourseDetailCatalog(),
     courseRepo.getCourseById(slug),
     batchRepo.getBatchesByCourseId(slug),
     homeRepo.getMentors(),

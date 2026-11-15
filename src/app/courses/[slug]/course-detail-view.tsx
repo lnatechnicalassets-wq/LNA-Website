@@ -66,6 +66,7 @@ export function CourseDetailView({
   const isMto = course.id === "mto-readiness" || course.id === "mto";
   const isIrgp = course.id === "irgp";
   const isCompleted = isIrgp || batch?.status === "completed";
+  const hasProgramShowcase = isMto || isIrgp;
 
   // Financial calculations via integer poisha aligned with server start_enrollment() (Rule R5)
   const formatBdt = (poisha: number) =>
@@ -87,24 +88,32 @@ export function CourseDetailView({
   const canEnroll = Boolean(!isCompleted && submissionEnabled && isBatchOpen);
 
   const scheduleSummary =
-    batch?.scheduleDescription || (isMto ? "16 sessions · 1.5h each" : "10 focus areas");
+    batch?.scheduleDescription ||
+    (isMto ? "16 sessions · 1.5h each" : isIrgp ? "10 focus areas" : "Schedule announced soon");
   const mentorCountLabel =
     mentors.length > 0
       ? `${mentors.length} industry mentor${mentors.length === 1 ? "" : "s"}`
       : isMto
         ? "5 industry mentors"
-        : "8 industry mentors";
+        : isIrgp
+          ? "8 industry mentors"
+          : "Mentors announced soon";
 
-  // Banner and captions
-  const bannerSrc = isMto
-    ? "/images/course-classroom-banner.jpg"
-    : "/images/irgp-gallery-teamwork.jpg";
-  const bannerAlt = isMto
-    ? "Interactive classroom session at Lead Nation Academy"
-    : "IRGP cohort teamwork and practical discussion";
-  const bannerCaption = isMto
-    ? "Illustrative learning environment"
-    : "IRGP program cohort in session";
+  const bannerSrc = isIrgp
+    ? "/images/irgp-gallery-teamwork.jpg"
+    : isMto
+      ? "/images/courses/mto-banner.jpg"
+      : "/images/course-classroom-banner.jpg";
+  const bannerAlt = isIrgp
+    ? "IRGP cohort teamwork and practical discussion"
+    : isMto
+      ? "MTO Readiness Program banner with mentors"
+      : "Illustrative classroom setting";
+  const bannerCaption = isIrgp
+    ? "IRGP program cohort in session"
+    : isMto
+      ? "MTO Readiness Program"
+      : "Illustrative learning environment";
 
   const toggleModule = (id: string) => {
     setExpandedModules((prev) => ({
@@ -162,7 +171,7 @@ export function CourseDetailView({
   const availabilityBadge = (() => {
     if (isCompleted) {
       return {
-        label: "Completed Program · IRGP",
+        label: isIrgp ? "Completed Program · IRGP" : "Completed Cohort",
         className: "bg-[#E8F3F5] text-[#086477] border-[#086477]/25",
       };
     }
@@ -243,7 +252,7 @@ export function CourseDetailView({
 
     return (
       <div className="bg-white rounded-2xl border border-[#E5ECEE] p-6 sm:p-7 shadow-xs">
-        {isCompleted ? (
+        {isIrgp ? (
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
               PROGRAM STATUS
@@ -457,7 +466,7 @@ export function CourseDetailView({
         {/* 2. WIDE CLASSROOM OR PROGRAM BANNER                          */}
         {/* ============================================================ */}
         <div className="mt-4">
-          <div className="relative w-full h-55 sm:h-75 lg:h-85 rounded-2xl overflow-hidden shadow-xs border border-[#E5ECEE] bg-[#E8F3F5]">
+          <div className="relative w-full aspect-[2/1] rounded-2xl overflow-hidden shadow-xs border border-[#E5ECEE] bg-[#E8F3F5]">
             <Image
               src={bannerSrc}
               alt={bannerAlt}
@@ -504,7 +513,7 @@ export function CourseDetailView({
                   </span>
                 </div>
               </>
-            ) : (
+            ) : isIrgp ? (
               <>
                 <div className="flex items-center gap-3 lg:pr-6">
                   <Layers className="h-5 w-5 text-[#086477] shrink-0" aria-hidden="true" />
@@ -529,6 +538,17 @@ export function CourseDetailView({
                   <span className="text-xs sm:text-sm font-bold text-[#172E35]">
                     Placement support
                   </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 lg:pr-6">
+                  <Calendar className="h-5 w-5 text-primary-800 shrink-0" aria-hidden="true" />
+                  <span className="text-sm font-bold">{scheduleSummary}</span>
+                </div>
+                <div className="flex items-center gap-3 lg:px-6">
+                  <Building className="h-5 w-5 text-primary-800 shrink-0" aria-hidden="true" />
+                  <span className="text-sm font-bold">{batch?.venue || course.venue}</span>
                 </div>
               </>
             )}
@@ -595,36 +615,39 @@ export function CourseDetailView({
                   <h2 className="text-2xl sm:text-[26px] font-serif font-bold text-[#172E35] tracking-tight">
                     {isMto
                       ? "Learning built around practice."
-                      : "Comprehensive industry readiness."}
+                      : isIrgp
+                        ? "Comprehensive industry readiness."
+                        : "Course overview"}
                   </h2>
                   <p className="mt-3 text-xs sm:text-sm text-[#526E77] leading-relaxed">
                     {course.description}
                   </p>
                 </div>
 
-                {/* Two Core Pillars */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="p-4 rounded-xl bg-[#F6FAFA] border border-[#E5ECEE]">
-                    <h3 className="font-bold text-sm text-[#172E35]">
-                      {isMto ? "Career Readiness" : "Functional Literacy"}
-                    </h3>
-                    <p className="text-xs text-[#526E77] mt-1.5 leading-relaxed">
-                      {isMto
-                        ? "Build the professional, analytical, and communication capabilities expected in MTO roles."
-                        : "Master core cross-sector industry operations, governance, and business models."}
-                    </p>
+                {hasProgramShowcase && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div className="p-4 rounded-xl bg-[#F6FAFA] border border-[#E5ECEE]">
+                      <h3 className="font-bold text-sm text-[#172E35]">
+                        {isMto ? "Career Readiness" : "Functional Literacy"}
+                      </h3>
+                      <p className="text-xs text-[#526E77] mt-1.5 leading-relaxed">
+                        {isMto
+                          ? "Build the professional, analytical, and communication capabilities expected in MTO roles."
+                          : "Master core cross-sector industry operations, governance, and business models."}
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-[#F6FAFA] border border-[#E5ECEE]">
+                      <h3 className="font-bold text-sm text-[#172E35]">
+                        {isMto ? "Leadership Growth" : "Executive Mentorship"}
+                      </h3>
+                      <p className="text-xs text-[#526E77] mt-1.5 leading-relaxed">
+                        {isMto
+                          ? "Develop problem-solving, collaboration, and people leadership for an early career in management."
+                          : "Engage in practical projects supervised directly by senior corporate directors and executives."}
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-[#F6FAFA] border border-[#E5ECEE]">
-                    <h3 className="font-bold text-sm text-[#172E35]">
-                      {isMto ? "Leadership Growth" : "Executive Mentorship"}
-                    </h3>
-                    <p className="text-xs text-[#526E77] mt-1.5 leading-relaxed">
-                      {isMto
-                        ? "Develop problem-solving, collaboration, and people leadership for an early career in management."
-                        : "Engage in practical projects supervised directly by senior corporate directors and executives."}
-                    </p>
-                  </div>
-                </div>
+                )}
 
                 <div className="w-full h-px bg-[#E5ECEE] my-6" />
 
@@ -735,13 +758,15 @@ export function CourseDetailView({
                     <div className="flex items-center gap-1.5 text-xs text-[#526E77] mt-1">
                       <Clock className="h-3.5 w-3.5 text-[#086477]" aria-hidden="true" />
                       <span>
-                        {isMto ? `${scheduleSummary}` : `10 focus areas · ${mentorCountLabel}`}
+                        {isIrgp ? `10 focus areas · ${mentorCountLabel}` : scheduleSummary}
                       </span>
                     </div>
                   </div>
-                  <span className="text-[11px] sm:text-xs text-[#526E77] italic">
-                    Approved curriculum structure
-                  </span>
+                  {hasProgramShowcase && (
+                    <span className="text-[11px] sm:text-xs text-[#526E77] italic">
+                      Approved curriculum structure
+                    </span>
+                  )}
                 </div>
 
                 {/* Modules Accordion List */}
@@ -820,32 +845,36 @@ export function CourseDetailView({
                   )}
                 </div>
 
-                {/* A Session at a Glance */}
-                <div className="pt-4 border-t border-[#E5ECEE]">
-                  <h3 className="text-base sm:text-lg font-serif font-bold text-[#172E35] mb-3">
-                    A session at a glance
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-[#F6FAFA] border border-[#E5ECEE]">
-                    <div>
-                      <h4 className="font-bold text-xs text-[#172E35]">Concept</h4>
-                      <p className="text-[11px] text-[#526E77] mt-1 leading-relaxed">
-                        A focused input on a key idea (e.g. core responsibilities &amp; frameworks).
-                      </p>
-                    </div>
-                    <div className="sm:border-l sm:border-[#E5ECEE] sm:pl-3 pt-2 sm:pt-0">
-                      <h4 className="font-bold text-xs text-[#172E35]">Practice</h4>
-                      <p className="text-[11px] text-[#526E77] mt-1 leading-relaxed">
-                        A hands-on activity to apply the concept (e.g. case analysis or mini-task).
-                      </p>
-                    </div>
-                    <div className="sm:border-l sm:border-[#E5ECEE] sm:pl-3 pt-2 sm:pt-0">
-                      <h4 className="font-bold text-xs text-[#172E35]">Discussion</h4>
-                      <p className="text-[11px] text-[#526E77] mt-1 leading-relaxed">
-                        A guided discussion to share perspectives and learn from executive faculty.
-                      </p>
+                {hasProgramShowcase && (
+                  <div className="pt-4 border-t border-[#E5ECEE]">
+                    <h3 className="text-base sm:text-lg font-serif font-bold text-[#172E35] mb-3">
+                      A session at a glance
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-[#F6FAFA] border border-[#E5ECEE]">
+                      <div>
+                        <h4 className="font-bold text-xs text-[#172E35]">Concept</h4>
+                        <p className="text-[11px] text-[#526E77] mt-1 leading-relaxed">
+                          A focused input on a key idea (e.g. core responsibilities &amp;
+                          frameworks).
+                        </p>
+                      </div>
+                      <div className="sm:border-l sm:border-[#E5ECEE] sm:pl-3 pt-2 sm:pt-0">
+                        <h4 className="font-bold text-xs text-[#172E35]">Practice</h4>
+                        <p className="text-[11px] text-[#526E77] mt-1 leading-relaxed">
+                          A hands-on activity to apply the concept (e.g. case analysis or
+                          mini-task).
+                        </p>
+                      </div>
+                      <div className="sm:border-l sm:border-[#E5ECEE] sm:pl-3 pt-2 sm:pt-0">
+                        <h4 className="font-bold text-xs text-[#172E35]">Discussion</h4>
+                        <p className="text-[11px] text-[#526E77] mt-1 leading-relaxed">
+                          A guided discussion to share perspectives and learn from executive
+                          faculty.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="pt-2">
                   <button

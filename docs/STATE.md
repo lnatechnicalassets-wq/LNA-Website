@@ -1,16 +1,16 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
-**Last Updated:** 12 November 2026  
-**Session Context:** Fixed the navbar and favicon logo assets to render the complete official Lead Nation Academy logo lockup (circular crest + `"LEAD NATION ACADEMY"` + bottom `"— • [briefcase] • —"`) without cropping: regenerated [`public/favicon.ico`](file:///d:/.internship/LNA/Website%20Development/public/favicon.ico) (`16x16`/`32x32`/`48x48`), [`public/favicon.png`](file:///d:/.internship/LNA/Website%20Development/public/favicon.png) (`48x48`), [`src/app/icon.png`](file:///d:/.internship/LNA/Website%20Development/src/app/icon.png) (`96x96`), [`src/app/apple-icon.png`](file:///d:/.internship/LNA/Website%20Development/src/app/apple-icon.png) (`180x180`), and [`public/images/brand/logo-square.png`](file:///d:/.internship/LNA/Website%20Development/public/images/brand/logo-square.png) (`512x512`) directly from the verified full logo PNG; updated [`BrandLogo`](file:///d:/.internship/LNA/Website%20Development/src/components/ui/demo-logo.tsx) (`variant = "full"` default), [`SiteHeader`](file:///d:/.internship/LNA/Website%20Development/src/components/public/site-header.tsx), [`MobileNav`](file:///d:/.internship/LNA/Website%20Development/src/components/public/mobile-nav.tsx), and [`layout.tsx`](file:///d:/.internship/LNA/Website%20Development/src/app/layout.tsx) (`?v=2` favicon cache busting). Previously completed `/news` category cleanup (`All updates`, `Partnerships`, `Program updates`), dev-cache bypass (`NODE_ENV === "development"`), Banani address (`Level-5, House-57, Road No. 11, Banani, Dhaka 1213`), single phone (`+880 1326-760702`), 2s mentor carousel cycle, `EMAIL_DISPATCH_MODE="disabled"`, and `BKASH_CHECKOUT_MODE="closed"` remain intact. Live Chrome DevTools MCP verification remains paused waiting on `chrome://inspect/#remote-debugging` (`DevToolsActivePort` absent).
+**Last Updated:** 15 November 2026  
+**Session Context:** Completed staff catalog draft publishing workflow (`task/p8-catalog-publish`) and course details MTO custom banner integration with exact 2:1 aspect ratio sizing (`/courses/mto-readiness`). Super Admins can publish draft courses and batches directly from their edit pages, backed by transactional RPC migration `20261113090000_admin_catalog_publish.sql` and public dynamic Supabase fallback on `/courses/[slug]`. Replaced placeholder MTO classroom banner with official `7.MTO_FINAL_Banner_with_mentor.jpg` (`5184x2592`, copied to `public/images/courses/mto-banner.jpg`) and updated container to `aspect-[2/1]` to ensure zero cropping of header text or mentor cards.
 
 ---
 
 ## 1. Current Phase and Task
-- **Current Phase:** Phase 6 / Phase 7 / Phase 9 / Phase 10 (Enrollment, Live bKash PGW Integration, Public Status Lookup & Superadmin MFA Portal)
-- **Current Task:** Direct Live bKash PGW Integration (`v1.2.0-beta`, `mode: "0011"`) & Grant Token Verification on `task/enrollment-bkash-superadmin`
-- **Task Status:** Live PGW adapter, `PGW_* -> BKASH_*` alias resolution, fail-closed HTTPS/credential validation, `execute` -> `query` decline/timeout recovery, and cron reconciliation (`/api/cron/reconcile-payments`) implemented and verified locally (`22/22` focused Vitest suites, `122/122` tests; clean `pnpm build`). Live `/tokenized/checkout/token/grant` was executed once (no `/create` or `/execute` call) and rejected by bKash (`HTTP 200`, `statusCode: "9999"`, `"Invalid app key and secret combination"`). Public enrollment checkout stays closed (`BKASH_CHECKOUT_MODE="closed"`).
-- **Current Git Branch:** `task/enrollment-bkash-superadmin`
-- **Base Commit:** `f8e4794`
+- **Current Phase:** Phase 8 / Phase 4 (Catalog Management & Public Course Presentation)
+- **Current Task:** Admin Catalog Publish Workflow & MTO Course Banner Update on `task/p8-admin-catalog`
+- **Task Status:** Catalog publish workflow, migration, pgTAP tests, dynamic public course page resolution, MTO 2:1 aspect ratio banner, and unit test suites implemented and verified locally (0 typecheck errors, 11/11 focused Vitest tests pass).
+- **Current Git Branch:** `task/p8-admin-catalog`
+- **Base Commit:** `2d31d95` (merged PR #25)
 - **Open Issues:**
   - **pgTAP Verification for Migration `20261110235500` on `lna-website-dev`:** Live REST/admin probes on `lna-website-dev` confirmed tables from both [`20261110161500_initial_catalog_and_enrollments.sql`](file:///d:/.internship/LNA/Website%20Development/supabase/migrations/20261110161500_initial_catalog_and_enrollments.sql) and [`20261110235500_enrollment_bkash_outbox_and_staff_profiles.sql`](file:///d:/.internship/LNA/Website%20Development/supabase/migrations/20261110235500_enrollment_bkash_outbox_and_staff_profiles.sql) (`courses`, `batches`, `mentors`, `course_mentors`, `enrollments`, `profiles`, `payment_attempts`, `payment_events`, `email_outbox`, `audit_events`) exist, while `supabase` CLI / `psql` are not installed locally so owner must confirm dev seed [`supabase/seed.sql`](file:///d:/.internship/LNA/Website%20Development/supabase/seed.sql) and run pgTAP suite [`supabase/tests/0002_enrollment_bkash_and_profiles_rls.sql`](file:///d:/.internship/LNA/Website%20Development/supabase/tests/0002_enrollment_bkash_and_profiles_rls.sql) (`58` assertions) against `lna-website-dev` only (never production).
   - **Public Signups & Live `AAL2` Superadmin Login Verification (`FR-AUT-001`..`004`):** Owner confirmed admin login works; verify `"Allow new users to sign up"` is disabled in Supabase Auth Dashboard (`GET /auth/v1/settings` previously reported `"disable_signup": false`).
@@ -29,6 +29,28 @@
 ---
 
 ## 2. Completed Tasks
+
+### Edit existing courses and batches (`task/p8-catalog-edit`)
+
+- **Scope:** Super Admins can edit course title, subtitle, category, summary, description and venue, and batch name, dates, schedule, venue, capacity and BDT fees. Edits use the Supabase catalog. The public homepage still reads its JSON catalog.
+- **Implementation:** Catalog edit forms and protected server action call `supabase/migrations/20261112100000_admin_catalog_edit.sql`. The RPC checks the actor and record revision, locks the record, enforces the batch seat floor and commits the update and audit entry together.
+- **Verification:** Production build, lint, content validation, 34 focused tests, and 11 catalog pgTAP assertions passed. Database tests used a local PGlite Supabase fixture. Fixture Chromium saves passed on both forms and axe reported zero violations at 390 and 1440 CSS pixels. Full Vitest reproduced the same eight existing failures in the prior catalog baseline. Repository formatting flagged 14 files outside the patch.
+- **Deployment:** Apply the catalog edit migration to the target Supabase project before trying a save. Record creation, publishing controls and the homepage catalog switch are pending.
+
+### Staff course and batch inventory (`task/p8-catalog-inventory`)
+
+- **Scope:** Staff can search and filter Supabase course and batch records, including draft and archived statuses. Batch cards show course, dates, venue, capacity, list fee, and discounted fee when present.
+- **Files:** `src/app/admin/catalog/[section]/page.tsx`, `src/server/admin/catalog.ts`, `src/lib/admin-catalog.ts`, sidebar link configuration, and affected tests.
+- **Access:** Both views use the existing Super Admin session and MFA guard. Catalog reads run on the server.
+- **Verification:** TypeScript, targeted ESLint, and 22 admin tests passed. Local Chromium with fixture staff and catalog data verified guest redirect, filter submission, Reset, and both views at 390 and 1440 CSS pixels. Axe reported zero violations in those four views.
+- **Next:** Implement the catalog authoring workflow with validated mutations, publishing, and audit events.
+
+### Admin portal navigation (`task/p8-admin-sidebar`)
+
+- **Scope:** Added a staff-only `/admin` Overview and a shared navigation shell for Overview, Admissions, and application details. The desktop sidebar and mobile drawer use the same menu. The active destination is marked, and the drawer supports keyboard dismissal and focus return.
+- **Files:** `src/lib/admin-navigation.ts` holds the navigation structure and copy. `src/components/admin/admin-portal-shell.tsx` replaces the previous admin header. The Overview and two enrollment views use the shared shell.
+- **Verification:** On base `2d31d95`, TypeScript, targeted ESLint, and all 18 admin tests passed, including the latest Admissions filter and Reset tests. The sidebar's earlier local Chromium audit used a staff fixture and found zero axe violations on desktop Overview and Admissions, mobile Overview, and the open drawer.
+- **Next:** Add Website Builder, Finance, Emails, and Reports links when their protected pages are ready.
 
 ### Navbar & Favicon Complete Official Logo Lockup (`task/enrollment-bkash-superadmin`)
 - **SRS IDs Covered:** FR-PUB-001, FR-PUB-002, NFR-A11Y-01, NFR-CMP-01, Rule R2, Rule R3, Rule R4, Rule R7, Rule R11, Rule R12, Rule R14, Rule R19
