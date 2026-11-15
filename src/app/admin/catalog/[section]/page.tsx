@@ -11,6 +11,7 @@ import {
   parseCatalogFilters,
 } from "@/lib/admin-catalog";
 import { createCatalogCopy, editCatalogCopy } from "@/lib/admin-catalog-edit";
+import { catalogPublishCopy } from "@/lib/admin-catalog-publish";
 import { adminMessage, adminPaths } from "@/lib/admin-navigation";
 import { AppError } from "@/lib/errors";
 import { formatPoishaToBDT } from "@/lib/money";
@@ -49,6 +50,14 @@ export default async function AdminCatalogPage({
   const path = adminPaths[section];
   const copy = catalogCopy[section];
   const queryParams = await searchParams;
+  const successMessage =
+    queryParams.published === "1"
+      ? catalogPublishCopy[section].success
+      : queryParams.created === "1"
+        ? createCatalogCopy[section].saved
+        : queryParams.saved === "1"
+          ? editCatalogCopy.saved
+          : undefined;
   const filters = parseCatalogFilters(section, queryParams);
 
   const result = await listAdminCatalog(section, filters).catch((error: unknown) => {
@@ -79,12 +88,12 @@ export default async function AdminCatalogPage({
             {createCatalogCopy[section].link}
           </Link>
         </header>
-        {(queryParams.saved === "1" || queryParams.created === "1") && (
+        {successMessage && (
           <p
             role="status"
             className="rounded-xl border border-status-success-border bg-status-success-bg p-4 text-sm text-status-success-text"
           >
-            {queryParams.created === "1" ? createCatalogCopy[section].saved : editCatalogCopy.saved}
+            {successMessage}
           </p>
         )}
 

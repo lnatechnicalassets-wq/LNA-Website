@@ -52,6 +52,7 @@ export async function getCatalogEditRecord(section: CatalogSection, id: string) 
       Object.entries(values).map(([field, value]) => [field, value == null ? "" : String(value)])
     ),
     revision: updated_at,
+    status,
     archived: status === "archived" || archived_at !== null,
   };
 }

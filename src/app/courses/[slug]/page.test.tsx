@@ -224,6 +224,26 @@ describe("CourseDetailPage", () => {
     expect(metadata.title).toContain("MTO Readiness Program");
   });
 
+  it("uses the published database title for a course absent from the JSON catalog", async () => {
+    const course = {
+      ...mtoCourseFixture,
+      id: "new-published-course",
+      title: "New published course",
+    };
+    vi.spyOn(catalogService, "getPublicCatalogFromSupabase").mockResolvedValue({
+      courses: [course],
+      batches: [],
+    });
+    const params = Promise.resolve({ slug: course.id });
+    const metadata = await generateMetadata({ params });
+    expect(metadata.title).toContain(course.title);
+    render(await CourseDetailPage({ params }));
+    expect(screen.getByRole("heading", { level: 1, name: course.title })).toBeDefined();
+    expect(screen.queryByText("100% completed cohort")).toBeNull();
+    expect(screen.queryByText("Placement support")).toBeNull();
+    expect(screen.queryByText("8 industry mentors")).toBeNull();
+  });
+
   it("generates static parameters for catalog courses", async () => {
     const params = await generateStaticParams();
     expect(params.length).toBe(2);

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
+import { CatalogPublishControl } from "@/components/admin/catalog-publish-control";
 import { catalogSection } from "@/lib/admin-catalog";
 import { editCatalogCopy } from "@/lib/admin-catalog-edit";
 import { adminPaths } from "@/lib/admin-navigation";
@@ -11,6 +12,7 @@ import { getCatalogEditRecord } from "@/server/admin/catalog-edit";
 import { requireStaff } from "@/server/auth/require-staff";
 import { saveCatalogEdit } from "./actions";
 import { EditForm } from "./edit-form";
+import { publishCatalogDraft } from "./publish-action";
 
 const route = z.object({ section: catalogSection, id: z.string().uuid() });
 
@@ -55,11 +57,19 @@ export default async function CatalogEditPage({
             {record === "unavailable" ? editCatalogCopy.readFailed : editCatalogCopy.archived}
           </p>
         ) : (
-          <EditForm
-            section={section}
-            initialValues={record.values}
-            save={saveCatalogEdit.bind(null, { section, id, revision: record.revision })}
-          />
+          <>
+            <EditForm
+              section={section}
+              initialValues={record.values}
+              save={saveCatalogEdit.bind(null, { section, id, revision: record.revision })}
+            />
+            {record.status === "draft" && (
+              <CatalogPublishControl
+                section={section}
+                publish={publishCatalogDraft.bind(null, { section, id, revision: record.revision })}
+              />
+            )}
+          </>
         )}
       </section>
     </AdminPortalShell>
