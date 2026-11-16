@@ -2,6 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { admissionStatus, isDuplicateEnrollmentContact } from "@/lib/admin-admissions";
 import { AppError } from "@/lib/errors";
 import {
   isValidBdPhone,
@@ -134,6 +135,11 @@ export interface AdminEnrollmentListItem {
   confirmedAt: string | null;
   createdAt: string;
   isDevFixture: boolean;
+  archivedAt?: string | null;
+  legacyDuplicatePhone?: boolean;
+  isStaffManualPayment?: boolean;
+  submittedPaymentRef?: string | null;
+  updatedAt?: string;
 }
 
 export interface AdminEnrollmentListResult {
@@ -197,6 +203,9 @@ export interface AdminEnrollmentDetailResult {
   paymentMethod: "bkash" | "free" | "bank_transfer";
   paymentStatus: string;
   submittedPaymentRef: string | null;
+  isStaffManualPayment: boolean;
+  legacyDuplicatePhone?: boolean;
+  archivedAt?: string | null;
   baseFeePoisha: number;
   discountAmountPoisha: number;
   payablePoisha: number;
@@ -562,6 +571,13 @@ export async function startEnrollmentCheckout(
     p_program_questions_snapshot: options.programQuestionsSnapshot,
   });
 
+  if (isDuplicateEnrollmentContact(rpcError)) {
+    throw new AppError(
+      "An active application or confirmed enrollment already uses this email or phone number in the selected batch.",
+      "DUPLICATE_ENROLLMENT",
+      409
+    );
+  }
   if (rpcError || !rpcRaw || typeof rpcRaw !== "object") {
     throw new AppError(
       "Unable to save your application right now. Please try again.",
@@ -1342,6 +1358,10 @@ export async function listAdminEnrollments(
   filters: {
     search?: string;
     status?: string;
+    batchId?: string;
+    courseId?: string;
+    archived?: boolean;
+    currentOnly?: boolean;
     page?: number;
     pageSize?: number;
   },
@@ -1359,24 +1379,27 @@ export async function listAdminEnrollments(
   let query = admin
     .from("enrollments")
     .select(
-      "id, public_ref, full_name, email, phone, payment_method, payment_status, status, payable_poisha, currency, hold_expires_at, confirmed_at, created_at, is_dev_fixture, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name)",
+      "id, public_ref, full_name, email, phone, payment_method, payment_status, status, payable_poisha, currency, hold_expires_at, confirmed_at, created_at, updated_at, archived_at, legacy_duplicate_phone, staff_payment_recorded_by, submitted_payment_ref, is_dev_fixture, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name)",
       { count: "exact" }
     )
-    .is("archived_at", null)
     .order("created_at", { ascending: false })
+    .order("id")
     .range(from, to);
 
-  const allowedStatuses = new Set([
-    "confirmed",
-    "pending",
-    "application_in_process",
-    "review_hold",
-    "expired",
-    "cancelled",
-  ]);
-  if (filters.status && allowedStatuses.has(filters.status)) {
-    query = query.eq("status", filters.status);
+  query = filters.archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
+  if (filters.batchId) {
+    const batchId = z.string().uuid().parse(filters.batchId);
+    query = query.eq("batch_id", batchId);
   }
+
+  if (filters.courseId) {
+    const courseId = z.string().uuid().parse(filters.courseId);
+    query = query.eq("course_id", courseId);
+  }
+
+  const status = admissionStatus.safeParse(filters.status);
+  if (status.success) query = query.eq("status", status.data);
+  else if (filters.currentOnly) query = query.not("status", "in", "(expired,cancelled)");
 
   const cleanSearch = sanitizePostgrestSearchTerm(filters.search ?? "");
   if (cleanSearch) {
@@ -1421,6 +1444,17 @@ export async function listAdminEnrollments(
       confirmedAt: row.confirmed_at ? String(row.confirmed_at) : null,
       createdAt: String(row.created_at),
       isDevFixture: Boolean(row.is_dev_fixture),
+      legacyDuplicatePhone: Boolean(row.legacy_duplicate_phone),
+      archivedAt: row.archived_at ? String(row.archived_at) : null,
+      updatedAt: String(row.updated_at),
+      isStaffManualPayment: Boolean(row.staff_payment_recorded_by),
+      submittedPaymentRef:
+        row.staff_payment_recorded_by &&
+        row.status === "application_in_process" &&
+        !row.archived_at &&
+        row.submitted_payment_ref
+          ? String(row.submitted_payment_ref)
+          : null,
     };
   });
 
@@ -1455,7 +1489,7 @@ export async function getAdminEnrollmentDetail(
   let query = admin
     .from("enrollments")
     .select(
-      "id, public_ref, full_name, email, phone, answers, program_questions_snapshot, payment_method, payment_status, submitted_payment_ref, base_fee_poisha, discount_amount_poisha, payable_poisha, currency, status, hold_expires_at, verified_at, confirmed_at, verification_notes, is_dev_fixture, fixture_label, created_at, updated_at, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name, start_date, venue)"
+      "id, public_ref, full_name, email, phone, answers, program_questions_snapshot, payment_method, payment_status, submitted_payment_ref, staff_payment_recorded_by, archived_at, legacy_duplicate_phone, base_fee_poisha, discount_amount_poisha, payable_poisha, currency, status, hold_expires_at, verified_at, confirmed_at, verification_notes, is_dev_fixture, fixture_label, created_at, updated_at, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name, start_date, venue)"
     );
 
   query = isUuid
@@ -1567,6 +1601,9 @@ export async function getAdminEnrollmentDetail(
     paymentMethod: row.payment_method as AdminEnrollmentDetailResult["paymentMethod"],
     paymentStatus: String(row.payment_status),
     submittedPaymentRef: row.submitted_payment_ref ? String(row.submitted_payment_ref) : null,
+    isStaffManualPayment: Boolean(row.staff_payment_recorded_by),
+    legacyDuplicatePhone: Boolean(row.legacy_duplicate_phone),
+    archivedAt: row.archived_at ? String(row.archived_at) : null,
     baseFeePoisha: parseSafeIntegerPoisha(row.base_fee_poisha),
     discountAmountPoisha: parseSafeIntegerPoisha(row.discount_amount_poisha),
     payablePoisha: parseSafeIntegerPoisha(row.payable_poisha),

@@ -28,6 +28,9 @@ const PAYMENT_STATUS_MAP: Record<
   expired: { label: "Expired", variant: "outline" },
   not_required: { label: "Free", variant: "primary" },
   refunded: { label: "Refunded", variant: "default" },
+  pending_verification: { label: "Pending verification", variant: "warning" },
+  verified: { label: "Verified", variant: "success" },
+  rejected: { label: "Rejected", variant: "danger" },
 };
 
 export function EnrollmentStatusBadge({ status }: { status: string }) {
@@ -53,4 +56,3 @@ export function PaymentStatusBadge({ status }: { status: string }) {
     </Badge>
   );
 }
-
