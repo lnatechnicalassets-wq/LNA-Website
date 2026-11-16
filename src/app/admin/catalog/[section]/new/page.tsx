@@ -2,16 +2,22 @@ import React from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
-import { catalogSection } from "@/lib/admin-catalog";
+import { catalogRecordId, catalogSection } from "@/lib/admin-catalog";
 import { createCatalogCopy, editCatalogCopy } from "@/lib/admin-catalog-edit";
-import { adminPaths } from "@/lib/admin-navigation";
+import { adminCourseBatchesHref, adminPaths } from "@/lib/admin-navigation";
 import { AppError } from "@/lib/errors";
 import { listBatchCourseOptions } from "@/server/admin/catalog";
 import { requireStaff } from "@/server/auth/require-staff";
 import { EditForm } from "../[id]/edit/edit-form";
 import { createCatalogDraft } from "./actions";
 
-export default async function NewCatalogPage({ params }: { params: Promise<{ section: string }> }) {
+export default async function NewCatalogPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ section: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const target = catalogSection.safeParse((await params).section);
   if (!target.success) notFound();
 
@@ -31,13 +37,17 @@ export default async function NewCatalogPage({ params }: { params: Promise<{ sec
           throw error;
         })
       : [];
+  const requestedCourse = catalogRecordId.safeParse((await searchParams).courseId);
+  const selectedCourse = requestedCourse.success
+    ? courses?.find((course) => course.id === requestedCourse.data)
+    : undefined;
   const needsCourse = section === "batches" && courses?.length === 0;
 
   return (
     <AdminPortalShell staff={staff} currentPath={path}>
       <section className="mx-auto w-full max-w-4xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         <Link
-          href={path}
+          href={selectedCourse ? adminCourseBatchesHref(selectedCourse.id) : path}
           className="inline-flex min-h-11 items-center text-sm font-medium text-primary-900 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
         >
           {editCatalogCopy.back}
@@ -67,7 +77,7 @@ export default async function NewCatalogPage({ params }: { params: Promise<{ sec
             section={section}
             mode="create"
             courseOptions={courses}
-            initialValues={{}}
+            initialValues={selectedCourse ? { course_id: selectedCourse.id } : {}}
             save={createCatalogDraft.bind(null, section)}
           />
         )}
