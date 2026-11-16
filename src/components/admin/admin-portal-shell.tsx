@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, ChevronDown, LogOut, Menu, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, LogOut, Menu, ShieldCheck } from "lucide-react";
 import { SkipLink } from "@/components/public/skip-link";
 import { Badge, Button } from "@/components/ui";
 import {
@@ -22,11 +22,15 @@ const rowClassName =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600";
 
 const idleRowClassName = "text-text-secondary hover:bg-surface-muted hover:text-primary-900";
-const activeRowClassName = "bg-primary-100 font-semibold text-primary-900";
+const activeRowClassName =
+  "bg-primary-100 font-semibold text-primary-900 ring-1 ring-inset ring-primary-200";
 
 function linkIsActive(currentPath: string, href: string) {
   return (
-    currentPath === href || (href !== adminPaths.overview && currentPath.startsWith(href + "/"))
+    currentPath === href ||
+    (href !== adminPaths.overview && currentPath.startsWith(href + "/")) ||
+    (href === adminPaths.courses &&
+      (currentPath === adminPaths.batches || currentPath.startsWith(adminPaths.batches + "/")))
   );
 }
 
@@ -75,61 +79,27 @@ function AdminSidebar({
     <>
       <nav aria-label={t("navigation")} className="min-h-0 flex-1 overflow-y-auto p-4">
         <ul className="space-y-1">
-          {adminNavigation.map((item) => {
-            const Icon = item.icon;
-            if ("href" in item) {
-              return (
-                <li key={item.label}>
-                  <AdminNavLink href={item.href} currentPath={currentPath} onNavigate={onNavigate}>
-                    <Icon className="size-4 shrink-0" aria-hidden="true" />
-                    {t(item.label)}
-                  </AdminNavLink>
-                </li>
-              );
-            }
-
-            const children = item.children.filter(
-              (child): child is typeof child & { href: string } => Boolean(child.href)
-            );
-            if (children.length === 0) return null;
-
-            const containsActive = children.some((child) => linkIsActive(currentPath, child.href));
-
-            return (
-              <li key={item.label}>
-                <details key={currentPath} open={containsActive} className="group">
-                  <summary
-                    className={cn(
-                      rowClassName,
-                      "cursor-pointer list-none [&::-webkit-details-marker]:hidden",
-                      idleRowClassName,
-                      containsActive && "font-semibold text-primary-900"
-                    )}
-                  >
-                    <Icon className="size-4 shrink-0" aria-hidden="true" />
-                    <span className="flex-1">{t(item.label)}</span>
-                    <ChevronDown
-                      className="size-4 shrink-0 group-open:rotate-180"
-                      aria-hidden="true"
-                    />
-                  </summary>
-                  <ul className="ml-5 mt-1 space-y-1 border-l border-border-subtle pl-2">
-                    {children.map((child) => (
-                      <li key={child.label}>
-                        <AdminNavLink
-                          href={child.href}
-                          currentPath={currentPath}
-                          onNavigate={onNavigate}
-                        >
-                          {t(child.label)}
-                        </AdminNavLink>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              </li>
-            );
-          })}
+          {adminNavigation.map(({ label, href, icon: Icon }) => (
+            <li key={label}>
+              <AdminNavLink href={href} currentPath={currentPath} onNavigate={onNavigate}>
+                <Icon className="size-4 shrink-0" aria-hidden="true" />
+                {t(label)}
+              </AdminNavLink>
+              {label === "courses" && (
+                <ul className="ml-4 mt-1 border-l border-border-subtle pl-2">
+                  <li>
+                    <AdminNavLink
+                      href={adminPaths.batches}
+                      currentPath={currentPath}
+                      onNavigate={onNavigate}
+                    >
+                      {t("batches")}
+                    </AdminNavLink>
+                  </li>
+                </ul>
+              )}
+            </li>
+          ))}
         </ul>
       </nav>
 
@@ -142,7 +112,7 @@ function AdminSidebar({
           <ArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
           {t("viewWebsite")}
         </Link>
-        <div className="space-y-2 rounded-lg bg-surface-muted px-3 py-3">
+        <div className="space-y-2 rounded-lg bg-primary-50 px-3 py-3">
           <p className="break-words text-sm font-semibold">{staff.fullName}</p>
           <p className="break-all text-xs text-text-secondary">{staff.email}</p>
           <div className="flex flex-wrap gap-1.5">
@@ -168,13 +138,15 @@ function AdminSidebar({
   );
 }
 
-function PortalBrand() {
+function PortalBrand({ inverse = false }: { inverse?: boolean }) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
       <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-800 text-text-inverse">
         <ShieldCheck className="size-5" aria-hidden="true" />
       </span>
-      <span className="text-sm font-bold text-primary-900">{t("portalTitle")}</span>
+      <span className={cn("text-sm font-bold", inverse ? "text-text-inverse" : "text-primary-900")}>
+        {t("portalTitle")}
+      </span>
     </div>
   );
 }
@@ -221,17 +193,12 @@ export function AdminPortalShell({
   const sidebarProps = { staff, currentPath, signingOut, onSignOut: handleSignOut };
 
   return (
-    <div className="min-h-dvh lg:flex">
+    <div className="min-h-dvh bg-linear-to-br from-primary-50 via-surface-base to-accent-100 lg:flex">
       <SkipLink targetId="admin-page-content" label={t("skipNavigation")} />
 
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border-subtle bg-surface-card lg:flex">
-        <div className="space-y-3 border-b border-border-subtle px-4 py-4">
-          <PortalBrand />
-          {linkIsActive(currentPath, adminPaths.admissions) && (
-            <Badge variant="info" size="sm">
-              {t("readOnly")}
-            </Badge>
-          )}
+        <div className="space-y-3 bg-primary-900 px-4 py-4">
+          <PortalBrand inverse />
         </div>
         <AdminSidebar {...sidebarProps} />
       </aside>
