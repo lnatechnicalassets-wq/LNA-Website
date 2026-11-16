@@ -1,6 +1,7 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
-**Last Updated:** 15 November 2026  
+**Last Updated:** 16 November 2026
+
 **Session Context:** Completed staff catalog draft publishing workflow (`task/p8-catalog-publish`) and course details MTO custom banner integration with exact 2:1 aspect ratio sizing (`/courses/mto-readiness`). Super Admins can publish draft courses and batches directly from their edit pages, backed by transactional RPC migration `20261113090000_admin_catalog_publish.sql` and public dynamic Supabase fallback on `/courses/[slug]`. Replaced placeholder MTO classroom banner with official `7.MTO_FINAL_Banner_with_mentor.jpg` (`5184x2592`, copied to `public/images/courses/mto-banner.jpg`) and updated container to `aspect-[2/1]` to ensure zero cropping of header text or mentor cards.
 
 ---
@@ -29,6 +30,114 @@
 ---
 
 ## 2. Completed Tasks
+
+### Admissions actions and student course history
+
+- Active Admissions rows show View, Edit, Confirm when relevant, and Archive. Active Students rows show View, Edit, Courses and Archive. Archived rows offer Restore.
+- Student Edit saves contact fields. Courses shows current enrollments and previous courses. Expanding a course loads its past batches. Adding a batch or choosing Batch unknown creates the record immediately. Existing history stays visible, and recording a completion date is a separate action.
+- The details dialog previews the records affected by permanent deletion. A single eligible application can also remove its sole linked profile when it has no independent history, manual creation record or other admissions. Verified and unresolved real payments remain protected. The migration does not delete existing data.
+- Migration `20261116180000_staff_record_workflows.sql` installs the course-history and purge-preview operations. Protected writes verify the operator and compare the confirmed preview with the current scope.
+- The production build, 62 focused tests, and 352 local pgTAP assertions passed. Browser checks verified both pages and both deletion flows with fixture data at 390, 1100 and 1440 pixels. The full verify command stops at existing formatting warnings in 10 unrelated files.
+
+### Students and Admissions workspaces
+
+- The redesigned Students directory uses compact rows with responsive contact and course columns. Profile opens the full contact and course history. Edit, Archive, Restore, and permanent student deletion are grouped under the individual student’s actions.
+- Admissions uses a matching layout and keeps search, status, and course/batch filtering. Eligible rows can be deleted on the list or detail view by typing the application ID. Protected payments offer Archive on active records. Successful deletion from the detail view returns to Admissions.
+- Migration `20261116170000_staff_admission_delete.sql` adds the eligibility check and Super Admin deletion RPC. Unpaid and identifiable test applications can be deleted atomically without removing the student or related enrollments. Verified and unresolved real payments are protected. Applying the migration does not delete any records, and Admissions remains available while the migration is pending.
+- The production build, lint, 62 targeted app tests, and 329 local pgTAP assertions passed. Browser checks with fixture data verified both pages at 390, 1100, and 1440 pixels, including payment review and permanent deletion. The repository-wide verify command stops at pre-existing formatting warnings in 10 unrelated files.
+
+### Permanent student deletion
+
+- The Students directory gives Super Admins a permanent Delete action on active and archived profiles. The dialog requires the student's current email address and the database checks the profile revision.
+- Migration `20261116160000_staff_student_purge.sql` removes the profile, contact history, completions, and eligible enrollments and outbox records in one transaction. Identified mock payment attempts, related events and test amounts are removed from operational data. Deleting an occupied enrollment automatically releases its place. The schema has no independent student balance.
+- Real or potentially real payment records are protected. The operation keeps an audit entry with the staff actor and time without student identifiers. Applying the migration does not delete existing data.
+- The Next.js configuration uses the default Turbopack runtime, and the root layout declares the existing smooth scrolling behavior for route transitions.
+- The production build, typecheck, lint, 41 focused Vitest tests, and 311 local pgTAP assertions passed. Browser checks at 390 and 1440 pixels covered cancellation, email confirmation, and preservation of protected payment records. The aggregate check still stops at existing formatting issues in unrelated files.
+
+### Admissions list redesign (`task/p8-admissions-redesign`)
+
+- Admissions uses one responsive list. Applicant names open record details, payment confirmation remains visible when required, and each row has a More actions menu.
+- The archived list offers permanent deletion for unused development fixtures. The database checks the active Super Admin, current record revision, application reference and deletion eligibility before writing an audit event. Live applications, confirmed enrollments, payment links, seat holds, student links and outbox records stay protected.
+- Apply `20261116153000_admissions_fixture_cleanup.sql` to enable permanent fixture deletion. The migration installs the checks and does not delete any records when applied.
+- The rollout fix loads the Admissions list independently of fixture eligibility. Archived fixtures can be restored while the migration is pending. Fixture deletion appears after Supabase exposes a positive eligibility result.
+- The production build, 56 focused Admissions and service tests, typecheck and 291 local pgTAP assertions passed. A browser fixture verified the list at 390 and 1440 pixels, payment review, protected archive actions and typed confirmation for eligible fixture deletion. Smoke-test the archived view on the linked development project after applying the migration.
+
+### Mentor editor cleanup (`task/p8-mentor-editor-cleanup`)
+
+- The mentor editor groups profile details and images separately, shows current thumbnails, and keeps Save and Cancel visible as the form scrolls.
+- Migration `20261116150000_remove_goyara_from_mir_hasib.sql` removes Goyara from the career history and clears any matching selected logo for the `mentor-mir-hasib` record. The local mentor data carries the same correction.
+- Mentor saves now distinguish missing database setup, rejected fields, and missing records. Server logs record the operation and database error code.
+- The targeted mentor tests and 276 pgTAP assertions pass locally. Apply the migration on the linked development database and confirm Mir Hasib’s public profile and save flow there.
+
+### Live mentor editing (`task/p8-live-mentor-preview`)
+
+- The mentor editor uses the public carousel card and the details shown by its Info button. Expertise is prefilled and entered as separate lines or comma-separated tags. LinkedIn, biographical text and selected images update the local preview before saving.
+- The homepage and course details read published mentor records from Supabase when configured. Save updates the public record for an already published mentor. New profiles start as drafts and can be made visible using Show on the website.
+- Portraits and company logos can use existing assets or uploads. Uploads are resized in the browser and validated again by the server. The private Storage bucket serves files only when the mentor is published or the request has verified staff access.
+- The production build, targeted lint, mentor and course tests, and 273 local pgTAP assertions passed. Storage behavior was tested with local fixtures and awaits a smoke test on the linked Supabase project.
+- Apply `20261116140000_staff_live_mentor_profiles.sql` after the people directories migration. The migration adds the private bucket and a backward-compatible service-only save RPC. Run an authenticated upload check on the linked development project before production rollout.
+
+### Staff people directories and catalog cards (`task/p8-people-directories`)
+
+- Added dedicated Mentors and Students pages with search, profile dialogs, edit, archive and restore. Mentor editors preview the card while typing and can select images from existing website assets.
+- Batch mentor cards show portraits and company marks. Confirming an assignment shows the exact course and cohort and keeps the current roster. The course and batch lists now open read-only cards for draft and published records.
+- Admissions uses a compact desktop header and filter toolbar. Staff portal surfaces and status accents use the existing design tokens.
+- Migration `20261116050000_staff_people_directories.sql` backfills confirmed non-fixture enrollments. Future confirmations link to the directory, and prior course completions can be recorded independently of payment and capacity. See ADR 0015.
+- Local verification passed for the production build, 105 focused app tests, 263 pgTAP assertions, the existing-enrollment backfill and mobile and desktop browser checks. Repository-wide checks still report the eight pre-existing unit-test failures and twelve existing formatting warnings.
+- Next step is to apply this migration on `lna-website-dev` and verify staff access with a real Super Admin session there. Mentor media currently uses existing site assets. These assignment and preview controls are in the staff portal.
+
+### Admissions and catalog workspace (`task/p8-admissions-workspace`)
+
+- Admissions now offers a payment confirmation dialog, contact editing, and reversible Archive and Restore. The default Applications list shows current records. Status filters and searches still expose expired or cancelled history.
+- The database enforces one active record per batch for each email or phone number. Legacy shared phones are flagged for staff correction without changing enrollment or payment state.
+- Batches can be filtered by course and link back to their course. The editor supports an ordered batch mentor roster with course roster inheritance. Course and batch archive actions preserve links and related records.
+- Migration `20261116040000_admissions_workspace.sql` adds the staff RPCs and batch mentor records. See ADR 0014 and pgTAP suite `0008_admissions_workspace.sql`.
+- The production build, lint, typecheck, 102 focused tests, 244 pgTAP assertions, and a legacy shared-phone migration check passed. The local browser fixture passed Confirm and Cancel on desktop and mobile, approval, editing, archive and restore. Axe found no violations in the confirmation dialog. Eight existing tests still fail and repo-wide formatting flags twelve unrelated files.
+
+### Staff review of manual admission payments (`task/p8-manual-payment-review`)
+
+- Paid Add student submissions record a bKash transaction ID or a bank reference. An active Super Admin with TOTP reviews the transfer using the receiving account and the saved fee.
+- Pending reviews reserve no seats. Approval checks capacity and reference reuse, records the reviewer, and queues confirmation in one database transaction. Rejection cancels the application and retains its audit record.
+- The staff flow uses `20261116030000_staff_manual_payment_review.sql`. Run a fresh save and review against the linked development project after applying it. The local suite uses fixture payments.
+- Local verification passed for the production build, 104 focused application tests, and all 209 pgTAP assertions. The browser fixture passed bank submission, amount mismatch and retry, approval, and Axe checks at 390 and 1440 pixels. The full test suite still reports the eight baseline failures. Repository-wide formatting flags twelve files outside this patch.
+- Public bKash checkout uses the gateway validation path. Older checkout reservations use their existing lifecycle.
+
+### Add student from Overview (`task/p8-admissions-quick-add`)
+
+- **Scope:** Overview and Admissions share an Add student shortcut. The protected form lists published courses with batches currently open for enrollment. A batch roster link prefills the course and batch. Changing courses preserves the student’s contact details and clears the previous course’s answers.
+- **Save handling:** The server action distinguishes missing RPC deployment from database permission failures. Unexpected failures produce a server-side error code without logging the submitted student or database response. The form preserves text and required choices after a failed save so staff can retry. The owner's captured request reached the server, but lacked the database response needed to identify the live failure.
+- **Deployment:** Uses the manual admissions migration `20261116020000_admin_manual_admissions.sql`. Verify that migration on the linked development project and retry there. No schema migration is part of this follow-up patch.
+- **Verification:** Production build, TypeScript, targeted ESLint and formatting, 87 focused Vitest tests, and 176 local pgTAP checks passed. Chromium with a local Supabase fixture verified Overview entry, course switching, closed-batch filtering, fee display, retry without re-entry, duplicate handling, and roster preselection. Axe reported no violations at 390 and 1440 CSS pixels. The development database still needs a live save check.
+- **Next task:** Add the mentor directory with a public card preview.
+
+### Manual student entry (`task/p8-manual-admissions`)
+
+- **Base:** Apply the CMS navigation and Admissions views patches first. The common GitHub base is `33ca267`.
+- **Scope:** A verified Super Admin can add a student from a selected open batch. The form shows the saved fee and collects the same course-specific answers as public intake. Duplicate submissions link to the existing enrollment.
+- **Persistence:** `20261116020000_admin_manual_admissions.sql` adds a service-role RPC. It checks the batch revision and availability under lock, counts historical enrollment and active holds, and records the staff action in the same transaction. Free registration uses the existing confirmation workflow. Paid entry remains pending with the normal temporary hold and no gateway attempt until checkout.
+- **Verification:** TypeScript, ESLint, targeted Prettier, production build, content/token checks, 82 targeted Vitest tests, and 176 local pgTAP assertions passed. Chromium checks with a simulated Supabase connection verified guest redirection, the displayed fee, duplicate recovery, and no Axe violations at 390px and 1440px. The full Vitest run reproduces the eight existing failures on the previous Admissions baseline. Repo-wide Prettier reports 14 existing warnings.
+- **Deployment:** Apply the migration to the linked development project before using Add student there. Live Supabase and payment verification were not run. Commit pending owner review.
+- **Next task:** Build the mentor directory and course mentor assignment workflow.
+
+### Read-only Admissions views (`task/p8-admissions-views`)
+
+- **Base:** Apply the CMS navigation patch before this patch. Both use GitHub `main` at `33ca267` as their common base.
+- **Scope:** Admissions now has Applications and Enrolled students views. Applications keeps the existing lifecycle status filter. Enrolled students reads confirmed enrollment records. Both views support course and batch filters, search, and pagination. Batch choices include past cohorts and show catalog status.
+- **Implementation:** Reused the protected Admissions route and catalog links. Server-side query validation checks the course and batch IDs, rejects a mismatched pair, and applies the selected scope to the enrollment query. The existing View students link opens the confirmed roster.
+- **Verification:** 76 targeted Vitest tests passed. TypeScript, targeted ESLint and Prettier, design-token, content, and traceability checks, and the production build passed. The live staff workflow still needs an environment check.
+- **Commit:** Pending owner review. No database migration is required.
+- **Next task:** Add manual enrollment using the same course and batch roster.
+
+
+### Course workspace navigation and batch roster links (`task/p8-cms-navigation`)
+
+- **Base:** GitHub `main` at `33ca267` (merged PR #26).
+- **Scope:** Overview links to Admissions and Courses. The sidebar shows those three working destinations. Courses links to its filtered batch list, and a batch links to its confirmed student roster. The all-batches and all-enrollments routes remain directly accessible.
+- **Implementation:** Updated the existing admin shell, Overview, catalog list and create page, and Admissions list. Course and batch context is resolved on the server with existing permissions and validated IDs. The course and batch filters survive search and pagination. A batch link works for previous cohorts and a new batch form preselects the course if it is available for creation.
+- **Verification:** `vitest run --maxWorkers=4 --minWorkers=1 src/app/admin src/components/admin src/server/enrollment/service.test.ts src/server/auth/require-staff.test.ts` passed (73 tests), along with `tsc --noEmit`, targeted ESLint and Prettier, design-token, content, and traceability checks, and `next build`.
+- **Commit:** Pending owner review. The patch fits the existing schema. Live staff/browser verification is pending.
+- **Next task:** Add Admissions views for applications and enrolled students, with course and batch selectors. Manual enrollment follows the read-only workflow.
+
 
 ### Edit existing courses and batches (`task/p8-catalog-edit`)
 

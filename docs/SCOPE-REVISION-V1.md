@@ -55,7 +55,8 @@ flowchart TD
 
 ### Module 3: Payment Integration through bKash API
 * **Target Architecture:** Direct bKash Payment Gateway API integration (URL-Based Checkout / Tokenized Checkout in mode `0011` agreement-less).
-* **Payment Invariants:** Server-only credentials (`BKASH_*`), pure integer poisha financial arithmetic (zero floats, zero `.toFixed()`), and mandatory server-to-server validation.
+* **Hosted Payment Invariants:** Server-only credentials (`BKASH_*`), pure integer poisha financial arithmetic, and mandatory server-to-server validation.
+* Staff can use **Add student** to record an external bKash transaction ID or bank transfer reference. An active Super Admin with verified TOTP must match the incoming payment and exact saved fee before confirming a seat. See [ADR 0013](decisions/0013-staff-entered-payment-review.md).
 * **Safe Expiration & Retries:** Untrusted browser redirects with `cancel` or `failure` never prematurely release seat holds. Holds expire passively in SQL queries; applicants can retry checkout within their 30-minute reservation window.
 * **Delayed Verification & Reconciliation:** Asynchronous reconciliation cron re-queries pending transactions against bKash search/query APIs to recover from network drops.
 * **Receipt Generation:** Tamper-evident PDF receipts delivered via Resend email and downloadable via short-lived HMAC-SHA256 signed URLs.
