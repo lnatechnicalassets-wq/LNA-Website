@@ -104,6 +104,7 @@ export const MentorSchema = z.object({
   published: z.boolean().optional(),
   linkedInUrl: z.string().url().optional(),
   portraitSrc: z.string().optional(),
+  companyLogoSrc: z.string().optional(),
   expertise: z.array(z.string()).optional(),
   careerHistory: z.array(CareerHistoryItemSchema).optional(),
   provenance: ProvenanceSchema,

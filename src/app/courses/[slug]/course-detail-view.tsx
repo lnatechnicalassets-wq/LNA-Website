@@ -1,5 +1,6 @@
 "use client";
 
+import { usesMentorMediaSource } from "@/lib/mentor-media";
 import React, { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -923,6 +924,7 @@ export function CourseDetailView({
                             <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-white border border-[#D5E5E8] shrink-0">
                               <Image
                                 src={avatarSrc}
+                                unoptimized={usesMentorMediaSource(avatarSrc)}
                                 alt={mentor.name}
                                 fill
                                 sizes="48px"

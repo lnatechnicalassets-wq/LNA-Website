@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import Image from "next/image";
-import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Mentor } from "@/lib/content";
-import { formatMentorRoleWithCompany, getMentorAvatar, getMentorCompanyLogos } from "@/lib/mentors";
-import { CompanyLogo, OfficialCompanyLogo } from "./company-logo";
+import { MentorDisplayCard } from "./mentor-display-card";
 import { useMentorQuickView } from "./mentor-quick-view-context";
 
 const CARD_TRANSITION_MS = 750;
@@ -463,13 +461,6 @@ export function MentorCarousel({
               ? "transform 1300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 1300ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 1300ms ease, filter 1300ms ease"
               : "transform 750ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 750ms ease, filter 750ms ease";
 
-          const avatarSrc = getMentorAvatar(mentor, index);
-          const companyLogos = getMentorCompanyLogos(mentor);
-          const fallbackHistoryLogos =
-            companyLogos.length === 0
-              ? (mentor.careerHistory?.filter((item) => Boolean(item.logoIcon)).slice(0, 2) ?? [])
-              : [];
-
           return (
             <div
               key={mentor.id}
@@ -498,86 +489,14 @@ export function MentorCarousel({
               }}
               className={`absolute top-2 w-[230px] sm:w-[248px] xl:w-[260px] h-[400px] sm:h-[420px] xl:h-[440px] rounded-3xl overflow-hidden cursor-pointer bg-[#FAF9F6] border border-white/70 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] will-change-transform ${visibilityClass} ${shadowClass}`}
             >
-              {/* Upper Portion: Fully Opaque Portrait with subtle specular glass sheen */}
-              <div className="relative h-[240px] sm:h-[255px] xl:h-[270px] w-full bg-[#053A45] overflow-hidden">
-                <Image
-                  src={avatarSrc}
-                  alt={mentor.name}
-                  fill
-                  priority={isActive || isSlotMinus1 || isSlot1}
-                  sizes="(max-width: 640px) 240px, (max-width: 1200px) 255px, 265px"
-                  className="object-cover object-top transition-transform duration-700 hover:scale-103"
-                />
-
-                {/* Subtle glass reflection highlight along top edge */}
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/20 via-white/5 to-transparent pointer-events-none"
-                />
-
-                {/* Explicit Info button replacing ambiguous '+' icon */}
-                {isVisible && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openQuickView(mentor);
-                    }}
-                    onMouseEnter={() => setIsHoveringControl(true)}
-                    onMouseLeave={() => setIsHoveringControl(false)}
-                    aria-label={`View mentor info for ${mentor.name}`}
-                    className={`absolute top-3 right-3 inline-flex items-center gap-1 rounded-full border backdrop-blur-xs font-semibold transition-all shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
-                      isActive
-                        ? "px-2.5 py-1 text-[11px] bg-white/90 hover:bg-white text-[#086477] border-white ring-1 ring-white/50"
-                        : "px-2 py-0.5 text-[10px] bg-white/80 hover:bg-white text-[#086477] border-white/75"
-                    }`}
-                  >
-                    <Info className="h-3 w-3 shrink-0" aria-hidden="true" />
-                    <span>Info</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Lower Portion: Solid Cream-White Glass Foundation (100% Opaque) */}
-              <div className="px-3.5 py-3 sm:px-4 sm:py-3.5 flex flex-col justify-between gap-2 h-[160px] sm:h-[165px] xl:h-[170px] bg-[#FAF9F6] border-t border-white/50">
-                <div className="min-w-0">
-                  <h3 className="text-[13px] sm:text-sm xl:text-[15px] font-bold font-serif text-[#172E35] tracking-tight leading-snug line-clamp-2">
-                    {mentor.name}
-                  </h3>
-                  <p className="text-[10.5px] sm:text-[11px] font-medium text-[#526E77] mt-0.5 leading-[1.35] line-clamp-3">
-                    {formatMentorRoleWithCompany(mentor)}
-                  </p>
-                </div>
-
-                {/* Company Logos Only (Official Corporate Marks) */}
-                {companyLogos.length > 0 ? (
-                  <div className="pt-2 border-t border-[#E5ECEE] flex items-center gap-3 min-h-[42px] sm:min-h-[46px]">
-                    {companyLogos.slice(0, 2).map((logo) => (
-                      <OfficialCompanyLogo
-                        key={logo.src}
-                        src={logo.src}
-                        alt={logo.alt}
-                        size="card"
-                        compact={companyLogos.length > 1}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  fallbackHistoryLogos.length > 0 && (
-                    <div className="pt-2 border-t border-[#E5ECEE] flex items-center gap-3 min-h-[42px] sm:min-h-[46px]">
-                      {fallbackHistoryLogos.map((item, idx) => (
-                        <CompanyLogo
-                          key={idx}
-                          name={item.company}
-                          logoIcon={item.logoIcon}
-                          iconOnly
-                          className="text-[#172E35]"
-                        />
-                      ))}
-                    </div>
-                  )
-                )}
-              </div>
+              <MentorDisplayCard
+                mentor={mentor}
+                index={index}
+                active={isActive}
+                priority={isActive || isSlotMinus1 || isSlot1}
+                onInfo={isVisible ? () => openQuickView(mentor) : undefined}
+                onControlHover={setIsHoveringControl}
+              />
             </div>
           );
         })}

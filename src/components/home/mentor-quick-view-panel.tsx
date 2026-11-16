@@ -1,14 +1,11 @@
 "use client";
 
+import { usesMentorMediaSource } from "@/lib/mentor-media";
 import React from "react";
 import Image from "next/image";
 import { X, ExternalLink } from "lucide-react";
 import type { Mentor } from "@/lib/content";
-import {
-  formatMentorRoleWithCompany,
-  getMentorAvatar,
-  getMentorCompanyLogos,
-} from "@/lib/mentors";
+import { formatMentorRoleWithCompany, getMentorAvatar, getMentorCompanyLogos } from "@/lib/mentors";
 import { CompanyLogo, OfficialCompanyLogo } from "./company-logo";
 
 export interface MentorQuickViewPanelProps {
@@ -24,8 +21,7 @@ export function MentorQuickViewPanel({
 }: MentorQuickViewPanelProps) {
   const avatarSrc = getMentorAvatar(mentor);
   const companyLogos = getMentorCompanyLogos(mentor);
-  const fallbackHistoryLogos =
-    companyLogos.length === 0 ? (mentor.careerHistory ?? []) : [];
+  const fallbackHistoryLogos = companyLogos.length === 0 ? (mentor.careerHistory ?? []) : [];
   const expertiseList = mentor.expertise || [
     "Growth Strategy",
     "Go-to-Market",
@@ -46,6 +42,7 @@ export function MentorQuickViewPanel({
           <div className="relative w-24 h-28 xl:w-26 xl:h-30 rounded-2xl overflow-hidden bg-[#E8F2F4] ring-2 ring-white/95 shadow-md shrink-0">
             <Image
               src={avatarSrc}
+              unoptimized={usesMentorMediaSource(avatarSrc)}
               alt={mentor.name}
               fill
               sizes="110px"

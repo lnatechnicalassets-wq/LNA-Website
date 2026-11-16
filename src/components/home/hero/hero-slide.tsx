@@ -1,5 +1,6 @@
 "use client";
 
+import { usesMentorMediaSource } from "@/lib/mentor-media";
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -41,13 +42,17 @@ export function HeroSlide({
   totalSlides,
   onMentorClick,
 }: HeroSlideProps) {
-  const isMto = slide.courseId === "mto-readiness" || slide.programType === "mto" || slide.id.includes("mto");
-  const isIrgp = slide.courseId === "irgp" || slide.programType === "irgp" || slide.id.includes("irgp");
+  const isMto =
+    slide.courseId === "mto-readiness" || slide.programType === "mto" || slide.id.includes("mto");
+  const isIrgp =
+    slide.courseId === "irgp" || slide.programType === "irgp" || slide.id.includes("irgp");
 
   // Resolve shared course mentor roster by actual catalog course ID from course.mentorIds
   const courseId = slide.courseId || (isMto ? "mto-readiness" : isIrgp ? "irgp" : undefined);
   const matchedCourse = courses?.find((c) => c.id === courseId);
-  const displayMentors = courseId ? getCourseMentorRoster(mentors, matchedCourse ?? courseId, courses) : [];
+  const displayMentors = courseId
+    ? getCourseMentorRoster(mentors, matchedCourse ?? courseId, courses)
+    : [];
 
   const handleSecondaryCtaClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (slide.secondaryCtaHref?.startsWith("#")) {
@@ -283,6 +288,7 @@ export function HeroSlide({
                       <div className="relative w-full aspect-[4/3] sm:aspect-[4/3.2] lg:aspect-[4/2.8] xl:aspect-[4/3] max-h-[140px] sm:max-h-[150px] lg:max-h-[140px] xl:max-h-[155px] rounded-lg bg-[#E6F3F5] overflow-hidden flex items-end justify-center pt-1.5">
                         <Image
                           src={getMentorAvatar(mentor, index)}
+                          unoptimized={usesMentorMediaSource(getMentorAvatar(mentor, index))}
                           alt={mentor.name}
                           fill
                           sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 200px"
@@ -460,6 +466,7 @@ export function HeroSlide({
                     <div className="relative w-full aspect-[4/3.6] min-[420px]:aspect-square sm:aspect-[4/4] lg:aspect-[4/3.4] xl:aspect-[4/3.6] max-h-[135px] sm:max-h-[150px] lg:max-h-[140px] xl:max-h-[150px] rounded-lg bg-[#E6F3F5] overflow-hidden flex items-end justify-center pt-1.5">
                       <Image
                         src={getMentorAvatar(mentor)}
+                        unoptimized={usesMentorMediaSource(getMentorAvatar(mentor))}
                         alt={mentor.name}
                         fill
                         sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 200px"
