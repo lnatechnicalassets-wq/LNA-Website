@@ -64,7 +64,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   experimental: {
-    turbopackPluginRuntimeStrategy: "forceWorkerThreads",
+    serverActions: { bodySizeLimit: "4mb" },
   },
   async headers() {
     return [

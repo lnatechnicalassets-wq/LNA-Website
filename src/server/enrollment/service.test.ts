@@ -46,9 +46,11 @@ function createServiceAdminMock(state: MockTableState) {
   const queryDebug: {
     orFilter?: string;
     eqFilters: Array<[string, unknown]>;
+    inFilters: Array<[string, unknown[]]>;
     selectClauses: Array<{ table: string; columns: string }>;
   } = {
     eqFilters: [],
+    inFilters: [],
     selectClauses: [],
   };
 
@@ -124,7 +126,10 @@ function createServiceAdminMock(state: MockTableState) {
       },
       is: () => chain,
       not: () => chain,
-      in: () => chain,
+      in: (column: string, values: unknown[]) => {
+        queryDebug.inFilters.push([column, values]);
+        return chain;
+      },
       or: (expr: string) => {
         queryDebug.orFilter = expr;
         return chain;
@@ -968,14 +973,21 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       ],
     });
 
+    const batchId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    const courseId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     const list = await listAdminEnrollments(
-      { search: "Nadia,email.eq.1()%*", status: "confirmed", page: 1 },
+      { search: "Nadia,email.eq.1()%*", status: "confirmed", page: 1, batchId, courseId },
       SAMPLE_STAFF,
       admin
     );
     expect(list.items).toHaveLength(1);
+    expect(queryDebug.selectClauses).toHaveLength(1);
+    expect(queryDebug.selectClauses[0]?.columns).not.toContain("admission_delete_eligibility");
     expect(queryDebug.selectClauses[0]?.columns).toContain("batches!enrollments_batch_id_fkey");
     expect(queryDebug.orFilter).toContain("public_ref.ilike.%Nadiaemail.eq.1%");
+    expect(queryDebug.eqFilters).toContainEqual(["batch_id", batchId]);
+    expect(queryDebug.eqFilters).toContainEqual(["course_id", courseId]);
+    expect(queryDebug.eqFilters).toContainEqual(["status", "confirmed"]);
     expect(queryDebug.orFilter).not.toContain("(");
     expect(queryDebug.orFilter).not.toContain("*");
 
@@ -995,6 +1007,21 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
           (i.payload as Record<string, unknown>).action === "admin_viewed_enrollment_detail"
       )
     ).toBe(true);
+  });
+
+  it("loads archived records without running the purge check", async () => {
+    const id = "eeeeeeee-eeee-4eee-8eee-000000000001";
+    const { admin, queryDebug } = createServiceAdminMock({
+      enrollmentsList: {
+        data: [{ id, is_dev_fixture: true, payable_poisha: 0, status: "expired" }],
+        count: 17,
+      },
+    });
+    const list = await listAdminEnrollments({ archived: true }, SAMPLE_STAFF, admin);
+    expect(list.totalCount).toBe(17);
+    expect(list.items.map((item) => item.id)).toEqual([id]);
+    expect(queryDebug.selectClauses).toHaveLength(1);
+    expect(queryDebug.inFilters).toEqual([]);
   });
 
   it("handles an empty enrollment table, rejects unauthorized staff contexts, and sanitizes DB errors", async () => {

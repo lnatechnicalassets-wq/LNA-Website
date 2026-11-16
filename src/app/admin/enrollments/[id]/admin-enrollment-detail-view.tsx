@@ -9,11 +9,13 @@ import {
   PaymentStatusBadge,
 } from "@/components/admin/enrollment-status-badge";
 import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { manualPaymentReviewCopy as reviewCopy } from "@/lib/admin-manual-admission";
 import { adminPaths } from "@/lib/admin-navigation";
 import { formatPaymentMethodLabel } from "@/lib/enrollment/status";
 import { formatPoishaToBDT } from "@/lib/money";
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
 import type { AdminEnrollmentDetailResult } from "@/server/enrollment/service";
+import { EnrollmentRowActions } from "../enrollment-row-actions";
 
 export interface AdminEnrollmentDetailViewProps {
   staff: VerifiedStaffContext;
@@ -73,6 +75,7 @@ export function AdminEnrollmentDetailView({ staff, detail }: AdminEnrollmentDeta
                 </h1>
                 <EnrollmentStatusBadge status={detail.status} />
                 <PaymentStatusBadge status={detail.paymentStatus} />
+                {detail.archivedAt && <Badge variant="outline">Archived</Badge>}
                 {detail.isDevFixture && (
                   <Badge variant="outline" size="sm">
                     {detail.fixtureLabel ? `Dev fixture (${detail.fixtureLabel})` : "Dev fixture"}
@@ -108,6 +111,9 @@ export function AdminEnrollmentDetailView({ staff, detail }: AdminEnrollmentDeta
                 </span>
               </div>
             </div>
+          </CardContent>
+          <CardContent className="border-t border-border-subtle px-5 pb-4 pt-3 sm:px-6">
+            <EnrollmentRowActions item={detail} showView={false} />
           </CardContent>
         </Card>
 
@@ -194,12 +200,34 @@ export function AdminEnrollmentDetailView({ staff, detail }: AdminEnrollmentDeta
                 {detail.submittedPaymentRef && (
                   <div className="py-2.5 flex justify-between gap-4">
                     <dt className="text-text-secondary">Submitted reference</dt>
-                    <dd className="font-mono text-text-primary text-right">
+                    <dd className="break-all font-mono text-text-primary text-right">
                       {detail.submittedPaymentRef}
                     </dd>
                   </div>
                 )}
               </dl>
+              {detail.isStaffManualPayment && detail.paymentMethod !== "free" && (
+                <section
+                  className="mt-4 space-y-3 border-t border-border-subtle pt-4"
+                  aria-labelledby="staff-payment-review-heading"
+                >
+                  <h2 id="staff-payment-review-heading" className="font-semibold text-primary-900">
+                    {reviewCopy.title}
+                  </h2>
+                  {detail.status === "application_in_process" && !detail.archivedAt && (
+                    <p className="text-sm text-text-secondary">{reviewCopy.pending}</p>
+                  )}
+                  {detail.status === "confirmed" && (
+                    <p className="text-sm text-text-secondary">
+                      {reviewCopy.verified}
+                      {detail.verifiedAt && <> · {formatDhakaTimestamp(detail.verifiedAt)}</>}
+                    </p>
+                  )}
+                  {detail.status === "cancelled" && (
+                    <p className="text-sm text-text-secondary">{reviewCopy.rejected}</p>
+                  )}
+                </section>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -215,7 +243,7 @@ export function AdminEnrollmentDetailView({ staff, detail }: AdminEnrollmentDeta
           <CardContent>
             {detail.paymentAttempts.length === 0 ? (
               <p className="text-xs sm:text-sm text-text-secondary">
-                No bKash gateway attempts recorded (free enrollment or initiated prior to payment).
+                No bKash gateway attempts recorded.
               </p>
             ) : (
               <div className="overflow-x-auto">

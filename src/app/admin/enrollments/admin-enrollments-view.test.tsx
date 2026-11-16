@@ -1,6 +1,8 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { EnrollmentRowActions } from "./enrollment-row-actions";
+import { loadPurgeImpact } from "@/app/admin/record-purge-actions";
 import { AdminEnrollmentsView } from "./admin-enrollments-view";
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
 
@@ -44,6 +46,11 @@ const SAMPLE_RECORD = {
   isDevFixture: false,
 };
 
+vi.mock("./[id]/manual-payment-actions", () => ({ reviewManualPayment: vi.fn() }));
+vi.mock("./enrollment-record-actions", () => ({ manageEnrollmentRecord: vi.fn() }));
+
+vi.mock("@/app/admin/record-purge-actions", () => ({ loadPurgeImpact: vi.fn() }));
+
 describe("AdminEnrollmentsView (/admin/enrollments)", () => {
   beforeEach(() => {
     pushMock.mockReset();
@@ -54,53 +61,103 @@ describe("AdminEnrollmentsView (/admin/enrollments)", () => {
     cleanup();
   });
 
-  it("renders read-only enrollments table/cards without any delete or mutating controls", () => {
+  it("shows Edit and Archive, and opens a cancellable review dialog with the saved payment", () => {
+    const row = {
+      ...SAMPLE_RECORD,
+      updatedAt: "2026-11-16T03:00:00Z",
+      isStaffManualPayment: true,
+      submittedPaymentRef: "TEST-BKASH-012",
+      status: "application_in_process",
+      paymentStatus: "pending_verification",
+    };
     render(
       <AdminEnrollmentsView
         staff={SAMPLE_STAFF}
         currentSearch=""
         currentStatus=""
+        list={{ totalCount: 1, page: 1, pageSize: 20, items: [row] }}
+      />
+    );
+    expect(screen.getByRole("link", { name: `View ${row.publicRef}` })).toBeDefined();
+    expect(screen.getByRole("button", { name: `Edit ${row.publicRef}` })).toBeDefined();
+    expect(screen.getByRole("button", { name: `Archive ${row.publicRef}` })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: `Confirm ${row.publicRef}` }));
+    const popup = within(screen.getByRole("dialog", { name: `Confirm ${row.publicRef}` }));
+    expect(popup.getByText("TEST-BKASH-012")).toBeDefined();
+    expect(popup.getByText("৳5,500")).toBeDefined();
+    expect(popup.getByRole("button", { name: "Approve payment and confirm seat" })).toBeDefined();
+    fireEvent.click(popup.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(refreshMock).not.toHaveBeenCalled();
+  });
+
+  it("offers Restore in the archive and keeps payment review unavailable", () => {
+    render(
+      <AdminEnrollmentsView
+        staff={SAMPLE_STAFF}
+        currentSearch=""
+        currentStatus=""
+        view="archived"
         list={{
           totalCount: 1,
           page: 1,
           pageSize: 20,
           items: [
             {
-              id: "enr-uuid-1",
-              publicRef: "LNA-2M4K-9P7Q",
-              fullName: "Nadia Sultana",
-              email: "nadia@example.com",
-              phone: "01711223344",
-              courseSlug: "mto-readiness",
-              courseTitle: "MTO Readiness Program",
-              batchSlug: "batch-mto-2026-01",
-              batchName: "MTO Readiness Cohort 1",
-              paymentMethod: "bkash",
-              paymentStatus: "validated",
-              status: "confirmed",
-              payablePoisha: 550000,
-              currency: "BDT",
-              holdExpiresAt: null,
-              confirmedAt: "2026-11-11T00:00:00Z",
-              createdAt: "2026-11-10T23:45:00Z",
-              isDevFixture: false,
+              ...SAMPLE_RECORD,
+              updatedAt: "2026-11-16T03:00:00Z",
+              archivedAt: "2026-11-16T03:00:00Z",
             },
           ],
         }}
       />
     );
+    expect(screen.getByRole("button", { name: /Restore LNA/ })).toBeDefined();
+    expect(screen.queryByRole("button", { name: /Delete|Confirm LNA|Edit LNA/ })).toBeNull();
+  });
 
-    expect(screen.getByText("Read-Only Release")).toBeDefined();
-    expect(screen.getByText("Super Admin")).toBeDefined();
-    expect(screen.getByText("AAL2")).toBeDefined();
-    expect(screen.getAllByText("LNA-2M4K-9P7Q").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Nadia Sultana").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/BDT 5,500/).length).toBeGreaterThanOrEqual(1);
+  it("explains protected payments from the application detail without offering confirmation", async () => {
+    vi.mocked(loadPurgeImpact).mockResolvedValue({ status: "payment_protected" });
+    render(
+      <EnrollmentRowActions
+        item={{ ...SAMPLE_RECORD, updatedAt: "2026-11-16T03:00:00Z" }}
+        showView={false}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: `Delete ${SAMPLE_RECORD.publicRef}` }));
+    const dialog = within(
+      await screen.findByRole("dialog", { name: "Permanent deletion is unavailable" })
+    );
+    expect(dialog.getByText(/verified or unresolved payment/)).toBeDefined();
+    expect(dialog.queryByRole("button", { name: "Delete permanently" })).toBeNull();
+  });
 
-    // Strictly read-only: zero delete/archive/edit/approve/refund buttons
+  it("requires the application ID and previews the deleted profile from the application detail", async () => {
+    vi.mocked(loadPurgeImpact).mockResolvedValue({
+      status: "eligible",
+      token: "a".repeat(32),
+      profile: "deleted",
+      applications: 1,
+      courseRecords: 0,
+      contactRecords: 1,
+      paymentRecords: 2,
+      emailRecords: 0,
+    });
+    render(
+      <EnrollmentRowActions
+        item={{ ...SAMPLE_RECORD, updatedAt: "2026-11-16T03:00:00Z" }}
+        showView={false}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: `Delete ${SAMPLE_RECORD.publicRef}` }));
+    const dialog = within(
+      screen.getByRole("dialog", { name: `Delete permanently ${SAMPLE_RECORD.publicRef}` })
+    );
     expect(
-      screen.queryByRole("button", { name: /delete|remove|edit|confirm payment|refund|archive/i })
-    ).toBeNull();
+      await dialog.findByLabelText(`Type ${SAMPLE_RECORD.publicRef} to confirm`)
+    ).toHaveProperty("required", true);
+    expect(dialog.getByText("Student profile")).toBeDefined();
+    expect(dialog.getByText("Test payment records")).toBeDefined();
   });
 
   it("renders empty-table state cleanly when no enrollment records exist yet without filters", () => {
@@ -232,5 +289,102 @@ describe("AdminEnrollmentsView (/admin/enrollments)", () => {
 
     expect(pushMock).toHaveBeenCalledWith("/admin/enrollments?q=LNA-2M4K&status=confirmed");
     expect(screen.getByText("Previous").parentElement?.getAttribute("aria-disabled")).toBe("true");
+  });
+  it("keeps the selected course and batch context across search, pagination, and reset", () => {
+    const batch = {
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      name: "Cohort 1",
+      courseId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      courseTitle: "MTO Readiness",
+    };
+    render(
+      <AdminEnrollmentsView
+        staff={SAMPLE_STAFF}
+        currentSearch=""
+        currentStatus="confirmed"
+        batch={batch}
+        list={{ totalCount: 21, page: 1, pageSize: 20, items: [SAMPLE_RECORD] }}
+      />
+    );
+
+    expect(screen.getByText("MTO Readiness / Cohort 1")).toBeDefined();
+    expect(screen.getByRole("link", { name: "Back to course batches" }).getAttribute("href")).toBe(
+      `/admin/catalog/batches?courseId=${batch.courseId}`
+    );
+    expect(screen.getByRole("link", { name: "Next" }).getAttribute("href")).toBe(
+      `/admin/enrollments?status=confirmed&batchId=${batch.id}&page=2`
+    );
+    fireEvent.change(screen.getByLabelText(/Search applications/i), { target: { value: "LNA" } });
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    expect(pushMock).toHaveBeenLastCalledWith(
+      `/admin/enrollments?q=LNA&status=confirmed&batchId=${batch.id}`
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(pushMock).toHaveBeenLastCalledWith(`/admin/enrollments?batchId=${batch.id}`);
+    expect(screen.getByRole("link", { name: "All applications" }).getAttribute("href")).toBe(
+      "/admin/enrollments"
+    );
+  });
+  it("switches tabs with the selected scope and resets the batch when the course changes", () => {
+    const courseId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const nextCourseId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    const batchId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    render(
+      <AdminEnrollmentsView
+        staff={SAMPLE_STAFF}
+        view="students"
+        currentSearch="Nadia"
+        currentStatus=""
+        courseId={courseId}
+        courses={[
+          { id: courseId, title: "MTO Readiness" },
+          { id: nextCourseId, title: "IRGP" },
+        ]}
+        batch={{ id: batchId, name: "Cohort 1", courseId, courseTitle: "MTO Readiness" }}
+        batches={[{ id: batchId, name: "Cohort 1", status: "archived" }]}
+        list={{ totalCount: 23, page: 1, pageSize: 20, items: [SAMPLE_RECORD] }}
+      />
+    );
+    expect(
+      screen.getByRole("link", { name: "Enrolled students" }).getAttribute("aria-current")
+    ).toBe("page");
+    expect(screen.getByRole("link", { name: "Applications" }).getAttribute("href")).toBe(
+      `/admin/enrollments?q=Nadia&courseId=${courseId}&batchId=${batchId}`
+    );
+    expect(screen.getByRole("link", { name: "Next" }).getAttribute("href")).toBe(
+      `/admin/enrollments?view=students&q=Nadia&courseId=${courseId}&batchId=${batchId}&page=2`
+    );
+    expect(screen.getByRole("option", { name: "Cohort 1 (Archived)" })).toBeDefined();
+    fireEvent.change(screen.getByLabelText("Batch"), { target: { value: "" } });
+    expect(pushMock).toHaveBeenLastCalledWith(
+      `/admin/enrollments?view=students&q=Nadia&courseId=${courseId}`
+    );
+    fireEvent.change(screen.getByLabelText("Course"), { target: { value: nextCourseId } });
+    expect(pushMock).toHaveBeenLastCalledWith(
+      `/admin/enrollments?view=students&q=Nadia&courseId=${nextCourseId}`
+    );
+  });
+  it("offers Add student for the selected open batch", () => {
+    const batch = {
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      name: "Cohort 1",
+      courseId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      courseTitle: "MTO Readiness",
+    };
+    render(
+      <AdminEnrollmentsView
+        staff={SAMPLE_STAFF}
+        view="students"
+        currentSearch=""
+        currentStatus=""
+        courseId={batch.courseId}
+        batch={batch}
+        batches={[{ id: batch.id, name: batch.name, status: "open_for_enrollment" }]}
+        list={{ totalCount: 0, page: 1, pageSize: 20, items: [] }}
+      />
+    );
+    expect(screen.getByRole("link", { name: "Add student" }).getAttribute("href")).toBe(
+      `/admin/enrollments/new?batchId=${batch.id}`
+    );
   });
 });

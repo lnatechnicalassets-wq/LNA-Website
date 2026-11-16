@@ -71,7 +71,7 @@ export function renderConfirmationEmailContent(
     "",
     isFree
       ? `Your free registration with Lead Nation Academy is confirmed.`
-      : `Your bKash payment has been verified server-side and your seat with Lead Nation Academy is confirmed.`,
+      : `Your payment has been verified and your seat with Lead Nation Academy is confirmed.`,
     "",
     `LNA Application ID: ${payload.public_ref}`,
     `Program: ${payload.course_title}`,

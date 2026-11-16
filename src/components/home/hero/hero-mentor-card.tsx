@@ -1,5 +1,6 @@
 "use client";
 
+import { usesMentorMediaSource } from "@/lib/mentor-media";
 import React from "react";
 import Image from "next/image";
 import type { Mentor } from "@/lib/content";
@@ -88,6 +89,7 @@ export function HeroMentorCard({
           {/* Upright Mentor Photo (Faces, foreheads, and chins remain completely visible and upright) */}
           <Image
             src={avatarSrc}
+            unoptimized={usesMentorMediaSource(avatarSrc)}
             alt={mentor.name}
             fill
             priority={priority}

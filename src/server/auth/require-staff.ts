@@ -6,7 +6,12 @@ import {
   hasConfiguredSupabaseServerEnv,
 } from "@/server/supabase/clients";
 
-export type StaffPermission = "enrollments:read" | "catalog:edit";
+export type StaffPermission =
+  | "enrollments:read"
+  | "enrollments:create"
+  | "enrollments:verify-payment"
+  | "enrollments:manage"
+  | "catalog:edit";
 
 export type StaffRole = "admin" | "super_admin";
 
@@ -67,7 +72,13 @@ export interface StaffAuthDeps {
 }
 
 const ROLE_PERMISSIONS: Record<StaffRole, ReadonlyArray<StaffPermission>> = {
-  super_admin: ["enrollments:read", "catalog:edit"],
+  super_admin: [
+    "enrollments:read",
+    "enrollments:create",
+    "enrollments:verify-payment",
+    "enrollments:manage",
+    "catalog:edit",
+  ],
   admin: [],
 };
 

@@ -40,7 +40,7 @@ describe("Admin portal navigation", () => {
     );
   }
 
-  it("shows live destinations, identifies the current page, and omits empty groups", () => {
+  it("shows only available destinations with Overview first", () => {
     renderShell(adminPaths.overview);
 
     const nav = within(screen.getByRole("navigation", { name: "Admin navigation" }));
@@ -48,8 +48,14 @@ describe("Admin portal navigation", () => {
     expect(nav.getByRole("link", { name: "Admissions" }).getAttribute("href")).toBe(
       adminPaths.admissions
     );
-    expect(nav.queryByText("Website Builder")).toBeNull();
-    expect(nav.queryByText("Finance")).toBeNull();
+    expect(nav.getAllByRole("link").map((link) => link.textContent)).toEqual([
+      "Overview",
+      "Admissions",
+      "Students",
+      "Mentors",
+      "Courses",
+      "Batches",
+    ]);
     expect(screen.getByRole("link", { name: "View website" }).getAttribute("href")).toBe("/");
     expect(screen.getByText(staff.fullName)).toBeDefined();
   });
@@ -63,15 +69,12 @@ describe("Admin portal navigation", () => {
     expect(screen.getByRole("link", { name: "Overview" }).hasAttribute("aria-current")).toBe(false);
   });
 
-  it("opens Courses & Batches and marks the current destination", () => {
-    renderShell(adminPaths.courses);
+  it("keeps Courses marked when staff visit a batch route", () => {
+    renderShell(`${adminPaths.batches}/batch-id/edit`);
 
-    const group = screen.getByText("Courses & Batches").closest("details");
-    expect(group?.open).toBe(true);
-    expect(screen.getByRole("link", { name: "Courses" }).getAttribute("aria-current")).toBe("page");
-    expect(screen.getByRole("link", { name: "Batches" }).getAttribute("href")).toBe(
-      adminPaths.batches
-    );
+    const courses = screen.getByRole("link", { name: "Courses" });
+    expect(courses.getAttribute("aria-current")).toBe("location");
+    expect(courses.getAttribute("href")).toBe(adminPaths.courses);
   });
 
   it("opens a named mobile drawer and returns focus on Escape", async () => {

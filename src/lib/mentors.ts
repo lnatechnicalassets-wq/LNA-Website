@@ -230,6 +230,7 @@ export function getMentorAvatar(
 ): string {
   if (mentor.portraitSrc) return mentor.portraitSrc;
   if (mentorAvatars[mentor.id]) return mentorAvatars[mentor.id];
+  if (!mentor.id || /^mentor-[0-9a-f-]{36}$/.test(mentor.id)) return "/images/brand/logo.png";
   return defaultAvatars[index % defaultAvatars.length];
 }
 
@@ -339,7 +340,9 @@ export function formatMentorRoleWithCompany(mentor: {
 export function getMentorCompanyLogo(mentor: {
   id?: string;
   organization?: string;
+  companyLogoSrc?: string;
 }): MentorCompanyLogo | null {
+  if (mentor.companyLogoSrc) return { src: mentor.companyLogoSrc, alt: mentor.organization || "" };
   const org = (mentor.organization || "").toLowerCase();
   const id = mentor.id || "";
 
@@ -476,14 +479,20 @@ export function getMentorCompanyLogo(mentor: {
 export function getMentorCompanyLogos(mentor: {
   id?: string;
   organization?: string;
+  companyLogoSrc?: string;
   careerHistory?: { company: string }[];
 }): MentorCompanyLogo[] {
   const results: MentorCompanyLogo[] = [];
   const seenSrc = new Set<string>();
 
+  if (mentor.companyLogoSrc) {
+    results.push({ src: mentor.companyLogoSrc, alt: mentor.organization || "" });
+    seenSrc.add(mentor.companyLogoSrc);
+  }
   if (Array.isArray(mentor.careerHistory) && mentor.careerHistory.length > 0) {
     for (const item of mentor.careerHistory) {
-      if (!item.company) continue;
+      if (!item.company || (mentor.companyLogoSrc && item.company === mentor.organization))
+        continue;
       const logo = getMentorCompanyLogo({ organization: item.company });
       if (logo && !seenSrc.has(logo.src)) {
         seenSrc.add(logo.src);

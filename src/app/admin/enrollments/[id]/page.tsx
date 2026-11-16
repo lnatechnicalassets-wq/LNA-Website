@@ -42,4 +42,3 @@ export default async function AdminEnrollmentDetailPage({
 
   return <AdminEnrollmentDetailView staff={staff} detail={detail} />;
 }
-

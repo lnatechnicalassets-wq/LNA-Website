@@ -10,6 +10,10 @@ import {
   ContactSection,
   MentorQuickViewProvider,
 } from "@/components/home";
+import { getPublicMentors } from "@/server/catalog/mentors";
+import { getArchivedCatalogSlugs } from "@/server/catalog/visibility";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Lead Nation Academy | Professional Education in Bangladesh",
@@ -26,30 +30,42 @@ export default async function HomePage() {
   const [
     heroSlides,
     partners,
-    courses,
-    batches,
+    allCourses,
+    allBatches,
     mentors,
     reviews,
     irgpData,
     internships,
     contactConfig,
+    archived,
   ] = await Promise.all([
     homeRepo.getHeroSlides(),
     homeRepo.getPartners(),
     courseRepo.getAllCourses(),
     batchRepo.getAllBatches(),
-    homeRepo.getMentors(),
+    getPublicMentors(),
     homeRepo.getReviews(),
     homeRepo.getIrgpData(),
     homeRepo.getInternships(),
     homeRepo.getContactConfig(),
+    getArchivedCatalogSlugs(),
   ]);
+  const courses = allCourses.filter((course) => !archived.courses.has(course.id));
+  const batches = allBatches.filter(
+    (batch) => !archived.courses.has(batch.courseId) && !archived.batches.has(batch.id)
+  );
 
   return (
     <MentorQuickViewProvider>
       <div className="flex flex-col bg-surface-base">
         {/* 1. Hero Section (HeroSlider + Two-Slide Mentor Showcase) */}
-        <HeroSection slides={heroSlides} mentors={mentors} courses={courses} />
+        <HeroSection
+          slides={heroSlides.filter(
+            (slide) => !slide.courseId || !archived.courses.has(slide.courseId)
+          )}
+          mentors={mentors}
+          courses={courses}
+        />
 
         {/* 2. Partners Section (Corporate Sector Alignments) */}
         <PartnersSection partners={partners} />

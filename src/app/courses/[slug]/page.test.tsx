@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import * as catalogService from "@/server/enrollment/service";
+import * as visibility from "@/server/catalog/visibility";
 import * as runtimeConfig from "@/server/enrollment/config";
 import type { Course, Batch } from "@/lib/content";
 import CourseDetailPage, { generateMetadata, generateStaticParams } from "./page";
@@ -89,6 +90,18 @@ describe("CourseDetailPage", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  it("suppresses an archived course even when the static catalog contains it", async () => {
+    vi.spyOn(visibility, "getArchivedCatalogSlugs").mockResolvedValue({
+      courses: new Set(["mto-readiness"]),
+      batches: new Set(),
+    });
+    const params = Promise.resolve({ slug: "mto-readiness" });
+    expect(await CourseDetailPage({ params })).toBeNull();
+    expect(await generateMetadata({ params })).toMatchObject({
+      title: expect.stringContaining("Course Not Found"),
+    });
   });
 
   it("renders approved catalog fee and hides active Enroll CTAs when public checkout is closed", async () => {

@@ -25,7 +25,7 @@ describe("AdminEnrollmentDetailView (/admin/enrollments/[id])", () => {
     cleanup();
   });
 
-  it("displays applicant responses, server integer-poisha totals, payment attempts, redacted gateway events, and outbox email status without mutation actions", () => {
+  it("displays applicant responses, server integer-poisha totals, payment attempts, redacted gateway events, and outbox email status while keeping gateway approval unavailable", () => {
     render(
       <AdminEnrollmentDetailView
         staff={SAMPLE_STAFF}
@@ -53,6 +53,7 @@ describe("AdminEnrollmentDetailView (/admin/enrollments/[id])", () => {
           paymentMethod: "bkash",
           paymentStatus: "validated",
           submittedPaymentRef: null,
+          isStaffManualPayment: false,
           baseFeePoisha: 750000,
           discountAmountPoisha: 200000,
           payablePoisha: 550000,
@@ -121,7 +122,9 @@ describe("AdminEnrollmentDetailView (/admin/enrollments/[id])", () => {
     expect(screen.getByText(/resend_msg_42/)).toBeDefined();
     expect(screen.getByRole("link", { name: /Back to enrollments/i })).toBeDefined();
 
-    // Read-only release invariant
-    expect(screen.queryByRole("button", { name: /delete|approve|refund|edit/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /Edit LNA/ })).toBeDefined();
+    expect(screen.getByRole("button", { name: /Archive LNA/ })).toBeDefined();
+    expect(screen.getByRole("button", { name: /Delete LNA/ })).toBeDefined();
+    expect(screen.queryByRole("button", { name: /approve|refund|Confirm LNA/i })).toBeNull();
   });
 });

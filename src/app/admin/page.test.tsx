@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
 afterEach(cleanup);
 
 describe("Admin Overview", () => {
-  it("uses the existing staff permission and links verified staff to applications", async () => {
+  it("links verified staff to add a student, review applications and manage courses", async () => {
     vi.mocked(requireStaff).mockResolvedValueOnce({
       userId: "staff-1",
       email: "staff@example.com",
@@ -29,8 +29,14 @@ describe("Admin Overview", () => {
 
     expect(requireStaff).toHaveBeenCalledWith("enrollments:read");
     expect(screen.getByRole("heading", { name: "Overview", level: 1 })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Add student" }).getAttribute("href")).toBe(
+      "/admin/enrollments/new"
+    );
     expect(screen.getByRole("link", { name: "Review applications" }).getAttribute("href")).toBe(
       "/admin/enrollments"
+    );
+    expect(screen.getByRole("link", { name: "Manage courses" }).getAttribute("href")).toBe(
+      "/admin/catalog/courses"
     );
   });
 

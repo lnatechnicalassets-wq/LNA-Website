@@ -1,5 +1,6 @@
 "use client";
 
+import { usesMentorMediaSource } from "@/lib/mentor-media";
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -145,6 +146,7 @@ export function CourseDetailsModal({
                       >
                         <Image
                           src={avatar}
+                          unoptimized={usesMentorMediaSource(avatar)}
                           alt={mentor.name}
                           fill
                           sizes="48px"

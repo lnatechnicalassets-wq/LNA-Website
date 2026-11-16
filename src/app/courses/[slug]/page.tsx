@@ -1,13 +1,10 @@
 import React, { cache } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import {
-  canBatchAcceptApplications,
-  getBatchRepository,
-  getCourseRepository,
-  getHomeRepository,
-} from "@/lib/content";
+import { canBatchAcceptApplications, getBatchRepository, getCourseRepository } from "@/lib/content";
 import { getCourseMentorRoster } from "@/lib/mentors";
+import { getPublicMentors } from "@/server/catalog/mentors";
+import { getArchivedCatalogSlugs } from "@/server/catalog/visibility";
 import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
 import { getPublicCatalogFromSupabase } from "@/server/enrollment/service";
 import { CourseDetailView } from "./course-detail-view";
@@ -31,13 +28,14 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: CoursePageProps): Promise<Metadata> {
   const { slug } = await params;
   const courseRepo = getCourseRepository();
-  const [liveCatalog, repoCourse] = await Promise.all([
+  const [liveCatalog, repoCourse, archived] = await Promise.all([
     getCourseDetailCatalog(),
     courseRepo.getCourseById(slug),
+    getArchivedCatalogSlugs(),
   ]);
   const course = liveCatalog.courses.find((item) => item.id === slug) ?? repoCourse;
 
-  if (!course || course.status !== "published") {
+  if (archived.courses.has(slug) || !course || course.status !== "published") {
     return {
       title: "Course Not Found — Lead Nation Academy",
     };
@@ -53,13 +51,13 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
   const { slug } = await params;
   const courseRepo = getCourseRepository();
   const batchRepo = getBatchRepository();
-  const homeRepo = getHomeRepository();
 
-  const [liveCatalog, repoCourse, repoBatches, allMentors] = await Promise.all([
+  const [liveCatalog, repoCourse, repoBatches, allMentors, archived] = await Promise.all([
     getCourseDetailCatalog(),
     courseRepo.getCourseById(slug),
     batchRepo.getBatchesByCourseId(slug),
-    homeRepo.getMentors(),
+    getPublicMentors(),
+    getArchivedCatalogSlugs(),
   ]);
   const runtime = getEnrollmentRuntimeConfig();
 
@@ -67,10 +65,12 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
   const liveBatches = liveCatalog.batches.filter((b) => b.courseId === slug);
   const usesLiveCatalogForCourse = Boolean(liveCourse || liveBatches.length > 0);
   const course = liveCourse ?? repoCourse;
-  const batches = usesLiveCatalogForCourse ? liveBatches : repoBatches;
+  const batches = (usesLiveCatalogForCourse ? liveBatches : repoBatches).filter(
+    (batch) => !archived.batches.has(batch.id)
+  );
   const serverCatalogReadyForCourse = liveCatalog.courses.length === 0 || Boolean(liveCourse);
 
-  if (!course || course.status !== "published") {
+  if (archived.courses.has(slug) || !course || course.status !== "published") {
     notFound();
     return null;
   }
