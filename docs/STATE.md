@@ -45,6 +45,14 @@
 
 ## 2. Completed Tasks
 
+### Public enrollment view bKash payment QR scanner
+
+- Redesigned the desktop companion visual panel on `/enroll` to display a dedicated, large high-clarity bKash payment QR scanner card during the payment and review step (`isBkashScanStep`).
+- Replaces the 4 mentor posters slider on the payment step so learners can effortlessly scan the QR code with their mobile device camera/bKash app without squinting at a small inline thumbnail.
+- Displays merchant name, official bKash branding, clear merchant number (`0158 1799 666`), and exact amount due, while maintaining the fallback 4-poster slideshow on earlier steps and the confirmation photo upon completion.
+- Positioned the companion panel on the left on desktop viewports (`md:order-1`, form on `md:order-2`), matching the site-wide design language across the Hero, Contact, and FAQ sections.
+- Verified with targeted Vitest unit test suite (10/10 tests pass) and TypeScript check (`tsc --noEmit`, 0 errors).
+
 ### Admissions actions and student course history
 
 - Active Admissions rows show View, Edit, Confirm when relevant, and Archive. Active Students rows show View, Edit, Courses and Archive. Archived rows offer Restore.
