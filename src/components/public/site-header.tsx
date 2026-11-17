@@ -49,7 +49,7 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
       )}
       role="banner"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
+      <div className="lna-content h-16 sm:h-20 flex items-center justify-between gap-4">
         {/* Logo Brand Lockup */}
         <Link
           href="/"

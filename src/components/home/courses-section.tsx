@@ -50,7 +50,7 @@ export function CoursesSection({ courses, batches, mentors = [] }: CoursesSectio
       aria-labelledby="courses-heading"
       className="py-14 sm:py-16 lg:py-20 bg-surface-base border-b border-border-subtle"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="lna-content">
         {/* Section Header aligned cleanly with card grid edges */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 sm:mb-12">
           <div>

@@ -61,7 +61,7 @@ export function ContactSection({ config }: ContactSectionProps) {
         aria-hidden="true"
       />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative lna-content">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-10 items-start">
           {/* Left Column (Zone 1): Introduction, 4 Enquiry Shortcuts & Desk Visual */}
           <div className="lg:col-span-5 xl:col-span-4 flex flex-col items-start">
