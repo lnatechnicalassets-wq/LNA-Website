@@ -199,35 +199,43 @@ export function AdminEnrollmentDetailView({ staff, detail }: AdminEnrollmentDeta
                 </div>
                 {detail.submittedPaymentRef && (
                   <div className="py-2.5 flex justify-between gap-4">
-                    <dt className="text-text-secondary">Submitted reference</dt>
+                    <dt className="text-text-secondary">
+                      {detail.isApplicantManualPayment
+                        ? "bKash Transaction ID"
+                        : "Submitted reference"}
+                    </dt>
                     <dd className="break-all font-mono text-text-primary text-right">
                       {detail.submittedPaymentRef}
                     </dd>
                   </div>
                 )}
               </dl>
-              {detail.isStaffManualPayment && detail.paymentMethod !== "free" && (
-                <section
-                  className="mt-4 space-y-3 border-t border-border-subtle pt-4"
-                  aria-labelledby="staff-payment-review-heading"
-                >
-                  <h2 id="staff-payment-review-heading" className="font-semibold text-primary-900">
-                    {reviewCopy.title}
-                  </h2>
-                  {detail.status === "application_in_process" && !detail.archivedAt && (
-                    <p className="text-sm text-text-secondary">{reviewCopy.pending}</p>
-                  )}
-                  {detail.status === "confirmed" && (
-                    <p className="text-sm text-text-secondary">
-                      {reviewCopy.verified}
-                      {detail.verifiedAt && <> · {formatDhakaTimestamp(detail.verifiedAt)}</>}
-                    </p>
-                  )}
-                  {detail.status === "cancelled" && (
-                    <p className="text-sm text-text-secondary">{reviewCopy.rejected}</p>
-                  )}
-                </section>
-              )}
+              {(detail.isStaffManualPayment || detail.isApplicantManualPayment) &&
+                detail.paymentMethod !== "free" && (
+                  <section
+                    className="mt-4 space-y-3 border-t border-border-subtle pt-4"
+                    aria-labelledby="staff-payment-review-heading"
+                  >
+                    <h2
+                      id="staff-payment-review-heading"
+                      className="font-semibold text-primary-900"
+                    >
+                      {reviewCopy.title}
+                    </h2>
+                    {detail.status === "application_in_process" && !detail.archivedAt && (
+                      <p className="text-sm text-text-secondary">{reviewCopy.pending}</p>
+                    )}
+                    {detail.status === "confirmed" && (
+                      <p className="text-sm text-text-secondary">
+                        {reviewCopy.verified}
+                        {detail.verifiedAt && <> · {formatDhakaTimestamp(detail.verifiedAt)}</>}
+                      </p>
+                    )}
+                    {detail.status === "cancelled" && (
+                      <p className="text-sm text-text-secondary">{reviewCopy.rejected}</p>
+                    )}
+                  </section>
+                )}
             </CardContent>
           </Card>
         </div>

@@ -5,6 +5,7 @@ import { AppError } from "@/lib/errors";
 
 const mockGetEnrollmentRuntimeConfig = vi.fn();
 const mockStartEnrollmentCheckout = vi.fn();
+const mockSubmitManualBkashEnrollment = vi.fn();
 const mockConsumeRateLimit = vi.fn();
 const mockGetEnrollmentConfig = vi.fn();
 
@@ -13,6 +14,7 @@ vi.mock("@/server/enrollment/config", () => ({
 }));
 
 vi.mock("@/server/enrollment/service", () => ({
+  submitManualBkashEnrollment: (...args: unknown[]) => mockSubmitManualBkashEnrollment(...args),
   startEnrollmentCheckout: (...args: unknown[]) => mockStartEnrollmentCheckout(...args),
 }));
 
@@ -91,6 +93,45 @@ describe("POST /api/enrollments", () => {
     expect(res.status).toBe(503);
     const json = await res.json();
     expect(json.code).toBe("CHECKOUT_CLOSED");
+  });
+
+  it("accepts applicant bKash proof with hosted checkout closed", async () => {
+    mockGetEnrollmentRuntimeConfig.mockReturnValue({
+      checkoutMode: "closed",
+      manualPaymentEnabled: true,
+      submissionEnabled: true,
+    });
+    mockSubmitManualBkashEnrollment.mockResolvedValueOnce({
+      isFree: false,
+      applicationReference: "LNA-2M4K-9P7Q",
+      status: "pending",
+    });
+    const body = {
+      email: "nadia@example.com",
+      courseId: "mto-readiness",
+      transactionId: "BK15A2H90X",
+      answers: { university: "DU" },
+    };
+    const req = new NextRequest("http://localhost:3000/api/enrollments", {
+      method: "POST",
+      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const response = await POST(req);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      ok: true,
+      isFree: false,
+      applicationReference: "LNA-2M4K-9P7Q",
+      status: "pending",
+    });
+    expect(mockSubmitManualBkashEnrollment).toHaveBeenCalledWith(body, {
+      programQuestionsSnapshot: [
+        { id: "university", label: "University", type: "text", required: true },
+      ],
+    });
+    expect(mockStartEnrollmentCheckout).not.toHaveBeenCalled();
   });
 
   it("enforces IP rate limiting with HTTP 429 RATE_LIMITED", async () => {

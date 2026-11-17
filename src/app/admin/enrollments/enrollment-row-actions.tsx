@@ -41,6 +41,7 @@ type ActionItem = Pick<
   | "updatedAt"
   | "archivedAt"
   | "isStaffManualPayment"
+  | "isApplicantManualPayment"
   | "submittedPaymentRef"
   | "paymentMethod"
   | "paymentStatus"
@@ -162,7 +163,7 @@ export function EnrollmentRowActions({
   const protectedPayment = impact?.status === "payment_protected";
   const canConfirm =
     revision &&
-    item.isStaffManualPayment &&
+    (item.isStaffManualPayment || item.isApplicantManualPayment) &&
     !item.archivedAt &&
     item.status === "application_in_process" &&
     item.paymentStatus === "pending_verification" &&

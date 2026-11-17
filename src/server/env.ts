@@ -101,6 +101,7 @@ const baseServerEnvObject = z
 
     // bKash Gateway Credentials & Mode (ADR 0009 - Standardized BKASH_* Server-Only)
     BKASH_CHECKOUT_MODE: z.enum(["closed", "mock", "live"]).default("closed"),
+    BKASH_MANUAL_PAYMENT_ENABLED: z.enum(["true", "false"]).default("false"),
     BKASH_APP_KEY: z.string().optional(),
     BKASH_APP_SECRET: z.string().optional(),
     BKASH_USERNAME: z.string().optional(),

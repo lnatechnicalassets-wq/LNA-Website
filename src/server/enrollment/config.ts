@@ -6,6 +6,7 @@ export type CheckoutMode = "closed" | "mock" | "live";
 export interface EnrollmentRuntimeConfig {
   checkoutMode: CheckoutMode;
   submissionEnabled: boolean;
+  manualPaymentEnabled?: boolean;
   statusLookupEnabled: boolean;
   emailDispatchMode: "disabled" | "mock" | "live";
   bankTransferEnabled: false;
@@ -23,7 +24,9 @@ export function getEnrollmentRuntimeConfig(): EnrollmentRuntimeConfig {
       ? "closed"
       : env.BKASH_CHECKOUT_MODE;
 
-  const submissionEnabled = effectiveCheckoutMode !== "closed";
+  const manualPaymentEnabled =
+    effectiveCheckoutMode === "closed" && env.BKASH_MANUAL_PAYMENT_ENABLED === "true";
+  const submissionEnabled = effectiveCheckoutMode !== "closed" || manualPaymentEnabled;
   const statusLookupEnabled =
     env.STATUS_LOOKUP_ENABLED !== undefined
       ? env.STATUS_LOOKUP_ENABLED === "true"
@@ -37,6 +40,7 @@ export function getEnrollmentRuntimeConfig(): EnrollmentRuntimeConfig {
   return {
     checkoutMode: effectiveCheckoutMode,
     submissionEnabled,
+    manualPaymentEnabled,
     statusLookupEnabled,
     emailDispatchMode: effectiveEmailMode,
     bankTransferEnabled: false,
