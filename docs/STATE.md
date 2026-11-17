@@ -6,6 +6,20 @@
 
 ---
 
+## Homepage MTO hero
+
+- The homepage features MTO Readiness with a two-line heavy, forward-slanted live text title treatment (`MTO` in deep ink-teal `#03242a`, `READINESS` in darker-to-brighter teal gradient).
+- The central diagonal strip displays the transparent building PNG (`mto-hero-glass-building.png`) with feathered alpha transition and CSS mask gradient (`mask-image: linear-gradient(to right, transparent 24%, black 35%)`) eliminating the abrupt vertical hard cut so the sloping roofline meets the pearl background (`#f6fafa`) seamlessly.
+- Section height reduced to a compact, responsive `560px` min-height on desktop (`520px` on tablet), ensuring "OUR PARTNERS" marquee remains visible without excessive vertical scrolling.
+- Program subtitle ("Mentor-led preparation for future MTOs") refined to a calm, proportional 16px font (`font-size: clamp(0.92rem, 1.02vw, 1.04rem)`, normal style, `#2b555e`), removing overpowering visual competition with the main "MTO READINESS" headline.
+- Program key insights designed as an aesthetic, clean, uncluttered architectural spec cluster (3 lines: `16 sessions · 1.5 hours each`, `2 industry visits`, `BDT 7,500`) anchored by slanted geometric prisms with continuous ambient gleam (`@keyframes statGleam`), zero bulky card boxes.
+- Secondary CTA ("View Program") scaled to a compact, refined 36px pill button (`padding: 0.46rem 1.15rem`, `font-size: 0.84rem`) positioned cleanly below the spec cluster with generous breathing room (`margin-top: 1.85rem`).
+- Urgency Countdown Clock placed directly above "Industry Mentor" inside the right dark teal stage: an aesthetic luxury capsule with ambient live pulse, Framer-Motion-style spring physics digit roll animations (`@keyframes digitSlideDown`), and clean tabular digits.
+- Mentor portraits calibrated with natural visual headroom and spacing across all faculty members (Md. Manik Hossain: `scale(1.06) translateX(-2%)`, Mohammad Salekeen Ibrahim: `scale(0.95) translateX(-5%)` providing ample headroom and generous gap to the text column, Syed Himyanuddin Ahmed: `scale(1.14) translateX(-3%)`, Anubhab: `scale(1.18) translateX(-3%)`, Mir Hasib: `scale(1.02) translateX(-2%)`), all grounded at the bottom edge.
+- Primary Enrollment action restored with active "Enroll Now" pill button and glowing gold "Limited Seats" badge positioned below the mentor profile.
+- Auto-rotation runs uninterrupted every 3s without pausing on mouse hover, respecting `prefers-reduced-motion` and `document.hidden`.
+- Unit tests (`mto-hero.test.tsx` 8/8), homepage integration tests (`page.test.tsx` 4/4), TypeScript typecheck (`0` errors) pass. All changes ready for human git review per Rule R14.
+
 ## 1. Current Phase and Task
 - **Current Phase:** Phase 8 / Phase 4 (Catalog Management & Public Course Presentation)
 - **Current Task:** Admin Catalog Publish Workflow & MTO Course Banner Update on `task/p8-admin-catalog`
