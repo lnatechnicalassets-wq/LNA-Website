@@ -270,7 +270,7 @@ export function PartnersSection({ partners }: PartnersSectionProps) {
       aria-label="Our Partners — Corporate Sector Alignments"
       className="relative w-full bg-surface-base pt-10 sm:pt-14 md:pt-18 pb-16 sm:pb-22 md:pb-26 overflow-hidden"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="lna-content">
         {/* Centered Heading */}
         <div className="relative flex items-center justify-center mb-12 sm:mb-14 md:mb-16">
           <h2 className="text-center text-sm sm:text-base md:text-lg font-extrabold tracking-[0.25em] uppercase text-[#086477]">

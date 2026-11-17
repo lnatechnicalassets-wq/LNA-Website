@@ -70,6 +70,7 @@ export interface PublicCatalogCourse {
 }
 
 export interface PublicCatalogBatch {
+  enrollmentClosesAt?: string;
   id: string;
   courseId: string;
   batchNumber: number;
@@ -487,6 +488,9 @@ export async function getPublicCatalogFromSupabase(
       feePoisha: parseSafeIntegerPoisha(row.fee_poisha),
       ...(row.discount_fee_poisha !== null && row.discount_fee_poisha !== undefined
         ? { discountFeePoisha: parseSafeIntegerPoisha(row.discount_fee_poisha) }
+        : {}),
+      ...(typeof row.enrollment_closes_at === "string"
+        ? { enrollmentClosesAt: row.enrollment_closes_at }
         : {}),
       status: effectiveStatus,
       venue: String(row.venue),

@@ -107,7 +107,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
         </svg>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 lg:pt-24 pb-8 sm:pb-12">
+      <div className="relative z-10 lna-content pt-16 sm:pt-20 lg:pt-24 pb-8 sm:pb-12">
         {/* Main Content Layout: Headline & CTA on Left, Navigation Columns on Right */}
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-12 lg:gap-14 xl:gap-16">
           {/* Left Column: Brand Lockup, Serif Headline, Soft-Teal Enroll Now Button */}

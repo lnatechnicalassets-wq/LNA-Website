@@ -109,7 +109,7 @@ export function ReviewsSection({ reviews, irgpData }: ReviewsSectionProps) {
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto max-w-7xl xl:max-w-[1360px] 2xl:max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+      <div className="relative lna-content">
         {/* Section Header: Eyebrow + Serif Heading with Curved Underline + Description */}
         <div
           className={`mb-8 sm:mb-12 transition-all duration-700 ease-out ${

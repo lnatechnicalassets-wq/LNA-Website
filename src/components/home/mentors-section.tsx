@@ -115,65 +115,7 @@ export function MentorsSection({ mentors, initialMentorId }: MentorsSectionProps
       aria-labelledby="mentors-heading"
       className="relative w-full overflow-hidden bg-[#F6FAFA] text-[#172E35] pt-12 pb-14 sm:pt-14 sm:pb-16 lg:pt-16 lg:pb-18"
     >
-      {/* Sweeping Two-Tone Background Curve: Pearl to Deep Teal */}
-      <div aria-hidden="true" className="absolute inset-0 w-full h-full pointer-events-none">
-        {/* Desktop Sweeping Curve (>= 1024px) */}
-        <svg
-          viewBox="0 0 1440 900"
-          fill="none"
-          preserveAspectRatio="none"
-          className="hidden lg:block absolute inset-0 w-full h-full"
-        >
-          <defs>
-            <linearGradient id="deepTealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#086477" />
-              <stop offset="50%" stopColor="#054452" />
-              <stop offset="100%" stopColor="#03272F" />
-            </linearGradient>
-            <linearGradient id="softTealAccent" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#C5E2E5" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#086477" stopOpacity="0.1" />
-            </linearGradient>
-          </defs>
-
-          {/* Soft Transition Wave Accent */}
-          <path
-            d="M 280 900 C 420 700, 680 340, 900 0 L 1440 0 L 1440 900 Z"
-            fill="url(#softTealAccent)"
-          />
-
-          {/* Primary Sweeping Deep Teal Curve */}
-          <path
-            d="M 340 900 C 460 680, 720 300, 950 0 L 1440 0 L 1440 900 Z"
-            fill="url(#deepTealGrad)"
-          />
-        </svg>
-
-        {/* Mobile/Tablet Sweeping Curve (< 1024px): Preserves contrast for text on Pearl background */}
-        <svg
-          viewBox="0 0 400 1000"
-          fill="none"
-          preserveAspectRatio="none"
-          className="block lg:hidden absolute inset-0 w-full h-full"
-        >
-          <defs>
-            <linearGradient id="deepTealGradMobile" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#086477" />
-              <stop offset="60%" stopColor="#054452" />
-              <stop offset="100%" stopColor="#03272F" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M 0 540 Q 200 500, 400 530 L 400 1000 L 0 1000 Z"
-            fill="url(#deepTealGradMobile)"
-          />
-        </svg>
-
-        {/* Subtle radial glow in deep teal area for dimensional depth */}
-        <div className="absolute right-0 top-0 w-2/3 h-full bg-radial from-white/5 via-transparent to-transparent opacity-60" />
-      </div>
-
-      <div className="relative z-10 max-w-7xl xl:max-w-[1360px] 2xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 lna-content">
         {/* ============================================================== */}
         {/* UPPER BAR: Dynamic Non-Zero Category Filters + Search & Sort   */}
         {/* ============================================================== */}
@@ -348,7 +290,7 @@ export function MentorsSection({ mentors, initialMentorId }: MentorsSectionProps
           </div>
 
           {/* 2. Right Mentor Carousel Deck (Flex-1, Centered Deck) */}
-          <div className="w-full flex-1 min-w-0 relative flex flex-col items-center justify-center overflow-visible pt-2 lg:pt-0">
+          <div className="w-full flex-1 min-w-0 lna-mentor-deck relative flex flex-col items-center justify-center overflow-visible pt-2 lg:pt-0">
             {filteredMentors.length > 0 ? (
               <MentorCarousel
                 mentors={filteredMentors}

@@ -198,7 +198,7 @@ const mentorAvatars: Record<string, string> = {
   "mentor-salekeen-ibrahim": "/images/mentors/mohammad-salekeen-ibrahim.png",
   "mentor-syed-himyanuddin-ahmed": "/images/mentors/syed-himyanuddin-ahmed.png",
   "mentor-himyanuddin-ahmed": "/images/mentors/syed-himyanuddin-ahmed.png",
-  "mentor-anubhab-rahman": "/images/mentors/anubhab-rahman-v3.png",
+  "mentor-anubhab-rahman": "/images/mentors/anubhab-rahman-v2.png",
   "mentor-md-manik-hossain": "/images/mentors/md-manik-hossain.png",
   "mentor-manik-hossain": "/images/mentors/md-manik-hossain.png",
   "mentor-mir-hasib": "/images/mentors/mir-hasib.png",

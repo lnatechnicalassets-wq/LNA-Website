@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { clsx } from "clsx";
 import {
   ArrowRight,
   Check,
@@ -72,6 +73,25 @@ export interface EnrollmentViewProps {
   }) => RetryCheckoutResponse | Promise<RetryCheckoutResponse>;
   onRedirectToCheckout?: (url: string) => void;
 }
+
+const ENROLLMENT_POSTERS = [
+  {
+    src: "/images/enrollment/mto-poster-manik-hossain.jpg",
+    alt: "Md. Manik Hossain — Head of HR Strategy & OD, MTO Readiness Program",
+  },
+  {
+    src: "/images/enrollment/mto-poster-salekeen-ibrahim.jpg",
+    alt: "Mohammad Salekeen Ibrahim — Head of Asset, Retail & SME Banking, MTO Readiness Program",
+  },
+  {
+    src: "/images/enrollment/mto-poster-anubhab-rahman.jpg",
+    alt: "Anubhab Rahman — Chief Human Resources Officer, MTO Readiness Program",
+  },
+  {
+    src: "/images/enrollment/mto-poster-syed-himyanuddin.jpg",
+    alt: "Syed Himyanuddin Ahmed — Senior Advisor, Transforming Financial Services, MTO Readiness Program",
+  },
+] as const;
 
 async function defaultStartCheckout(
   payload: EnrollmentSubmissionPayload
@@ -224,6 +244,15 @@ export function EnrollmentView({
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const shouldFocusStepRef = useRef(false);
+  const [activePosterIndex, setActivePosterIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      setActivePosterIndex((prev) => (prev + 1) % ENROLLMENT_POSTERS.length);
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -661,21 +690,8 @@ export function EnrollmentView({
   return (
     <div className="w-full bg-[#F6FAFA] text-[#172E35] min-h-screen py-8 sm:py-12 lg:py-16">
       <div className="max-w-7xl xl:max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
-        {(isClosedBeforeForm || step === "program") && (
-          <div className="lg:hidden mb-8 relative w-full aspect-[2/1] rounded-2xl overflow-hidden shadow-xs bg-[#EBF3F5]">
-            <Image
-              src="/images/enrollment/lna-enrollment-workshop-640.webp"
-              alt="Lead Nation Academy workshop learning environment"
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 640px"
-              className="object-cover object-[center_35%]"
-            />
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 xl:gap-20 items-start">
-          <div className="lg:col-span-6 xl:col-span-6 flex flex-col justify-start min-w-0">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-14 xl:gap-20 items-start">
+          <div className="col-span-1 md:col-span-7 lg:col-span-6 xl:col-span-6 flex flex-col justify-start min-w-0">
             <span className="text-xs font-bold uppercase tracking-widest text-[#086477] mb-2">
               PROGRAM ENROLLMENT
             </span>
@@ -2104,43 +2120,59 @@ export function EnrollmentView({
             )}
           </div>
 
-          {/* RIGHT COLUMN: Editorial Photo Panel */}
-          <div className="hidden lg:block lg:col-span-6 xl:col-span-6 sticky top-28">
-            <div className="relative w-full h-[580px] xl:h-[620px] rounded-2xl overflow-hidden shadow-md bg-[#0F2930]">
-              <Image
-                src={
-                  isConfirmationPhoto
-                    ? "/images/enrollment/lna-enrollment-confirmation-1120.webp"
-                    : "/images/enrollment/lna-enrollment-workshop-1120.webp"
-                }
-                alt={
-                  isConfirmationPhoto
-                    ? "Confirmed cohort members discussing session takeaways"
-                    : "Interactive workshop participants engaged in discussion"
-                }
-                fill
-                priority
-                sizes="(max-width: 1024px) 50vw, 680px"
-                className="object-cover"
-              />
+          {/* RIGHT COLUMN: Editorial Photo Panel / Mentor Posters Slideshow */}
+          <div className="hidden md:block md:col-span-5 lg:col-span-6 xl:col-span-6 sticky top-24 lg:top-28">
+            {isConfirmationPhoto ? (
+              <div className="relative w-full h-[580px] xl:h-[620px] rounded-2xl overflow-hidden shadow-md bg-[#0F2930]">
+                <Image
+                  src="/images/enrollment/lna-enrollment-confirmation-1120.webp"
+                  alt="Confirmed cohort members discussing session takeaways"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 50vw, 680px"
+                  className="object-cover"
+                />
 
-              <div
-                className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none"
-                aria-hidden="true"
-              />
+                <div
+                  className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none"
+                  aria-hidden="true"
+                />
 
-              <div className="absolute inset-x-0 bottom-0 p-8 text-white z-10">
-                <div className="w-full h-px bg-white/25 mb-3" aria-hidden="true" />
-                <span className="text-xs uppercase font-bold tracking-wider text-white/80 block mb-1">
-                  LEAD NATION ACADEMY
-                </span>
-                <p className="text-sm sm:text-base font-medium text-white/95 leading-snug">
-                  {isConfirmationPhoto
-                    ? "See you in the next session."
-                    : "Learn alongside people who share your goals."}
-                </p>
+                <div className="absolute inset-x-0 bottom-0 p-8 text-white z-10">
+                  <div className="w-full h-px bg-white/25 mb-3" aria-hidden="true" />
+                  <span className="text-xs uppercase font-bold tracking-wider text-white/80 block mb-1">
+                    LEAD NATION ACADEMY
+                  </span>
+                  <p className="text-sm sm:text-base font-medium text-white/95 leading-snug">
+                    See you in the next session.
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="relative w-full aspect-[3/4] max-w-[480px] xl:max-w-[520px] mx-auto rounded-2xl overflow-hidden shadow-xl border border-border-subtle bg-[#08272f]">
+                {ENROLLMENT_POSTERS.map((poster, index) => (
+                  <div
+                    key={poster.src}
+                    className={clsx(
+                      "absolute inset-0 transition-opacity duration-700 ease-in-out",
+                      activePosterIndex === index
+                        ? "opacity-100 z-10"
+                        : "opacity-0 z-0 pointer-events-none"
+                    )}
+                    aria-hidden={activePosterIndex !== index}
+                  >
+                    <Image
+                      src={poster.src}
+                      alt={poster.alt}
+                      fill
+                      priority={index === 0}
+                      sizes="(max-width: 1024px) 45vw, (max-width: 1280px) 500px, 540px"
+                      className="object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

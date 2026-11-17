@@ -1,17 +1,27 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import HomePage from "./page";
+
+vi.mock("@/server/catalog/visibility", () => ({
+  getArchivedCatalogSlugs: async () => ({ courses: new Set(), batches: new Set() }),
+}));
+vi.mock("@/server/catalog/mentors", async () => {
+  const { getHomeRepository } = await import("@/lib/content");
+  return { getPublicMentors: () => getHomeRepository().getMentors() };
+});
+vi.mock("@/server/enrollment/config", () => ({
+  getEnrollmentRuntimeConfig: () => ({ submissionEnabled: false }),
+}));
+vi.mock("@/server/enrollment/service", () => ({
+  getPublicCatalogFromSupabase: async () => ({ courses: [], batches: [] }),
+}));
 
 describe("HomePage - Phase 4 Approved Architecture", () => {
   it("renders the primary homepage sections in correct sequence", async () => {
     const Component = await HomePage();
     render(Component);
 
-    // 1. Hero Slider (FR-PUB-003, FR-PUB-004)
-    const carousel = screen.getByRole("region", {
-      name: /Lead Nation Academy Featured Executive Programs/i,
-    });
-    expect(carousel).toBeDefined();
+    expect(screen.getByRole("region", { name: /MTO Readiness/i })).toBeDefined();
 
     // 2. Partners Strip
     const partnersSection = screen.getByLabelText(/Corporate Sector Alignments/i);
@@ -20,7 +30,7 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
     // 3. Courses Section
     const coursesHeading = screen.getByRole("heading", {
       level: 2,
-      name: /Explore Our Courses/i,
+      name: /Courses & Programs/i,
     });
     expect(coursesHeading).toBeDefined();
 
@@ -46,12 +56,7 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
     });
     expect(reviewsHeading).toBeDefined();
 
-    // 6. FAQ Section (Approved Section 6: Frequently Asked Questions)
-    const faqHeading = screen.getByRole("heading", {
-      level: 2,
-      name: /Frequently Asked Questions/i,
-    });
-    expect(faqHeading).toBeDefined();
+    expect(screen.getByRole("heading", { name: /Internship Opportunities/i })).toBeDefined();
 
     // 7. Contact Us Section (Approved Section 7: Get in Touch)
     const contactHeading = screen.getByRole("heading", {
@@ -61,38 +66,24 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
     expect(contactHeading).toBeDefined();
   }, 15000);
 
-  it("renders the hero slider with manual controls and WCAG 2.2 AA accessibility", async () => {
-    const Component = await HomePage();
-    render(Component);
-
-    // Slide indicator tab selectors (exactly two indicators per approved redesign, strictly no third slide)
-    expect(screen.getByRole("tab", { name: /Go to slide 1/i })).toBeDefined();
-    expect(screen.getByRole("tab", { name: /Go to slide 2/i })).toBeDefined();
-    expect(screen.queryByRole("tab", { name: /Go to slide 3/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: /Previous slide/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: /Next slide/i })).toBeNull();
-
-    // Primary CTA to explore program
-    expect(screen.getByRole("link", { name: /Explore the Program/i })).toBeDefined();
+  it("shows the MTO program with View Program and Enroll Now actions", async () => {
+    render(await HomePage());
+    const hero = screen.getByRole("region", { name: /MTO Readiness/i });
+    expect(hero.querySelector("h1")?.textContent).toMatch(/MTO\s+Readiness/i);
+    expect(hero.querySelectorAll("button, [role=tab]")).toHaveLength(0);
+    expect(screen.getByRole("link", { name: "View Program" }).getAttribute("href")).toBe(
+      "/courses/mto-readiness"
+    );
+    expect(screen.getByRole("link", { name: /Enroll Now/i })).toBeDefined();
+    expect(screen.getByText("Limited Seats")).toBeDefined();
   });
 
-  it("renders offline executive courses with fee disclosures", async () => {
-    const Component = await HomePage();
-    render(Component);
-
-    // Seeded Course 1
+  it("keeps MTO and IRGP in the course catalog", async () => {
+    render(await HomePage());
+    expect(screen.getByRole("heading", { name: "MTO Readiness Program" })).toBeDefined();
     expect(
-      screen.getAllByText("Executive Leadership & Strategic Governance").length
-    ).toBeGreaterThanOrEqual(1);
-
-    // Seeded Course 2
-    expect(
-      screen.getAllByText("Corporate Finance & Capital Structuring").length
-    ).toBeGreaterThanOrEqual(1);
-
-    // Check offline badges
-    const offlineBadges = screen.getAllByText(/Offline Only/i);
-    expect(offlineBadges.length).toBeGreaterThanOrEqual(2);
+      screen.getByRole("heading", { name: "Industry Readiness Graduate Program" })
+    ).toBeDefined();
   });
 
   it("renders learner testimonials with accessible navigation controls", async () => {

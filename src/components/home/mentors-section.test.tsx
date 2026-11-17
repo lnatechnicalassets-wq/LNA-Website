@@ -192,7 +192,7 @@ const officialMentors: Mentor[] = [
     role: "Chief Human Resources Officer, Human Resources Division",
     organization: "Nagad Ltd.",
     bio: "Chief Human Resources Officer at Nagad Ltd.",
-    portraitSrc: "/images/mentors/anubhab-rahman-v3.png",
+    portraitSrc: "/images/mentors/anubhab-rahman-v2.png",
     categories: ["Leadership & Career", "Operations & Management"],
     expertise: ["Human Resources Strategy", "Executive Recruitment"],
     careerHistory: [{ company: "Nagad Ltd.", role: "CHRO" }],

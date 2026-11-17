@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1840 860" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="pearl" x2="1" y2="1">
+      <stop stop-color="#EAF4F4"/>
+      <stop offset=".58" stop-color="#F6FAFA"/>
+      <stop offset="1" stop-color="#C5E2E5"/>
+    </linearGradient>
+    <linearGradient id="teal" x2="1" y2="1">
+      <stop stop-color="#0E6574"/>
+      <stop offset=".53" stop-color="#104957"/>
+      <stop offset="1" stop-color="#07323D"/>
+    </linearGradient>
+    <linearGradient id="glass" x2=".8" y2="1">
+      <stop stop-color="#BDE7EA"/>
+      <stop offset=".48" stop-color="#268A9A"/>
+      <stop offset="1" stop-color="#086477"/>
+    </linearGradient>
+    <linearGradient id="gold" x2="1" y2="1">
+      <stop stop-color="#FFE4A1"/>
+      <stop offset="1" stop-color="#E8A533"/>
+    </linearGradient>
+    <clipPath id="facade">
+      <path d="M1084 0h280L909 860H504z"/>
+    </clipPath>
+  </defs>
+  <path fill="url(#pearl)" d="M0 0h1840v860H0z"/>
+  <path fill="#C5E2E5" d="M438 810h190l-35 50H406z" opacity=".7"/>
+  <path fill="url(#teal)" d="M1084 0h756v860H504z"/>
+  <g clip-path="url(#facade)">
+    <path fill="url(#glass)" d="M500 0h900v860H500z"/>
+    <path fill="#D8F4F3" opacity=".16" d="m1084 0 246 0-413 666-190 50z"/>
+    <path fill="none" stroke="#064653" stroke-width="4" opacity=".33"
+      d="M717 727 1418 90M766 827 1469 185M840 860 1510 279M976 860 1558 368
+         M849 139l-79 721M957 71l-67 789M1059 3l-53 857M1156 0l-34 827M1267 0l-31 738"/>
+    <path fill="none" stroke="#D7F5F4" stroke-width="2" opacity=".36"
+      d="M715 714 1418 78M766 815 1469 173M840 848 1510 267M976 848 1558 356"/>
+  </g>
+  <path fill="url(#gold)" d="M1840 646v101l-64 113h-56z"/>
+</svg>
