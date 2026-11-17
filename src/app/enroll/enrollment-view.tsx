@@ -30,6 +30,11 @@ import type {
   EnrollmentStep,
   EnrollmentState,
 } from "@/lib/enrollment/types";
+import {
+  bkashTransactionIdError,
+  bkashTransactionIdPattern,
+  normalizeBkashTransactionId,
+} from "@/lib/enrollment/manual-payment";
 import { formatPaymentMethodLabel, isValidBdPhone } from "@/lib/enrollment/status";
 
 export interface EnrollmentSubmissionPayload {
@@ -39,6 +44,7 @@ export interface EnrollmentSubmissionPayload {
   email: string;
   whatsapp: string;
   answers: Record<string, string>;
+  transactionId?: string;
 }
 
 export interface EnrollmentCheckoutResponse {
@@ -62,6 +68,7 @@ export interface EnrollmentViewProps {
   batches: Batch[];
   config: EnrollmentConfig;
   checkoutMode?: "closed" | "mock" | "live";
+  manualPaymentEnabled?: boolean;
   initialOutcome?: EnrollmentOutcomeSummary | null;
   invalidOutcomeNotice?: boolean;
   onStartCheckout?: (
@@ -193,6 +200,7 @@ export function EnrollmentView({
   batches,
   config,
   checkoutMode = "closed",
+  manualPaymentEnabled = false,
   initialOutcome = null,
   invalidOutcomeNotice = false,
   onStartCheckout,
@@ -203,7 +211,9 @@ export function EnrollmentView({
 
   const urlCourseId = searchParams.get("course") || searchParams.get("program") || "";
   const urlBatchId = searchParams.get("batch") || "";
-  const canSubmitOnline = Boolean(config.payment.submissionEnabled && checkoutMode !== "closed");
+  const canSubmitOnline = Boolean(
+    config.payment.submissionEnabled && (checkoutMode !== "closed" || manualPaymentEnabled)
+  );
 
   const publishedCourses = useMemo(
     () => courses.filter((c) => c.status === "published"),
@@ -241,6 +251,8 @@ export function EnrollmentView({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showAnswersExpanded, setShowAnswersExpanded] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [transactionId, setTransactionId] = useState("");
+  const [merchantCopyMessage, setMerchantCopyMessage] = useState("");
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const shouldFocusStepRef = useRef(false);
@@ -423,6 +435,16 @@ export function EnrollmentView({
     transitionToStep("details");
   };
 
+  const getProgramQuestionErrors = () => {
+    const answerErrors: Record<string, string> = {};
+    for (const question of programQuestions) {
+      if (question.required && !state.answers[question.id]?.trim()) {
+        answerErrors[question.id] = "Please answer this question.";
+      }
+    }
+    return answerErrors;
+  };
+
   const handleContinueFromDetails = () => {
     if (!canSubmitOnline) {
       return;
@@ -442,15 +464,17 @@ export function EnrollmentView({
       newErrors.whatsapp = "Please enter a valid 11-digit Bangladeshi mobile number.";
     }
 
-    if (Object.keys(newErrors).length > 0) {
+    if (manualPaymentEnabled) Object.assign(newErrors, getProgramQuestionErrors());
+
+    const firstId = Object.keys(newErrors)[0];
+    if (firstId) {
       setErrors(newErrors);
-      const firstId = newErrors.fullName ? "fullName" : newErrors.email ? "email" : "whatsapp";
       focusFieldById(firstId);
       return;
     }
 
     setErrors({});
-    if (programQuestions.length > 0) {
+    if (!manualPaymentEnabled && programQuestions.length > 0) {
       transitionToStep("questions");
     } else {
       transitionToStep("review");
@@ -461,18 +485,11 @@ export function EnrollmentView({
     if (!canSubmitOnline) {
       return;
     }
-    const newErrors: Record<string, string> = {};
-    let firstInvalidId: string | null = null;
-    programQuestions.forEach((q) => {
-      if (q.required && (!state.answers[q.id] || !state.answers[q.id].trim())) {
-        newErrors[q.id] = "Please answer this question.";
-        if (!firstInvalidId) firstInvalidId = q.id;
-      }
-    });
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      if (firstInvalidId) focusFieldById(firstInvalidId);
+    const answerErrors = getProgramQuestionErrors();
+    const firstInvalidId = Object.keys(answerErrors)[0];
+    if (firstInvalidId) {
+      setErrors(answerErrors);
+      focusFieldById(firstInvalidId);
       return;
     }
 
@@ -485,8 +502,16 @@ export function EnrollmentView({
       return;
     }
 
-    setErrors({});
+    const manualPaid = manualPaymentEnabled && !isFree;
+    const normalizedId = normalizeBkashTransactionId(transactionId);
     setSubmitError("");
+    if (manualPaid && !bkashTransactionIdPattern.test(normalizedId)) {
+      setErrors({ transactionId: bkashTransactionIdError });
+      focusFieldById("bkash-transaction-id");
+      return;
+    }
+
+    setErrors({});
     setIsSubmitting(true);
     try {
       const startFn = onStartCheckout ?? defaultStartCheckout;
@@ -497,6 +522,7 @@ export function EnrollmentView({
         email: state.email.trim(),
         whatsapp: state.whatsapp.trim(),
         answers: state.answers,
+        ...(manualPaid ? { transactionId: normalizedId } : {}),
       });
 
       setCopiedRef(false);
@@ -506,7 +532,7 @@ export function EnrollmentView({
         isFree: response.isFree,
       }));
 
-      if (response.isFree) {
+      if (response.status === "confirmed") {
         transitionToStep("confirmed");
         return;
       }
@@ -608,6 +634,8 @@ export function EnrollmentView({
     step === "payment_failed";
   const isClosedBeforeForm = !canSubmitOnline && !isCompletedStep;
   const isConfirmationPhoto = step === "confirmed" || step === "pending_verification";
+  const isBkashScanStep =
+    (step === "review" && manualPaymentEnabled && !isFree) || step === "payment";
 
   const formatStartDate = (dateStr?: string) => {
     if (!dateStr) return "Upcoming";
@@ -632,6 +660,7 @@ export function EnrollmentView({
   const summaryBatchName = selectedBatch?.name ?? outcomeSummary?.batchName ?? "";
   const summaryPaymentMethod = outcomeSummary?.paymentMethod ?? (isFree ? "free" : "bkash");
   const formattedHoldExpiry = formatDhakaHoldExpiry(outcomeSummary?.holdExpiresAt);
+  const isManualReceipt = manualPaymentEnabled && !outcomeSummary;
 
   const errorEntries = useMemo(() => {
     const list: Array<{ fieldId: string; message: string }> = [];
@@ -642,13 +671,14 @@ export function EnrollmentView({
       if (errors.fullName) list.push({ fieldId: "fullName", message: errors.fullName });
       if (errors.email) list.push({ fieldId: "email", message: errors.email });
       if (errors.whatsapp) list.push({ fieldId: "whatsapp", message: errors.whatsapp });
-    } else if (step === "questions") {
+    }
+    if (step === "questions" || (step === "details" && manualPaymentEnabled)) {
       programQuestions.forEach((q) => {
         if (errors[q.id]) list.push({ fieldId: q.id, message: errors[q.id] });
       });
     }
     return list;
-  }, [errors, programQuestions, step]);
+  }, [errors, manualPaymentEnabled, programQuestions, step]);
 
   const renderErrorSummary = () => {
     if (errorEntries.length === 0) return null;
@@ -687,11 +717,117 @@ export function EnrollmentView({
     );
   };
 
+  const renderProgramQuestions = () =>
+    programQuestions.map((q) => {
+      const errId = `${q.id}-error`;
+      if (q.type === "select") {
+        return (
+          <div key={q.id}>
+            <label htmlFor={q.id} className="block text-sm font-semibold text-[#172E35] mb-1.5">
+              {q.label}
+            </label>
+            <div className="relative">
+              <select
+                id={q.id}
+                value={state.answers[q.id] || ""}
+                onChange={(e) => {
+                  setErrors((prev) => ({ ...prev, [q.id]: "" }));
+                  setState((prev) => ({
+                    ...prev,
+                    answers: { ...prev.answers, [q.id]: e.target.value },
+                  }));
+                }}
+                aria-invalid={Boolean(errors[q.id])}
+                aria-describedby={errors[q.id] ? errId : undefined}
+                className="w-full min-h-[44px] appearance-none px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs cursor-pointer pr-10"
+              >
+                <option value="">{q.placeholder || "Select an option"}</option>
+                {q.options?.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="w-4 h-4 text-[#526E77] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                aria-hidden="true"
+              />
+            </div>
+            {errors[q.id] && (
+              <p id={errId} role="alert" className="mt-1.5 text-xs text-rose-700 font-medium">
+                {errors[q.id]}
+              </p>
+            )}
+          </div>
+        );
+      }
+
+      if (q.type === "textarea") {
+        return (
+          <div key={q.id}>
+            <label htmlFor={q.id} className="block text-sm font-semibold text-[#172E35] mb-1.5">
+              {q.label}
+            </label>
+            <textarea
+              id={q.id}
+              rows={3}
+              value={state.answers[q.id] || ""}
+              onChange={(e) => {
+                setErrors((prev) => ({ ...prev, [q.id]: "" }));
+                setState((prev) => ({
+                  ...prev,
+                  answers: { ...prev.answers, [q.id]: e.target.value },
+                }));
+              }}
+              placeholder={q.placeholder || "Share a short answer"}
+              aria-invalid={Boolean(errors[q.id])}
+              aria-describedby={errors[q.id] ? errId : undefined}
+              className="w-full px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs resize-none"
+            />
+            {errors[q.id] && (
+              <p id={errId} role="alert" className="mt-1.5 text-xs text-rose-700 font-medium">
+                {errors[q.id]}
+              </p>
+            )}
+          </div>
+        );
+      }
+
+      return (
+        <div key={q.id}>
+          <label htmlFor={q.id} className="block text-sm font-semibold text-[#172E35] mb-1.5">
+            {q.label}
+          </label>
+          <input
+            id={q.id}
+            type="text"
+            value={state.answers[q.id] || ""}
+            onChange={(e) => {
+              setErrors((prev) => ({ ...prev, [q.id]: "" }));
+              setState((prev) => ({
+                ...prev,
+                answers: { ...prev.answers, [q.id]: e.target.value },
+              }));
+            }}
+            placeholder={q.placeholder || ""}
+            aria-invalid={Boolean(errors[q.id])}
+            aria-describedby={errors[q.id] ? errId : undefined}
+            className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
+          />
+          {errors[q.id] && (
+            <p id={errId} role="alert" className="mt-1.5 text-xs text-rose-700 font-medium">
+              {errors[q.id]}
+            </p>
+          )}
+        </div>
+      );
+    });
+
   return (
     <div className="w-full bg-[#F6FAFA] text-[#172E35] min-h-screen py-8 sm:py-12 lg:py-16">
       <div className="max-w-7xl xl:max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-14 xl:gap-20 items-start">
-          <div className="col-span-1 md:col-span-7 lg:col-span-6 xl:col-span-6 flex flex-col justify-start min-w-0">
+          <div className="col-span-1 md:col-span-7 lg:col-span-6 xl:col-span-6 flex flex-col justify-start min-w-0 md:order-2">
             <span className="text-xs font-bold uppercase tracking-widest text-[#086477] mb-2">
               PROGRAM ENROLLMENT
             </span>
@@ -767,12 +903,18 @@ export function EnrollmentView({
                         tabIndex={-1}
                         className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2 focus:outline-none"
                       >
-                        {isFree ? "Review your registration." : "Review your application."}
+                        {isFree
+                          ? "Review your registration."
+                          : manualPaymentEnabled
+                            ? "Review and pay."
+                            : "Review your application."}
                       </h1>
                       <p className="text-sm sm:text-base text-[#526E77]">
                         {isFree
                           ? "Check your details before confirming your free registration."
-                          : "Check your details before continuing to bKash Checkout."}
+                          : manualPaymentEnabled
+                            ? "Check your details, then pay with bKash and submit your Transaction ID."
+                            : "Check your details before continuing to bKash Checkout."}
                       </p>
                     </>
                   )}
@@ -803,8 +945,9 @@ export function EnrollmentView({
                         Application in process.
                       </h1>
                       <p className="text-sm sm:text-base text-[#526E77]">
-                        Your application and seat hold are recorded while your bKash payment is
-                        being verified.
+                        {isManualReceipt
+                          ? "We received your application and bKash Transaction ID. Admissions will verify your payment before confirming your seat."
+                          : "Your application and seat hold are recorded while your bKash payment is being verified."}
                       </p>
                     </>
                   )}
@@ -855,7 +998,9 @@ export function EnrollmentView({
                       <p className="text-sm sm:text-base text-[#526E77]">
                         {summaryPaymentMethod === "free"
                           ? "Your place in the workshop is confirmed."
-                          : "Your bKash payment was verified server-side and your seat is confirmed."}
+                          : isManualReceipt
+                            ? "Admissions verified your bKash payment and confirmed your seat."
+                            : "Your bKash payment was verified server-side and your seat is confirmed."}
                       </p>
                     </>
                   )}
@@ -1041,7 +1186,7 @@ export function EnrollmentView({
                               step === "review" ? "font-bold text-[#172E35]" : "text-[#526E77]"
                             }`}
                           >
-                            03 Review
+                            {manualPaymentEnabled && !isFree ? "03 Review & Pay" : "03 Review"}
                           </span>
                         </li>
                       </ol>
@@ -1345,6 +1490,15 @@ export function EnrollmentView({
                       </div>
                     </div>
 
+                    {manualPaymentEnabled && programQuestions.length > 0 && (
+                      <fieldset className="space-y-4 border-t border-[#C5E2E5] pt-4">
+                        <legend className="pr-3 text-sm font-semibold text-[#172E35]">
+                          Program questions
+                        </legend>
+                        {renderProgramQuestions()}
+                      </fieldset>
+                    )}
+
                     <p className="text-xs text-[#526E77] pt-1">
                       We&apos;ll use your email or phone number to verify your application status
                       later.
@@ -1384,131 +1538,7 @@ export function EnrollmentView({
                   >
                     {renderErrorSummary()}
 
-                    {programQuestions.map((q) => {
-                      const errId = `${q.id}-error`;
-                      if (q.type === "select") {
-                        return (
-                          <div key={q.id}>
-                            <label
-                              htmlFor={q.id}
-                              className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                            >
-                              {q.label}
-                            </label>
-                            <div className="relative">
-                              <select
-                                id={q.id}
-                                value={state.answers[q.id] || ""}
-                                onChange={(e) => {
-                                  setErrors((prev) => ({ ...prev, [q.id]: "" }));
-                                  setState((prev) => ({
-                                    ...prev,
-                                    answers: { ...prev.answers, [q.id]: e.target.value },
-                                  }));
-                                }}
-                                aria-invalid={Boolean(errors[q.id])}
-                                aria-describedby={errors[q.id] ? errId : undefined}
-                                className="w-full min-h-[44px] appearance-none px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs cursor-pointer pr-10"
-                              >
-                                <option value="">{q.placeholder || "Select an option"}</option>
-                                {q.options?.map((opt) => (
-                                  <option key={opt} value={opt}>
-                                    {opt}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown
-                                className="w-4 h-4 text-[#526E77] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                                aria-hidden="true"
-                              />
-                            </div>
-                            {errors[q.id] && (
-                              <p
-                                id={errId}
-                                role="alert"
-                                className="mt-1.5 text-xs text-rose-700 font-medium"
-                              >
-                                {errors[q.id]}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      }
-
-                      if (q.type === "textarea") {
-                        return (
-                          <div key={q.id}>
-                            <label
-                              htmlFor={q.id}
-                              className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                            >
-                              {q.label}
-                            </label>
-                            <textarea
-                              id={q.id}
-                              rows={3}
-                              value={state.answers[q.id] || ""}
-                              onChange={(e) => {
-                                setErrors((prev) => ({ ...prev, [q.id]: "" }));
-                                setState((prev) => ({
-                                  ...prev,
-                                  answers: { ...prev.answers, [q.id]: e.target.value },
-                                }));
-                              }}
-                              placeholder={q.placeholder || "Share a short answer"}
-                              aria-invalid={Boolean(errors[q.id])}
-                              aria-describedby={errors[q.id] ? errId : undefined}
-                              className="w-full px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs resize-none"
-                            />
-                            {errors[q.id] && (
-                              <p
-                                id={errId}
-                                role="alert"
-                                className="mt-1.5 text-xs text-rose-700 font-medium"
-                              >
-                                {errors[q.id]}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div key={q.id}>
-                          <label
-                            htmlFor={q.id}
-                            className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                          >
-                            {q.label}
-                          </label>
-                          <input
-                            id={q.id}
-                            type="text"
-                            value={state.answers[q.id] || ""}
-                            onChange={(e) => {
-                              setErrors((prev) => ({ ...prev, [q.id]: "" }));
-                              setState((prev) => ({
-                                ...prev,
-                                answers: { ...prev.answers, [q.id]: e.target.value },
-                              }));
-                            }}
-                            placeholder={q.placeholder || ""}
-                            aria-invalid={Boolean(errors[q.id])}
-                            aria-describedby={errors[q.id] ? errId : undefined}
-                            className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
-                          />
-                          {errors[q.id] && (
-                            <p
-                              id={errId}
-                              role="alert"
-                              className="mt-1.5 text-xs text-rose-700 font-medium"
-                            >
-                              {errors[q.id]}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {renderProgramQuestions()}
 
                     <div className="flex items-center justify-between pt-4">
                       <button
@@ -1614,6 +1644,114 @@ export function EnrollmentView({
                       </div>
                     </div>
 
+                    {manualPaymentEnabled && !isFree && (
+                      <section
+                        aria-labelledby="manual-bkash-heading"
+                        className="space-y-5 rounded-xl border border-[#C5E2E5] bg-white p-4 sm:p-5"
+                      >
+                        <div>
+                          <h2
+                            id="manual-bkash-heading"
+                            className="text-lg font-semibold text-[#172E35]"
+                          >
+                            Pay with bKash
+                          </h2>
+                          <p className="mt-1 text-sm text-[#526E77]">
+                            Scan the QR code or open your bKash app and choose Payment. Admissions
+                            confirms your seat after verifying payment, subject to availability.
+                          </p>
+                        </div>
+                        <div className="grid items-center gap-4 rounded-lg border border-[#C5E2E5] bg-[#F6FAFA] p-4 sm:grid-cols-[10rem_1fr]">
+                          <Image
+                            src={config.payment.bkash.qrImageSrc}
+                            alt={`bKash Merchant QR for ${config.payment.bkash.merchantName}`}
+                            width={160}
+                            height={160}
+                            unoptimized
+                            className="mx-auto h-auto w-40 max-w-full object-contain"
+                          />
+                          <div>
+                            <p className="text-sm font-semibold text-[#172E35]">
+                              {config.payment.bkash.merchantName}
+                            </p>
+                            <p className="mt-1 text-xs text-[#526E77]">Merchant number</p>
+                            <p className="mt-0.5 font-mono tabular-nums text-[#172E35]">
+                              {config.payment.bkash.merchantNumber}
+                            </p>
+                            <button
+                              type="button"
+                              className="inline-flex min-h-[44px] items-center gap-2 rounded text-sm font-semibold text-[#086477] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(
+                                    config.payment.bkash.merchantNumber.replace(/\s/g, "")
+                                  );
+                                  setMerchantCopyMessage("Merchant number copied.");
+                                } catch {
+                                  setMerchantCopyMessage("Enter the merchant number shown above.");
+                                }
+                              }}
+                            >
+                              <Copy className="h-4 w-4" aria-hidden="true" />
+                              Copy merchant number
+                            </button>
+                            <p role="status" className="text-xs text-[#526E77]">
+                              {merchantCopyMessage}
+                            </p>
+                          </div>
+                        </div>
+                        <form
+                          id="manual-bkash-proof"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            if (!isSubmitting) void handleSubmitEnrollment();
+                          }}
+                        >
+                          <label
+                            htmlFor="bkash-transaction-id"
+                            className="block text-sm font-semibold text-[#172E35]"
+                          >
+                            bKash Transaction ID
+                          </label>
+                          <p id="bkash-transaction-help" className="mt-1 text-xs text-[#526E77]">
+                            Copy the TrxID from your bKash receipt after paying. Keep the receipt
+                            until Admissions confirms your application.
+                          </p>
+                          <input
+                            id="bkash-transaction-id"
+                            type="text"
+                            autoComplete="off"
+                            autoCapitalize="characters"
+                            spellCheck={false}
+                            maxLength={64}
+                            aria-required="true"
+                            aria-invalid={Boolean(errors.transactionId)}
+                            aria-describedby={
+                              errors.transactionId
+                                ? "bkash-transaction-help bkash-transaction-error"
+                                : "bkash-transaction-help"
+                            }
+                            value={transactionId}
+                            onChange={(event) => {
+                              setTransactionId(event.target.value);
+                              setErrors({});
+                              setSubmitError("");
+                            }}
+                            className="mt-2 min-h-[44px] w-full rounded-lg border border-[#73939C] px-3 py-2 font-mono text-[#172E35] focus:outline-2 focus:outline-[#086477]"
+                          />
+                          {errors.transactionId && (
+                            <p
+                              id="bkash-transaction-error"
+                              role="alert"
+                              className="mt-2 text-xs font-medium text-rose-700"
+                            >
+                              {errors.transactionId}
+                            </p>
+                          )}
+                        </form>
+                      </section>
+                    )}
+
                     {submitError && (
                       <p role="alert" className="text-xs text-rose-700 font-medium">
                         {submitError}
@@ -1644,7 +1782,7 @@ export function EnrollmentView({
                         onClick={() => {
                           setErrors({});
                           setSubmitError("");
-                          if (programQuestions.length > 0) {
+                          if (!manualPaymentEnabled && programQuestions.length > 0) {
                             transitionToStep("questions");
                           } else {
                             transitionToStep("details");
@@ -1655,11 +1793,14 @@ export function EnrollmentView({
                         Back
                       </button>
                       <button
-                        type="button"
+                        type={manualPaymentEnabled && !isFree ? "submit" : "button"}
+                        form={manualPaymentEnabled && !isFree ? "manual-bkash-proof" : undefined}
                         disabled={isSubmitting}
                         aria-disabled={isSubmitting}
                         aria-busy={isSubmitting ? "true" : undefined}
-                        onClick={handleContinueFromReview}
+                        onClick={
+                          manualPaymentEnabled && !isFree ? undefined : handleContinueFromReview
+                        }
                         className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
                           isSubmitting
                             ? "bg-[#E2ECEF] text-[#3B555E] border border-[#94B0B8] cursor-not-allowed"
@@ -1671,7 +1812,11 @@ export function EnrollmentView({
                             ? isSubmitting
                               ? "Confirming..."
                               : "Confirm registration"
-                            : "Continue to payment"}
+                            : manualPaymentEnabled
+                              ? isSubmitting
+                                ? "Submitting..."
+                                : "Submit application"
+                              : "Continue to payment"}
                         </span>
                         <ArrowRight className="w-4 h-4" aria-hidden="true" />
                       </button>
@@ -1857,7 +2002,7 @@ export function EnrollmentView({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
-                      {outcomeSummary?.canRetry && canSubmitOnline && (
+                      {outcomeSummary?.canRetry && checkoutMode !== "closed" && canSubmitOnline && (
                         <button
                           type="button"
                           disabled={isSubmitting}
@@ -1971,7 +2116,9 @@ export function EnrollmentView({
                     <p className="text-xs sm:text-sm text-[#526E77] leading-relaxed">
                       {step === "review_hold"
                         ? "Our team is verifying the transaction details reported by the gateway. Please do not submit a duplicate payment."
-                        : "Gateway confirmation is still processing. Check your application status anytime with your LNA Application ID."}
+                        : isManualReceipt
+                          ? "Keep your bKash receipt and use your LNA Application ID to check your status."
+                          : "Gateway confirmation is still processing. Check your application status anytime with your LNA Application ID."}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
@@ -2120,8 +2267,8 @@ export function EnrollmentView({
             )}
           </div>
 
-          {/* RIGHT COLUMN: Editorial Photo Panel / Mentor Posters Slideshow */}
-          <div className="hidden md:block md:col-span-5 lg:col-span-6 xl:col-span-6 sticky top-24 lg:top-28">
+          {/* LEFT/COMPANION COLUMN: Visual Panel (Mentor Posters Slider / bKash Payment Scanner / Confirmation Photo) */}
+          <div className="hidden md:block md:col-span-5 lg:col-span-6 xl:col-span-6 sticky top-24 lg:top-28 md:order-1">
             {isConfirmationPhoto ? (
               <div className="relative w-full h-[580px] xl:h-[620px] rounded-2xl overflow-hidden shadow-md bg-[#0F2930]">
                 <Image
@@ -2146,6 +2293,58 @@ export function EnrollmentView({
                   <p className="text-sm sm:text-base font-medium text-white/95 leading-snug">
                     See you in the next session.
                   </p>
+                </div>
+              </div>
+            ) : isBkashScanStep ? (
+              <div className="relative w-full aspect-[3/4] max-w-[480px] xl:max-w-[520px] mx-auto rounded-2xl overflow-hidden shadow-xl border border-[#C5E2E5] bg-gradient-to-b from-[#F6FAFA] via-white to-[#F0F7F8] p-6 sm:p-8 flex flex-col justify-between text-center">
+                <div className="w-full flex items-center justify-between border-b border-[#E5ECEE] pb-3 text-left">
+                  <div>
+                    <span className="text-[11px] uppercase font-bold tracking-wider text-[#086477] block">
+                      Scan & Pay with bKash
+                    </span>
+                    <h3 className="font-serif font-bold text-lg text-[#172E35]">
+                      {config.payment.bkash.merchantName}
+                    </h3>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#E01A59]/10 text-[#E01A59] border border-[#E01A59]/20 font-bold text-xs">
+                    bKash
+                  </span>
+                </div>
+
+                <div className="my-auto py-3 flex flex-col items-center">
+                  <div className="relative p-4 sm:p-5 rounded-2xl bg-white shadow-lg border border-[#E5ECEE] inline-flex items-center justify-center">
+                    <Image
+                      src={config.payment.bkash.qrImageSrc}
+                      alt="bKash payment QR scanner"
+                      width={320}
+                      height={320}
+                      priority
+                      unoptimized
+                      className="w-56 sm:w-64 md:w-72 h-auto max-w-full object-contain"
+                    />
+                  </div>
+                  <p className="mt-4 text-xs sm:text-sm text-[#526E77] font-medium">
+                    Open your bKash app and scan this QR code
+                  </p>
+                </div>
+
+                <div className="w-full pt-4 border-t border-[#E5ECEE] flex items-center justify-between text-left">
+                  <div>
+                    <span className="text-[11px] uppercase font-semibold text-[#526E77] block">
+                      Merchant Number
+                    </span>
+                    <span className="font-mono font-bold text-sm sm:text-base text-[#172E35]">
+                      {config.payment.bkash.merchantNumber}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[11px] uppercase font-semibold text-[#526E77] block">
+                      Amount Due
+                    </span>
+                    <span className="font-bold text-base sm:text-lg text-[#086477]">
+                      {feeDetails.formattedPayable}
+                    </span>
+                  </div>
                 </div>
               </div>
             ) : (

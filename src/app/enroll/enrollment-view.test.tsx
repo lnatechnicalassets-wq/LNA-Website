@@ -238,6 +238,68 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
     vi.restoreAllMocks();
   });
 
+  it("keeps all details in one step and submits a manual bKash receipt", async () => {
+    mockSearchParams = new URLSearchParams("course=mto-readiness&batch=batch-mto-discounted");
+    const onSubmit = vi.fn().mockResolvedValue({
+      isFree: false,
+      status: "pending",
+      applicationReference: "LNA-2M4K-9P7Q",
+    });
+    render(
+      <EnrollmentView
+        courses={testCourses}
+        batches={testBatches}
+        config={createOfficialConfig(true)}
+        manualPaymentEnabled
+        onStartCheckout={onSubmit}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
+    const change = (label: RegExp, value: string) =>
+      fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    change(/Full name/i, "Samira Rahman");
+    change(/Email address/i, "samira@example.com");
+    change(/WhatsApp \/ Phone number/i, "01711223344");
+    change(/University/i, "Dhaka University");
+    change(/Department/i, "Finance");
+    change(/Current professional phase/i, "Recent graduate");
+    change(/Goals/i, "Improve my interview skills.");
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
+
+    expect(screen.getByRole("heading", { name: "Review and pay." })).toBeDefined();
+    expect(screen.getByRole("img", { name: /bKash Merchant QR/i })).toBeDefined();
+    expect(screen.getByRole("img", { name: /bKash payment QR scanner/i })).toBeDefined();
+    expect(screen.getByText("Scan & Pay with bKash")).toBeDefined();
+    expect(screen.getByText("Open your bKash app and scan this QR code")).toBeDefined();
+    expect(screen.queryByTestId("hosted-bkash-checkout-panel")).toBeNull();
+    const submit = screen.getByRole("button", { name: "Submit application" });
+    fireEvent.click(submit);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Enter the bKash Transaction ID from your payment receipt.")
+    ).toBeDefined();
+    change(/bKash Transaction ID/i, " bk15a2h90x ");
+    fireEvent.click(submit);
+
+    expect((await screen.findByTestId("application-id-value")).textContent).toBe("LNA-2M4K-9P7Q");
+    expect(screen.getByText(/Admissions will verify your payment/)).toBeDefined();
+    expect(onSubmit).toHaveBeenCalledWith({
+      courseId: "mto-readiness",
+      batchId: "batch-mto-discounted",
+      fullName: "Samira Rahman",
+      email: "samira@example.com",
+      whatsapp: "01711223344",
+      answers: {
+        university: "Dhaka University",
+        department: "Finance",
+        professionalPhase: "Recent graduate",
+        goals: "Improve my interview skills.",
+      },
+      transactionId: "BK15A2H90X",
+    });
+  });
+
   it("shows 'Online enrollment is coming soon' and /status link before asking for personal details when closed", () => {
     render(
       <EnrollmentView
