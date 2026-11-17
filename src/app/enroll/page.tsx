@@ -75,6 +75,7 @@ export default async function EnrollPage({
         batches={batches}
         config={effectiveConfig}
         checkoutMode={runtime.checkoutMode}
+        manualPaymentEnabled={runtime.manualPaymentEnabled}
         initialOutcome={initialOutcome}
         invalidOutcomeNotice={invalidOutcomeNotice}
       />

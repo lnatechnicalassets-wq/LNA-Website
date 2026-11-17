@@ -3,7 +3,7 @@ import { getEnrollmentConfig } from "@/lib/enrollment/config";
 import { normalizeEmail } from "@/lib/enrollment/status";
 import { AppError } from "@/lib/errors";
 import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
-import { startEnrollmentCheckout } from "@/server/enrollment/service";
+import { startEnrollmentCheckout, submitManualBkashEnrollment } from "@/server/enrollment/service";
 import { consumeRateLimit, extractHashedClientIp } from "@/server/ratelimit/limiter";
 import { resolveSafeAppOrigin, verifySameOriginRequest } from "@/server/security/origin";
 
@@ -22,7 +22,10 @@ export async function POST(request: NextRequest) {
   }
 
   const runtime = getEnrollmentRuntimeConfig();
-  if (!runtime.submissionEnabled || runtime.checkoutMode === "closed") {
+  if (
+    !runtime.submissionEnabled ||
+    (runtime.checkoutMode === "closed" && !runtime.manualPaymentEnabled)
+  ) {
     return NextResponse.json(
       {
         ok: false,
@@ -51,7 +54,10 @@ export async function POST(request: NextRequest) {
 
   let body: Record<string, unknown>;
   try {
-    body = (await request.json()) as Record<string, unknown>;
+    const parsed: unknown = await request.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      throw new Error("Invalid request body");
+    body = parsed as Record<string, unknown>;
   } catch {
     return NextResponse.json(
       { ok: false, code: "INVALID_JSON", message: "Invalid JSON request body." },
@@ -79,13 +85,17 @@ export async function POST(request: NextRequest) {
   }
 
   const config = getEnrollmentConfig();
-  const programQuestionsSnapshot = config.programQuestions[rawCourseId] ?? [];
+  const programQuestionsSnapshot = Object.hasOwn(config.programQuestions, rawCourseId)
+    ? config.programQuestions[rawCourseId]
+    : [];
 
   try {
-    const result = await startEnrollmentCheckout(body, {
-      origin: resolveSafeAppOrigin(request),
-      programQuestionsSnapshot,
-    });
+    const result = runtime.manualPaymentEnabled
+      ? await submitManualBkashEnrollment(body, { programQuestionsSnapshot })
+      : await startEnrollmentCheckout(body, {
+          origin: resolveSafeAppOrigin(request),
+          programQuestionsSnapshot,
+        });
 
     return NextResponse.json({ ok: true, ...result }, { status: 200, headers: noStoreHeaders });
   } catch (err) {

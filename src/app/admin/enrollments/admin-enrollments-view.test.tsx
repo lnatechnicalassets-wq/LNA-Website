@@ -61,35 +61,39 @@ describe("AdminEnrollmentsView (/admin/enrollments)", () => {
     cleanup();
   });
 
-  it("shows Edit and Archive, and opens a cancellable review dialog with the saved payment", () => {
-    const row = {
-      ...SAMPLE_RECORD,
-      updatedAt: "2026-11-16T03:00:00Z",
-      isStaffManualPayment: true,
-      submittedPaymentRef: "TEST-BKASH-012",
-      status: "application_in_process",
-      paymentStatus: "pending_verification",
-    };
-    render(
-      <AdminEnrollmentsView
-        staff={SAMPLE_STAFF}
-        currentSearch=""
-        currentStatus=""
-        list={{ totalCount: 1, page: 1, pageSize: 20, items: [row] }}
-      />
-    );
-    expect(screen.getByRole("link", { name: `View ${row.publicRef}` })).toBeDefined();
-    expect(screen.getByRole("button", { name: `Edit ${row.publicRef}` })).toBeDefined();
-    expect(screen.getByRole("button", { name: `Archive ${row.publicRef}` })).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: `Confirm ${row.publicRef}` }));
-    const popup = within(screen.getByRole("dialog", { name: `Confirm ${row.publicRef}` }));
-    expect(popup.getByText("TEST-BKASH-012")).toBeDefined();
-    expect(popup.getByText("৳5,500")).toBeDefined();
-    expect(popup.getByRole("button", { name: "Approve payment and confirm seat" })).toBeDefined();
-    fireEvent.click(popup.getByRole("button", { name: "Cancel" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(refreshMock).not.toHaveBeenCalled();
-  });
+  it.each(["staff", "applicant"] as const)(
+    "shows direct actions and opens payment review for a %s submission",
+    (source) => {
+      const row = {
+        ...SAMPLE_RECORD,
+        updatedAt: "2026-11-16T03:00:00Z",
+        isStaffManualPayment: source === "staff",
+        isApplicantManualPayment: source === "applicant",
+        submittedPaymentRef: "TEST-BKASH-012",
+        status: "application_in_process",
+        paymentStatus: "pending_verification",
+      };
+      render(
+        <AdminEnrollmentsView
+          staff={SAMPLE_STAFF}
+          currentSearch=""
+          currentStatus=""
+          list={{ totalCount: 1, page: 1, pageSize: 20, items: [row] }}
+        />
+      );
+      expect(screen.getByRole("link", { name: `View ${row.publicRef}` })).toBeDefined();
+      expect(screen.getByRole("button", { name: `Edit ${row.publicRef}` })).toBeDefined();
+      expect(screen.getByRole("button", { name: `Archive ${row.publicRef}` })).toBeDefined();
+      fireEvent.click(screen.getByRole("button", { name: `Confirm ${row.publicRef}` }));
+      const popup = within(screen.getByRole("dialog", { name: `Confirm ${row.publicRef}` }));
+      expect(popup.getByText("TEST-BKASH-012")).toBeDefined();
+      expect(popup.getByText("৳5,500")).toBeDefined();
+      expect(popup.getByRole("button", { name: "Approve payment and confirm seat" })).toBeDefined();
+      fireEvent.click(popup.getByRole("button", { name: "Cancel" }));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(refreshMock).not.toHaveBeenCalled();
+    }
+  );
 
   it("offers Restore in the archive and keeps payment review unavailable", () => {
     render(

@@ -3,6 +3,11 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { admissionStatus, isDuplicateEnrollmentContact } from "@/lib/admin-admissions";
+import {
+  bkashTransactionIdError,
+  bkashTransactionIdPattern,
+  normalizeBkashTransactionId,
+} from "@/lib/enrollment/manual-payment";
 import { AppError } from "@/lib/errors";
 import {
   isValidBdPhone,
@@ -139,6 +144,7 @@ export interface AdminEnrollmentListItem {
   archivedAt?: string | null;
   legacyDuplicatePhone?: boolean;
   isStaffManualPayment?: boolean;
+  isApplicantManualPayment?: boolean;
   submittedPaymentRef?: string | null;
   updatedAt?: string;
 }
@@ -205,6 +211,7 @@ export interface AdminEnrollmentDetailResult {
   paymentStatus: string;
   submittedPaymentRef: string | null;
   isStaffManualPayment: boolean;
+  isApplicantManualPayment?: boolean;
   legacyDuplicatePhone?: boolean;
   archivedAt?: string | null;
   baseFeePoisha: number;
@@ -505,22 +512,10 @@ export async function getPublicCatalogFromSupabase(
  * Validates and persists an enrollment application BEFORE calling hosted bKash Checkout.
  * Computes base fee, discount, and payable poisha exclusively inside start_enrollment() on Postgres.
  */
-export async function startEnrollmentCheckout(
+function validateEnrollmentSubmission(
   rawInput: unknown,
-  options: {
-    origin: string;
-    programQuestionsSnapshot: ProgramQuestion[];
-    adminOverride?: SupabaseClient;
-    gatewayOverride?: PaymentGatewayClient;
-    emailSenderOverride?: OutboxEmailSender;
-    checkoutModeOverride?: "closed" | "mock" | "live";
-  }
-): Promise<StartEnrollmentCheckoutResult> {
-  const mode = options.checkoutModeOverride ?? getEnrollmentRuntimeConfig().checkoutMode;
-  if (mode === "closed") {
-    throw new AppError("Online enrollment checkout is currently closed.", "CHECKOUT_CLOSED", 503);
-  }
-
+  programQuestionsSnapshot: ProgramQuestion[]
+) {
   const parsed = startEnrollmentPayloadSchema.safeParse(rawInput);
   if (!parsed.success) {
     const firstIssue = parsed.error.issues[0];
@@ -542,7 +537,7 @@ export async function startEnrollmentCheckout(
 
   const cleanEmail = normalizeEmail(parsed.data.email);
   const normalizedAnswers: Record<string, string> = {};
-  for (const question of options.programQuestionsSnapshot) {
+  for (const question of programQuestionsSnapshot) {
     const rawAns = String(parsed.data.answers[question.id] ?? "").trim();
     if (question.required && !rawAns) {
       throw new AppError(`Please answer: ${question.label}`, "MISSING_PROGRAM_ANSWER", 400);
@@ -561,18 +556,136 @@ export async function startEnrollmentCheckout(
     }
   }
 
-  const admin = options.adminOverride ?? createSupabaseAdminClient();
-  const publicRef = generateSecureEnrollmentReference();
-
-  const { data: rpcRaw, error: rpcError } = await admin.rpc("start_enrollment", {
+  return {
     p_course_slug: parsed.data.courseId,
     p_batch_slug: parsed.data.batchId,
-    p_public_ref: publicRef,
     p_full_name: parsed.data.fullName,
     p_email: cleanEmail,
     p_phone: cleanPhone,
     p_answers: normalizedAnswers,
-    p_program_questions_snapshot: options.programQuestionsSnapshot,
+    p_program_questions_snapshot: programQuestionsSnapshot,
+  };
+}
+
+const manualEnrollmentErrors: Record<string, { message: string; status: number }> = {
+  BATCH_NOT_FOUND: { message: "Selected batch could not be found.", status: 404 },
+  BATCH_CLOSED: { message: "Enrollment is no longer open for this batch.", status: 409 },
+  BATCH_FULL: { message: "No seats remain available for this batch.", status: 409 },
+  DUPLICATE_ENROLLMENT: {
+    message: "An active application already uses this email or phone number in the selected batch.",
+    status: 409,
+  },
+  DUPLICATE_PAYMENT_REFERENCE: {
+    message:
+      "This Transaction ID is already on file. Check the ID on your bKash receipt or contact Admissions.",
+    status: 409,
+  },
+  TRANSACTION_ID_REQUIRED: { message: bkashTransactionIdError, status: 400 },
+  TRANSACTION_ID_UNEXPECTED: {
+    message:
+      "This batch currently has no fee. If you already paid, contact Admissions with your receipt.",
+    status: 409,
+  },
+};
+
+export async function submitManualBkashEnrollment(
+  rawInput: unknown,
+  options: {
+    programQuestionsSnapshot: ProgramQuestion[];
+    adminOverride?: SupabaseClient;
+    emailSenderOverride?: OutboxEmailSender;
+  }
+): Promise<StartEnrollmentCheckoutResult> {
+  const enrollment = validateEnrollmentSubmission(rawInput, options.programQuestionsSnapshot);
+  const transaction = z
+    .object({ transactionId: z.string().max(64).optional() })
+    .safeParse(rawInput);
+  if (!transaction.success) {
+    throw new AppError(bkashTransactionIdError, "INVALID_TRANSACTION_ID", 400);
+  }
+  const transactionId = normalizeBkashTransactionId(transaction.data.transactionId ?? "");
+  if (transactionId && !bkashTransactionIdPattern.test(transactionId)) {
+    throw new AppError(bkashTransactionIdError, "INVALID_TRANSACTION_ID", 400);
+  }
+
+  const admin = options.adminOverride ?? createSupabaseAdminClient();
+  const { data: rawResult, error } = await admin.rpc("submit_public_manual_enrollment", {
+    ...enrollment,
+    p_public_ref: generateSecureEnrollmentReference(),
+    p_trx_id: transactionId || null,
+  });
+
+  const parsed = z
+    .discriminatedUnion("ok", [
+      z.object({ ok: z.literal(false), code: z.string() }),
+      z.object({
+        ok: z.literal(true),
+        enrollment_id: z.string().uuid(),
+        public_ref: z.string().regex(CROCKFORD_REF_REGEX),
+        is_free: z.boolean(),
+        status: z.enum(["application_in_process", "confirmed"]),
+        outbox_id: z.string().uuid().nullish(),
+      }),
+    ])
+    .safeParse(rawResult);
+
+  const code = isDuplicateEnrollmentContact(error)
+    ? "DUPLICATE_ENROLLMENT"
+    : !error && parsed.success && !parsed.data.ok
+      ? parsed.data.code
+      : null;
+  if (code && Object.hasOwn(manualEnrollmentErrors, code)) {
+    const { message, status } = manualEnrollmentErrors[code];
+    throw new AppError(message, code, status);
+  }
+  if (error || !parsed.success || !parsed.data.ok) {
+    throw new AppError(
+      "Unable to save your application right now. Keep your bKash receipt and try again.",
+      "ENROLLMENT_SAVE_FAILED",
+      503
+    );
+  }
+
+  const saved = parsed.data;
+  if (saved.outbox_id) {
+    await dispatchEmailOutboxById(saved.outbox_id, {
+      senderOverride: options.emailSenderOverride,
+      adminOverride: options.adminOverride,
+    }).catch(() => null);
+  }
+
+  return {
+    isFree: saved.is_free,
+    applicationReference: saved.public_ref,
+    status: saved.status === "confirmed" ? "confirmed" : "pending",
+    outcomeToken: signEnrollmentOutcomeToken(saved.public_ref, saved.enrollment_id),
+  };
+}
+
+export async function startEnrollmentCheckout(
+  rawInput: unknown,
+  options: {
+    origin: string;
+    programQuestionsSnapshot: ProgramQuestion[];
+    adminOverride?: SupabaseClient;
+    gatewayOverride?: PaymentGatewayClient;
+    emailSenderOverride?: OutboxEmailSender;
+    checkoutModeOverride?: "closed" | "mock" | "live";
+  }
+): Promise<StartEnrollmentCheckoutResult> {
+  const mode = options.checkoutModeOverride ?? getEnrollmentRuntimeConfig().checkoutMode;
+  if (mode === "closed") {
+    throw new AppError("Online enrollment checkout is currently closed.", "CHECKOUT_CLOSED", 503);
+  }
+
+  const enrollment = validateEnrollmentSubmission(rawInput, options.programQuestionsSnapshot);
+
+  const admin = options.adminOverride ?? createSupabaseAdminClient();
+  const publicRef = generateSecureEnrollmentReference();
+
+  const { data: rpcRaw, error: rpcError } = await admin.rpc("start_enrollment", {
+    p_public_ref: publicRef,
+    ...enrollment,
   });
 
   if (isDuplicateEnrollmentContact(rpcError)) {
@@ -1383,7 +1496,7 @@ export async function listAdminEnrollments(
   let query = admin
     .from("enrollments")
     .select(
-      "id, public_ref, full_name, email, phone, payment_method, payment_status, status, payable_poisha, currency, hold_expires_at, confirmed_at, created_at, updated_at, archived_at, legacy_duplicate_phone, staff_payment_recorded_by, submitted_payment_ref, is_dev_fixture, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name)",
+      "id, public_ref, full_name, email, phone, payment_method, payment_status, status, payable_poisha, currency, hold_expires_at, confirmed_at, created_at, updated_at, archived_at, legacy_duplicate_phone, staff_payment_recorded_by, applicant_payment_submitted, submitted_payment_ref, is_dev_fixture, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name)",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
@@ -1452,8 +1565,9 @@ export async function listAdminEnrollments(
       archivedAt: row.archived_at ? String(row.archived_at) : null,
       updatedAt: String(row.updated_at),
       isStaffManualPayment: Boolean(row.staff_payment_recorded_by),
+      isApplicantManualPayment: Boolean(row.applicant_payment_submitted),
       submittedPaymentRef:
-        row.staff_payment_recorded_by &&
+        (row.staff_payment_recorded_by || row.applicant_payment_submitted) &&
         row.status === "application_in_process" &&
         !row.archived_at &&
         row.submitted_payment_ref
@@ -1493,7 +1607,7 @@ export async function getAdminEnrollmentDetail(
   let query = admin
     .from("enrollments")
     .select(
-      "id, public_ref, full_name, email, phone, answers, program_questions_snapshot, payment_method, payment_status, submitted_payment_ref, staff_payment_recorded_by, archived_at, legacy_duplicate_phone, base_fee_poisha, discount_amount_poisha, payable_poisha, currency, status, hold_expires_at, verified_at, confirmed_at, verification_notes, is_dev_fixture, fixture_label, created_at, updated_at, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name, start_date, venue)"
+      "id, public_ref, full_name, email, phone, answers, program_questions_snapshot, payment_method, payment_status, submitted_payment_ref, staff_payment_recorded_by, applicant_payment_submitted, archived_at, legacy_duplicate_phone, base_fee_poisha, discount_amount_poisha, payable_poisha, currency, status, hold_expires_at, verified_at, confirmed_at, verification_notes, is_dev_fixture, fixture_label, created_at, updated_at, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name, start_date, venue)"
     );
 
   query = isUuid
@@ -1606,6 +1720,7 @@ export async function getAdminEnrollmentDetail(
     paymentStatus: String(row.payment_status),
     submittedPaymentRef: row.submitted_payment_ref ? String(row.submitted_payment_ref) : null,
     isStaffManualPayment: Boolean(row.staff_payment_recorded_by),
+    isApplicantManualPayment: Boolean(row.applicant_payment_submitted),
     legacyDuplicatePhone: Boolean(row.legacy_duplicate_phone),
     archivedAt: row.archived_at ? String(row.archived_at) : null,
     baseFeePoisha: parseSafeIntegerPoisha(row.base_fee_poisha),

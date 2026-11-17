@@ -14,6 +14,7 @@ import {
   retryEnrollmentCheckout,
   signEnrollmentOutcomeToken,
   startEnrollmentCheckout,
+  submitManualBkashEnrollment,
 } from "./service";
 
 const SAMPLE_STAFF: VerifiedStaffContext = {
@@ -175,6 +176,66 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
   afterEach(() => {
     process.env = { ...originalEnv };
     vi.restoreAllMocks();
+  });
+
+  it("records a normalized manual bKash reference with all required answers", async () => {
+    const publicRef = "LNA-2M4K-9P7Q";
+    const { admin, rpcCalls } = createServiceAdminMock({
+      rpcHandlers: {
+        submit_public_manual_enrollment: () => ({
+          data: {
+            ok: true,
+            enrollment_id: "198c39c8-6205-488f-b864-5b27fc31f118",
+            public_ref: publicRef,
+            is_free: false,
+            status: "application_in_process",
+          },
+          error: null,
+        }),
+      },
+    });
+    const questions = [
+      { id: "university", label: "University", type: "text" as const, required: true },
+    ];
+    const options = { adminOverride: admin, programQuestionsSnapshot: questions };
+    const applicant = {
+      courseId: "mto-readiness",
+      batchId: "batch-mto-2026-01",
+      fullName: "Nadia Sultana",
+      email: " Nadia@Example.COM ",
+      whatsapp: "+8801711223344",
+      transactionId: " bk15a2h90x ",
+      answers: { university: " DU " },
+    };
+
+    await expect(
+      submitManualBkashEnrollment({ ...applicant, answers: {} }, options)
+    ).rejects.toMatchObject({ code: "MISSING_PROGRAM_ANSWER" });
+    expect(rpcCalls).toHaveLength(0);
+
+    const result = await submitManualBkashEnrollment(applicant, options);
+    expect(result).toMatchObject({
+      applicationReference: publicRef,
+      status: "pending",
+      isFree: false,
+    });
+    expect(result.checkoutUrl).toBeUndefined();
+    expect(rpcCalls).toEqual([
+      {
+        fn: "submit_public_manual_enrollment",
+        params: {
+          p_public_ref: expect.stringMatching(/^LNA-[A-Z0-9]{4}-[A-Z0-9]{4}$/),
+          p_course_slug: applicant.courseId,
+          p_batch_slug: applicant.batchId,
+          p_full_name: applicant.fullName,
+          p_email: "nadia@example.com",
+          p_phone: "01711223344",
+          p_answers: { university: "DU" },
+          p_program_questions_snapshot: questions,
+          p_trx_id: "BK15A2H90X",
+        },
+      },
+    ]);
   });
 
   it("rejects enrollment checkout when mode is closed (503 CHECKOUT_CLOSED)", async () => {
