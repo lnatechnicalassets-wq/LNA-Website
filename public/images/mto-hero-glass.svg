@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 700" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="pearl" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#f6fafa"/><stop offset="1" stop-color="#dcebed"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="1" y1="0" x2="0" y2="1">
+      <stop stop-color="#b5dde2"/><stop offset=".55" stop-color="#4da4b0"/>
+      <stop offset="1" stop-color="#075565"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#075565"/><stop offset="1" stop-color="#04333c"/>
+    </linearGradient>
+    <pattern id="windows" width="75" height="70" patternUnits="userSpaceOnUse" patternTransform="skewY(-24) skewX(-8)">
+      <path d="M0 0H75V70" fill="none" stroke="#064654" stroke-opacity=".34" stroke-width="5"/>
+    </pattern>
+  </defs>
+  <path fill="url(#pearl)" d="M0 0h1600v700H0z"/>
+  <path fill="url(#glass)" d="M1008 0h592v700H530z"/>
+  <path fill="url(#windows)" d="M1008 0h592v700H530z"/>
+  <path fill="url(#teal)" d="M1210 0h390v700H822z"/>
+  <path fill="#ffc34a" d="M1600 585v67l-28 48h-42z"/>
+</svg>

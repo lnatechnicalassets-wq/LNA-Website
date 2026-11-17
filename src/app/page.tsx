@@ -1,7 +1,6 @@
 import React from "react";
 import { getHomeRepository, getCourseRepository, getBatchRepository } from "@/lib/content";
 import {
-  HeroSection,
   PartnersSection,
   CoursesSection,
   MentorsSection,
@@ -10,6 +9,8 @@ import {
   ContactSection,
   MentorQuickViewProvider,
 } from "@/components/home";
+import { MtoHero } from "@/components/home/hero/mto-hero";
+import { getMtoHeroCourse } from "@/server/catalog/mto-hero";
 import { getPublicMentors } from "@/server/catalog/mentors";
 import { getArchivedCatalogSlugs } from "@/server/catalog/visibility";
 
@@ -28,7 +29,6 @@ export default async function HomePage() {
 
   // Load homepage data in parallel via clean repository interfaces (Rule R4)
   const [
-    heroSlides,
     partners,
     allCourses,
     allBatches,
@@ -39,7 +39,6 @@ export default async function HomePage() {
     contactConfig,
     archived,
   ] = await Promise.all([
-    homeRepo.getHeroSlides(),
     homeRepo.getPartners(),
     courseRepo.getAllCourses(),
     batchRepo.getAllBatches(),
@@ -55,17 +54,12 @@ export default async function HomePage() {
     (batch) => !archived.courses.has(batch.courseId) && !archived.batches.has(batch.id)
   );
 
+  const program = await getMtoHeroCourse(courses, batches, mentors);
+
   return (
     <MentorQuickViewProvider>
       <div className="flex flex-col bg-surface-base">
-        {/* 1. Hero Section (HeroSlider + Two-Slide Mentor Showcase) */}
-        <HeroSection
-          slides={heroSlides.filter(
-            (slide) => !slide.courseId || !archived.courses.has(slide.courseId)
-          )}
-          mentors={mentors}
-          courses={courses}
-        />
+        {program && <MtoHero program={program} />}
 
         {/* 2. Partners Section (Corporate Sector Alignments) */}
         <PartnersSection partners={partners} />
