@@ -10,7 +10,7 @@
 
 | Package | Pinned Version | Purpose | Peer / Runtime Status |
 | :--- | :--- | :--- | :--- |
-| `next` | `16.4.4` | App Router, Turbopack, SSR, Edge runtime | Node.js >=20.9.0 (Running on 26.13.0) |
+| `next` | `16.4.6` | App Router, Turbopack, SSR, Edge runtime | Node.js >=20.9.0 (Running on 26.13.0) |
 | `react` | `19.3.1` | Core UI library | Peer dependency of Next.js 16 |
 | `react-dom` | `19.3.1` | React DOM renderer | Peer dependency of Next.js 16 |
 | `tailwindcss` | `4.3.4` | CSS-first styling framework | Compatible with Next.js 16 |
