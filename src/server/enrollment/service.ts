@@ -787,7 +787,7 @@ export async function startEnrollmentCheckout(
   const holdExpiresAt = rpc.hold_expires_at ? String(rpc.hold_expires_at) : null;
   const cleanOrigin = options.origin.replace(/\/+$/, "");
 
-  const gateway = options.gatewayOverride ?? getPaymentGatewayClient(cleanOrigin);
+  const gateway = options.gatewayOverride ?? getPaymentGatewayClient(cleanOrigin, mode);
   let createdPaymentId: string | null = null;
   try {
     const init = await gateway.initiateCheckout({
@@ -920,7 +920,7 @@ export async function retryEnrollmentCheckout(
   const holdExpiresAt = rpc.hold_expires_at ? String(rpc.hold_expires_at) : null;
   const cleanOrigin = options.origin.replace(/\/+$/, "");
 
-  const gateway = options.gatewayOverride ?? getPaymentGatewayClient(cleanOrigin);
+  const gateway = options.gatewayOverride ?? getPaymentGatewayClient(cleanOrigin, mode);
   let createdPaymentId: string | null = null;
   try {
     const init = await gateway.initiateCheckout({

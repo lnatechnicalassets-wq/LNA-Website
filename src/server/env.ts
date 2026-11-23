@@ -96,6 +96,7 @@ function resolveBkashEnvAliases(input: unknown): unknown {
   const username = firstNonEmpty(
     raw.BKASH_USERNAME,
     raw.BKASH_CHECKOUT_URL_USER_NAME,
+    raw.BKASH_CHECKOUT_URL_USERNAME,
     raw.PGW_Username,
     raw.PGW_USERNAME
   );
@@ -110,6 +111,9 @@ function resolveBkashEnvAliases(input: unknown): unknown {
   if (appSecret !== undefined) raw.BKASH_APP_SECRET = appSecret;
   if (username !== undefined) raw.BKASH_USERNAME = username;
   if (password !== undefined) raw.BKASH_PASSWORD = password;
+  if (raw.BKASH_CHECKOUT_MODE === "sandbox") {
+    raw.BKASH_CHECKOUT_MODE = "live";
+  }
   if (typeof raw.CRON_SECRET === "string" && raw.CRON_SECRET.trim() === "") {
     delete raw.CRON_SECRET;
   }
@@ -130,7 +134,9 @@ const baseServerEnvObject = z
     SUPABASE_SECRET_KEY: z.string().optional(),
 
     // bKash Gateway Credentials & Mode (ADR 0009 - Standardized BKASH_* Server-Only)
-    BKASH_CHECKOUT_MODE: z.enum(["closed", "mock", "live"]).default("closed"),
+    BKASH_CHECKOUT_MODE: z
+      .preprocess((val) => (val === "sandbox" ? "live" : val), z.enum(["closed", "mock", "live"]))
+      .default("closed"),
     BKASH_MANUAL_PAYMENT_ENABLED: z.enum(["true", "false"]).default("false"),
     BKASH_APP_KEY: z.string().optional(),
     BKASH_APP_SECRET: z.string().optional(),

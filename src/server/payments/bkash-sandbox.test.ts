@@ -1,8 +1,12 @@
 // @vitest-environment node
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { BkashTokenizedClient } from "./bkash";
 import { SupabaseBkashTokenCache } from "./bkash-token-cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+beforeEach(() => {
+  SupabaseBkashTokenCache.clearMemoryCacheForTesting();
+});
 
 const config = {
   apiVersion: "v2",
@@ -145,17 +149,36 @@ it("classifies null Execute as missing and preserves the English message on a re
   await expect(client.executePayment("PAY-3")).resolves.toMatchObject({ outcome: "failed" });
 });
 
-it.each([{ data: { state: "limited" } }, { data: null, error: { code: "PGRST202" } }])(
-  "does not call Grant without a database claim ($data)",
-  async (result) => {
-    const db = mockCacheDatabase(() => result);
-    const grant = vi.fn();
-    await expect(
-      new SupabaseBkashTokenCache(db, "fixture-merchant").getOrGrant(grant)
-    ).rejects.toMatchObject({ code: "BKASH_AUTH_UNAVAILABLE" });
-    expect(grant).not.toHaveBeenCalled();
-  }
-);
+it("rejects when token grant rate limit is reached", async () => {
+  const db = mockCacheDatabase(() => ({ data: { state: "limited" } }));
+  const grant = vi.fn();
+  await expect(
+    new SupabaseBkashTokenCache(db, "fixture-merchant").getOrGrant(grant)
+  ).rejects.toMatchObject({ code: "BKASH_AUTH_LIMITED", statusCode: 429 });
+  expect(grant).not.toHaveBeenCalled();
+});
+
+it("falls back gracefully to memory cache when database token cache RPC is missing or fails (PGRST202)", async () => {
+  const db = mockCacheDatabase(() => ({
+    data: null,
+    error: { code: "PGRST202", message: "function not found" },
+  }));
+  const grant = vi.fn().mockResolvedValue({
+    token: "fallback-token",
+    expiresAtMs: Date.now() + 60_000,
+    validForMs: 60_000,
+  });
+
+  const cache = new SupabaseBkashTokenCache(db, "fallback-merchant");
+  const token1 = await cache.getOrGrant(grant);
+  expect(token1).toBe("fallback-token");
+  expect(grant).toHaveBeenCalledTimes(1);
+
+  // Subsequent call within validity reuses the memory token without hitting grant again
+  const token2 = await cache.getOrGrant(grant);
+  expect(token2).toBe("fallback-token");
+  expect(grant).toHaveBeenCalledTimes(1);
+});
 
 it("lets a concurrent server wait for the first server to finish Grant", async () => {
   let owner: unknown;
