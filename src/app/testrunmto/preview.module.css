@@ -1,0 +1,1560 @@
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--color-surface-base, #f6fafa);
+  color: var(--color-text-primary, #172e35);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(125deg, #086477, #062f38 75%);
+  clip-path: polygon(62% 0, 100% 0, 100% 100%, 40% 100%);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 38rem;
+  max-width: 88rem;
+  margin-inline: auto;
+  padding: clamp(2rem, 6vw, 6rem);
+  gap: 2rem;
+}
+
+.copy {
+  align-self: start;
+  padding-block-start: clamp(0rem, 4vw, 4rem);
+}
+
+.eyebrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.copy > .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: #086477;
+  line-height: 1.5;
+}
+
+.copy > .eyebrow::before {
+  content: "";
+  flex: 0 0 1.5rem;
+  height: 2px;
+  background: #b88736;
+}
+
+.copy h1 {
+  max-width: 13ch;
+  margin-block: 1.15rem 1rem;
+  color: #123b42;
+  font-size: clamp(2.25rem, 4.2vw, 4.75rem);
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  line-height: 1.04;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+@supports (background-clip: text) {
+  .copy h1 {
+    background: linear-gradient(
+        112deg,
+        #123b42 10%,
+        #086477 39%,
+        #876020 48%,
+        #086477 56%,
+        #123b42 86%
+      )
+      100% center / 245% 100%;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.copy > p:not(.eyebrow) {
+  max-width: 32ch;
+  color: #35575c;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.highlights {
+  display: grid;
+  gap: 0.7rem;
+  margin-block-start: 1.65rem;
+}
+
+.highlights li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #1a4850;
+  font-weight: 650;
+}
+
+.highlights li::before {
+  content: "";
+  flex: 0 0 0.48rem;
+  aspect-ratio: 1;
+  border: 1px solid #946a2c;
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (background-clip: text) {
+    .copy h1 {
+      animation: headline-glint 3.2s cubic-bezier(0.25, 0.65, 0.25, 1) both;
+    }
+  }
+
+  .highlights li::before {
+    animation: highlight-glow 850ms ease-out 550ms both;
+  }
+
+  .highlights li:nth-child(2)::before {
+    animation-delay: 710ms;
+  }
+  .highlights li:nth-child(3)::before {
+    animation-delay: 870ms;
+  }
+}
+
+@keyframes headline-glint {
+  from {
+    background-position: 100% center;
+  }
+  to {
+    background-position: 0% center;
+  }
+}
+
+@keyframes highlight-glow {
+  45% {
+    background-color: #d9b46c;
+    box-shadow: 0 0 0 4px #d9b46c40;
+  }
+}
+
+@media (forced-colors: active) {
+  .copy h1 {
+    color: CanvasText;
+    background: none;
+  }
+}
+
+.showcase {
+  min-width: 0;
+  color: white;
+  text-align: center;
+}
+
+.frame {
+  position: relative;
+  width: min(100%, 26rem);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  background: radial-gradient(circle at 48% 35%, #d4e9ea, #528997);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.portrait {
+  position: absolute;
+  inset: 0;
+  animation: portrait-enter 520ms cubic-bezier(0.2, 0.7, 0.25, 1) both;
+}
+
+.portrait img {
+  object-fit: cover;
+  object-position: center 34%;
+}
+
+.caption {
+  min-height: 5rem;
+  padding-block: 1rem 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.caption strong,
+.caption span {
+  display: block;
+}
+
+.caption strong {
+  font-size: 1.25rem;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.controls button {
+  min-width: 44px;
+  min-height: 44px;
+  padding-inline: 0.75rem;
+  border: 1px solid #90bdc5;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.controls button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
+
+@keyframes portrait-enter {
+  from {
+    opacity: 0;
+    transform: translateX(6%) scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@media (max-width: 760px) {
+  .hero::before {
+    display: none;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+    padding: 0;
+    gap: 0;
+  }
+  .copy {
+    padding: 2.5rem 1.5rem;
+  }
+  .showcase {
+    padding: 3.5rem 1.25rem 2rem;
+    background: linear-gradient(125deg, #086477, #062f38 75%);
+    clip-path: polygon(0 1.75rem, 100% 0, 100% 100%, 0 100%);
+  }
+  .frame {
+    width: min(85vw, 24rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portrait {
+    animation: none;
+  }
+}
+
+/* Layer the portrait in front of the architecture and keep the caption on teal. */
+.hero::before {
+  clip-path: polygon(64% 0, 100% 0, 100% 100%, 32% 100%);
+}
+
+.layout {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.1fr);
+  padding-block-end: 0;
+}
+
+.showcase {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  column-gap: clamp(1rem, 3vw, 3rem);
+  text-align: start;
+}
+
+.frame {
+  align-self: end;
+  grid-row: 1 / 3;
+  width: 100%;
+  min-height: clamp(25rem, 43vw, 39rem);
+  aspect-ratio: auto;
+  margin: 0;
+  isolation: isolate;
+  background: transparent;
+  clip-path: none;
+}
+
+.frame::before {
+  content: "";
+  position: absolute;
+  inset: 0 -18% 0 -10%;
+  background:
+    linear-gradient(140deg, #60b9c452, #05617080),
+    url("/images/hero-mto-office-bg.jpg") 55% center / cover;
+  clip-path: polygon(100% 0, 71% 100%, 0 100%, 26% 51%);
+}
+
+.portrait img {
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+.caption {
+  padding-block: 2rem 1rem;
+}
+
+.details strong {
+  margin-block: 0.75rem 1rem;
+  color: #ffc052;
+  font-size: clamp(1.8rem, 3.7vw, 4rem);
+  line-height: 1;
+}
+
+.details > span {
+  padding-inline-start: 0.75rem;
+  border-inline-start: 1px solid #ffc052;
+  font-size: clamp(1rem, 1.45vw, 1.35rem);
+}
+
+.logo {
+  position: relative;
+  width: 7rem;
+  height: 3.5rem;
+  margin-block-start: 1.25rem;
+}
+
+.logo img {
+  object-fit: contain;
+  object-position: left center;
+}
+
+.join {
+  display: inline-flex;
+  gap: 1.25rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-start: 1.5rem;
+  padding: 0.75rem 1.4rem;
+  border-radius: 100px;
+  background: #086477;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.join:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
+
+.controls {
+  justify-content: flex-start;
+  padding-block-end: 1.5rem;
+}
+
+.hero[data-mto-reflective] {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  background: #f6fafa;
+}
+
+.hero[data-mto-reflective]::before,
+.hero[data-mto-reflective]::after {
+  content: none;
+}
+
+.hero[data-mto-reflective] .layout::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, #063641 13%, #063641a6 38%, transparent 66%),
+    url("/images/mto-hero-glass-building.png") 50% 50% / cover no-repeat,
+    #086477;
+  clip-path: polygon(0 0, 65% 0, 54% 100%, 0 100%);
+  mask-image: none;
+}
+
+.hero[data-mto-reflective] .frame::before,
+.hero[data-mto-reflective] .mentorAccent,
+.hero[data-mto-reflective] .lightSweep,
+.hero[data-mto-reflective] .logo::before,
+.hero[data-mto-reflective] .logo::after {
+  content: none;
+  display: none;
+}
+
+.hero[data-mto-reflective] .copy,
+.hero[data-mto-reflective] .copy p,
+.hero[data-mto-reflective] .copy h1.wordmark,
+.hero[data-mto-reflective] .highlights[data-stats] li,
+.hero[data-mto-reflective] .viewProgram {
+  color: #f6fafa;
+}
+
+.hero[data-mto-reflective] .readiness {
+  animation: none;
+  background: none;
+  color: #c5f0f1;
+}
+
+.hero[data-mto-reflective] .highlights[data-stats] li {
+  border-color: #c5e2e564;
+}
+
+.hero[data-mto-reflective] .viewProgram {
+  border-color: currentColor;
+}
+
+.hero[data-mto-reflective] .caption,
+.hero[data-mto-reflective] .caption .details strong,
+.hero[data-mto-reflective] .caption .details > span,
+.hero[data-mto-reflective] .controls {
+  color: #0b3039;
+}
+
+.hero[data-mto-reflective] .countdown {
+  max-width: 26rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid white;
+  border-radius: 0.85rem;
+  background: #d7ebed;
+  box-shadow: 0 2px 10px #0838440c;
+}
+
+@supports (backdrop-filter: blur(10px)) {
+  .hero[data-mto-reflective] .countdown {
+    background: #c5e2e580;
+    backdrop-filter: blur(10px);
+  }
+}
+
+.hero[data-mto-reflective] .countdown :is(p, dt, dd) {
+  color: #0b3039;
+}
+
+.hero[data-mto-reflective] .countdown dl div + div {
+  border-color: #08647740;
+}
+
+.hero[data-mto-reflective] .logo {
+  align-items: center;
+  min-height: clamp(4rem, 6vw, 6rem);
+  padding: 0;
+}
+
+.hero[data-mto-reflective] .logo img {
+  max-width: min(100%, 14rem);
+  max-height: clamp(3.5rem, 6vw, 6rem);
+}
+
+.hero[data-mto-reflective] .admissionsAction {
+  position: relative;
+  width: 100%;
+  margin-block-start: clamp(2.5rem, 4vw, 4.5rem);
+}
+
+.hero[data-mto-reflective] .join {
+  width: 100%;
+  background: #075363;
+  color: white;
+}
+
+.hero[data-mto-reflective] .limitedSeats {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: 0;
+  inset-inline-end: 1rem;
+  transform: translateY(-70%);
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: 0;
+  background: #b32227;
+  color: white;
+  letter-spacing: normal;
+  pointer-events: none;
+}
+
+.hero[data-mto-reflective] .controls {
+  justify-content: flex-start;
+}
+
+.hero[data-mto-reflective] .controls button {
+  border-color: currentColor;
+}
+
+.hero[data-mto-reflective] .controls button:focus-visible {
+  outline-color: #086477;
+}
+
+@media (min-width: 1001px) {
+  .hero[data-mto-reflective] .layout {
+    grid-template-columns: minmax(0, 30fr) minmax(0, 70fr);
+  }
+
+  .hero[data-mto-reflective] .showcase {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1000px) {
+  .hero[data-mto-reflective] .layout::before {
+    display: none;
+  }
+
+  .hero[data-mto-reflective] .copy {
+    background: #063641;
+  }
+
+  .hero[data-mto-reflective] .frame {
+    background: url("/images/mto-hero-glass-building.png") center / cover no-repeat;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero[data-mto-reflective] .limitedSeats {
+    animation: seat-blink 1.5s step-end infinite;
+  }
+}
+
+@keyframes seat-blink {
+  0% {
+    background-color: #b32227;
+  }
+
+  70% {
+    background-color: #78151b;
+  }
+}
+
+@media (max-width: 1000px) {
+  .hero::before {
+    display: none;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+    padding: 0;
+    gap: 0;
+  }
+  .copy {
+    padding: 2.5rem 1.5rem;
+  }
+  .showcase {
+    background: linear-gradient(125deg, #086477, #062f38 75%);
+    padding-inline: clamp(0.75rem, 4vw, 3rem);
+    clip-path: polygon(0 1.75rem, 100% 0, 100% 100%, 0 100%);
+  }
+  .frame {
+    min-height: clamp(17rem, 58vw, 31rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .showcase {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .frame {
+    grid-row: auto;
+    min-height: 19rem;
+  }
+  .caption,
+  .controls {
+    padding-inline: 0.75rem;
+  }
+}
+
+.glass,
+.lightSweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.glass {
+  z-index: -1;
+  inset-inline: -12% -14%;
+  clip-path: polygon(75% 5%, 90% 5%, 42% 100%, 25% 100%);
+  background: linear-gradient(160deg, transparent 15%, #b4f2f14a 60%, #4cc5cd1c);
+  animation: glass-reveal 900ms ease-out both;
+}
+
+.lightSweep {
+  z-index: 1;
+  background: linear-gradient(115deg, transparent 42%, #baf7f338 50%, transparent 58%);
+  clip-path: polygon(85% 0, 100% 0, 58% 100%, 4% 100%);
+  background-size: 240% 100%;
+  animation: light-sweep 1050ms ease-out both;
+}
+
+.details > * {
+  animation: detail-reveal 580ms cubic-bezier(0.2, 0.7, 0.25, 1) both;
+  animation-delay: 70ms;
+}
+
+.details > :nth-child(2) {
+  animation-delay: 140ms;
+}
+.details > :nth-child(3) {
+  animation-delay: 210ms;
+}
+.details > :nth-child(4) {
+  animation-delay: 280ms;
+}
+
+@keyframes glass-reveal {
+  from {
+    opacity: 0;
+    transform: translateX(-1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes light-sweep {
+  0% {
+    opacity: 0;
+    background-position: 100% 0;
+  }
+  28% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    background-position: 0 0;
+  }
+}
+
+@keyframes detail-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass,
+  .lightSweep,
+  .details > * {
+    animation: none;
+  }
+
+  .lightSweep {
+    display: none;
+  }
+}
+
+.viewProgram {
+  border: 1px solid #086477;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  color: #065868;
+  font-weight: 700;
+}
+
+.copy h1.wordmark {
+  display: grid;
+  max-width: none;
+  background: none;
+  color: #082f36;
+  font-size: clamp(3rem, 6.2vw, 6.4rem);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  animation: none;
+  overflow-wrap: normal;
+}
+
+.wordMask {
+  display: block;
+  overflow: hidden;
+  padding: 0.03em 0.1em 0.06em 0;
+}
+
+.wordMask > span {
+  display: block;
+}
+.readiness {
+  position: relative;
+  width: fit-content;
+  font-size: 0.52em;
+  color: #086477;
+  white-space: nowrap;
+}
+
+.copy .highlights[data-stats] li {
+  display: block;
+  border-bottom: 1px solid #d8e7e8;
+  padding: 0.55rem 0;
+  font-weight: 400;
+}
+
+.copy .highlights[data-stats] li::before {
+  display: inline-block;
+  width: 1.3rem;
+  height: 0.2rem;
+  margin-inline-end: 0.65rem;
+  vertical-align: middle;
+  border: 0;
+  border-radius: 99px;
+  background: #008e83;
+  transform: none;
+}
+
+.copy .highlights[data-stats] li:nth-child(2)::before {
+  background: #b87913;
+}
+.copy .highlights[data-stats] li:nth-child(3)::before {
+  background: #087c9c;
+}
+.viewProgram {
+  display: inline-flex;
+  gap: 0.8rem;
+  margin-top: 1.4rem;
+}
+
+.mentorAccent {
+  position: absolute;
+  inset: 10% -5% 8%;
+  border: 1px solid #b0f1e7;
+  pointer-events: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wordMask > span {
+    animation: word-rise 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .wordMask:nth-child(2) > span {
+    animation-delay: 120ms;
+  }
+
+  .readiness {
+    background: linear-gradient(110deg, #086477 35%, #178b84 49%, #91691f 52%, #086477 64%) 100% /
+      280% 100%;
+    background-clip: text;
+    color: transparent;
+    animation:
+      word-rise 680ms 120ms both,
+      headline-glint 5s 700ms infinite;
+  }
+
+  .mentorAccent {
+    transform: skewX(-22deg);
+    animation: glass-edge 1100ms ease-out;
+  }
+}
+
+@keyframes word-rise {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes glass-edge {
+  25% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0;
+    translate: 1.5rem 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .readiness {
+    color: CanvasText;
+    background: none;
+  }
+}
+
+/* Keep the portrait and information inside one continuous banner. */
+.hero {
+  max-width: 95rem;
+  width: calc(100% - clamp(2rem, 8vw, 10rem));
+  margin: clamp(1.25rem, 3vw, 2.75rem) auto;
+  border-radius: clamp(1rem, 2vw, 1.75rem);
+  box-shadow: 0 14px 54px #123b4212;
+}
+
+.layout {
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  grid-template-columns: minmax(0, 0.87fr) minmax(0, 1.6fr);
+}
+
+.copy {
+  position: relative;
+  z-index: 2;
+  padding: clamp(2rem, 4vw, 4.5rem) clamp(1.25rem, 3vw, 3.5rem);
+}
+
+.copy h1.wordmark {
+  gap: 0.035em;
+  font-size: clamp(3rem, 5.8vw, 5.8rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  text-wrap: nowrap;
+}
+
+.wordMask {
+  padding-inline-end: 0.22em;
+}
+
+.readiness {
+  font-size: 0.59em;
+  letter-spacing: -0.035em;
+  padding-inline-end: 0.13em;
+}
+
+.copy .highlights[data-stats] {
+  max-width: 20rem;
+  gap: 0.25rem;
+}
+
+.showcase {
+  align-self: stretch;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  column-gap: clamp(0.75rem, 2vw, 2rem);
+  padding-inline-end: clamp(1.25rem, 3vw, 3rem);
+}
+
+.frame {
+  min-height: clamp(27rem, 46vw, 41rem);
+  width: 116%;
+  margin-inline-start: -12%;
+}
+
+.mentorAccent {
+  inset: 11% 1% 8%;
+}
+
+.caption {
+  padding-block: clamp(1.5rem, 3vw, 3rem) 1rem;
+}
+
+.details strong {
+  font-size: clamp(1.85rem, 3vw, 3.1rem);
+  line-height: 1.04;
+}
+
+.logo {
+  width: min(100%, 9.75rem);
+  height: 4.5rem;
+  margin-block-start: 1.25rem;
+  border-radius: 0.6rem;
+  background: #f6fafa;
+  overflow: hidden;
+}
+
+.logo img {
+  padding: 0.45rem 0.7rem;
+  object-position: center;
+}
+
+.organization {
+  margin-block-start: 1.25rem;
+  font-weight: 700;
+}
+
+.join {
+  width: 100%;
+  padding-block: 1rem;
+}
+
+.countdown {
+  max-width: 24rem;
+  margin-block-end: 1.5rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #aedade40;
+  border-radius: 0.65rem;
+  background: #062f38;
+  color: #f6fafa;
+}
+
+.countdown p {
+  margin-block-end: 0.55rem;
+  color: #c3e5e6;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.countdown dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  text-align: center;
+}
+
+.countdown dl div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.12rem;
+}
+
+.countdown dl div + div {
+  border-inline-start: 1px solid #aedade40;
+}
+.countdown dt {
+  font-size: 0.66rem;
+  color: #c3e5e6;
+}
+.countdown dd {
+  font-weight: 800;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero[data-mto-reflective] {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  background: #f6fafa;
+}
+
+.hero[data-mto-reflective]::before,
+.hero[data-mto-reflective]::after {
+  content: none;
+}
+
+.hero[data-mto-reflective] .layout::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, #063641 13%, #063641a6 38%, transparent 66%),
+    url("/images/mto-hero-glass-building.png") 50% 50% / cover no-repeat,
+    #086477;
+  clip-path: polygon(0 0, 65% 0, 54% 100%, 0 100%);
+  mask-image: none;
+}
+
+.hero[data-mto-reflective] .frame::before,
+.hero[data-mto-reflective] .mentorAccent,
+.hero[data-mto-reflective] .lightSweep,
+.hero[data-mto-reflective] .logo::before,
+.hero[data-mto-reflective] .logo::after {
+  content: none;
+  display: none;
+}
+
+.hero[data-mto-reflective] .copy,
+.hero[data-mto-reflective] .copy p,
+.hero[data-mto-reflective] .copy h1.wordmark,
+.hero[data-mto-reflective] .highlights[data-stats] li,
+.hero[data-mto-reflective] .viewProgram {
+  color: #f6fafa;
+}
+
+.hero[data-mto-reflective] .readiness {
+  animation: none;
+  background: none;
+  color: #c5f0f1;
+}
+
+.hero[data-mto-reflective] .highlights[data-stats] li {
+  border-color: #c5e2e564;
+}
+
+.hero[data-mto-reflective] .viewProgram {
+  border-color: currentColor;
+}
+
+.hero[data-mto-reflective] .caption,
+.hero[data-mto-reflective] .caption .details strong,
+.hero[data-mto-reflective] .caption .details > span,
+.hero[data-mto-reflective] .controls {
+  color: #0b3039;
+}
+
+.hero[data-mto-reflective] .countdown {
+  max-width: 26rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid white;
+  border-radius: 0.85rem;
+  background: #d7ebed;
+  box-shadow: 0 2px 10px #0838440c;
+}
+
+@supports (backdrop-filter: blur(10px)) {
+  .hero[data-mto-reflective] .countdown {
+    background: #c5e2e580;
+    backdrop-filter: blur(10px);
+  }
+}
+
+.hero[data-mto-reflective] .countdown :is(p, dt, dd) {
+  color: #0b3039;
+}
+
+.hero[data-mto-reflective] .countdown dl div + div {
+  border-color: #08647740;
+}
+
+.hero[data-mto-reflective] .logo {
+  align-items: center;
+  min-height: clamp(4rem, 6vw, 6rem);
+  padding: 0;
+}
+
+.hero[data-mto-reflective] .logo img {
+  max-width: min(100%, 14rem);
+  max-height: clamp(3.5rem, 6vw, 6rem);
+}
+
+.hero[data-mto-reflective] .admissionsAction {
+  position: relative;
+  width: 100%;
+  margin-block-start: clamp(2.5rem, 4vw, 4.5rem);
+}
+
+.hero[data-mto-reflective] .join {
+  width: 100%;
+  background: #075363;
+  color: white;
+}
+
+.hero[data-mto-reflective] .limitedSeats {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: 0;
+  inset-inline-end: 1rem;
+  transform: translateY(-70%);
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: 0;
+  background: #b32227;
+  color: white;
+  letter-spacing: normal;
+  pointer-events: none;
+}
+
+.hero[data-mto-reflective] .controls {
+  justify-content: flex-start;
+}
+
+.hero[data-mto-reflective] .controls button {
+  border-color: currentColor;
+}
+
+.hero[data-mto-reflective] .controls button:focus-visible {
+  outline-color: #086477;
+}
+
+@media (min-width: 1001px) {
+  .hero[data-mto-reflective] .layout {
+    grid-template-columns: minmax(0, 30fr) minmax(0, 70fr);
+  }
+
+  .hero[data-mto-reflective] .showcase {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1000px) {
+  .hero[data-mto-reflective] .layout::before {
+    display: none;
+  }
+
+  .hero[data-mto-reflective] .copy {
+    background: #063641;
+  }
+
+  .hero[data-mto-reflective] .frame {
+    background: url("/images/mto-hero-glass-building.png") center / cover no-repeat;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero[data-mto-reflective] .limitedSeats {
+    animation: seat-blink 1.5s step-end infinite;
+  }
+}
+
+@keyframes seat-blink {
+  0% {
+    background-color: #b32227;
+  }
+
+  70% {
+    background-color: #78151b;
+  }
+}
+
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .copy {
+    padding: 2rem clamp(1.25rem, 5vw, 3rem);
+  }
+  .showcase {
+    padding-inline: clamp(1.25rem, 5vw, 3rem);
+  }
+  .frame {
+    min-height: clamp(19rem, 50vw, 30rem);
+  }
+}
+
+@media (max-width: 540px) {
+  .hero {
+    width: calc(100% - 1.25rem);
+  }
+  .showcase {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .frame {
+    grid-row: auto;
+    width: 100%;
+    margin: 0;
+  }
+  .caption,
+  .controls {
+    padding-inline: 0;
+  }
+}
+
+/* The homepage glass facade is part of the stage, behind both portrait and copy. */
+.frame::before {
+  inset: 0 -10% 0 -24%;
+  background: url("/images/mto-hero-glass-building.png") right bottom / contain no-repeat;
+  clip-path: polygon(100% 0, 84% 100%, 0 100%, 12% 68%);
+  mask-image: linear-gradient(104deg, transparent 4%, #000 36%, #000 77%, transparent 100%);
+}
+
+.caption,
+.controls {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 540px) {
+  .frame::before {
+    inset-inline: 0;
+  }
+}
+
+/* Anchor each cutout to the stage floor and balance the visible headroom. */
+.portrait {
+  inset: auto -14% 0;
+  height: var(--portrait-height, 86%);
+}
+
+.portrait[hidden] {
+  display: none;
+}
+
+.portrait img {
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.portrait[data-mentor="mentor-anubhab-rahman"] {
+  --portrait-height: 91%;
+  inset-inline: -22% -8%;
+}
+
+.portrait[data-mentor="mentor-md-manik-hossain"] {
+  --portrait-height: 83%;
+}
+
+.portrait[data-mentor="mentor-mir-hasib"] {
+  --portrait-height: 84%;
+}
+
+.frame::before {
+  mask-image:
+    linear-gradient(104deg, transparent 5%, #000 35%, #000 75%, transparent 100%),
+    linear-gradient(to top, transparent, #000 14%);
+  mask-composite: intersect;
+}
+
+.logo {
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 3.5rem;
+  padding: 0.4rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  background: #b5d8dc;
+  border-radius: 0.45rem;
+}
+
+.logo img {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: min(100%, 9rem);
+  max-height: 3rem;
+  padding: 0;
+}
+
+.countdown {
+  border: 0;
+  border-block-end: 1px solid #aedade40;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.25rem 0 0.6rem;
+  margin-block-end: 1rem;
+}
+
+.countdown dl {
+  text-align: start;
+}
+
+.countdown dl div + div {
+  padding-inline-start: 0.55rem;
+}
+
+@media (max-width: 540px) {
+  .portrait {
+    inset-inline: 0;
+  }
+}
+
+/* Size the facade from the banner, independently of captions and portraits. */
+.layout {
+  position: relative;
+  isolation: isolate;
+}
+
+.layout::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 31% 0 27%;
+  pointer-events: none;
+  background: url("/images/mto-hero-glass-building.png") right bottom / contain no-repeat;
+  mask-image: linear-gradient(100deg, transparent 3%, #000 34%, #000 83%, transparent 100%);
+}
+
+.frame::before,
+.frame > .glass {
+  display: none;
+}
+
+.copy h1.wordmark {
+  gap: 0.035em;
+  line-height: 0.9;
+  margin-block: 1.35rem 1.1rem;
+}
+
+.readiness {
+  letter-spacing: -0.012em;
+}
+
+.copy > .eyebrow {
+  align-items: flex-start;
+}
+
+.copy > .eyebrow::before {
+  margin-block-start: 0.68em;
+}
+
+.caption .details {
+  max-width: 25rem;
+  overflow-wrap: anywhere;
+}
+
+.caption .details strong {
+  margin-block: 0.55rem 0.75rem;
+  max-width: 100%;
+  font-size: clamp(1.65rem, 2.45vw, 2.75rem);
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.caption .details > span {
+  font-size: clamp(0.95rem, 1.2vw, 1.18rem);
+  line-height: 1.45;
+  color: #e1eeee;
+}
+
+.logo {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  justify-items: start;
+  width: 100%;
+  min-height: clamp(6rem, 8vw, 8rem);
+  margin-block-start: 1.15rem;
+  padding: 0.6rem 1.2rem;
+  background: none;
+  overflow: visible;
+}
+
+.logo::before,
+.logo::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  clip-path: polygon(5% 0, 58% 0, 78% 18%, 100% 18%, 100% 85%, 72% 85%, 55% 100%, 0 100%, 0 30%);
+}
+
+.logo::before {
+  inset: 0 calc(-1 * clamp(1.25rem, 3vw, 3rem)) 0 -0.65rem;
+  background: linear-gradient(105deg, #fff 12%, #e9f5f4 67%, #c5e2e5);
+}
+
+.logo::after {
+  inset: 12% -1rem -0.35rem 0;
+  z-index: -2;
+  background: #79aeb552;
+}
+
+.logo img {
+  max-width: min(100%, 16rem);
+  max-height: 7rem;
+  object-fit: contain;
+}
+
+.admissionsAction {
+  display: grid;
+  justify-items: start;
+  gap: 0.65rem;
+  margin-block-start: 1.4rem;
+}
+
+.limitedSeats {
+  width: fit-content;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #f8d28a;
+  border-radius: 0.25rem;
+  background: #ffc052;
+  color: #172e35;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.095em;
+  text-transform: uppercase;
+  transform-origin: left center;
+}
+
+.join {
+  width: min(100%, 23rem);
+  margin-block-start: 0;
+}
+
+.countdown {
+  max-width: 19rem;
+  padding-block-end: 0.65rem;
+  border-block-end: 1px solid #aedade66;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .limitedSeats {
+    animation: seat-pulse 1.9s ease-in-out 2;
+  }
+}
+
+@keyframes seat-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  23% {
+    transform: scale(0.94);
+  }
+
+  43% {
+    transform: scale(1.09);
+  }
+}
+
+.hero[data-mto-reflective] {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  background: #f6fafa;
+}
+
+.hero[data-mto-reflective]::before,
+.hero[data-mto-reflective]::after {
+  content: none;
+}
+
+.hero[data-mto-reflective] .layout::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, #063641 13%, #063641a6 38%, transparent 66%),
+    url("/images/mto-hero-glass-building.png") 50% 50% / cover no-repeat,
+    #086477;
+  clip-path: polygon(0 0, 65% 0, 54% 100%, 0 100%);
+  mask-image: none;
+}
+
+.hero[data-mto-reflective] .frame::before,
+.hero[data-mto-reflective] .mentorAccent,
+.hero[data-mto-reflective] .lightSweep,
+.hero[data-mto-reflective] .logo::before,
+.hero[data-mto-reflective] .logo::after {
+  content: none;
+  display: none;
+}
+
+.hero[data-mto-reflective] .copy,
+.hero[data-mto-reflective] .copy p,
+.hero[data-mto-reflective] .copy h1.wordmark,
+.hero[data-mto-reflective] .highlights[data-stats] li,
+.hero[data-mto-reflective] .viewProgram {
+  color: #f6fafa;
+}
+
+.hero[data-mto-reflective] .readiness {
+  animation: none;
+  background: none;
+  color: #c5f0f1;
+}
+
+.hero[data-mto-reflective] .highlights[data-stats] li {
+  border-color: #c5e2e564;
+}
+
+.hero[data-mto-reflective] .viewProgram {
+  border-color: currentColor;
+}
+
+.hero[data-mto-reflective] .caption,
+.hero[data-mto-reflective] .caption .details strong,
+.hero[data-mto-reflective] .caption .details > span,
+.hero[data-mto-reflective] .controls {
+  color: #0b3039;
+}
+
+.hero[data-mto-reflective] .countdown {
+  max-width: 26rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid white;
+  border-radius: 0.85rem;
+  background: #d7ebed;
+  box-shadow: 0 2px 10px #0838440c;
+}
+
+@supports (backdrop-filter: blur(10px)) {
+  .hero[data-mto-reflective] .countdown {
+    background: #c5e2e580;
+    backdrop-filter: blur(10px);
+  }
+}
+
+.hero[data-mto-reflective] .countdown :is(p, dt, dd) {
+  color: #0b3039;
+}
+
+.hero[data-mto-reflective] .countdown dl div + div {
+  border-color: #08647740;
+}
+
+.hero[data-mto-reflective] .logo {
+  align-items: center;
+  min-height: clamp(4rem, 6vw, 6rem);
+  padding: 0;
+}
+
+.hero[data-mto-reflective] .logo img {
+  max-width: min(100%, 14rem);
+  max-height: clamp(3.5rem, 6vw, 6rem);
+}
+
+.hero[data-mto-reflective] .admissionsAction {
+  position: relative;
+  width: 100%;
+  margin-block-start: clamp(2.5rem, 4vw, 4.5rem);
+}
+
+.hero[data-mto-reflective] .join {
+  width: 100%;
+  background: #075363;
+  color: white;
+}
+
+.hero[data-mto-reflective] .limitedSeats {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: 0;
+  inset-inline-end: 1rem;
+  transform: translateY(-70%);
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: 0;
+  background: #b32227;
+  color: white;
+  letter-spacing: normal;
+  pointer-events: none;
+}
+
+.hero[data-mto-reflective] .controls {
+  justify-content: flex-start;
+}
+
+.hero[data-mto-reflective] .controls button {
+  border-color: currentColor;
+}
+
+.hero[data-mto-reflective] .controls button:focus-visible {
+  outline-color: #086477;
+}
+
+@media (min-width: 1001px) {
+  .hero[data-mto-reflective] .layout {
+    grid-template-columns: minmax(0, 30fr) minmax(0, 70fr);
+  }
+
+  .hero[data-mto-reflective] .showcase {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1000px) {
+  .hero[data-mto-reflective] .layout::before {
+    display: none;
+  }
+
+  .hero[data-mto-reflective] .copy {
+    background: #063641;
+  }
+
+  .hero[data-mto-reflective] .frame {
+    background: url("/images/mto-hero-glass-building.png") center / cover no-repeat;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero[data-mto-reflective] .limitedSeats {
+    animation: seat-blink 1.5s step-end infinite;
+  }
+}
+
+@keyframes seat-blink {
+  0% {
+    background-color: #b32227;
+  }
+
+  70% {
+    background-color: #78151b;
+  }
+}
+
+@media (max-width: 1000px) {
+  .layout::before {
+    display: none;
+  }
+
+  .frame::before {
+    display: block;
+  }
+}

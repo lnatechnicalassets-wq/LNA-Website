@@ -1,8 +1,8 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
-**Last Updated:** 16 November 2026
+**Last Updated:** 23 November 2026
 
-**Session Context:** Completed staff catalog draft publishing workflow (`task/p8-catalog-publish`) and course details MTO custom banner integration with exact 2:1 aspect ratio sizing (`/courses/mto-readiness`). Super Admins can publish draft courses and batches directly from their edit pages, backed by transactional RPC migration `20261113090000_admin_catalog_publish.sql` and public dynamic Supabase fallback on `/courses/[slug]`. Replaced placeholder MTO classroom banner with official `7.MTO_FINAL_Banner_with_mentor.jpg` (`5184x2592`, copied to `public/images/courses/mto-banner.jpg`) and updated container to `aspect-[2/1]` to ensure zero cropping of header text or mentor cards.
+**Session Context:** Completed bKash sandbox payment UAT (`task/p8-admissions-quick-add`), token caching RPC migrations, and MTO Readiness Hero carousel redesign in `/testrunmto`. Guarded development sandbox routes (`/mtotest` and `/testrunmto`) with `notFound()` in production environments (`process.env.NODE_ENV === "production"`) while keeping the public homepage intact. Replaced Nagad official partner branding with verified vector/PNG assets and trimmed Eastern Bank SVG viewBox. All 13 focused test suites pass (10/10 in `readiness-hero.test.tsx`, 3/3 in `slideshow.test.tsx`), with zero TypeScript errors.
 
 ---
 

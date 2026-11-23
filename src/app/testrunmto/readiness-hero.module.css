@@ -1,0 +1,1043 @@
+.heroWrapper {
+  width: 100%;
+  max-width: 1360px;
+  margin: clamp(1.25rem, 3vw, 2.75rem) auto;
+  display: flex;
+  justify-content: center;
+}
+
+.hero {
+  --teal-900: #073842;
+  --teal-700: #0d5565;
+  --ink: #073842;
+  --mist: #f6f9fa;
+  --hairline: rgba(7, 58, 71, 0.14);
+  --gold: #f2c45c;
+  --hero-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  width: 1360px;
+  height: 640px;
+  border-radius: 28px;
+  overflow: clip;
+  contain: layout paint;
+  isolation: isolate;
+  background: var(--mist);
+  box-shadow: 0 20px 60px rgba(7, 56, 66, 0.12);
+  transform-origin: top center;
+}
+
+/* ==========================================================================
+   Left and Right Panels (Derived from seam.ts)
+   ========================================================================== */
+
+.leftPanel {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--teal-900);
+  clip-path: polygon(0 0, var(--seam-top) 0, var(--seam-bottom) 100%, 0 100%);
+  overflow: clip;
+}
+
+.buildingBg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 46% 28%, rgba(229, 255, 255, 0.08), transparent 28%),
+    radial-gradient(ellipse at 42% 35%, transparent 30%, rgba(0, 27, 34, 0.65) 85%),
+    linear-gradient(90deg, #06313c 10%, rgba(6, 49, 60, 0.94) 28%, rgba(6, 70, 84, 0.45) 65%),
+    url("/images/mto-hero-glass-building.png") 48% 54% / cover no-repeat,
+    var(--teal-900);
+  pointer-events: none;
+}
+
+.seamLine {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  clip-path: polygon(
+    calc(var(--seam-top) - 1px) 0,
+    calc(var(--seam-top) + 0.5px) 0,
+    calc(var(--seam-bottom) + 0.5px) 100%,
+    calc(var(--seam-bottom) - 1px) 100%
+  );
+  background: rgba(226, 248, 249, 0.65);
+  transform-origin: top center;
+}
+
+.rightPanel {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--mist);
+  clip-path: polygon(var(--seam-top) 0, 100% 0, 100% 100%, var(--seam-bottom) 100%);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Left Column: Text from x=56 to 420
+   ========================================================================== */
+
+.textColumn {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 56px;
+  width: 364px; /* x = 56 to 420 */
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 0;
+  color: #fff;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #fff;
+  margin: 0 0 32px 0;
+}
+
+.eyebrowLine {
+  width: 20px;
+  height: 2px;
+  background: var(--gold);
+  flex: none;
+}
+
+.wordmark {
+  display: grid;
+  margin: 0 0 33px 0;
+  line-height: 0.88;
+  letter-spacing: -0.06em;
+}
+
+.wordMask {
+  position: relative;
+  display: block;
+  overflow: clip;
+}
+
+.wordMask > span {
+  display: block;
+}
+
+.wordMto {
+  font-size: 75.6px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 0.88;
+  letter-spacing: -0.06em;
+}
+
+.readiness {
+  position: relative;
+  font-size: 56px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 0.88;
+  color: #e2f8f9;
+  letter-spacing: -0.035em;
+  padding-right: 0.15em;
+  overflow: clip;
+}
+
+.lightSweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 15%,
+    rgba(255, 255, 255, 0.4) 45%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.4) 55%,
+    transparent 85%
+  );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.description {
+  max-width: 22rem;
+  text-wrap: balance;
+  font-size: 17px;
+  line-height: 1.55;
+  color: #eef9f9;
+  margin: 0;
+}
+
+.bottomGroup {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #eef9f9;
+  line-height: 1.35;
+}
+
+.statIcon {
+  flex: none;
+  color: #92c5cb; /* Pale teal outline icon (stroke 1.5), not gold */
+}
+
+.viewLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e9f7f8;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.linkUnderline {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 18px;
+  height: 1.5px;
+  background: #e9f7f8;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 250ms var(--hero-ease);
+}
+
+.viewLink:hover .linkUnderline {
+  transform: scaleX(1);
+}
+
+.linkArrow {
+  transition: transform 200ms var(--hero-ease);
+}
+
+.viewLink:hover .linkArrow {
+  transform: translateX(3px);
+}
+
+.viewLink:focus-visible,
+.ctaButton:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* ==========================================================================
+   Center: Photo Frame & Dots
+   ========================================================================== */
+
+.photoFrame {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  clip-path: polygon(0 0, var(--seam-top) 0, var(--seam-bottom) 100%, 0 100%);
+  overflow: clip;
+}
+
+.portraits {
+  position: absolute;
+  inset: 0;
+}
+
+.portrait {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 600ms var(--hero-ease);
+}
+
+.portrait[data-active="true"] {
+  opacity: 1;
+  z-index: 1;
+}
+
+.portraitImage {
+  position: absolute;
+  bottom: 0;
+  left: 646.27px; /* Midpoint between x=420 and seamX(208) at face height */
+  width: var(--portrait-w);
+  height: var(--portrait-h);
+  transform: translateX(calc(-1 * var(--face-center-x, 50%))) translateY(var(--offset-y, 0px));
+  transform-origin: bottom center;
+}
+
+.portraitImage img {
+  object-fit: contain;
+  object-position: center bottom;
+  filter: var(--portrait-filter);
+}
+
+.filters {
+  position: absolute;
+}
+
+.dotsRow {
+  position: absolute;
+  bottom: 32px; /* 32px above bottom edge */
+  left: 616px; /* Centered in photo clear zone (x=420 to seamX(640)=811.8px) */
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+  pointer-events: auto;
+}
+
+.dotButton {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 9999px;
+}
+
+.dotButton:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.dotMark {
+  display: block;
+  width: 7px; /* 7px inactive dot */
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9); /* white at 90% */
+  transition: width 250ms var(--hero-ease), background 250ms ease;
+}
+
+.dotButton[aria-current="true"] .dotMark {
+  position: relative;
+  width: 32px; /* 32x6 gold active bar */
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(242, 196, 92, 0.3);
+  overflow: clip;
+}
+
+.dotFill {
+  position: absolute;
+  inset: 0;
+  background: var(--gold);
+  transform-origin: left;
+  animation: fill-bar 2.5s linear both;
+}
+
+/* ==========================================================================
+   Glass Transition Sweep Strip (Lean = SEAM_DEG 8°, 700ms)
+   ========================================================================== */
+
+.glassSweep {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  width: 38%;
+  pointer-events: none;
+  clip-path: polygon(var(--glass-slant) 0, 100% 0, calc(100% - var(--glass-slant)) 100%, 0 100%);
+  backdrop-filter: blur(14px) saturate(140%);
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04));
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.6);
+  opacity: 0;
+  transform: translateX(-150%);
+}
+
+.hero[data-has-slid="true"] .glassSweep {
+  animation: glass-sweep-motion 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes glass-sweep-motion {
+  0% {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(320%);
+  }
+}
+
+/* ==========================================================================
+   Right Column: Three Sections Separated by 1px Hairlines (No Boxes)
+   x0 = seamX(48) + 40 (≈ 935px), right = W - 40 (1320px)
+   ========================================================================== */
+
+.rightColumn {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--right-x0);
+  right: 40px;
+  width: 385px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: var(--ink);
+  background: transparent;
+}
+
+.sectionA {
+  padding-top: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sectionLabel {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(7, 56, 66, 0.8); /* 6.63:1 contrast on #F6F9FA (>= 4.5:1) */
+}
+
+.dateValue {
+  display: block;
+  margin-top: 8px;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+.sectionB {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.mentorDetailsStack {
+  position: relative;
+  min-height: 250px;
+}
+
+.mentorDetail {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms var(--hero-ease);
+}
+
+.mentorDetail[data-active="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mentorNameStack {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 85px;
+  height: 85px;
+  overflow: clip;
+}
+
+.mentorNameLine {
+  display: block;
+  font-family: var(--font-hero-serif), Georgia, serif;
+  font-variation-settings: "SOFT" 0, "WONK" 0;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.mentorTitle {
+  margin: 8px 0 0 0;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgba(7, 56, 66, 0.8); /* 6.63:1 contrast on #F6F9FA (>= 4.5:1) */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.logoBox {
+  position: relative;
+  width: 240px;
+  height: 64px;
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.logoBox img {
+  object-fit: contain;
+  object-position: left center;
+}
+
+.organizationFallback {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ==========================================================================
+   Section C: Top-to-Bottom Layout (Badge on Own Row, Right-Aligned)
+   24px padding-top, badge (28px), 14px gap, button (60px), 40px bottom
+   Total Section C = 166px
+   ========================================================================== */
+
+.sectionC {
+  padding-top: 24px;
+  padding-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  position: relative;
+}
+
+.badgeRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  height: 28px;
+  margin-bottom: 14px;
+}
+
+.statusBadge {
+  position: relative;
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  background: var(--gold);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  transform-origin: center center;
+  z-index: 2;
+}
+
+.badgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+  flex: none;
+}
+
+.badgeText {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.badgeRing {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1.5px solid var(--gold);
+  pointer-events: none;
+  transform-origin: center center;
+  z-index: 1;
+}
+
+.ctaButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 60px;
+  border-radius: 9999px;
+  background: var(--teal-700);
+  color: #fff;
+  text-decoration: none;
+  padding-left: 28px;
+  padding-right: 8px;
+  box-shadow: 0 8px 20px rgba(7, 56, 66, 0.2);
+  transition: transform 200ms var(--hero-ease), background 200ms ease, box-shadow 200ms ease;
+}
+
+.ctaButton:hover {
+  background: #094754;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(7, 56, 66, 0.28);
+}
+
+.ctaButton:active {
+  transform: scale(0.98);
+}
+
+.ctaLabel {
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.arrowChip {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--teal-900);
+  transition: transform 200ms var(--hero-ease);
+}
+
+.ctaButton:hover .arrowChip {
+  transform: translateX(3px);
+}
+
+/* ==========================================================================
+   Keyframes & Motion Timeline
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Seam draws top to bottom (500ms) */
+  .seamLine {
+    animation: draw-seam 500ms var(--hero-ease) 0ms backwards;
+  }
+
+  /* Eyebrow & Headline Masked Rise */
+  .eyebrowLine {
+    animation: draw-line 350ms var(--hero-ease) 200ms backwards;
+  }
+
+  .eyebrow {
+    animation: fade-in 350ms ease-out 250ms backwards;
+  }
+
+  .wordMask:first-child > span {
+    animation: reveal-word 500ms var(--hero-ease) 300ms backwards;
+  }
+
+  .wordMask:last-child > span {
+    animation: reveal-word 500ms var(--hero-ease) 390ms backwards;
+  }
+
+  .lightSweep {
+    animation: sweep-once 850ms ease-in-out 750ms forwards;
+  }
+
+  /* Description & Stats stagger 60ms */
+  .description {
+    animation: rise 400ms var(--hero-ease) 480ms backwards;
+  }
+
+  .statsList li:nth-child(1) {
+    animation: rise 400ms var(--hero-ease) 540ms backwards;
+  }
+
+  .statsList li:nth-child(2) {
+    animation: rise 400ms var(--hero-ease) 600ms backwards;
+  }
+
+  .statsList li:nth-child(3) {
+    animation: rise 400ms var(--hero-ease) 660ms backwards;
+  }
+
+  .viewLink {
+    animation: rise 400ms var(--hero-ease) 720ms backwards;
+  }
+
+  /* Photo clip-reveal along seam angle with 16px settle */
+  .hero[data-has-slid="false"] .portrait[data-active="true"] {
+    animation: photo-intro 600ms var(--hero-ease) 550ms backwards;
+  }
+
+  /* Right sections top to bottom */
+  .sectionA {
+    animation: rise 450ms var(--hero-ease) 700ms backwards;
+  }
+
+  .hero[data-has-slid="false"] .mentorDetail[data-active="true"] .mentorNameLine:nth-child(1) {
+    animation: reveal-word 420ms var(--hero-ease) 780ms backwards;
+  }
+
+  .hero[data-has-slid="false"] .mentorDetail[data-active="true"] .mentorNameLine:nth-child(2) {
+    animation: reveal-word 420ms var(--hero-ease) 840ms backwards;
+  }
+
+  .hero[data-has-slid="false"] .mentorDetail[data-active="true"] .mentorTitle {
+    animation: reveal-word 420ms var(--hero-ease) 900ms backwards;
+  }
+
+  .hero[data-has-slid="false"] .mentorDetail[data-active="true"] .logoBox {
+    animation: fade-in 400ms ease-out 1000ms backwards;
+  }
+
+  .sectionC {
+    animation: rise 450ms var(--hero-ease) 950ms backwards;
+  }
+
+  /* Badge spring intro at ~1.0s, loop starts at 1.3s (1.0s loop) */
+  .statusBadge {
+    animation:
+      badge-intro-spring 300ms var(--hero-ease) 1000ms backwards,
+      badge-pop-1s 1000ms cubic-bezier(0.22, 1, 0.36, 1) 1300ms infinite;
+  }
+
+  .badgeRing {
+    animation: badge-ring-expand-1s 1000ms cubic-bezier(0.22, 1, 0.36, 1) 1300ms infinite;
+  }
+
+  /* Slide change transitions (cycle > 0) */
+  .hero[data-has-slid="true"] .mentorDetail[data-active="true"] .mentorNameLine:nth-child(1) {
+    animation: slide-in-up 400ms var(--hero-ease) 0ms backwards;
+  }
+
+  .hero[data-has-slid="true"] .mentorDetail[data-active="true"] .mentorNameLine:nth-child(2) {
+    animation: slide-in-up 400ms var(--hero-ease) 60ms backwards;
+  }
+
+  .hero[data-has-slid="true"] .mentorDetail[data-active="true"] .mentorTitle {
+    animation: slide-in-up 400ms var(--hero-ease) 120ms backwards;
+  }
+
+  .hero[data-has-slid="true"] .mentorDetail[data-active="true"] .logoBox {
+    animation: fade-in 300ms ease-out 100ms backwards;
+  }
+}
+
+@keyframes draw-seam {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes draw-line {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-word {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sweep-once {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(130%);
+  }
+}
+
+@keyframes photo-intro {
+  from {
+    opacity: 0;
+    transform: translate(16px, -4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes badge-intro-spring {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.10);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes badge-pop-1s {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.10);
+  }
+  60% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes badge-ring-expand-1s {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  70% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+@keyframes fill-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ==========================================================================
+   Section 9: Below 1024px Stacked Layout (Fixed Heights, No Shifts)
+   Order:
+   1. Eyebrow, MTO/READINESS, description, stats and link
+   2. Mentor photo (fixed 360px tall, bleeding off bottom edge, dots on it)
+   3. Date
+   4. Mentor name, title, logo
+   5. CTA with the badge (sticky bottom bar on mobile)
+   ========================================================================== */
+
+@media (max-width: 1023px) {
+  .hero {
+    width: 100%;
+    height: auto;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    transform: none !important;
+  }
+
+  .leftPanel,
+  .rightPanel,
+  .seamLine {
+    display: none;
+  }
+
+  /* 1. Left column copy */
+  .textColumn {
+    position: static;
+    width: 100%;
+    padding: 32px 24px;
+    background: var(--teal-900);
+    order: 1;
+  }
+
+  .wordMto {
+    font-size: clamp(3rem, 11vw, 4.8rem);
+  }
+
+  .readiness {
+    font-size: clamp(2.2rem, 8vw, 3.6rem);
+  }
+
+  /* 2. Mentor photo */
+  .photoFrame {
+    position: relative;
+    height: 360px;
+    width: 100%;
+    background:
+      radial-gradient(ellipse at 50% 28%, rgba(191, 234, 237, 0.15), transparent 48%),
+      linear-gradient(120deg, rgba(6, 49, 60, 0.8), rgba(6, 70, 84, 0.2)),
+      url("/images/mto-hero-glass-building.png") center / cover no-repeat,
+      var(--teal-900);
+    clip-path: none;
+    order: 2;
+    overflow: hidden;
+  }
+
+  .portraitImage {
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    height: 100%;
+    width: auto;
+  }
+
+  .dotsRow {
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* 3. Right column: Date, Mentor details, CTA */
+  .rightColumn {
+    position: static;
+    width: 100%;
+    padding: 24px 20px 32px;
+    background: var(--mist);
+    order: 3;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sectionA {
+    padding-top: 0;
+    padding-bottom: 20px;
+    order: 1;
+  }
+
+  .dateValue {
+    font-size: 48px;
+  }
+
+  .sectionB {
+    padding: 20px 0;
+    order: 2;
+  }
+
+  .mentorDetailsStack {
+    min-height: 200px;
+  }
+
+  .mentorNameStack {
+    height: 72px;
+    min-height: 72px;
+  }
+
+  .mentorNameLine {
+    font-size: 32px;
+  }
+
+  .mentorTitle {
+    font-size: 15px;
+  }
+
+  .logoBox {
+    height: 52px;
+    margin-top: 16px;
+  }
+
+  .sectionC {
+    padding-top: 24px;
+    padding-bottom: 0;
+    order: 3;
+  }
+
+  .sectionC[data-sticky="true"] .ctaButton {
+    position: fixed;
+    z-index: 50;
+    inset: auto max(1rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom))
+      max(1rem, env(safe-area-inset-left));
+    width: auto;
+  }
+
+  .sectionC[data-sticky="true"]::after {
+    position: fixed;
+    z-index: 49;
+    inset: auto 0 0;
+    height: calc(4.5rem + max(0.5rem, env(safe-area-inset-bottom)));
+    border-block-start: 1px solid var(--hairline);
+    background: rgba(246, 249, 250, 0.95);
+    backdrop-filter: blur(12px);
+    pointer-events: none;
+    content: "";
+  }
+}
