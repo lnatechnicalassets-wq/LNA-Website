@@ -47,18 +47,10 @@ Use a fault test or mocked Execute call for the timeout, null, and explicit gate
 
 ## Sandbox refund
 
-1. Confirm one sandbox payment. Copy its `payment_attempts.id` from staging Admissions or Supabase.
-2. Set `BKASH_SANDBOX_REFUNDS_ENABLED=true` on staging. Sign in to staging as an active Super Admin with MFA.
-3. From that same staging browser session, send the following request with the sandbox payment-attempt UUID.
-
-```js
-const response = await fetch("/api/payments/bkash/sandbox-refund", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ paymentAttemptId: "sandbox-payment-attempt-uuid" }),
-});
-await response.json();
-```
+1. Confirm one sandbox payment on staging.
+2. Set `BKASH_SANDBOX_REFUNDS_ENABLED=true` on staging and redeploy. Sign in as an active Super Admin with MFA.
+3. In **Admissions**, open the confirmed enrollment. Select **Refund sandbox payment** in the header action row, check the amount and original transaction ID, then select **Confirm refund**.
+4. Confirm the refund status and transaction ID appear in the header. The same authenticated request can also be sent to `POST /api/payments/bkash/sandbox-refund` with `{ "paymentAttemptId": "<sandbox attempt UUID>" }` for API verification.
 
 The test sends a full sandbox refund for the exact amount recorded on the validated attempt and uses the same Supabase-backed `id_token` as checkout. It records the result on the attempt and in the audit trail. The endpoint is disabled by default and is restricted to the sandbox v2 host, sandbox-origin payment attempts, and same-origin staff sessions. Refunds do not change the enrollment or seat state in this UAT workflow.
 

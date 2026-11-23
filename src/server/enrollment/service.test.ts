@@ -1020,6 +1020,9 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
           gateway_status_code: "0000",
           gateway_status_message: "Successful",
           failure_reason: null,
+          bkash_sandbox_v2: true,
+          sandbox_refund_state: "completed",
+          sandbox_refund_trx_id: "REFUND-9",
           executed_at: "2026-11-11T00:00:00Z",
           created_at: "2026-11-10T23:45:00Z",
         },
@@ -1074,6 +1077,10 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     );
     expect(detail?.payablePoisha).toBe(550000);
     expect(detail?.paymentAttempts[0].trxId).toBe("TRX-9");
+    expect(detail?.paymentAttempts[0].sandboxRefund).toEqual({
+      state: "completed",
+      trxId: "REFUND-9",
+    });
     expect(detail?.paymentEvents[0].redactedPayload.id_token).toBe("[REDACTED]");
     expect(detail?.emailOutbox[0].providerMessageId).toBe("resend_123");
     expect(

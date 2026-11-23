@@ -3,7 +3,7 @@ import { z } from "zod";
 import { AppError } from "@/lib/errors";
 import { requireStaff } from "@/server/auth/require-staff";
 import { parseCurrentServerEnv } from "@/server/env";
-import { createLiveBkashClientFromEnv, isBkashSandboxV2 } from "@/server/payments/bkash";
+import { createLiveBkashClientFromEnv, isBkashSandboxRefundEnabled } from "@/server/payments/bkash";
 import { verifySameOriginRequest } from "@/server/security/origin";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
@@ -15,11 +15,7 @@ const headers = { "Cache-Control": "no-store" };
 export async function POST(request: Request) {
   try {
     const env = parseCurrentServerEnv();
-    if (
-      env.BKASH_SANDBOX_REFUNDS_ENABLED !== "true" ||
-      env.BKASH_CHECKOUT_MODE !== "live" ||
-      !isBkashSandboxV2(env.BKASH_BASE_URL, env.BKASH_API_VERSION)
-    ) {
+    if (!isBkashSandboxRefundEnabled(env)) {
       throw new AppError("Sandbox refunds are unavailable.", "BKASH_REFUND_DISABLED", 404);
     }
     if (!verifySameOriginRequest(request)) {
