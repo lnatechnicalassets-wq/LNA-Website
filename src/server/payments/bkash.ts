@@ -83,6 +83,7 @@ export interface PaymentGatewayClient {
   executePayment(paymentId: string, context?: MockGatewayContext): Promise<PaymentExecutionResult>;
   queryPaymentStatus(paymentId: string, context?: MockGatewayContext): Promise<PaymentStatusResult>;
   searchTransaction(trxId: string, context?: MockGatewayContext): Promise<TransactionSearchResult>;
+  verifyAuthentication?(): Promise<{ ok: true; apiRoot?: string }>;
 }
 
 const SENSITIVE_KEY_PATTERN =
@@ -240,27 +241,48 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
     const endpoint = this.v2
       ? "/tokenized-checkout/auth/grant-token"
       : "/tokenized/checkout/token/grant";
-    const res = await this.fetchImpl(`${this.apiRoot}${endpoint}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        username: this.config.username,
-        password: this.config.password,
-      },
-      body: JSON.stringify({
-        app_key: this.config.appKey,
-        app_secret: this.config.appSecret,
-      }),
-      cache: "no-store",
-      redirect: "error",
-      signal: AbortSignal.timeout(10_000),
-    });
+    let res: Response;
+    try {
+      res = await this.fetchImpl(`${this.apiRoot}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          username: this.config.username,
+          password: this.config.password,
+        },
+        body: JSON.stringify({
+          app_key: this.config.appKey,
+          app_secret: this.config.appSecret,
+        }),
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch (fetchErr) {
+      console.error("[bKash PGW] Network failure during grantToken", {
+        endpoint,
+        error: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
+        durationMs: Date.now() - startedAt,
+      });
+      throw new AppError(
+        "bKash authentication service is unreachable.",
+        "BKASH_AUTH_FAILED",
+        502
+      );
+    }
 
     const raw = asGatewayObject(await res.json().catch(() => null));
     const gatewayStatusCode = typeof raw.statusCode === "string" ? raw.statusCode.trim() : null;
+    const durationMs = Date.now() - startedAt;
 
     if (!res.ok) {
+      console.error("[bKash PGW] Grant token HTTP failure", {
+        endpoint,
+        httpStatus: res.status,
+        gatewayStatusCode,
+        durationMs,
+      });
       throw new AppError("Unable to authenticate with bKash gateway.", "BKASH_AUTH_FAILED", 502, {
         httpStatus: res.status,
         gatewayStatusCode,
@@ -268,6 +290,13 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
     }
 
     if (gatewayStatusCode && gatewayStatusCode !== "0000") {
+      console.error("[bKash PGW] Grant token rejected by gateway", {
+        endpoint,
+        httpStatus: res.status,
+        gatewayStatusCode,
+        statusMessage: cleanGatewayMessage(raw.statusMessage),
+        durationMs,
+      });
       throw new AppError("bKash gateway rejected authentication.", "BKASH_AUTH_REJECTED", 502, {
         gatewayStatusCode,
       });
@@ -275,6 +304,12 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
 
     const parsed = grantResponseSchema.safeParse(raw);
     if (!parsed.success) {
+      console.error("[bKash PGW] Invalid grant token response schema", {
+        endpoint,
+        httpStatus: res.status,
+        gatewayStatusCode,
+        durationMs,
+      });
       throw new AppError("Invalid token grant response from bKash.", "BKASH_AUTH_INVALID", 502, {
         gatewayStatusCode,
       });
@@ -305,10 +340,23 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
     payload: Record<string, unknown>,
     retried = false
   ): Promise<Response> {
-    const token = await this.getIdToken(retried).catch(() => {
+    let token: string;
+    try {
+      token = await this.getIdToken(retried);
+    } catch (tokenErr) {
+      console.error("[bKash PGW] Token acquisition failed before sending request", {
+        endpoint: endpointPath,
+        errorCode: tokenErr instanceof AppError ? tokenErr.code : undefined,
+        errorMessage: tokenErr instanceof Error ? tokenErr.message : String(tokenErr),
+      });
+      if (tokenErr instanceof AppError) {
+        throw tokenErr;
+      }
       throw new BkashRequestNotSentError();
-    });
+    }
+
     let res: Response;
+    const startedAt = Date.now();
     try {
       res = await this.fetchImpl(`${this.apiRoot}${endpointPath}`, {
         method: "POST",
@@ -323,8 +371,21 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
         redirect: "manual",
         signal: AbortSignal.timeout(30_000),
       });
-    } catch {
+    } catch (fetchErr) {
+      console.error("[bKash PGW] Network failure contacting gateway", {
+        endpoint: endpointPath,
+        durationMs: Date.now() - startedAt,
+        error: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
+      });
       throw new BkashNoResponseError("No response from the bKash gateway.");
+    }
+
+    if (!res.ok) {
+      console.error("[bKash PGW] Gateway endpoint returned non-200 HTTP status", {
+        endpoint: endpointPath,
+        httpStatus: res.status,
+        durationMs: Date.now() - startedAt,
+      });
     }
 
     // Retain legacy behavior for isolated v1 clients. Shared merchant tokens
@@ -507,7 +568,11 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
       paymentId: typeof id === "string" ? id : "",
       trxId: typeof trx === "string" ? trx : null,
       merchantInvoiceNumber:
-        typeof raw.merchantInvoiceNumber === "string" ? raw.merchantInvoiceNumber : null,
+        typeof raw.merchantInvoiceNumber === "string"
+          ? raw.merchantInvoiceNumber
+          : typeof raw.merchantInvoice === "string"
+            ? raw.merchantInvoice
+            : null,
       amountPoisha: parseOptionalPoisha(raw.amount),
       currency: typeof raw.currency === "string" ? raw.currency : null,
       transactionStatus:
@@ -525,7 +590,7 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
 
   async queryPaymentStatus(paymentId: string): Promise<PaymentStatusResult> {
     const endpoint = this.v2
-      ? "/tokenized-checkout/payment/status"
+      ? "/tokenized-checkout/query/payment"
       : "/tokenized/checkout/payment/status";
     const response = await this.postAuthenticated(
       endpoint,
@@ -656,6 +721,10 @@ export class MockBkashClient implements PaymentGatewayClient {
       );
     }
     this.appOrigin = appOrigin.replace(/\/+$/, "");
+  }
+
+  async verifyAuthentication(): Promise<{ ok: true; apiRoot: string }> {
+    return { ok: true, apiRoot: this.appOrigin };
   }
 
   async initiateCheckout(attempt: PaymentAttemptRecord): Promise<PaymentInitiationResult> {
@@ -893,13 +962,17 @@ export function createLiveBkashClientFromEnv(): BkashTokenizedClient {
   });
 }
 
-export function getPaymentGatewayClient(originOverride?: string): PaymentGatewayClient {
+export function getPaymentGatewayClient(
+  originOverride?: string,
+  modeOverride?: "closed" | "mock" | "live"
+): PaymentGatewayClient {
   const env = parseCurrentServerEnv();
-  if (env.BKASH_CHECKOUT_MODE === "closed") {
+  const mode = modeOverride ?? env.BKASH_CHECKOUT_MODE;
+  if (mode === "closed") {
     throw new AppError("Online enrollment checkout is currently closed.", "CHECKOUT_CLOSED", 503);
   }
 
-  if (env.BKASH_CHECKOUT_MODE === "mock") {
+  if (mode === "mock") {
     if (env.NODE_ENV === "production") {
       throw new AppError(
         "Mock bKash mode is forbidden in production.",
