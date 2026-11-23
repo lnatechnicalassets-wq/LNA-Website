@@ -187,6 +187,10 @@ export interface AdminPaymentAttemptView {
   gatewayStatusMessage: string | null;
   failureReason: string | null;
   executedAt: string | null;
+  sandboxRefund?: {
+    state: "started" | "completed" | "unconfirmed" | null;
+    trxId: string | null;
+  };
   createdAt: string;
 }
 
@@ -1663,14 +1667,18 @@ export async function getAdminEnrollmentDetail(
 
   const enrollmentId = String(row.id);
 
-  const [attemptsRes, outboxRes] = await Promise.all([
+  const attemptColumns =
+    "id, tran_id, payment_id, trx_id, amount_poisha, validated_amount_poisha, currency, status, gateway_status_code, gateway_status_message, failure_reason, executed_at, created_at";
+  const loadAttempts = <Columns extends string>(columns: Columns) =>
     admin
       .from("payment_attempts")
-      .select(
-        "id, tran_id, payment_id, trx_id, amount_poisha, validated_amount_poisha, currency, status, gateway_status_code, gateway_status_message, failure_reason, executed_at, created_at"
-      )
+      .select(columns)
       .eq("enrollment_id", enrollmentId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false });
+  const [attemptsWithRefund, outboxRes] = await Promise.all([
+    loadAttempts(
+      `${attemptColumns}, bkash_sandbox_v2, sandbox_refund_state, sandbox_refund_trx_id`
+    ),
     admin
       .from("email_outbox")
       .select(
@@ -1680,7 +1688,18 @@ export async function getAdminEnrollmentDetail(
       .order("created_at", { ascending: false }),
   ]);
 
-  const attemptIds = (attemptsRes.data ?? []).map((a) => String(a.id));
+  // Older deployments can still display payment history before the sandbox migration.
+  const attempts =
+    attemptsWithRefund.error?.code === "42703"
+      ? (await loadAttempts(attemptColumns)).data?.map((attempt) => ({
+          ...attempt,
+          bkash_sandbox_v2: false,
+          sandbox_refund_state: null,
+          sandbox_refund_trx_id: null,
+        }))
+      : attemptsWithRefund.data;
+
+  const attemptIds = (attempts ?? []).map((a) => String(a.id));
   let eventsData: AdminPaymentEventView[] = [];
   if (attemptIds.length > 0) {
     const eventsRes = await admin
@@ -1770,7 +1789,7 @@ export async function getAdminEnrollmentDetail(
     fixtureLabel: row.fixture_label ? String(row.fixture_label) : null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
-    paymentAttempts: (attemptsRes.data ?? []).map((a) => ({
+    paymentAttempts: (attempts ?? []).map((a) => ({
       id: String(a.id),
       tranId: String(a.tran_id),
       paymentId: a.payment_id ? String(a.payment_id) : null,
@@ -1786,6 +1805,12 @@ export async function getAdminEnrollmentDetail(
       gatewayStatusMessage: a.gateway_status_message ? String(a.gateway_status_message) : null,
       failureReason: a.failure_reason ? String(a.failure_reason) : null,
       executedAt: a.executed_at ? String(a.executed_at) : null,
+      ...(a.bkash_sandbox_v2 === true && {
+        sandboxRefund: {
+          state: a.sandbox_refund_state ?? null,
+          trxId: a.sandbox_refund_trx_id ?? null,
+        },
+      }),
       createdAt: String(a.created_at),
     })),
     paymentEvents: eventsData,

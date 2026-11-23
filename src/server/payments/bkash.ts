@@ -7,7 +7,7 @@ import {
 } from "@/server/payments/bkash-token-cache";
 import { bdtStringToPoisha, poishaToBdtString } from "@/lib/money";
 import { AppError } from "@/lib/errors";
-import { parseCurrentServerEnv } from "@/server/env";
+import { parseCurrentServerEnv, type ServerEnv } from "@/server/env";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 import { signHmacToken, verifyHmacToken } from "@/server/security/hmac";
 
@@ -162,6 +162,19 @@ const createResponseSchema = z.object({
 export function isBkashSandboxV2(baseUrl: string, apiVersion: string): boolean {
   const url = new URL(baseUrl);
   return url.origin === "https://tokenized.sandbox.bka.sh" && apiVersion === "v2";
+}
+
+export function isBkashSandboxRefundEnabled(
+  env: Pick<
+    ServerEnv,
+    "BKASH_SANDBOX_REFUNDS_ENABLED" | "BKASH_CHECKOUT_MODE" | "BKASH_BASE_URL" | "BKASH_API_VERSION"
+  >
+): boolean {
+  return (
+    env.BKASH_SANDBOX_REFUNDS_ENABLED === "true" &&
+    env.BKASH_CHECKOUT_MODE === "live" &&
+    isBkashSandboxV2(env.BKASH_BASE_URL, env.BKASH_API_VERSION)
+  );
 }
 
 function asGatewayObject(value: unknown): Record<string, unknown> {

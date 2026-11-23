@@ -89,6 +89,23 @@ export const enrollmentActionCopy = {
     "The email is locked after checkout starts or enrollment is confirmed. You can still edit the name and phone number.",
 } as const;
 
+export const sandboxRefundCopy = {
+  button: "Refund sandbox payment",
+  confirm: "Confirm refund",
+  cancel: "Cancel",
+  submitting: "Submitting refund…",
+  description:
+    "Send a full refund to the original bKash sandbox wallet. The enrollment stays confirmed.",
+  amount: "Refund amount",
+  transactionId: "Original transaction ID",
+  completed: "Sandbox refund completed",
+  started: "Sandbox refund submitted",
+  unconfirmed: "Sandbox refund needs review",
+  refundReference: (id: string) => `Refund ID ${id}`,
+  uncertain: "The refund result could not be verified. Check its status in bKash before retrying.",
+  failed: "The sandbox refund could not be submitted.",
+} as const;
+
 export function isDuplicateEnrollmentContact(error: { code?: string; message?: string } | null) {
   return (
     error?.code === "23505" &&

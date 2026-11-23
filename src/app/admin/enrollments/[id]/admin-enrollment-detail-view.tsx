@@ -16,10 +16,12 @@ import { formatPoishaToBDT } from "@/lib/money";
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
 import type { AdminEnrollmentDetailResult } from "@/server/enrollment/service";
 import { EnrollmentRowActions } from "../enrollment-row-actions";
+import { SandboxRefundAction } from "./sandbox-refund-action";
 
 export interface AdminEnrollmentDetailViewProps {
   staff: VerifiedStaffContext;
   detail: AdminEnrollmentDetailResult;
+  sandboxRefundEnabled?: boolean;
 }
 
 function formatDhakaTimestamp(iso: string | null): string {
@@ -45,12 +47,29 @@ function formatMoneyBdt(poisha: number): string {
   return formatPoishaToBDT(poisha).replace("৳", "BDT ");
 }
 
-export function AdminEnrollmentDetailView({ staff, detail }: AdminEnrollmentDetailViewProps) {
+export function AdminEnrollmentDetailView({
+  staff,
+  detail,
+  sandboxRefundEnabled = false,
+}: AdminEnrollmentDetailViewProps) {
   const questionLabelById = new Map<string, string>();
   for (const q of detail.programQuestionsSnapshot) {
     questionLabelById.set(q.id, q.label);
   }
   const answerEntries = Object.entries(detail.answers);
+
+  const sandboxAttempts = detail.paymentAttempts.filter(
+    (attempt) =>
+      attempt.status === "validated" &&
+      attempt.currency === "BDT" &&
+      attempt.sandboxRefund &&
+      attempt.paymentId &&
+      attempt.trxId &&
+      attempt.validatedAmountPoisha &&
+      attempt.validatedAmountPoisha > 0
+  );
+  const refundAttempt = sandboxAttempts.length === 1 ? sandboxAttempts[0] : undefined;
+  const canViewRefund = staff.role === "super_admin" && staff.aal === "aal2";
 
   return (
     <AdminPortalShell staff={staff} currentPath={`${adminPaths.admissions}/${detail.id}`}>
@@ -113,7 +132,25 @@ export function AdminEnrollmentDetailView({ staff, detail }: AdminEnrollmentDeta
             </div>
           </CardContent>
           <CardContent className="border-t border-border-subtle px-5 pb-4 pt-3 sm:px-6">
-            <EnrollmentRowActions item={detail} showView={false} />
+            <EnrollmentRowActions
+              item={detail}
+              showView={false}
+              leadingAction={
+                canViewRefund &&
+                refundAttempt?.sandboxRefund &&
+                refundAttempt.trxId &&
+                refundAttempt.validatedAmountPoisha !== null && (
+                  <SandboxRefundAction
+                    key={refundAttempt.id}
+                    enabled={sandboxRefundEnabled}
+                    attemptId={refundAttempt.id}
+                    amount={formatMoneyBdt(refundAttempt.validatedAmountPoisha)}
+                    transactionId={refundAttempt.trxId}
+                    refund={refundAttempt.sandboxRefund}
+                  />
+                )
+              }
+            />
           </CardContent>
         </Card>
 

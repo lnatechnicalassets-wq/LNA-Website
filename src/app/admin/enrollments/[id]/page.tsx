@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { AppError } from "@/lib/errors";
 import { requireStaff, type VerifiedStaffContext } from "@/server/auth/require-staff";
 import { getAdminEnrollmentDetail } from "@/server/enrollment/service";
+import { parseCurrentServerEnv } from "@/server/env";
+import { isBkashSandboxRefundEnabled } from "@/server/payments/bkash";
 import { AdminEnrollmentDetailView } from "./admin-enrollment-detail-view";
 
 export const dynamic = "force-dynamic";
@@ -40,5 +42,11 @@ export default async function AdminEnrollmentDetailPage({
     notFound();
   }
 
-  return <AdminEnrollmentDetailView staff={staff} detail={detail} />;
+  return (
+    <AdminEnrollmentDetailView
+      staff={staff}
+      detail={detail}
+      sandboxRefundEnabled={isBkashSandboxRefundEnabled(parseCurrentServerEnv())}
+    />
+  );
 }

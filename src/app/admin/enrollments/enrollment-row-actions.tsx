@@ -143,9 +143,11 @@ function RecordMutationForm({
 export function EnrollmentRowActions({
   item,
   showView = true,
+  leadingAction,
 }: {
   item: ActionItem;
   showView?: boolean;
+  leadingAction?: React.ReactNode;
 }) {
   const router = useRouter();
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -195,6 +197,7 @@ export function EnrollmentRowActions({
 
   return (
     <div className="flex w-full flex-wrap items-center justify-end gap-1.5 max-[419px]:grid max-[419px]:grid-cols-2">
+      {leadingAction}
       <Dialog open={open !== null} onOpenChange={(next) => !next && setOpen(null)}>
         {showView && (
           <Link
