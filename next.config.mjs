@@ -63,6 +63,9 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  images: {
+    qualities: [75, 90],
+  },
   experimental: {
     serverActions: { bodySizeLimit: "4mb" },
     agentUpgrade: "security",

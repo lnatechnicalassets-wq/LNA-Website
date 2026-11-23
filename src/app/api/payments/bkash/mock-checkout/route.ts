@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
   );
 
   const successHref = `${callbackBase}?paymentID=${pid}&status=success&mockSig=${successSig}`;
-  const cancelHref = `${callbackBase}?paymentID=${pid}&status=cancel`;
-  const failHref = `${callbackBase}?paymentID=${pid}&status=failure`;
+  const cancelHref = `${callbackBase}?paymentID=${pid}&status=cancel&mockSig=${successSig}`;
+  const failHref = `${callbackBase}?paymentID=${pid}&status=failure&mockSig=${gatewayFailedSig}`;
   const pendingHref = `${callbackBase}?paymentID=${pid}&status=success&mockSig=${pendingSig}`;
   const mismatchHref = `${callbackBase}?paymentID=${pid}&status=success&mockSig=${mismatchSig}`;
   const currencyMismatchHref = `${callbackBase}?paymentID=${pid}&status=success&mockSig=${currencySig}`;
@@ -121,4 +121,3 @@ export async function GET(request: NextRequest) {
     },
   });
 }
-

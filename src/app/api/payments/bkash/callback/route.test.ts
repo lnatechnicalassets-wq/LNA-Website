@@ -25,7 +25,7 @@ describe("GET/POST /api/payments/bkash/callback", () => {
 
   it("handles GET callback redirects with 303 See Other and no-store caching", async () => {
     const req = new NextRequest(
-      "http://localhost:3000/api/payments/bkash/callback?paymentID=PAY-100&status=success"
+      "http://localhost:3000/api/payments/bkash/callback?paymentId=PAY-100&verificationStatus=success&signature=v2-callback-signature"
     );
 
     const res = await GET(req);
@@ -38,6 +38,7 @@ describe("GET/POST /api/payments/bkash/callback", () => {
       expect.objectContaining({
         paymentID: "PAY-100",
         status: "success",
+        signature: "v2-callback-signature",
       }),
       expect.objectContaining({ origin: "http://localhost:3000" })
     );
@@ -64,4 +65,3 @@ describe("GET/POST /api/payments/bkash/callback", () => {
     );
   });
 });
-

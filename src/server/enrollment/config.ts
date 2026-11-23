@@ -1,5 +1,6 @@
 import "server-only";
 import { parseCurrentServerEnv } from "@/server/env";
+import { isBkashSandboxV2 } from "@/server/payments/bkash";
 
 export type CheckoutMode = "closed" | "mock" | "live";
 
@@ -7,6 +8,7 @@ export interface EnrollmentRuntimeConfig {
   checkoutMode: CheckoutMode;
   submissionEnabled: boolean;
   manualPaymentEnabled?: boolean;
+  sandboxPaymentEnabled?: boolean;
   statusLookupEnabled: boolean;
   emailDispatchMode: "disabled" | "mock" | "live";
   bankTransferEnabled: false;
@@ -41,6 +43,9 @@ export function getEnrollmentRuntimeConfig(): EnrollmentRuntimeConfig {
     checkoutMode: effectiveCheckoutMode,
     submissionEnabled,
     manualPaymentEnabled,
+    sandboxPaymentEnabled:
+      effectiveCheckoutMode === "live" &&
+      isBkashSandboxV2(env.BKASH_BASE_URL, env.BKASH_API_VERSION),
     statusLookupEnabled,
     emailDispatchMode: effectiveEmailMode,
     bankTransferEnabled: false,
