@@ -54,6 +54,16 @@ function resolveBkashEnvAliases(input: unknown): unknown {
   const rawBaseOrRoot = firstNonEmpty(raw.BKASH_BASE_URL, raw.PGW_Production_API_Context_Root);
   let resolvedVersion = firstNonEmpty(raw.BKASH_API_VERSION);
 
+  const rawAppUrl = firstNonEmpty(
+    raw.APP_URL,
+    raw.NEXT_PUBLIC_APP_URL,
+    raw.VERCEL_PROJECT_PRODUCTION_URL ? `https://${raw.VERCEL_PROJECT_PRODUCTION_URL}` : undefined,
+    raw.VERCEL_URL ? `https://${raw.VERCEL_URL}` : undefined
+  );
+  if (rawAppUrl) {
+    raw.APP_URL = rawAppUrl;
+  }
+
   if (rawBaseOrRoot) {
     try {
       const parsed = new URL(rawBaseOrRoot);
@@ -192,24 +202,35 @@ const baseServerEnvObject = z
       }
 
       if (data.NODE_ENV === "production") {
+        let isProductionGateway = false;
         try {
-          const parsedAppUrl = new URL(data.APP_URL);
-          const isLocalhost =
-            parsedAppUrl.hostname === "localhost" || parsedAppUrl.hostname === "127.0.0.1";
-          if (parsedAppUrl.protocol !== "https:" || isLocalhost) {
+          const parsedGateway = new URL(data.BKASH_BASE_URL);
+          isProductionGateway = parsedGateway.hostname === "tokenized.pay.bka.sh";
+        } catch {
+          isProductionGateway = false;
+        }
+
+        // Only enforce the strict public HTTPS callback constraint if using the live production gateway
+        if (isProductionGateway) {
+          try {
+            const parsedAppUrl = new URL(data.APP_URL);
+            const isLocalhost =
+              parsedAppUrl.hostname === "localhost" || parsedAppUrl.hostname === "127.0.0.1";
+            if (parsedAppUrl.protocol !== "https:" || isLocalhost) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["APP_URL"],
+                message:
+                  "CRITICAL SECURITY FAILURE: Live production bKash checkout requires an HTTPS non-localhost APP_URL for callback verification.",
+              });
+            }
+          } catch {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
               path: ["APP_URL"],
-              message:
-                "CRITICAL SECURITY FAILURE: Live production bKash checkout requires an HTTPS non-localhost APP_URL for callback verification.",
+              message: "Invalid APP_URL for live production checkout.",
             });
           }
-        } catch {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["APP_URL"],
-            message: "Invalid APP_URL for live production checkout.",
-          });
         }
       }
     }
@@ -403,15 +424,28 @@ export function validateServerEnvironment(
   return result.data;
 }
 
-export const serverEnv: ServerEnv = validateServerEnvironment();
+let cachedServerEnv: ServerEnv | null = null;
 
 /**
  * Accessor for validated server-only environment variables.
  * Protected by compile-time "server-only" boundary.
+ * Lazily validates and caches on first call to prevent eager build-time evaluation.
  */
 export function getServerEnv(): ServerEnv {
-  return serverEnv;
+  if (process.env.NODE_ENV === "test") {
+    return validateServerEnvironment(process.env);
+  }
+  if (!cachedServerEnv) {
+    cachedServerEnv = validateServerEnvironment(process.env);
+  }
+  return cachedServerEnv;
 }
+
+export const serverEnv: ServerEnv = new Proxy({} as ServerEnv, {
+  get(_target, prop: string | symbol) {
+    return getServerEnv()[prop as keyof ServerEnv];
+  },
+});
 
 /**
  * Dynamically re-parses process.env (useful in tests that toggle env modes per request).

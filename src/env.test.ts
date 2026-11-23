@@ -320,6 +320,25 @@ describe("Environment Configuration & Security Isolation (NFR-SEC-02)", () => {
     expect(overridden.BKASH_APP_KEY).toBe("explicit_bkash_key");
   });
 
+  it("accepts hosted sandbox checkout in production without forcing HTTPS non-localhost APP_URL", () => {
+    const sandboxProductionEnv = {
+      NODE_ENV: "production",
+      APP_URL: "http://localhost:3000",
+      APP_SECRET: "a_very_strong_production_hmac_key_min_32_chars_long",
+      SUPABASE_SECRET_KEY: "sb_secret_live_key_123456",
+      BKASH_CHECKOUT_MODE: "live",
+      BKASH_BASE_URL: "https://tokenized.sandbox.bka.sh/v2",
+      BKASH_CHECKOUT_URL_APP_KEY: "sandbox-key",
+      BKASH_CHECKOUT_URL_APP_SECRET: "sandbox-secret",
+      BKASH_CHECKOUT_URL_USER_NAME: "sandbox-username",
+      BKASH_CHECKOUT_URL_PASSWORD: "sandbox-password",
+    };
+
+    const parsed = serverEnvSchema.parse(sandboxProductionEnv);
+    expect(parsed.BKASH_BASE_URL).toBe("https://tokenized.sandbox.bka.sh");
+    expect(parsed.BKASH_CHECKOUT_MODE).toBe("live");
+  });
+
   it("rejects live production bKash checkout with http or localhost APP_URL and reports non-secret readiness", () => {
     expect(() =>
       serverEnvSchema.parse({
