@@ -12,6 +12,12 @@ export const ProgramQuestionSchema = z.object({
   required: z.boolean(),
 });
 
+const hostedBkashCopy = {
+  hostedInstruction:
+    "Continue to bKash to pay the amount shown. You’ll return here to see your payment result.",
+  sandboxLabel: "Sandbox test payment",
+};
+
 export const EnrollmentConfigSchema = z.object({
   programQuestions: z.record(z.array(ProgramQuestionSchema)),
   payment: z.object({
@@ -23,6 +29,8 @@ export const EnrollmentConfigSchema = z.object({
       qrImageSrc: z.string().min(1),
       qrImageAlt: z.string().min(1),
       instruction: z.string().min(1),
+      hostedInstruction: z.string().min(1).default(hostedBkashCopy.hostedInstruction),
+      sandboxLabel: z.string().min(1).default(hostedBkashCopy.sandboxLabel),
     }),
     bankTransfer: z.object({
       enabled: z.boolean(),
@@ -46,6 +54,7 @@ const DEFAULT_ENROLLMENT_CONFIG: EnrollmentConfig = {
     submissionEnabled: false,
     bkash: {
       enabled: true,
+      ...hostedBkashCopy,
       merchantName: "Lead Nation Academy",
       merchantNumber: "0158 1799 666",
       qrImageSrc: "/images/payments/lna-bkash-merchant-qr.png",

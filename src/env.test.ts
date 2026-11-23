@@ -260,6 +260,34 @@ describe("Environment Configuration & Security Isolation (NFR-SEC-02)", () => {
     expect(env.APP_SECRET).toBeDefined();
   });
 
+  it("accepts hosted sandbox checkout without Upstash and maps the bKash aliases", () => {
+    const sandboxEnv = {
+      NODE_ENV: "test",
+      APP_URL: "https://staging.example.com",
+      BKASH_CHECKOUT_MODE: "live",
+      BKASH_BASE_URL: "https://tokenized.sandbox.bka.sh/v2",
+      BKASH_CHECKOUT_URL_APP_KEY: "sandbox-key",
+      BKASH_CHECKOUT_URL_APP_SECRET: "sandbox-secret",
+      BKASH_CHECKOUT_URL_USER_NAME: "sandbox-username",
+      BKASH_CHECKOUT_URL_PASSWORD: "sandbox-password",
+      SUPABASE_SECRET_KEY: "sandbox-supabase-key",
+    };
+    expect(serverEnvSchema.parse(sandboxEnv)).toMatchObject({
+      BKASH_BASE_URL: "https://tokenized.sandbox.bka.sh",
+      BKASH_API_VERSION: "v2",
+      BKASH_APP_KEY: "sandbox-key",
+      BKASH_APP_SECRET: "sandbox-secret",
+      BKASH_USERNAME: "sandbox-username",
+      BKASH_PASSWORD: "sandbox-password",
+    });
+    expect(
+      serverEnvSchema.parse({ ...sandboxEnv, UPSTASH_REDIS_REST_URL: "" }).UPSTASH_REDIS_REST_URL
+    ).toBeUndefined();
+    expect(
+      serverEnvSchema.safeParse({ ...sandboxEnv, SUPABASE_SECRET_KEY: undefined }).success
+    ).toBe(false);
+  });
+
   it("maps PGW_* production merchant env variables onto canonical BKASH_* fields without duplication", () => {
     const mapped = serverEnvSchema.parse({
       NODE_ENV: "development",

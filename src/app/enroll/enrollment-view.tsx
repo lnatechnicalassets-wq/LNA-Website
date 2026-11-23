@@ -68,6 +68,7 @@ export interface EnrollmentViewProps {
   batches: Batch[];
   config: EnrollmentConfig;
   checkoutMode?: "closed" | "mock" | "live";
+  sandboxPaymentEnabled?: boolean;
   manualPaymentEnabled?: boolean;
   initialOutcome?: EnrollmentOutcomeSummary | null;
   invalidOutcomeNotice?: boolean;
@@ -200,6 +201,7 @@ export function EnrollmentView({
   batches,
   config,
   checkoutMode = "closed",
+  sandboxPaymentEnabled = false,
   manualPaymentEnabled = false,
   initialOutcome = null,
   invalidOutcomeNotice = false,
@@ -1862,15 +1864,17 @@ export function EnrollmentView({
                           <Lock className="w-3.5 h-3.5" aria-hidden="true" />
                           <span>HOSTED BKASH CHECKOUT</span>
                         </span>
-                        {checkoutMode === "mock" && (
+                        {(checkoutMode === "mock" || sandboxPaymentEnabled) && (
                           <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
-                            Mock Gateway Mode (Dev)
+                            {sandboxPaymentEnabled
+                              ? config.payment.bkash.sandboxLabel
+                              : "Mock Gateway Mode (Dev)"}
                           </span>
                         )}
                       </div>
 
                       <p className="text-xs sm:text-sm text-[#172E35] leading-relaxed">
-                        {config.payment.bkash.instruction}
+                        {config.payment.bkash.hostedInstruction ?? config.payment.bkash.instruction}
                       </p>
 
                       <ul className="space-y-2 text-xs text-[#526E77]">
@@ -1961,6 +1965,11 @@ export function EnrollmentView({
                             ? "bKash checkout was cancelled"
                             : "bKash payment failed or was declined"}
                         </div>
+                        {outcomeSummary?.paymentErrorMessage && (
+                          <p className="mt-1 leading-relaxed">
+                            {outcomeSummary.paymentErrorMessage}
+                          </p>
+                        )}
                         <p className="mt-1 leading-relaxed">
                           Your application is saved under{" "}
                           <span className="font-mono font-bold">{activeReference}</span>. Your seat

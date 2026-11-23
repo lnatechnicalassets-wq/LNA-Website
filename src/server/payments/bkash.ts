@@ -1,8 +1,14 @@
 import "server-only";
 import { z } from "zod";
+import {
+  SupabaseBkashTokenCache,
+  type BkashToken,
+  type BkashTokenCache,
+} from "@/server/payments/bkash-token-cache";
 import { bdtStringToPoisha, poishaToBdtString } from "@/lib/money";
 import { AppError } from "@/lib/errors";
 import { parseCurrentServerEnv } from "@/server/env";
+import { createSupabaseAdminClient } from "@/server/supabase/clients";
 import { signHmacToken, verifyHmacToken } from "@/server/security/hmac";
 
 export type MockBkashScenario =
@@ -24,6 +30,8 @@ export interface PaymentAttemptRecord {
 export interface PaymentInitiationResult {
   paymentId: string;
   redirectUrl: string;
+  callbackSignature?: string;
+  sandboxV2?: boolean;
   rawRedacted: Record<string, unknown>;
 }
 
@@ -78,7 +86,7 @@ export interface PaymentGatewayClient {
 }
 
 const SENSITIVE_KEY_PATTERN =
-  /(token|secret|password|app_key|authorization|pin|otp|msisdn|customermsisdn|payeraccount|payerreference|email|phone)/i;
+  /(token|secret|password|app_key|authorization|pin|otp|msisdn|customermsisdn|payeraccount|payerreference|email|phone|signature|bkashurl|callbackurl)/i;
 
 /**
  * Redacts all sensitive credentials and payer identifiers before saving raw payloads in payment_events.
@@ -131,6 +139,7 @@ export interface BkashClientConfig {
   username: string;
   password: string;
   fetchImpl?: typeof fetch;
+  tokenCache?: BkashTokenCache;
 }
 
 const grantResponseSchema = z.object({
@@ -146,18 +155,38 @@ const createResponseSchema = z.object({
   statusCode: z.string().optional(),
   statusMessage: z.string().optional(),
   merchantInvoiceNumber: z.string().optional(),
+  signature: z.string().min(1).max(512).optional(),
 });
 
-interface TokenCacheEntry {
-  token: string;
-  expiresAtMs: number;
+export function isBkashSandboxV2(baseUrl: string, apiVersion: string): boolean {
+  const url = new URL(baseUrl);
+  return url.origin === "https://tokenized.sandbox.bka.sh" && apiVersion === "v2";
+}
+
+function asGatewayObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function cleanGatewayMessage(value: unknown): string {
+  return typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, 300) : "";
+}
+
+class BkashNoResponseError extends Error {}
+
+export class BkashRequestNotSentError extends AppError {
+  constructor() {
+    super("bKash authentication is temporarily unavailable.", "BKASH_REQUEST_NOT_SENT", 503);
+  }
 }
 
 export class BkashTokenizedClient implements PaymentGatewayClient {
   private readonly apiRoot: string;
   private readonly config: BkashClientConfig;
   private readonly fetchImpl: typeof fetch;
-  private tokenCache: TokenCacheEntry | null = null;
+  private tokenCache: BkashToken | null = null;
+  private readonly v2: boolean;
   private tokenInFlight: Promise<string> | null = null;
 
   constructor(config: BkashClientConfig) {
@@ -166,6 +195,7 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
 
     const trimmedBase = config.baseUrl.replace(/\/+$/, "");
     const cleanVersion = config.apiVersion.replace(/^\/+|\/+$/g, "");
+    this.v2 = cleanVersion === "v2";
     this.apiRoot = trimmedBase.endsWith(`/${cleanVersion}`)
       ? trimmedBase
       : `${trimmedBase}/${cleanVersion}`;
@@ -180,6 +210,8 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
   }
 
   private async getIdToken(forceRefresh = false): Promise<string> {
+    if (this.config.tokenCache) return this.config.tokenCache.getOrGrant(() => this.grantToken());
+
     if (!forceRefresh && this.tokenCache && Date.now() < this.tokenCache.expiresAtMs) {
       return this.tokenCache.token;
     }
@@ -188,64 +220,10 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
       return this.tokenInFlight;
     }
 
-    const refreshPromise = (async () => {
-      const res = await this.fetchImpl(`${this.apiRoot}/tokenized/checkout/token/grant`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          username: this.config.username,
-          password: this.config.password,
-        },
-        body: JSON.stringify({
-          app_key: this.config.appKey,
-          app_secret: this.config.appSecret,
-        }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(10_000),
-      });
-
-      const raw = (await res.json().catch(() => null)) as Record<string, unknown> | null;
-      const gatewayStatusCode =
-        raw && typeof raw.statusCode === "string" ? raw.statusCode.trim() : null;
-
-      if (!res.ok) {
-        throw new AppError("Unable to authenticate with bKash gateway.", "BKASH_AUTH_FAILED", 502, {
-          httpStatus: res.status,
-          gatewayStatusCode,
-        });
-      }
-
-      if (gatewayStatusCode && gatewayStatusCode !== "0000") {
-        throw new AppError("bKash gateway rejected authentication.", "BKASH_AUTH_REJECTED", 502, {
-          gatewayStatusCode,
-        });
-      }
-
-      const parsed = grantResponseSchema.safeParse(raw);
-      if (!parsed.success) {
-        throw new AppError("Invalid token grant response from bKash.", "BKASH_AUTH_INVALID", 502, {
-          gatewayStatusCode,
-        });
-      }
-
-      const rawExpiresSec =
-        typeof parsed.data.expires_in === "number"
-          ? parsed.data.expires_in
-          : typeof parsed.data.expires_in === "string"
-            ? Number.parseInt(parsed.data.expires_in, 10)
-            : 3600;
-      const ttlMs =
-        Number.isFinite(rawExpiresSec) && rawExpiresSec > 0
-          ? Math.min(45 * 60 * 1000, Math.max(60, rawExpiresSec - 120) * 1000)
-          : 45 * 60 * 1000;
-
-      this.tokenCache = {
-        token: parsed.data.id_token,
-        expiresAtMs: Date.now() + ttlMs,
-      };
-      return parsed.data.id_token;
-    })();
+    const refreshPromise = this.grantToken().then((entry) => {
+      this.tokenCache = entry;
+      return entry.token;
+    });
 
     this.tokenInFlight = refreshPromise;
     try {
@@ -257,11 +235,68 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
     }
   }
 
+  private async grantToken(): Promise<BkashToken> {
+    const startedAt = Date.now();
+    const endpoint = this.v2
+      ? "/tokenized-checkout/auth/grant-token"
+      : "/tokenized/checkout/token/grant";
+    const res = await this.fetchImpl(`${this.apiRoot}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        username: this.config.username,
+        password: this.config.password,
+      },
+      body: JSON.stringify({
+        app_key: this.config.appKey,
+        app_secret: this.config.appSecret,
+      }),
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    const raw = asGatewayObject(await res.json().catch(() => null));
+    const gatewayStatusCode = typeof raw.statusCode === "string" ? raw.statusCode.trim() : null;
+
+    if (!res.ok) {
+      throw new AppError("Unable to authenticate with bKash gateway.", "BKASH_AUTH_FAILED", 502, {
+        httpStatus: res.status,
+        gatewayStatusCode,
+      });
+    }
+
+    if (gatewayStatusCode && gatewayStatusCode !== "0000") {
+      throw new AppError("bKash gateway rejected authentication.", "BKASH_AUTH_REJECTED", 502, {
+        gatewayStatusCode,
+      });
+    }
+
+    const parsed = grantResponseSchema.safeParse(raw);
+    if (!parsed.success) {
+      throw new AppError("Invalid token grant response from bKash.", "BKASH_AUTH_INVALID", 502, {
+        gatewayStatusCode,
+      });
+    }
+
+    const rawExpiresSec =
+      typeof parsed.data.expires_in === "number"
+        ? parsed.data.expires_in
+        : typeof parsed.data.expires_in === "string"
+          ? Number.parseInt(parsed.data.expires_in, 10)
+          : 3600;
+    const expirySeconds =
+      Number.isFinite(rawExpiresSec) && rawExpiresSec > 0 ? Math.min(3600, rawExpiresSec) : 3600;
+    const validForMs = Math.floor(expirySeconds * 1000);
+    return { token: parsed.data.id_token, expiresAtMs: startedAt + validForMs, validForMs };
+  }
+
   /**
    * Verifies live Tokenized Checkout /token/grant authentication cleanly without initiating a payment.
    */
   async verifyAuthentication(): Promise<{ ok: true; apiRoot: string }> {
-    await this.getIdToken(true);
+    await this.getIdToken();
     return { ok: true, apiRoot: this.apiRoot };
   }
 
@@ -270,21 +305,31 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
     payload: Record<string, unknown>,
     retried = false
   ): Promise<Response> {
-    const token = await this.getIdToken(retried);
-    const res = await this.fetchImpl(`${this.apiRoot}${endpointPath}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        authorization: token,
-        "x-app-key": this.config.appKey,
-      },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
+    const token = await this.getIdToken(retried).catch(() => {
+      throw new BkashRequestNotSentError();
     });
+    let res: Response;
+    try {
+      res = await this.fetchImpl(`${this.apiRoot}${endpointPath}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          authorization: this.v2 ? `Bearer ${token}` : token,
+          "x-app-key": this.config.appKey,
+        },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+        redirect: "manual",
+        signal: AbortSignal.timeout(30_000),
+      });
+    } catch {
+      throw new BkashNoResponseError("No response from the bKash gateway.");
+    }
 
-    if (res.status === 401 && !retried) {
+    // Retain legacy behavior for isolated v1 clients. Shared merchant tokens
+    // always follow the shared quota and are never force-refreshed on a 401.
+    if (res.status === 401 && !retried && !this.v2 && !this.config.tokenCache) {
       this.tokenCache = null;
       return this.postAuthenticated(endpointPath, payload, true);
     }
@@ -311,7 +356,7 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
       );
     }
 
-    if (this.isProductionGatewayHost() || process.env.NODE_ENV === "production") {
+    if (this.v2 || this.isProductionGatewayHost() || process.env.NODE_ENV === "production") {
       const host = parsedCallback.hostname.toLowerCase();
       if (parsedCallback.protocol !== "https:" || host === "localhost" || host === "127.0.0.1") {
         throw new AppError(
@@ -322,7 +367,8 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
       }
     }
 
-    const res = await this.postAuthenticated("/tokenized/checkout/create", {
+    const endpoint = this.v2 ? "/tokenized-checkout/payment/create" : "/tokenized/checkout/create";
+    const res = await this.postAuthenticated(endpoint, {
       mode: this.config.mode || "0011",
       payerReference: attempt.payerReference,
       callbackURL: parsedCallback.toString(),
@@ -332,7 +378,7 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
       intent: "sale",
     });
 
-    const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const raw = asGatewayObject(await res.json().catch(() => null));
     const gatewayStatusCode = typeof raw.statusCode === "string" ? raw.statusCode.trim() : null;
     if (!res.ok) {
       throw new AppError("bKash checkout session creation failed.", "BKASH_CREATE_FAILED", 502, {
@@ -341,7 +387,10 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
       });
     }
 
-    const parsed = createResponseSchema.safeParse(raw);
+    const parsed = createResponseSchema.safeParse({
+      ...raw,
+      paymentID: raw.paymentId ?? raw.paymentID,
+    });
     if (!parsed.success || (parsed.data.statusCode && parsed.data.statusCode !== "0000")) {
       throw new AppError(
         "bKash returned an invalid checkout creation payload.",
@@ -351,140 +400,191 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
       );
     }
 
+    if (this.v2 && !parsed.data.signature) {
+      throw new AppError(
+        "bKash checkout is missing its callback signature.",
+        "BKASH_CREATE_INVALID",
+        502
+      );
+    }
     const checkoutUrl = new URL(parsed.data.bkashURL);
+    const allowedHosts = this.isProductionGatewayHost()
+      ? ["payment.bkash.com", "checkout.pay.bka.sh"]
+      : this.v2
+        ? ["sandbox.payment.bkash.com", "checkout.sandbox.bka.sh"]
+        : ["sandbox.payment.bkash.com", "checkout.sandbox.bka.sh", "checkout.pay.bka.sh"];
     if (checkoutUrl.protocol !== "https:") {
       throw new AppError("Unsafe non-HTTPS bKash redirect URL rejected.", "BKASH_UNSAFE_URL", 502);
+    }
+    if (
+      checkoutUrl.port ||
+      checkoutUrl.username ||
+      checkoutUrl.password ||
+      !allowedHosts.includes(checkoutUrl.hostname)
+    ) {
+      throw new AppError("Unsafe bKash redirect URL rejected.", "BKASH_UNSAFE_URL", 502);
     }
 
     return {
       paymentId: parsed.data.paymentID,
       redirectUrl: checkoutUrl.toString(),
+      ...(this.v2
+        ? {
+            callbackSignature: parsed.data.signature,
+            sandboxV2: isBkashSandboxV2(this.config.baseUrl, this.config.apiVersion),
+          }
+        : {}),
       rawRedacted: redactBkashPayload(raw),
     };
   }
 
   async executePayment(paymentId: string): Promise<PaymentExecutionResult> {
+    const endpoint = this.v2
+      ? "/tokenized-checkout/payment/execute"
+      : "/tokenized/checkout/execute";
+    const payload = this.v2 ? { paymentId } : { paymentID: paymentId };
+    let response: Response;
+    let body: string;
     try {
-      const res = await this.postAuthenticated("/tokenized/checkout/execute", {
-        paymentID: paymentId,
-      });
-
-      const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-      if (!res.ok) {
-        const gatewayStatusCode = String(raw.statusCode ?? res.status).trim();
-        const isTransientOrAlreadyDone =
-          gatewayStatusCode === "2062" ||
-          res.status >= 500 ||
-          res.status === 429 ||
-          res.status === 408;
-
-        return {
-          paymentId,
-          trxId: null,
-          merchantInvoiceNumber: null,
-          amountPoisha: null,
-          currency: null,
-          transactionStatus: "Pending",
-          statusCode: gatewayStatusCode,
-          statusMessage: String(raw.statusMessage ?? "Gateway execute returned non-200 status"),
-          outcome: isTransientOrAlreadyDone ? "pending" : "failed",
-          rawRedacted: redactBkashPayload(raw),
-        };
+      response = await this.postAuthenticated(endpoint, payload);
+      try {
+        body = await response.text();
+      } catch {
+        throw new BkashNoResponseError("bKash closed the response before returning a body.");
       }
-
-      const transactionStatus = String(raw.transactionStatus ?? "").trim();
-      const statusCode = String(raw.statusCode ?? "").trim();
-      const statusMessage = String(raw.statusMessage ?? "").trim();
-      const amountPoisha = parseOptionalPoisha(raw.amount);
-
-      let outcome: "completed" | "pending" | "failed" = "pending";
-      if (transactionStatus === "Completed" && statusCode === "0000") {
-        outcome = "completed";
-      } else if (
-        statusCode === "2062" ||
-        statusCode === "9999" ||
-        statusCode === "PENDING" ||
-        statusCode === "TIMEOUT" ||
-        transactionStatus === "Pending"
-      ) {
-        // 2062 (already completed) or pending/ambiguous state must be confirmed via queryPaymentStatus
-        outcome = "pending";
-      } else if (
-        transactionStatus === "Cancelled" ||
-        transactionStatus === "Failed" ||
-        (statusCode !== "" && statusCode !== "0000")
-      ) {
-        outcome = "failed";
-      }
-
-      return {
-        paymentId: String(raw.paymentID ?? paymentId),
-        trxId: raw.trxID ? String(raw.trxID) : null,
-        merchantInvoiceNumber: raw.merchantInvoiceNumber ? String(raw.merchantInvoiceNumber) : null,
-        amountPoisha,
-        currency: raw.currency ? String(raw.currency) : null,
-        transactionStatus,
-        statusCode,
-        statusMessage,
-        outcome,
-        rawRedacted: redactBkashPayload(raw),
-      };
-    } catch {
-      // Timeout or network interruption during execute MUST leave payment in pending state
-      return {
-        paymentId,
-        trxId: null,
-        merchantInvoiceNumber: null,
-        amountPoisha: null,
-        currency: null,
-        transactionStatus: "Pending",
-        statusCode: "TIMEOUT",
-        statusMessage: "Execute request timed out; awaiting verification query",
-        outcome: "pending",
-        rawRedacted: { statusCode: "TIMEOUT" },
-      };
+    } catch (error) {
+      if (!(error instanceof BkashNoResponseError)) throw error;
+      return this.executeWithoutResponse(paymentId);
     }
+
+    const bodyValue = body.trim();
+    if (
+      (!bodyValue && (response.ok || response.status === 408 || response.status === 504)) ||
+      bodyValue === "null"
+    ) {
+      return this.executeWithoutResponse(paymentId);
+    }
+
+    let raw: Record<string, unknown> = {};
+    try {
+      raw = asGatewayObject(JSON.parse(bodyValue));
+    } catch {
+      // A nonempty but malformed response is not an Execute timeout.
+    }
+    const completed =
+      response.ok &&
+      raw.transactionStatus === "Completed" &&
+      (raw.statusCode === "0000" || (this.v2 && raw.statusCode == null));
+    return {
+      ...this.paymentStatus(raw, response, completed),
+      outcome: completed ? "completed" : "failed",
+    };
+  }
+
+  private executeWithoutResponse(paymentId: string): PaymentExecutionResult {
+    return {
+      paymentId,
+      trxId: null,
+      merchantInvoiceNumber: null,
+      amountPoisha: null,
+      currency: null,
+      transactionStatus: "Pending",
+      statusCode: "TIMEOUT",
+      statusMessage: "bKash did not return an Execute response.",
+      outcome: "pending",
+      rawRedacted: { statusCode: "TIMEOUT" },
+    };
+  }
+
+  private paymentStatus(
+    raw: Record<string, unknown>,
+    response: Response,
+    completed: boolean
+  ): PaymentStatusResult {
+    const id = raw.paymentId ?? raw.paymentID;
+    const trx = raw.trxId ?? raw.trxID;
+    return {
+      paymentId: typeof id === "string" ? id : "",
+      trxId: typeof trx === "string" ? trx : null,
+      merchantInvoiceNumber:
+        typeof raw.merchantInvoiceNumber === "string" ? raw.merchantInvoiceNumber : null,
+      amountPoisha: parseOptionalPoisha(raw.amount),
+      currency: typeof raw.currency === "string" ? raw.currency : null,
+      transactionStatus:
+        response.ok && typeof raw.transactionStatus === "string"
+          ? raw.transactionStatus
+          : "Unknown",
+      statusCode: completed ? "0000" : String(raw.statusCode ?? raw.errorCode ?? response.status),
+      statusMessage:
+        cleanGatewayMessage(raw.errorMessageEn) || cleanGatewayMessage(raw.statusMessage),
+      verificationStatus:
+        typeof raw.verificationStatus === "string" ? raw.verificationStatus : null,
+      rawRedacted: redactBkashPayload(raw),
+    };
   }
 
   async queryPaymentStatus(paymentId: string): Promise<PaymentStatusResult> {
-    const res = await this.postAuthenticated("/tokenized/checkout/payment/status", {
-      paymentID: paymentId,
-    });
-    const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!res.ok) {
-      return {
-        paymentId,
-        trxId: null,
-        merchantInvoiceNumber: null,
-        amountPoisha: null,
-        currency: null,
-        transactionStatus: "Pending",
-        statusCode: String(raw.statusCode ?? res.status),
-        statusMessage: String(raw.statusMessage ?? "Payment status query unavailable"),
-        verificationStatus: raw.verificationStatus ? String(raw.verificationStatus) : null,
-        rawRedacted: redactBkashPayload(raw),
-      };
+    const endpoint = this.v2
+      ? "/tokenized-checkout/payment/status"
+      : "/tokenized/checkout/payment/status";
+    const response = await this.postAuthenticated(
+      endpoint,
+      this.v2 ? { paymentId } : { paymentID: paymentId }
+    );
+    const raw = asGatewayObject(await response.json().catch(() => null));
+    const completed =
+      response.ok &&
+      raw.transactionStatus === "Completed" &&
+      (raw.statusCode === "0000" || (this.v2 && raw.statusCode == null));
+    return this.paymentStatus(raw, response, completed);
+  }
+
+  async refundSandboxPayment(paymentId: string, trxId: string, amountPoisha: bigint) {
+    if (
+      !isBkashSandboxV2(this.config.baseUrl, this.config.apiVersion) ||
+      !this.config.tokenCache ||
+      !paymentId ||
+      !trxId ||
+      amountPoisha <= 0n
+    ) {
+      throw new AppError("Invalid bKash sandbox refund request.", "BKASH_REFUND_INVALID", 400);
     }
 
-    return {
-      paymentId: String(raw.paymentID ?? paymentId),
-      trxId: raw.trxID ? String(raw.trxID) : null,
-      merchantInvoiceNumber: raw.merchantInvoiceNumber ? String(raw.merchantInvoiceNumber) : null,
-      amountPoisha: parseOptionalPoisha(raw.amount),
-      currency: raw.currency ? String(raw.currency) : null,
-      transactionStatus: String(raw.transactionStatus ?? "Unknown"),
-      statusCode: String(raw.statusCode ?? ""),
-      statusMessage: String(raw.statusMessage ?? ""),
-      verificationStatus: raw.verificationStatus ? String(raw.verificationStatus) : null,
-      rawRedacted: redactBkashPayload(raw),
-    };
+    const response = await this.postAuthenticated(
+      "/tokenized-checkout/refund/payment/transaction",
+      {
+        paymentId,
+        trxId,
+        refundAmount: poishaToBdtString(amountPoisha),
+        reason: "Sandbox UAT",
+      }
+    );
+    const raw = asGatewayObject(await response.json().catch(() => null));
+    const refundTrxId = cleanGatewayMessage(raw.refundTrxId ?? raw.refundTrxID);
+    if (
+      !response.ok ||
+      raw.transactionStatus !== "Completed" ||
+      (raw.statusCode != null && raw.statusCode !== "0000") ||
+      (raw.originalTrxId ?? raw.originalTrxID) !== trxId ||
+      parseOptionalPoisha(raw.refundAmount ?? raw.amount) !== amountPoisha ||
+      (raw.currency != null && raw.currency !== "BDT") ||
+      !refundTrxId
+    ) {
+      throw new AppError(
+        "bKash did not confirm the sandbox refund.",
+        "BKASH_REFUND_UNCONFIRMED",
+        502
+      );
+    }
+
+    return { refundTrxId, amountPoisha: amountPoisha.toString() };
   }
 
   async searchTransaction(trxId: string): Promise<TransactionSearchResult> {
     const res = await this.postAuthenticated("/tokenized/checkout/general/searchTransaction", {
       trxID: trxId,
     });
-    const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const raw = asGatewayObject(await res.json().catch(() => null));
     if (!res.ok) {
       throw new AppError("bKash searchTransaction request failed.", "BKASH_SEARCH_FAILED", 502);
     }
@@ -761,7 +861,28 @@ export function createLiveBkashClientFromEnv(): BkashTokenizedClient {
     );
   }
 
+  if (
+    !["https://tokenized.sandbox.bka.sh", "https://tokenized.pay.bka.sh"].includes(
+      env.BKASH_BASE_URL
+    ) ||
+    !/^[a-zA-Z0-9.-]+$/.test(env.BKASH_API_VERSION)
+  ) {
+    throw new AppError(
+      "The bKash API origin or version is invalid.",
+      "BKASH_API_ORIGIN_INVALID",
+      503
+    );
+  }
   return new BkashTokenizedClient({
+    tokenCache: new SupabaseBkashTokenCache(
+      createSupabaseAdminClient(),
+      JSON.stringify([
+        env.BKASH_BASE_URL,
+        env.BKASH_API_VERSION,
+        env.BKASH_APP_KEY,
+        env.BKASH_USERNAME,
+      ])
+    ),
     baseUrl: env.BKASH_BASE_URL,
     apiVersion: env.BKASH_API_VERSION,
     mode: env.BKASH_MODE,

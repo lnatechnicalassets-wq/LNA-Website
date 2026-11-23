@@ -22,6 +22,8 @@ export interface BkashPaymentConfig {
   qrImageSrc: string;
   qrImageAlt: string;
   instruction: string;
+  hostedInstruction?: string;
+  sandboxLabel?: string;
 }
 
 export interface BankTransferConfig {
@@ -70,6 +72,7 @@ export interface EnrollmentOutcomeSummary {
   status: string;
   holdExpiresAt: string | null;
   canRetry: boolean;
+  paymentErrorMessage?: string;
   outcomeToken: string;
 }
 

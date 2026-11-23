@@ -29,6 +29,7 @@ import { parseCurrentServerEnv } from "@/server/env";
 import { dispatchEmailOutboxById, type OutboxEmailSender } from "@/server/email/resend";
 import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
 import {
+  BkashRequestNotSentError,
   getPaymentGatewayClient,
   redactBkashPayload,
   verifyMockScenarioToken,
@@ -43,6 +44,23 @@ import {
 
 const CROCKFORD_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const CROCKFORD_REF_REGEX = /^LNA-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/;
+const EXECUTE_NO_RESPONSE = "EXECUTE_NO_RESPONSE";
+
+function hashBkashCallbackSignature(signature: string): string {
+  return crypto.createHash("sha256").update(signature).digest("hex");
+}
+
+function matchesBkashCallbackSignature(expected: string, signature?: string | null): boolean {
+  return Boolean(
+    signature &&
+      signature.length <= 512 &&
+      /^[a-f0-9]{64}$/.test(expected) &&
+      crypto.timingSafeEqual(
+        Buffer.from(expected, "hex"),
+        Buffer.from(hashBkashCallbackSignature(signature), "hex")
+      )
+  );
+}
 
 export interface PublicCatalogCourse {
   id: string;
@@ -235,6 +253,8 @@ export interface AdminEnrollmentDetailResult {
 interface EnrollmentOutcomeTokenPayload {
   publicRef: string;
   enrollmentId: string;
+  paymentAttemptId?: string;
+  paymentOutcome?: EnrollmentOutcomeType;
   scope: "enrollment_outcome";
   [key: string]: unknown;
 }
@@ -332,12 +352,17 @@ export function generateSecureEnrollmentReference(): string {
   return `LNA-${seg1}-${seg2}`;
 }
 
-export function signEnrollmentOutcomeToken(publicRef: string, enrollmentId: string): string {
+export function signEnrollmentOutcomeToken(
+  publicRef: string,
+  enrollmentId: string,
+  payment?: { paymentAttemptId: string; paymentOutcome: EnrollmentOutcomeType }
+): string {
   return signHmacToken<EnrollmentOutcomeTokenPayload>(
     {
       publicRef: normalizeApplicationRef(publicRef),
       enrollmentId,
       scope: "enrollment_outcome",
+      ...payment,
     },
     3600
   );
@@ -346,7 +371,10 @@ export function signEnrollmentOutcomeToken(publicRef: string, enrollmentId: stri
 export function verifyEnrollmentOutcomeToken(
   token: string | null | undefined,
   expectedRef?: string
-): { publicRef: string; enrollmentId: string } | null {
+): Pick<
+  EnrollmentOutcomeTokenPayload,
+  "publicRef" | "enrollmentId" | "paymentAttemptId" | "paymentOutcome"
+> | null {
   if (!token) return null;
   const parsed = verifyHmacToken<EnrollmentOutcomeTokenPayload>(token);
   if (
@@ -366,6 +394,12 @@ export function verifyEnrollmentOutcomeToken(
   return {
     publicRef: normalizeApplicationRef(parsed.publicRef),
     enrollmentId: parsed.enrollmentId,
+    ...(parsed.paymentAttemptId
+      ? {
+          paymentAttemptId: parsed.paymentAttemptId,
+          paymentOutcome: parsed.paymentOutcome,
+        }
+      : {}),
   };
 }
 
@@ -771,6 +805,12 @@ export async function startEnrollmentCheckout(
       .update({
         payment_id: init.paymentId,
         status: "pending",
+        ...(init.callbackSignature
+          ? {
+              bkash_callback_signature_hash: hashBkashCallbackSignature(init.callbackSignature),
+              bkash_sandbox_v2: init.sandboxV2 === true,
+            }
+          : {}),
       })
       .eq("id", attemptId);
     if (persistAttemptError) {
@@ -898,6 +938,12 @@ export async function retryEnrollmentCheckout(
       .update({
         payment_id: init.paymentId,
         status: "pending",
+        ...(init.callbackSignature
+          ? {
+              bkash_callback_signature_hash: hashBkashCallbackSignature(init.callbackSignature),
+              bkash_sandbox_v2: init.sandboxV2 === true,
+            }
+          : {}),
       })
       .eq("id", attemptId);
     if (persistAttemptError) {
@@ -953,6 +999,7 @@ export async function processBkashCallback(
     merchantInvoiceNumber?: string | null;
     tranId?: string | null;
     mockSig?: string | null;
+    signature?: string | null;
     rawParams?: Record<string, unknown>;
   },
   options: {
@@ -965,56 +1012,56 @@ export async function processBkashCallback(
   const admin = options.adminOverride ?? createSupabaseAdminClient();
   const cleanOrigin = options.origin.replace(/\/+$/, "");
   const paymentId = params.paymentID?.trim() || null;
-  const fallbackTranId = params.merchantInvoiceNumber?.trim() || params.tranId?.trim() || null;
   const statusParam = (params.status ?? "").trim().toLowerCase();
 
-  interface AttemptRow {
-    id: string;
-    enrollment_id: string;
-    tran_id: string;
-    payment_id: string | null;
-    trx_id: string | null;
-    amount_poisha: number | string;
-    currency: string;
-    status: string;
+  const invalidResult: BkashCallbackProcessResult = {
+    outcome: "invalid",
+    redirectUrl: `${cleanOrigin}/enroll?outcome=invalid`,
+  };
+  if (
+    !paymentId ||
+    paymentId.length > 128 ||
+    !["success", "cancel", "failure"].includes(statusParam)
+  ) {
+    return invalidResult;
   }
 
-  let attempt: AttemptRow | null = null;
+  const { data: attempt, error: attemptError } = await admin
+    .from("payment_attempts")
+    .select(
+      "id, enrollment_id, tran_id, payment_id, amount_poisha, currency, status, bkash_callback_signature_hash"
+    )
+    .eq("payment_id", paymentId)
+    .maybeSingle();
 
-  if (paymentId) {
-    const res = await admin
-      .from("payment_attempts")
-      .select("id, enrollment_id, tran_id, payment_id, trx_id, amount_poisha, currency, status")
-      .eq("payment_id", paymentId)
-      .maybeSingle();
-    attempt = (res.data as AttemptRow | null) ?? null;
+  if (attemptError) {
+    throw new AppError("Unable to look up the bKash payment.", "BKASH_CALLBACK_LOOKUP_FAILED", 503);
+  }
+  if (!attempt) return invalidResult;
+
+  const verifiedScenario = verifyMockScenarioToken(params.mockSig, paymentId);
+  const checkoutMode = getEnrollmentRuntimeConfig().checkoutMode;
+  if (attempt.bkash_callback_signature_hash) {
+    if (!matchesBkashCallbackSignature(attempt.bkash_callback_signature_hash, params.signature)) {
+      return invalidResult;
+    }
+  } else if (
+    !options.gatewayOverride &&
+    (checkoutMode === "closed" ||
+      (checkoutMode === "mock" && !verifiedScenario) ||
+      (checkoutMode === "live" && parseCurrentServerEnv().BKASH_API_VERSION === "v2"))
+  ) {
+    return invalidResult;
   }
 
-  if (!attempt && fallbackTranId) {
-    const res = await admin
-      .from("payment_attempts")
-      .select("id, enrollment_id, tran_id, payment_id, trx_id, amount_poisha, currency, status")
-      .eq("tran_id", fallbackTranId)
-      .maybeSingle();
-    attempt = (res.data as AttemptRow | null) ?? null;
-  }
-
-  const isMockCallback = Boolean(params.mockSig);
   await admin.from("payment_events").insert({
-    payment_attempt_id: attempt?.id ?? null,
-    tran_id: attempt?.tran_id ?? fallbackTranId,
-    payment_id: paymentId ?? attempt?.payment_id ?? null,
-    source: isMockCallback ? "mock_callback" : "callback",
-    event_status: statusParam || "missing_status",
+    payment_attempt_id: attempt.id,
+    tran_id: attempt.tran_id,
+    payment_id: paymentId,
+    source: verifiedScenario ? "mock_callback" : "callback",
+    event_status: statusParam,
     redacted_payload: redactBkashPayload(params.rawParams ?? { paymentId, status: statusParam }),
   });
-
-  if (!attempt) {
-    return {
-      outcome: "invalid",
-      redirectUrl: `${cleanOrigin}/enroll?outcome=invalid`,
-    };
-  }
 
   const { data: enrollmentRow } = await admin
     .from("enrollments")
@@ -1031,10 +1078,14 @@ export async function processBkashCallback(
 
   const publicRef = String(enrollmentRow.public_ref);
   const enrollmentId = String(enrollmentRow.id);
-  const outcomeToken = signEnrollmentOutcomeToken(publicRef, enrollmentId);
-
-  const buildRedirect = (outcome: EnrollmentOutcomeType): string =>
-    `${cleanOrigin}/enroll?outcome=${encodeURIComponent(outcome)}&ref=${encodeURIComponent(publicRef)}&token=${encodeURIComponent(outcomeToken)}`;
+  const buildRedirect = (outcome: EnrollmentOutcomeType): string => {
+    const token = signEnrollmentOutcomeToken(publicRef, enrollmentId, {
+      paymentAttemptId: String(attempt.id),
+      paymentOutcome: outcome,
+    });
+    const search = new URLSearchParams({ outcome, ref: publicRef, token });
+    return `${cleanOrigin}/enroll?${search}`;
+  };
 
   // 1. Strict Idempotency Guards (FR-PAY-006, AT-03)
   if (attempt.status === "validated" || enrollmentRow.status === "confirmed") {
@@ -1066,214 +1117,181 @@ export async function processBkashCallback(
     };
   }
 
-  // 2. Untrusted Browser Cancel / Failure Redirects (Rule 10 §1.3: NEVER release seat holds)
-  if (statusParam === "cancel" || statusParam === "failure") {
-    const nextStatus = statusParam === "cancel" ? "cancelled" : "failed";
-    await admin.rpc("record_payment_outcome", {
+  const result = (outcome: EnrollmentOutcomeType): BkashCallbackProcessResult => ({
+    outcome,
+    applicationReference: publicRef,
+    redirectUrl: buildRedirect(outcome),
+  });
+
+  // Only one callback may move a gateway attempt forward. A replay never sends
+  // Execute twice, including while the first request is in flight.
+  const gateway =
+    statusParam === "success"
+      ? (options.gatewayOverride ?? getPaymentGatewayClient(cleanOrigin))
+      : null;
+  const shouldClaim = checkoutMode === "live" || Boolean(attempt.bkash_callback_signature_hash);
+  if (shouldClaim) {
+    if (checkoutMode === "closed" && !options.gatewayOverride) return result("pending");
+    const { data: claimed, error } = await admin
+      .from("payment_attempts")
+      .update({
+        failure_reason: statusParam === "success" ? "EXECUTE_STARTED" : "CALLBACK_STARTED",
+        bkash_execute_claimed: statusParam === "success",
+      })
+      .eq("id", attempt.id)
+      .eq("payment_id", paymentId)
+      .in("status", ["initiated", "pending"])
+      .is("failure_reason", null)
+      .select("id")
+      .maybeSingle();
+    if (error?.code === "23505") return result("pending");
+    if (error) {
+      throw new AppError("Unable to claim bKash callback.", "BKASH_CALLBACK_CLAIM_FAILED", 503);
+    }
+    if (!claimed) return result("pending");
+  }
+
+  const recordOutcome = async (
+    nextStatus: "cancelled" | "failed" | "pending" | "review_hold",
+    reason: string,
+    code: string,
+    message: string
+  ) => {
+    const { error } = await admin.rpc("record_payment_outcome", {
       p_attempt_id: attempt.id,
       p_next_status: nextStatus,
       p_payment_id: paymentId,
-      p_failure_reason: statusParam === "cancel" ? "USER_CANCELLED" : "GATEWAY_FAILURE",
-      p_gateway_status_code: statusParam.toUpperCase(),
-      p_gateway_status_message: `Gateway redirected with status=${statusParam}`,
+      p_failure_reason: reason,
+      p_gateway_status_code: code,
+      p_gateway_status_message: message,
     });
-    const outcome: EnrollmentOutcomeType = nextStatus === "cancelled" ? "cancelled" : "failed";
-    return {
-      outcome,
-      applicationReference: publicRef,
-      redirectUrl: buildRedirect(outcome),
-    };
+    if (error)
+      throw new AppError("Unable to save payment outcome.", "BKASH_OUTCOME_SAVE_FAILED", 503);
+    return result(nextStatus);
+  };
+
+  if (statusParam === "cancel") {
+    return recordOutcome("cancelled", "USER_CANCELLED", "CANCEL", "bKash checkout was cancelled.");
+  }
+  if (statusParam === "failure") {
+    return recordOutcome(
+      "failed",
+      "GATEWAY_FAILURE",
+      "FAILURE",
+      "bKash checkout did not complete."
+    );
   }
 
-  const effectivePaymentId = paymentId || attempt.payment_id;
-  if (statusParam !== "success" || !effectivePaymentId) {
-    await admin.rpc("record_payment_outcome", {
-      p_attempt_id: attempt.id,
-      p_next_status: "failed",
-      p_payment_id: effectivePaymentId,
-      p_failure_reason: "INVALID_CALLBACK_STATUS",
-      p_gateway_status_code: statusParam || "MISSING",
-      p_gateway_status_message: "Callback lacked success status or paymentID",
-    });
-    return {
-      outcome: "failed",
-      applicationReference: publicRef,
-      redirectUrl: buildRedirect("failed"),
-    };
-  }
-
-  // 3. Server-to-Server Execute + Secondary Query Verification (FR-PAY-005)
   const expectedPoisha = parseBigIntPoisha(attempt.amount_poisha);
-  const verifiedScenario = verifyMockScenarioToken(params.mockSig, effectivePaymentId);
   const mockContext = {
-    tranId: attempt.tran_id,
+    tranId: String(attempt.tran_id),
     amountPoisha: expectedPoisha,
     ...(verifiedScenario ? { scenario: verifiedScenario } : {}),
   };
-
-  const gateway = options.gatewayOverride ?? getPaymentGatewayClient(cleanOrigin);
-  const execRes = await gateway.executePayment(effectivePaymentId, mockContext);
-
-  await admin.from("payment_events").insert({
-    payment_attempt_id: attempt.id,
-    tran_id: attempt.tran_id,
-    payment_id: effectivePaymentId,
-    source: "execute",
-    event_status: execRes.transactionStatus,
-    redacted_payload: execRes.rawRedacted,
-  });
-
-  let queryRes: PaymentStatusResult;
+  if (!gateway) return invalidResult;
+  let execRes: Awaited<ReturnType<typeof gateway.executePayment>>;
   try {
-    queryRes = await gateway.queryPaymentStatus(effectivePaymentId, mockContext);
-  } catch {
-    queryRes = {
-      paymentId: effectivePaymentId,
-      trxId: null,
-      merchantInvoiceNumber: null,
-      amountPoisha: null,
-      currency: null,
-      transactionStatus: "Pending",
-      statusCode: "QUERY_ERROR",
-      statusMessage: "Unable to query payment status from bKash gateway",
-      verificationStatus: null,
-      rawRedacted: { statusCode: "QUERY_ERROR" },
-    };
+    execRes = await gateway.executePayment(paymentId, mockContext);
+  } catch (error) {
+    // A failed token lookup never sent Execute, so a later callback can retry.
+    if (shouldClaim && error instanceof BkashRequestNotSentError) {
+      await admin
+        .from("payment_attempts")
+        .update({ failure_reason: null, bkash_execute_claimed: false })
+        .eq("id", attempt.id)
+        .eq("failure_reason", "EXECUTE_STARTED");
+    }
+    throw error;
   }
 
-  await admin.from("payment_events").insert({
-    payment_attempt_id: attempt.id,
-    tran_id: attempt.tran_id,
-    payment_id: effectivePaymentId,
-    source: "query_status",
-    event_status: queryRes.transactionStatus,
-    redacted_payload: queryRes.rawRedacted,
-  });
-
-  // 4. Classify Execute + Query Verification Results Safely (Rule 10 T20, FR-PAY-005..008)
-  const effectiveTrxId = (queryRes.trxId || execRes.trxId || "").trim();
-  const queryCompleted =
-    queryRes.transactionStatus === "Completed" &&
-    queryRes.statusCode === "0000" &&
-    Boolean(queryRes.trxId?.trim());
-  const execCompleted =
-    execRes.outcome === "completed" &&
-    execRes.transactionStatus === "Completed" &&
-    execRes.statusCode === "0000";
-  const execRecoverablePending = execRes.outcome === "pending";
-
-  const queryDeclined =
-    queryRes.transactionStatus === "Cancelled" || queryRes.transactionStatus === "Failed";
-  const queryUnsettledOrUnknown =
-    queryRes.transactionStatus === "Initiated" || queryRes.transactionStatus === "Unknown";
-  const execDeclined =
-    execRes.outcome === "failed" ||
-    execRes.transactionStatus === "Cancelled" ||
-    execRes.transactionStatus === "Failed";
-
-  // 4a. Clean Gateway Decline / Abort with Zero trxID -> failed (30-min hold retained for retry)
-  if (
-    !effectiveTrxId &&
-    ((execDeclined && (queryDeclined || queryUnsettledOrUnknown)) || queryDeclined)
-  ) {
-    await admin.rpc("record_payment_outcome", {
-      p_attempt_id: attempt.id,
-      p_next_status: "failed",
-      p_payment_id: effectivePaymentId,
-      p_failure_reason: "GATEWAY_DECLINED",
-      p_gateway_status_code:
-        execRes.statusCode !== "0000"
-          ? execRes.statusCode || queryRes.statusCode
-          : queryRes.statusCode,
-      p_gateway_status_message: execRes.statusMessage || queryRes.statusMessage,
+  const recordGatewayResponse = (
+    source: "execute" | "query_status",
+    response: {
+      transactionStatus: string;
+      rawRedacted: Record<string, unknown>;
+    }
+  ) =>
+    admin.from("payment_events").insert({
+      payment_attempt_id: attempt.id,
+      tran_id: attempt.tran_id,
+      payment_id: paymentId,
+      source,
+      event_status: response.transactionStatus,
+      redacted_payload: response.rawRedacted,
     });
 
-    return {
-      outcome: "failed",
-      applicationReference: publicRef,
-      redirectUrl: buildRedirect("failed"),
-    };
+  await recordGatewayResponse("execute", execRes);
+
+  let verified: typeof execRes | PaymentStatusResult = execRes;
+  if (execRes.outcome === "pending" && execRes.statusCode === "TIMEOUT") {
+    // Record the missing Execute response before using the fallback so that
+    // background reconciliation can recover this payment if Query also times out.
+    const pending = await recordOutcome(
+      "pending",
+      EXECUTE_NO_RESPONSE,
+      execRes.statusCode,
+      execRes.statusMessage
+    );
+    try {
+      verified = await gateway.queryPaymentStatus(paymentId, mockContext);
+    } catch {
+      return pending;
+    }
+    await recordGatewayResponse("query_status", verified);
+
+    if (
+      ["Failed", "Cancelled"].includes(verified.transactionStatus) &&
+      verified.paymentId === paymentId
+    ) {
+      return recordOutcome(
+        "failed",
+        "GATEWAY_DECLINED",
+        verified.statusCode,
+        verified.statusMessage
+      );
+    }
+    if (verified.transactionStatus !== "Completed") return pending;
+  } else if (execRes.outcome !== "completed" || execRes.transactionStatus !== "Completed") {
+    return recordOutcome("failed", "GATEWAY_DECLINED", execRes.statusCode, execRes.statusMessage);
   }
 
-  // 4b. Still Pending / Timeout without Completed Verification -> keep pending hold intact
-  if (
-    !queryCompleted &&
-    (execRecoverablePending ||
-      queryRes.transactionStatus === "Pending" ||
-      (!effectiveTrxId && queryRes.transactionStatus === "Initiated"))
-  ) {
-    await admin.rpc("record_payment_outcome", {
-      p_attempt_id: attempt.id,
-      p_next_status: "pending",
-      p_payment_id: effectivePaymentId,
-      p_failure_reason: "GATEWAY_PENDING_VERIFICATION",
-      p_gateway_status_code: queryRes.statusCode || execRes.statusCode,
-      p_gateway_status_message: queryRes.statusMessage || execRes.statusMessage,
-    });
-
-    return {
-      outcome: "pending",
-      applicationReference: publicRef,
-      redirectUrl: buildRedirect("pending"),
-    };
-  }
-
-  // 5. Strict Field Comparison (tran_id, amount_poisha, currency BDT, statusCode 0000, Completed)
-  const effectiveCurrency = (queryRes.currency || execRes.currency || "").trim().toUpperCase();
-  const invoiceMismatch =
-    (queryRes.merchantInvoiceNumber !== null &&
-      queryRes.merchantInvoiceNumber !== attempt.tran_id) ||
-    (execRes.merchantInvoiceNumber !== null && execRes.merchantInvoiceNumber !== attempt.tran_id);
-  const amountMismatch =
-    queryRes.amountPoisha === null ||
-    queryRes.amountPoisha !== expectedPoisha ||
-    (execRes.amountPoisha !== null && execRes.amountPoisha !== expectedPoisha);
-  const statusDisagreement = !(queryCompleted && (execCompleted || execRecoverablePending));
-
-  if (invoiceMismatch || !effectiveTrxId) {
-    await admin.rpc("record_payment_outcome", {
-      p_attempt_id: attempt.id,
-      p_next_status: "review_hold",
-      p_payment_id: effectivePaymentId,
-      p_failure_reason: invoiceMismatch ? "INVOICE_MISMATCH" : "MISSING_TRX_ID",
-      p_gateway_status_code: queryRes.statusCode || execRes.statusCode,
-      p_gateway_status_message: "Gateway invoice reference mismatch or missing trxID",
-    });
-
+  const trxId = verified.trxId?.trim();
+  const currency = verified.currency?.trim().toUpperCase();
+  const mismatch =
+    verified.paymentId !== paymentId
+      ? "PAYMENT_ID_MISMATCH"
+      : verified.merchantInvoiceNumber !== attempt.tran_id
+        ? "INVOICE_MISMATCH"
+        : !trxId
+          ? "MISSING_TRX_ID"
+          : null;
+  if (mismatch) {
+    const flagged = await recordOutcome(
+      "review_hold",
+      mismatch,
+      verified.statusCode,
+      "bKash returned mismatched payment references."
+    );
     await admin.from("audit_events").insert({
       actor_role: "system",
       action: "payment_flagged_review_hold",
       target_entity: "payment_attempts",
       target_id: attempt.id,
-      after_state: {
-        expected_tran_id: attempt.tran_id,
-        query_tran_id: queryRes.merchantInvoiceNumber,
-        exec_tran_id: execRes.merchantInvoiceNumber,
-      },
+      after_state: { reason: mismatch },
     });
-
-    return {
-      outcome: "review_hold",
-      applicationReference: publicRef,
-      redirectUrl: buildRedirect("review_hold"),
-    };
+    return flagged;
   }
 
-  const verifiedPoisha = queryRes.amountPoisha ?? execRes.amountPoisha ?? 0n;
-  const effectiveCode =
-    !statusDisagreement && !amountMismatch && effectiveCurrency === "BDT"
-      ? "0000"
-      : queryRes.statusCode || execRes.statusCode || "MISMATCH";
-
-  // 7. Atomic Confirmation / Mismatch Quarantine via confirm_payment() RPC
+  // The RPC makes amount, currency and duplicate transaction checks atomic
+  // with the seat confirmation. A missing value is passed as a mismatch.
   const { data: confirmRaw, error: confirmError } = await admin.rpc("confirm_payment", {
     p_attempt_id: attempt.id,
-    p_payment_id: effectivePaymentId,
-    p_trx_id: effectiveTrxId,
-    p_verified_poisha: verifiedPoisha.toString(),
-    p_currency: effectiveCurrency || "UNKNOWN",
-    p_gateway_status_code: effectiveCode,
-    p_gateway_status_message: queryRes.statusMessage || execRes.statusMessage || "Processed",
+    p_payment_id: paymentId,
+    p_trx_id: trxId,
+    p_verified_poisha: (verified.amountPoisha ?? 0n).toString(),
+    p_currency: currency || "UNKNOWN",
+    p_gateway_status_code: verified.statusCode === "0000" ? "0000" : "MISMATCH",
+    p_gateway_status_message: verified.statusMessage || "Processed",
   });
 
   if (confirmError || !confirmRaw || typeof confirmRaw !== "object") {
@@ -1349,16 +1367,31 @@ export async function getEnrollmentOutcomeSummaryByToken(
   const courseRel = unwrapRelation(row.courses as { title?: string } | { title?: string }[] | null);
   const batchRel = unwrapRelation(row.batches as { name?: string } | { name?: string }[] | null);
 
+  let paymentErrorMessage: string | undefined;
+  const requestedOutcome = verified.paymentOutcome ?? outcomeParam;
   let derivedOutcome: EnrollmentOutcomeType = "pending";
   const dbStatus = String(row.status);
   if (dbStatus === "confirmed") {
     derivedOutcome = "confirmed";
   } else if (dbStatus === "review_hold") {
     derivedOutcome = "review_hold";
-  } else if (outcomeParam === "cancelled") {
+  } else if (requestedOutcome === "cancelled") {
     derivedOutcome = "cancelled";
-  } else if (outcomeParam === "failed") {
+  } else if (requestedOutcome === "failed") {
     derivedOutcome = "failed";
+  }
+
+  if (derivedOutcome === "failed" && verified.paymentAttemptId) {
+    const { data: failedAttempt } = await admin
+      .from("payment_attempts")
+      .select("gateway_status_message")
+      .eq("enrollment_id", verified.enrollmentId)
+      .eq("id", verified.paymentAttemptId)
+      .eq("status", "failed")
+      .maybeSingle();
+    if (typeof failedAttempt?.gateway_status_message === "string") {
+      paymentErrorMessage = failedAttempt.gateway_status_message.trim().slice(0, 300) || undefined;
+    }
   }
 
   const holdExpiresAt = row.hold_expires_at ? String(row.hold_expires_at) : null;
@@ -1379,6 +1412,7 @@ export async function getEnrollmentOutcomeSummaryByToken(
     status: dbStatus,
     holdExpiresAt,
     canRetry,
+    ...(paymentErrorMessage ? { paymentErrorMessage } : {}),
     outcomeToken: tokenParam,
   };
 }
@@ -1781,9 +1815,8 @@ export interface ReconcilePendingBkashResult {
 }
 
 /**
- * Reconciles uncertain or interrupted bKash payment_attempts via server-to-server queryPaymentStatus().
- * Used by /api/cron/reconcile-payments to recover payments whose execute/callback step dropped
- * after wallet authorization without double-charging or releasing active seat holds prematurely.
+ * Reconciles attempts after an observed missing Execute response. Other
+ * initiated and pending attempts never use the gateway fallback query.
  */
 export async function reconcilePendingBkashPayments(
   options: {
@@ -1841,12 +1874,13 @@ export async function reconcilePendingBkashPayments(
   let attemptsQuery = admin
     .from("payment_attempts")
     .select(
-      "id, enrollment_id, tran_id, payment_id, trx_id, amount_poisha, currency, status, created_at"
+      "id, enrollment_id, tran_id, payment_id, trx_id, amount_poisha, currency, status, created_at, updated_at"
     )
     .eq("gateway", "bkash")
+    .eq("failure_reason", EXECUTE_NO_RESPONSE)
     .in("status", ["initiated", "pending"])
     .not("payment_id", "is", null)
-    .order("created_at", { ascending: true })
+    .order("updated_at", { ascending: true })
     .limit(limit);
 
   if (enrollmentIdFilter) {
@@ -1868,6 +1902,7 @@ export async function reconcilePendingBkashPayments(
     currency: string;
     status: string;
     created_at: string;
+    updated_at: string;
   }>;
 
   if (rows.length === 0) {
@@ -1915,7 +1950,7 @@ export async function reconcilePendingBkashPayments(
     if (!enrollment || enrollment.status === "review_hold") {
       return false;
     }
-    const createdMs = new Date(String(row.created_at)).getTime();
+    const createdMs = new Date(row.updated_at ?? row.created_at).getTime();
     if (minAgeMs > 0 && Number.isFinite(createdMs) && nowMs - createdMs < minAgeMs) {
       return false;
     }
@@ -1998,15 +2033,18 @@ export async function reconcilePendingBkashPayments(
     }
 
     if (queryCompleted) {
-      const invoiceMismatch =
-        queryRes.merchantInvoiceNumber !== null &&
-        queryRes.merchantInvoiceNumber !== attempt.tran_id;
-      if (invoiceMismatch) {
+      const mismatch =
+        queryRes.paymentId !== paymentId
+          ? "PAYMENT_ID_MISMATCH"
+          : queryRes.merchantInvoiceNumber !== attempt.tran_id
+            ? "INVOICE_MISMATCH"
+            : null;
+      if (mismatch) {
         await admin.rpc("record_payment_outcome", {
           p_attempt_id: attempt.id,
           p_next_status: "review_hold",
           p_payment_id: paymentId,
-          p_failure_reason: "INVOICE_MISMATCH",
+          p_failure_reason: mismatch,
           p_gateway_status_code: queryRes.statusCode || "MISMATCH",
           p_gateway_status_message: "Gateway invoice reference mismatch during reconciliation",
         });

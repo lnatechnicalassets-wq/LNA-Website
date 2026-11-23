@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { processBkashCallback } from "@/server/enrollment/service";
 import { resolveSafeAppOrigin } from "@/server/security/origin";
 
+export const maxDuration = 120;
+
 function extractQueryParams(url: URL): Record<string, string> {
   const out: Record<string, string> = {};
   url.searchParams.forEach((value, key) => {
@@ -41,7 +43,12 @@ async function handleCallback(request: NextRequest) {
       : typeof merged.paymentId === "string"
         ? merged.paymentId
         : null;
-  const status = typeof merged.status === "string" ? merged.status : null;
+  const status =
+    typeof merged.status === "string"
+      ? merged.status
+      : typeof merged.verificationStatus === "string"
+        ? merged.verificationStatus
+        : null;
   const merchantInvoiceNumber =
     typeof merged.merchantInvoiceNumber === "string" ? merged.merchantInvoiceNumber : null;
   const tranId = typeof merged.tranId === "string" ? merged.tranId : null;
@@ -56,6 +63,7 @@ async function handleCallback(request: NextRequest) {
         merchantInvoiceNumber,
         tranId,
         mockSig,
+        ...(typeof merged.signature === "string" ? { signature: merged.signature } : {}),
         rawParams: merged,
       },
       { origin }
@@ -80,4 +88,3 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return handleCallback(request);
 }
-

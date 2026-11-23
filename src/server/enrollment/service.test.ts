@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { OutboxEmailSender } from "@/server/email/resend";
 import { signMockScenarioToken, type PaymentGatewayClient } from "@/server/payments/bkash";
@@ -58,6 +59,7 @@ function createServiceAdminMock(state: MockTableState) {
   function makeChain(table: string) {
     const localFilters: Array<[string, unknown]> = [];
     let isUpdate = false;
+    let requiresUnclaimed = false;
     let updatePayload: unknown = null;
     let selectedCols = "";
 
@@ -72,13 +74,22 @@ function createServiceAdminMock(state: MockTableState) {
       return null;
     };
 
+    const storeUpdate = () =>
+      updates.push({ table, payload: updatePayload, filters: [...localFilters] });
     const resolveSingle = async () => {
       const fkErr = getAmbiguousBatchError();
       if (fkErr) {
         return { data: null, error: fkErr };
       }
       if (table === "payment_attempts") {
-        return { data: state.paymentAttemptsSelectSingle ?? null, error: null };
+        const attempt = state.paymentAttemptsSelectSingle;
+        if (isUpdate && requiresUnclaimed) {
+          if (!attempt || attempt.failure_reason) return { data: null, error: null };
+          Object.assign(attempt, updatePayload);
+          storeUpdate();
+          return { data: { id: attempt.id }, error: null };
+        }
+        return { data: attempt ?? null, error: null };
       }
       if (table === "enrollments") {
         return { data: state.enrollmentsSelectSingle ?? null, error: null };
@@ -119,13 +130,12 @@ function createServiceAdminMock(state: MockTableState) {
       eq: (col: string, val: unknown) => {
         localFilters.push([col, val]);
         queryDebug.eqFilters.push([col, val]);
-        if (isUpdate) {
-          updates.push({ table, payload: updatePayload, filters: [...localFilters] });
-          return Promise.resolve({ error: null });
-        }
         return chain;
       },
-      is: () => chain,
+      is: (col: string, val: unknown) => {
+        requiresUnclaimed = col === "failure_reason" && val === null;
+        return chain;
+      },
       not: () => chain,
       in: (column: string, values: unknown[]) => {
         queryDebug.inFilters.push([column, values]);
@@ -148,8 +158,13 @@ function createServiceAdminMock(state: MockTableState) {
         inserts.push({ table, payload });
         return { error: null };
       },
-      then: (onFulfilled: (val: unknown) => unknown, onRejected?: (err: unknown) => unknown) =>
-        resolveMany().then(onFulfilled, onRejected),
+      then: (onFulfilled: (val: unknown) => unknown, onRejected?: (err: unknown) => unknown) => {
+        if (isUpdate) {
+          storeUpdate();
+          return Promise.resolve({ error: null }).then(onFulfilled, onRejected);
+        }
+        return resolveMany().then(onFulfilled, onRejected);
+      },
     };
 
     return chain;
@@ -546,7 +561,7 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     });
   });
 
-  it("verifies bKash success server-side (execute + query), confirms seat via RPC, and sends confirmation email once (AT-01)", async () => {
+  it("verifies bKash success from Execute alone, confirms seat via RPC, and sends confirmation email once (AT-01)", async () => {
     process.env = { ...process.env, NODE_ENV: "test", EMAIL_DISPATCH_MODE: "mock" };
 
     const { admin, rpcCalls, inserts } = createServiceAdminMock({
@@ -639,7 +654,7 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     );
 
     expect(gatewayStub.executePayment).toHaveBeenCalledTimes(1);
-    expect(gatewayStub.queryPaymentStatus).toHaveBeenCalledTimes(1);
+    expect(gatewayStub.queryPaymentStatus).not.toHaveBeenCalled();
     expect(rpcCalls[0].fn).toBe("confirm_payment");
     expect(rpcCalls[0].params).toMatchObject({
       p_attempt_id: "att-1",
@@ -648,7 +663,7 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       p_currency: "BDT",
       p_gateway_status_code: "0000",
     });
-    expect(inserts.filter((i) => i.table === "payment_events")).toHaveLength(3);
+    expect(inserts.filter((i) => i.table === "payment_events")).toHaveLength(2);
     expect(res.outcome).toBe("confirmed");
     expect(res.alreadyProcessed).toBe(false);
     expect(res.redirectUrl).toContain(
@@ -1501,7 +1516,11 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
 
     // 2. User cancels first attempt -> seat hold retained & retry allowed
     const cancelCallback = await processBkashCallback(
-      { paymentID: firstPaymentId, status: "cancel" },
+      {
+        paymentID: firstPaymentId,
+        status: "cancel",
+        mockSig: signMockScenarioToken(firstPaymentId, "success"),
+      },
       {
         origin: "http://localhost:3000",
         adminOverride: statefulAdmin,
@@ -1535,7 +1554,7 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     const secondPaymentId = String(attempts[1].payment_id);
     expect(secondPaymentId).not.toBe(firstPaymentId);
 
-    // 4. Signed mock success executes server-side execute+query via MockBkashClient and confirms enrollment
+    // 4. Signed mock success executes server-side via MockBkashClient and confirms enrollment
     const mockSig = signMockScenarioToken(secondPaymentId, "success");
     const successCallback = await processBkashCallback(
       { paymentID: secondPaymentId, status: "success", mockSig },
@@ -1611,6 +1630,92 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     expect(auditEvents.some((e) => e.action === "admin_viewed_enrollment_detail")).toBe(true);
   });
 
+  it("rejects a forged v2 callback and sends Execute only once on concurrent valid callbacks", async () => {
+    const signature = "fixture-signature";
+    const { admin, rpcCalls, updates } = createServiceAdminMock({
+      paymentAttemptsSelectSingle: {
+        id: "att-signed",
+        enrollment_id: "enr-signed",
+        tran_id: "INV-SIGNED",
+        payment_id: "PAY-SIGNED",
+        amount_poisha: 750000,
+        status: "pending",
+        bkash_callback_signature_hash: createHash("sha256").update(signature).digest("hex"),
+      },
+      enrollmentsSelectSingle: {
+        id: "enr-signed",
+        public_ref: "LNA-2M4K-9P7Q",
+        status: "pending",
+      },
+      rpcHandlers: {
+        confirm_payment: () => ({ data: { status: "validated" }, error: null }),
+      },
+    });
+    const gateway: PaymentGatewayClient = {
+      initiateCheckout: vi.fn(),
+      executePayment: vi.fn().mockResolvedValue({
+        paymentId: "PAY-SIGNED",
+        trxId: "TRX-SIGNED",
+        merchantInvoiceNumber: "INV-SIGNED",
+        currency: "BDT",
+        amountPoisha: 750000n,
+        transactionStatus: "Completed",
+        statusCode: "0000",
+        statusMessage: "",
+        outcome: "completed",
+        rawRedacted: {},
+      }),
+      queryPaymentStatus: vi.fn(),
+      searchTransaction: vi.fn(),
+    };
+    const options = { origin: "https://lnabd.org", adminOverride: admin, gatewayOverride: gateway };
+    const callback = { paymentID: "PAY-SIGNED", status: "success" };
+    const invalid = await processBkashCallback({ ...callback, signature: "forged" }, options);
+    expect(invalid.outcome).toBe("invalid");
+    expect(gateway.executePayment).not.toHaveBeenCalled();
+
+    const outcomes = await Promise.all([
+      processBkashCallback({ ...callback, signature }, options),
+      processBkashCallback({ ...callback, signature }, options),
+    ]);
+    expect(outcomes.map(({ outcome }) => outcome).sort()).toEqual(["confirmed", "pending"]);
+    expect(gateway.executePayment).toHaveBeenCalledTimes(1);
+    expect(gateway.queryPaymentStatus).not.toHaveBeenCalled();
+    expect(rpcCalls.filter(({ fn }) => fn === "confirm_payment")).toHaveLength(1);
+    expect(updates[0].payload).toMatchObject({
+      failure_reason: "EXECUTE_STARTED",
+      bkash_execute_claimed: true,
+    });
+  });
+
+  it("returns the saved English gateway error for the signed failed attempt", async () => {
+    const { admin, queryDebug } = createServiceAdminMock({
+      enrollmentsSelectSingle: {
+        id: "enr-failed",
+        public_ref: "LNA-2M4K-9P7Q",
+        status: "pending",
+        payable_poisha: 750000,
+        payment_method: "bkash",
+      },
+      paymentAttemptsSelectSingle: { gateway_status_message: "Insufficient balance." },
+    });
+    const token = signEnrollmentOutcomeToken("LNA-2M4K-9P7Q", "enr-failed", {
+      paymentAttemptId: "att-failed",
+      paymentOutcome: "failed",
+    });
+    const summary = await getEnrollmentOutcomeSummaryByToken(
+      "pending",
+      "LNA-2M4K-9P7Q",
+      token,
+      admin
+    );
+    expect(summary).toMatchObject({
+      outcome: "failed",
+      paymentErrorMessage: "Insufficient balance.",
+    });
+    expect(queryDebug.eqFilters).toContainEqual(["id", "att-failed"]);
+  });
+
   it("marks real gateway decline without trxID (e.g. 2023 + Initiated) as failed while retaining seat hold for retry", async () => {
     const { admin, rpcCalls } = createServiceAdminMock({
       paymentAttemptsSelectSingle: {
@@ -1668,6 +1773,7 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     );
 
     expect(result.outcome).toBe("failed");
+    expect(gatewayMock.queryPaymentStatus).not.toHaveBeenCalled();
     expect(rpcCalls.find((c) => c.fn === "confirm_payment")).toBeUndefined();
     const outcomeCall = rpcCalls.find((c) => c.fn === "record_payment_outcome");
     expect(outcomeCall?.params).toMatchObject({
@@ -1677,7 +1783,7 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     });
   });
 
-  it("recovers confirmation when execute returns 2062/timeout and queryPaymentStatus verifies Completed trxID", async () => {
+  it("recovers confirmation after an Execute timeout with a completed Query response", async () => {
     const emailSpy: OutboxEmailSender = { send: vi.fn().mockResolvedValue({ messageId: null }) };
     const { admin, rpcCalls } = createServiceAdminMock({
       paymentAttemptsSelectSingle: {
@@ -1696,6 +1802,7 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
         status: "pending",
       },
       rpcHandlers: {
+        record_payment_outcome: () => ({ data: { ok: true }, error: null }),
         confirm_payment: () => ({
           data: {
             ok: true,
@@ -1717,10 +1824,10 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
         amountPoisha: null,
         currency: null,
         transactionStatus: "Pending",
-        statusCode: "2062",
-        statusMessage: "The payment has already been completed",
+        statusCode: "TIMEOUT",
+        statusMessage: "No Execute response",
         outcome: "pending",
-        rawRedacted: { statusCode: "2062" },
+        rawRedacted: { statusCode: "TIMEOUT" },
       }),
       queryPaymentStatus: vi.fn().mockResolvedValue({
         paymentId: "TR-RECOVER-1",
@@ -1748,6 +1855,8 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     );
 
     expect(result.outcome).toBe("confirmed");
+    expect(gatewayMock.queryPaymentStatus).toHaveBeenCalledTimes(1);
+    expect(rpcCalls[0].params).toMatchObject({ p_failure_reason: "EXECUTE_NO_RESPONSE" });
     const confirmCall = rpcCalls.find((c) => c.fn === "confirm_payment");
     expect(confirmCall?.params).toMatchObject({
       p_attempt_id: "att-recover-1",

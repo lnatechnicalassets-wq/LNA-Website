@@ -312,7 +312,7 @@ describe("bKash gateway adapter (FR-PAY-004, FR-PAY-005)", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("distinguishes bKash decline status codes (2023) from recoverable pending status codes (2062)", async () => {
+  it("treats explicit declines and already-completed errors as non-success Execute replies", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
@@ -353,7 +353,7 @@ describe("bKash gateway adapter (FR-PAY-004, FR-PAY-005)", () => {
     expect(declined.statusCode).toBe("2023");
 
     const alreadyDone = await client.executePayment("PAY-2062");
-    expect(alreadyDone.outcome).toBe("pending");
+    expect(alreadyDone.outcome).toBe("failed");
     expect(alreadyDone.statusCode).toBe("2062");
   });
 });

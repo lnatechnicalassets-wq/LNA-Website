@@ -71,10 +71,30 @@ function resolveBkashEnvAliases(input: unknown): unknown {
     raw.BKASH_API_VERSION = resolvedVersion;
   }
 
-  const appKey = firstNonEmpty(raw.BKASH_APP_KEY, raw.PGW_App_Key, raw.PGW_APP_KEY);
-  const appSecret = firstNonEmpty(raw.BKASH_APP_SECRET, raw.PGW_App_Secret, raw.PGW_APP_SECRET);
-  const username = firstNonEmpty(raw.BKASH_USERNAME, raw.PGW_Username, raw.PGW_USERNAME);
-  const password = firstNonEmpty(raw.BKASH_PASSWORD, raw.PGW_Password, raw.PGW_PASSWORD);
+  const appKey = firstNonEmpty(
+    raw.BKASH_APP_KEY,
+    raw.BKASH_CHECKOUT_URL_APP_KEY,
+    raw.PGW_App_Key,
+    raw.PGW_APP_KEY
+  );
+  const appSecret = firstNonEmpty(
+    raw.BKASH_APP_SECRET,
+    raw.BKASH_CHECKOUT_URL_APP_SECRET,
+    raw.PGW_App_Secret,
+    raw.PGW_APP_SECRET
+  );
+  const username = firstNonEmpty(
+    raw.BKASH_USERNAME,
+    raw.BKASH_CHECKOUT_URL_USER_NAME,
+    raw.PGW_Username,
+    raw.PGW_USERNAME
+  );
+  const password = firstNonEmpty(
+    raw.BKASH_PASSWORD,
+    raw.BKASH_CHECKOUT_URL_PASSWORD,
+    raw.PGW_Password,
+    raw.PGW_PASSWORD
+  );
 
   if (appKey !== undefined) raw.BKASH_APP_KEY = appKey;
   if (appSecret !== undefined) raw.BKASH_APP_SECRET = appSecret;
@@ -109,6 +129,7 @@ const baseServerEnvObject = z
     BKASH_BASE_URL: z.string().url().default("https://tokenized.sandbox.bka.sh"),
     BKASH_API_VERSION: z.string().min(1).default("v1.2.0-beta"),
     BKASH_MODE: z.string().min(1).default("0011"),
+    BKASH_SANDBOX_REFUNDS_ENABLED: z.enum(["true", "false"]).default("false"),
 
     // Optional Cron Secret for automated background payment reconciliation
     CRON_SECRET: z.string().min(32).optional(),
@@ -122,8 +143,11 @@ const baseServerEnvObject = z
     RESEND_FROM_EMAIL: z.string().email().default("admissions@mail.lnabd.org"),
     RESEND_TO_EMAIL: z.string().email().default("info@lnabd.org"),
 
-    // Upstash Redis (Distributed Rate Limiting)
-    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+    // Upstash Redis (Optional Distributed Rate Limiting)
+    UPSTASH_REDIS_REST_URL: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().url().optional()
+    ),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 
     // Cloudflare Turnstile Server Secret
@@ -281,6 +305,7 @@ export interface BkashLiveReadiness {
 /**
  * Returns non-secret operational diagnostics for live bKash PGW readiness.
  * Never returns API keys, secrets, usernames, or passwords.
+ * These environment checks do not probe the runtime Supabase cache.
  */
 export function getBkashLiveReadiness(
   envSource: Record<string, string | undefined> = process.env
@@ -338,9 +363,10 @@ export function getBkashLiveReadiness(
   if (!hasNonDefaultAppSecret) missingRequirements.push("APP_SECRET");
   if (!hasHttpsCallbackOrigin) missingRequirements.push("APP_URL (https:// non-localhost)");
 
-  const readyForLiveGrant = hasAppKey && hasAppSecret && hasUsername && hasPassword;
+  const readyForLiveGrant =
+    hasAppKey && hasAppSecret && hasUsername && hasPassword && hasSupabaseSecretKey;
   const readyForLiveCheckout =
-    readyForLiveGrant && hasSupabaseSecretKey && hasNonDefaultAppSecret && hasHttpsCallbackOrigin;
+    readyForLiveGrant && hasNonDefaultAppSecret && hasHttpsCallbackOrigin;
 
   return {
     checkoutMode,
