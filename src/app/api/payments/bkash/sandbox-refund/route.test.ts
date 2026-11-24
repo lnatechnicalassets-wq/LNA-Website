@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { beforeEach, expect, it, vi } from "vitest";
+import { AppError } from "@/lib/errors";
+import { BkashRefundUnconfirmedError, BkashRequestNotSentError } from "@/server/payments/bkash";
 
 const mocks = vi.hoisted(() => ({
   env: vi.fn(),
@@ -7,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   verifyAuthentication: vi.fn(),
   refund: vi.fn(),
   from: vi.fn(),
+  audit: vi.fn(),
   updates: [] as unknown[],
 }));
 
@@ -46,6 +49,7 @@ beforeEach(() => {
   mocks.env.mockReturnValue(sandboxEnv);
   mocks.requireStaff.mockResolvedValue({ userId: "staff-uuid", role: "super_admin" });
   mocks.refund.mockResolvedValue({ refundTrxId: "REFUND-1", amountPoisha: "750000" });
+  mocks.audit.mockResolvedValue({ error: null });
 });
 
 it("blocks refunds against a production gateway before looking up payment or staff details", async () => {
@@ -55,12 +59,12 @@ it("blocks refunds against a production gateway before looking up payment or sta
   expect(mocks.refund).not.toHaveBeenCalled();
 });
 
-it("refunds the validated amount once and records the refund ID", async () => {
+function mockAttempt() {
   let alreadyClaimed = false;
   mocks.from.mockImplementation(() => {
-    let state: string | undefined;
+    let state: string | null | undefined;
     const chain = {
-      update: (payload: { sandbox_refund_state: string }) => {
+      update: (payload: { sandbox_refund_state: string | null }) => {
         state = payload.sandbox_refund_state;
         mocks.updates.push(payload);
         return chain;
@@ -68,8 +72,12 @@ it("refunds the validated amount once and records the refund ID", async () => {
       select: () => chain,
       eq: () => chain,
       is: () => chain,
-      insert: vi.fn().mockResolvedValue({ error: null }),
+      insert: mocks.audit,
       maybeSingle: async () => {
+        if (state === null) {
+          alreadyClaimed = false;
+          return { data: { id: paymentAttemptId }, error: null };
+        }
         if (state === "started") {
           if (alreadyClaimed) return { data: null, error: null };
           alreadyClaimed = true;
@@ -80,6 +88,7 @@ it("refunds the validated amount once and records the refund ID", async () => {
             id: paymentAttemptId,
             payment_id: "PAY-1",
             trx_id: "TRX-1",
+            tran_id: "invoice-no-1",
             validated_amount_poisha: "750000",
             currency: "BDT",
           },
@@ -89,12 +98,15 @@ it("refunds the validated amount once and records the refund ID", async () => {
     };
     return chain;
   });
+}
 
+it("refunds the validated amount once and records the refund ID", async () => {
+  mockAttempt();
   const response = await POST(request());
   expect(response.status).toBe(200);
   await expect(response.json()).resolves.toMatchObject({ refundTrxId: "REFUND-1" });
   expect(mocks.requireStaff).toHaveBeenCalledWith("enrollments:verify-payment");
-  expect(mocks.refund).toHaveBeenCalledWith("PAY-1", "TRX-1", 750000n);
+  expect(mocks.refund).toHaveBeenCalledWith("PAY-1", "TRX-1", 750000n, "invoice-no-1");
   expect(mocks.updates).toContainEqual({
     sandbox_refund_state: "completed",
     sandbox_refund_trx_id: "REFUND-1",
@@ -103,4 +115,57 @@ it("refunds the validated amount once and records the refund ID", async () => {
   const duplicate = await POST(request());
   expect(duplicate.status).toBe(409);
   expect(mocks.refund).toHaveBeenCalledTimes(1);
+});
+
+it("leaves an upstream HTTP 400 unconfirmed and exposes only the safe diagnostics", async () => {
+  mockAttempt();
+  mocks.refund.mockRejectedValue(new BkashRefundUnconfirmedError(400, "2013"));
+  const response = await POST(request());
+  expect(response.status).toBe(502);
+  await expect(response.json()).resolves.toMatchObject({
+    code: "BKASH_REFUND_UNCONFIRMED",
+    gatewayHttpStatus: 400,
+    gatewayCode: "2013",
+  });
+  expect(mocks.updates).toEqual([
+    { sandbox_refund_state: "started" },
+    { sandbox_refund_state: "unconfirmed" },
+  ]);
+  expect(mocks.audit).toHaveBeenCalledWith(
+    expect.objectContaining({
+      action: "bkash_sandbox_refund_unconfirmed",
+      after_state: { gateway_http_status: 400, gateway_code: "2013" },
+    })
+  );
+  expect((await POST(request())).status).toBe(409);
+  expect(mocks.refund).toHaveBeenCalledTimes(1);
+});
+
+it("reports missing token-cache setup before claiming any refund", async () => {
+  mockAttempt();
+  mocks.verifyAuthentication.mockRejectedValue(
+    new AppError("Token cache setup is missing.", "BKASH_AUTH_CACHE_MISSING", 503)
+  );
+  const response = await POST(request());
+  expect(response.status).toBe(503);
+  await expect(response.json()).resolves.toMatchObject({
+    code: "BKASH_AUTH_CACHE_MISSING",
+    refundRequestSent: false,
+  });
+  expect(mocks.updates).toHaveLength(0);
+  expect(mocks.refund).not.toHaveBeenCalled();
+});
+
+it("releases the new claim if auth fails before sending the refund", async () => {
+  mockAttempt();
+  mocks.refund.mockRejectedValueOnce(new BkashRequestNotSentError());
+  const response = await POST(request());
+  expect(response.status).toBe(503);
+  await expect(response.json()).resolves.toMatchObject({ refundRequestSent: false });
+  expect(mocks.updates).toEqual([
+    { sandbox_refund_state: "started" },
+    { sandbox_refund_state: null },
+  ]);
+  expect(mocks.audit).not.toHaveBeenCalled();
+  expect((await POST(request())).status).toBe(200);
 });

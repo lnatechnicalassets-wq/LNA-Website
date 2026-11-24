@@ -190,8 +190,28 @@ function cleanGatewayMessage(value: unknown): string {
 class BkashNoResponseError extends Error {}
 
 export class BkashRequestNotSentError extends AppError {
-  constructor() {
-    super("bKash authentication is temporarily unavailable.", "BKASH_REQUEST_NOT_SENT", 503);
+  constructor(error?: AppError) {
+    super(
+      error?.message ?? "bKash authentication is temporarily unavailable.",
+      error?.code ?? "BKASH_REQUEST_NOT_SENT",
+      error?.statusCode ?? 503,
+      error?.details
+    );
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+export class BkashRefundUnconfirmedError extends AppError {
+  constructor(
+    readonly gatewayHttpStatus: number,
+    readonly gatewayCode: string | null
+  ) {
+    super(
+      "Refund could not be confirmed. Check bKash before retrying.",
+      "BKASH_REFUND_UNCONFIRMED",
+      502
+    );
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 
@@ -278,11 +298,7 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
         error: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
         durationMs: Date.now() - startedAt,
       });
-      throw new AppError(
-        "bKash authentication service is unreachable.",
-        "BKASH_AUTH_FAILED",
-        502
-      );
+      throw new AppError("bKash authentication service is unreachable.", "BKASH_AUTH_FAILED", 502);
     }
 
     const raw = asGatewayObject(await res.json().catch(() => null));
@@ -362,10 +378,7 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
         errorCode: tokenErr instanceof AppError ? tokenErr.code : undefined,
         errorMessage: tokenErr instanceof Error ? tokenErr.message : String(tokenErr),
       });
-      if (tokenErr instanceof AppError) {
-        throw tokenErr;
-      }
-      throw new BkashRequestNotSentError();
+      throw new BkashRequestNotSentError(tokenErr instanceof AppError ? tokenErr : undefined);
     }
 
     let res: Response;
@@ -617,13 +630,15 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
     return this.paymentStatus(raw, response, completed);
   }
 
-  async refundSandboxPayment(paymentId: string, trxId: string, amountPoisha: bigint) {
+  async refundSandboxPayment(paymentId: string, trxId: string, amountPoisha: bigint, sku: string) {
     if (
       !isBkashSandboxV2(this.config.baseUrl, this.config.apiVersion) ||
       !this.config.tokenCache ||
       !paymentId ||
       !trxId ||
-      amountPoisha <= 0n
+      amountPoisha <= 0n ||
+      !sku.trim() ||
+      sku.length > 255
     ) {
       throw new AppError("Invalid bKash sandbox refund request.", "BKASH_REFUND_INVALID", 400);
     }
@@ -634,6 +649,7 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
         paymentId,
         trxId,
         refundAmount: poishaToBdtString(amountPoisha),
+        sku,
         reason: "Sandbox UAT",
       }
     );
@@ -641,18 +657,18 @@ export class BkashTokenizedClient implements PaymentGatewayClient {
     const refundTrxId = cleanGatewayMessage(raw.refundTrxId ?? raw.refundTrxID);
     if (
       !response.ok ||
-      raw.transactionStatus !== "Completed" ||
+      (raw.refundTransactionStatus ?? raw.transactionStatus) !== "Completed" ||
+      raw.errorCode != null ||
       (raw.statusCode != null && raw.statusCode !== "0000") ||
       (raw.originalTrxId ?? raw.originalTrxID) !== trxId ||
       parseOptionalPoisha(raw.refundAmount ?? raw.amount) !== amountPoisha ||
       (raw.currency != null && raw.currency !== "BDT") ||
       !refundTrxId
     ) {
-      throw new AppError(
-        "bKash did not confirm the sandbox refund.",
-        "BKASH_REFUND_UNCONFIRMED",
-        502
-      );
+      const code = raw.errorCode ?? raw.statusCode;
+      const codeText = typeof code === "number" || typeof code === "string" ? String(code) : "";
+      const safeCode = /^\d{1,8}$/.test(codeText) ? codeText : null;
+      throw new BkashRefundUnconfirmedError(response.status, safeCode);
     }
 
     return { refundTrxId, amountPoisha: amountPoisha.toString() };
