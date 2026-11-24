@@ -181,11 +181,17 @@ describe("AdminEnrollmentDetailView (/admin/enrollments/[id])", () => {
   });
 
   it("stops repeat submission when the result could not be verified", async () => {
-    const request = vi
-      .fn()
-      .mockResolvedValue(
-        Response.json({ ok: false, code: "BKASH_REFUND_UNCONFIRMED" }, { status: 502 })
-      );
+    const request = vi.fn().mockResolvedValue(
+      Response.json(
+        {
+          ok: false,
+          code: "BKASH_REFUND_UNCONFIRMED",
+          gatewayHttpStatus: 400,
+          gatewayCode: "2013",
+        },
+        { status: 502 }
+      )
+    );
     vi.stubGlobal("fetch", request);
     renderSandboxRefund();
 
@@ -195,9 +201,36 @@ describe("AdminEnrollmentDetailView (/admin/enrollments/[id])", () => {
     await waitFor(() =>
       expect(screen.getByRole("alert").textContent).toContain("Check its status in bKash")
     );
+    expect(screen.getByRole("alert").textContent).toContain("bKash HTTP status 400.");
+    expect(screen.getByRole("alert").textContent).toContain("Gateway code 2013.");
     expect(screen.queryByRole("button", { name: "Confirm refund" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.getByText("Sandbox refund needs review")).toBeDefined();
     expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the refund action available after a confirmed preflight failure", async () => {
+    const request = vi.fn().mockResolvedValue(
+      Response.json(
+        {
+          ok: false,
+          code: "BKASH_AUTH_CACHE_MISSING",
+          message: "Check the Supabase token cache migration.",
+          refundRequestSent: false,
+        },
+        { status: 503 }
+      )
+    );
+    vi.stubGlobal("fetch", request);
+    renderSandboxRefund();
+
+    fireEvent.click(screen.getByRole("button", { name: "Refund sandbox payment" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm refund" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toContain("Check the Supabase token cache")
+    );
+    const confirm = screen.getByRole<HTMLButtonElement>("button", { name: "Confirm refund" });
+    expect(confirm.disabled).toBe(false);
   });
 });

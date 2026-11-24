@@ -66,9 +66,20 @@ export function SandboxRefundAction({
         router.refresh();
         return;
       }
+      if (body.refundRequestSent === false) {
+        setMessage(typeof body.message === "string" ? body.message : copy.failed);
+        return;
+      }
       if (response.ok || response.status >= 500 || body.code === "BKASH_REFUND_DUPLICATE") {
         setLocalResult({ state: "unconfirmed", trxId: null });
-        setMessage(copy.uncertain);
+        const parts: string[] = [copy.uncertain];
+        if (Number.isInteger(body.gatewayHttpStatus)) {
+          parts.push(copy.gatewayHttpStatus(body.gatewayHttpStatus));
+        }
+        if (typeof body.gatewayCode === "string" && /^\d{1,8}$/.test(body.gatewayCode)) {
+          parts.push(copy.gatewayCode(body.gatewayCode));
+        }
+        setMessage(parts.join(" "));
         router.refresh();
         return;
       }

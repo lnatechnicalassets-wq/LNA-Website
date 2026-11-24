@@ -3,7 +3,12 @@ import { z } from "zod";
 import { AppError } from "@/lib/errors";
 import { requireStaff } from "@/server/auth/require-staff";
 import { parseCurrentServerEnv } from "@/server/env";
-import { createLiveBkashClientFromEnv, isBkashSandboxRefundEnabled } from "@/server/payments/bkash";
+import {
+  BkashRefundUnconfirmedError,
+  BkashRequestNotSentError,
+  createLiveBkashClientFromEnv,
+  isBkashSandboxRefundEnabled,
+} from "@/server/payments/bkash";
 import { verifySameOriginRequest } from "@/server/security/origin";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
@@ -32,7 +37,7 @@ export async function POST(request: Request) {
     const { paymentAttemptId } = input.data;
     const { data: attempt, error } = await admin
       .from("payment_attempts")
-      .select("id, payment_id, trx_id, validated_amount_poisha::text, currency")
+      .select("id, payment_id, trx_id, tran_id, validated_amount_poisha::text, currency")
       .eq("id", paymentAttemptId)
       .eq("gateway", "bkash")
       .eq("bkash_sandbox_v2", true)
@@ -43,6 +48,8 @@ export async function POST(request: Request) {
     if (
       !attempt?.payment_id ||
       !attempt.trx_id ||
+      !attempt.tran_id?.trim() ||
+      attempt.tran_id.length > 255 ||
       !attempt.validated_amount_poisha ||
       attempt.currency !== "BDT"
     ) {
@@ -57,7 +64,11 @@ export async function POST(request: Request) {
     if (amountPoisha <= 0n) {
       throw new AppError("Invalid refund amount.", "BKASH_REFUND_NOT_ELIGIBLE", 409);
     }
-    await gateway.verifyAuthentication();
+    try {
+      await gateway.verifyAuthentication();
+    } catch (error) {
+      throw new BkashRequestNotSentError(error instanceof AppError ? error : undefined);
+    }
     const { data: claimed, error: claimError } = await admin
       .from("payment_attempts")
       .update({ sandbox_refund_state: "started" })
@@ -77,25 +88,47 @@ export async function POST(request: Request) {
       );
     }
 
-    const audit = (action: string, refundTrxId?: string) =>
+    const audit = (action: string, afterState: Record<string, string | number | null> = {}) =>
       admin.from("audit_events").insert({
         actor_role: staff.role,
         actor_id: staff.userId,
         action,
         target_entity: "payment_attempts",
         target_id: paymentAttemptId,
-        after_state: refundTrxId ? { refund_trx_id: refundTrxId } : {},
+        after_state: afterState,
       });
 
     let result: Awaited<ReturnType<typeof gateway.refundSandboxPayment>>;
     try {
-      result = await gateway.refundSandboxPayment(attempt.payment_id, attempt.trx_id, amountPoisha);
-    } catch {
+      result = await gateway.refundSandboxPayment(
+        attempt.payment_id,
+        attempt.trx_id,
+        amountPoisha,
+        attempt.tran_id
+      );
+    } catch (error) {
+      if (error instanceof BkashRequestNotSentError) {
+        const { data: released, error: releaseError } = await admin
+          .from("payment_attempts")
+          .update({ sandbox_refund_state: null })
+          .eq("id", paymentAttemptId)
+          .eq("sandbox_refund_state", "started")
+          .select("id")
+          .maybeSingle();
+        if (!releaseError && released) throw error;
+      }
       await admin
         .from("payment_attempts")
         .update({ sandbox_refund_state: "unconfirmed" })
         .eq("id", paymentAttemptId)
         .eq("sandbox_refund_state", "started");
+      if (error instanceof BkashRefundUnconfirmedError) {
+        await audit("bkash_sandbox_refund_unconfirmed", {
+          gateway_http_status: error.gatewayHttpStatus,
+          gateway_code: error.gatewayCode,
+        });
+        throw error;
+      }
       await audit("bkash_sandbox_refund_unconfirmed");
       throw new AppError(
         "Refund could not be confirmed. Check bKash before retrying.",
@@ -109,7 +142,7 @@ export async function POST(request: Request) {
       .update({ sandbox_refund_state: "completed", sandbox_refund_trx_id: result.refundTrxId })
       .eq("id", paymentAttemptId)
       .eq("sandbox_refund_state", "started");
-    await audit("bkash_sandbox_refund_completed", result.refundTrxId);
+    await audit("bkash_sandbox_refund_completed", { refund_trx_id: result.refundTrxId });
     if (storeError) {
       throw new AppError(
         "bKash confirmed the refund, but the local record could not be updated.",
@@ -125,6 +158,10 @@ export async function POST(request: Request) {
         ok: false,
         code: known?.code ?? "BKASH_REFUND_FAILED",
         message: known?.message ?? "Sandbox refund failed.",
+        ...(error instanceof BkashRequestNotSentError ? { refundRequestSent: false } : {}),
+        ...(error instanceof BkashRefundUnconfirmedError
+          ? { gatewayHttpStatus: error.gatewayHttpStatus, gatewayCode: error.gatewayCode }
+          : {}),
       },
       { status: known?.statusCode ?? 500, headers }
     );

@@ -28,7 +28,17 @@ Fill the empty values from your bKash merchant account, and keep them server-sid
 
 All app instances using the same merchant credentials should point to the same Supabase database. PostgreSQL serializes Grant requests per merchant and counts failed and successful attempts toward the two-request rolling hourly limit. A cached token lasts up to one hour, or less if bKash issues a shorter lifetime. Upstash remains optional for the site's existing distributed rate limiting. The checkout does not use it.
 
-When switching from the previous Redis-backed patch for an active merchant, stop the previous workers and allow one hour from the last Grant attempt before starting the new checkout workers. Supabase starts with an empty cache and cannot count previous Grant calls made through Redis. Avoid direct Grant calls in Postman during app testing.
+When switching from Redis or the previous in-memory fallback, stop the previous workers and allow one hour from the last Grant attempt before starting the new checkout workers. Supabase cannot count previous Grant calls made outside the shared cache. Avoid direct Grant calls in Postman during app testing.
+
+If the app reports `BKASH_AUTH_CACHE_MISSING`, run this read-only check in the Supabase SQL Editor for the project configured in the failing environment.
+
+```sql
+select
+  to_regprocedure('public.bkash_acquire_gateway_token(text,uuid)') as acquire_rpc,
+  to_regprocedure('public.bkash_finish_gateway_token(text,uuid,text,integer)') as finish_rpc;
+```
+
+If both results are null, apply `20261123110000_bkash_supabase_token_cache.sql` to that project. If only one is null, check the database migration history before changing the schema. If both functions exist, run `notify pgrst, 'reload schema';` to refresh the API schema cache. The app blocks outgoing bKash requests when the shared cache is unavailable.
 
 ## Validation checklist
 
@@ -54,7 +64,7 @@ Use a fault test or mocked Execute call for the timeout, null, and explicit gate
 
 The test sends a full sandbox refund for the exact amount recorded on the validated attempt and uses the same Supabase-backed `id_token` as checkout. It records the result on the attempt and in the audit trail. The endpoint is disabled by default and is restricted to the sandbox v2 host, sandbox-origin payment attempts, and same-origin staff sessions. Refunds do not change the enrollment or seat state in this UAT workflow.
 
-The request uses bKash’s documented v2 refund endpoint and field names. A report in the bKash developer repository describes a different contract for older integrations. Verify the endpoint and response for this merchant during UAT. An unconfirmed refund stays blocked from automatic resubmission. Check the merchant records for that transaction before any further action.
+The v2 refund request sends the stored invoice as its SKU. When bKash responds without confirming the refund, the dialog and audit trail capture HTTP status and any numeric gateway code. An unconfirmed refund stays blocked from resubmission. Look it up using bKash’s Query Refund operation or request a status check from bKash support. Use a fresh sandbox payment for the next refund test.
 
 ## Local verification
 

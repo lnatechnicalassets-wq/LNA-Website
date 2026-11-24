@@ -103,6 +103,8 @@ export const sandboxRefundCopy = {
   unconfirmed: "Sandbox refund needs review",
   refundReference: (id: string) => `Refund ID ${id}`,
   uncertain: "The refund result could not be verified. Check its status in bKash before retrying.",
+  gatewayHttpStatus: (status: number) => `bKash HTTP status ${status}.`,
+  gatewayCode: (code: string) => `Gateway code ${code}.`,
   failed: "The sandbox refund could not be submitted.",
 } as const;
 

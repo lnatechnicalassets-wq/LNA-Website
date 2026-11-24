@@ -1,12 +1,8 @@
 // @vitest-environment node
-import { beforeEach, expect, it, vi } from "vitest";
-import { BkashTokenizedClient } from "./bkash";
+import { expect, it, vi } from "vitest";
+import { BkashRequestNotSentError, BkashTokenizedClient } from "./bkash";
 import { SupabaseBkashTokenCache } from "./bkash-token-cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-beforeEach(() => {
-  SupabaseBkashTokenCache.clearMemoryCacheForTesting();
-});
 
 const config = {
   apiVersion: "v2",
@@ -74,7 +70,7 @@ it("reuses one Supabase token across v2 Create, Execute, and sandbox Refund clie
         refundTrxId: "REFUND-1",
         currency: "BDT",
         refundAmount: "225.00",
-        transactionStatus: "Completed",
+        refundTransactionStatus: "Completed",
       })
     );
   const client = () =>
@@ -97,7 +93,7 @@ it("reuses one Supabase token across v2 Create, Execute, and sandbox Refund clie
     statusCode: "0000",
     amountPoisha: 22500n,
   });
-  expect(await client().refundSandboxPayment("PAY-1", "TRX-1", 22500n)).toEqual({
+  expect(await client().refundSandboxPayment("PAY-1", "TRX-1", 22500n, "invoice-no-1")).toEqual({
     refundTrxId: "REFUND-1",
     amountPoisha: "22500",
   });
@@ -116,7 +112,34 @@ it("reuses one Supabase token across v2 Create, Execute, and sandbox Refund clie
     paymentId: "PAY-1",
     trxId: "TRX-1",
     refundAmount: "225.00",
+    sku: "invoice-no-1",
+    reason: "Sandbox UAT",
   });
+});
+
+it("keeps only safe diagnostics when bKash returns a refund HTTP 400", async () => {
+  const fetchImpl = vi
+    .fn()
+    .mockResolvedValueOnce(
+      Response.json(
+        { errorCode: "2013", errorMessageEn: "private gateway details" },
+        { status: 400 }
+      )
+    );
+  const client = new BkashTokenizedClient({
+    ...config,
+    fetchImpl,
+    tokenCache: { getOrGrant: async () => "shared-token" },
+  });
+  await expect(
+    client.refundSandboxPayment("PAY-1", "TRX-1", 22500n, "invoice-no-1")
+  ).rejects.toMatchObject({
+    code: "BKASH_REFUND_UNCONFIRMED",
+    message: "Refund could not be confirmed. Check bKash before retrying.",
+    gatewayHttpStatus: 400,
+    gatewayCode: "2013",
+  });
+  expect(fetchImpl).toHaveBeenCalledTimes(1);
 });
 
 it("classifies null Execute as missing and preserves the English message on a returned error", async () => {
@@ -158,25 +181,37 @@ it("rejects when token grant rate limit is reached", async () => {
   expect(grant).not.toHaveBeenCalled();
 });
 
-it("falls back gracefully to memory cache when database token cache RPC is missing or fails (PGRST202)", async () => {
+it("sends neither Grant nor Execute when the shared database cache RPC is missing", async () => {
   const db = mockCacheDatabase(() => ({
     data: null,
     error: { code: "PGRST202", message: "function not found" },
   }));
+  const fetchImpl = vi.fn();
+  const client = new BkashTokenizedClient({
+    ...config,
+    fetchImpl,
+    tokenCache: new SupabaseBkashTokenCache(db, "fixture-merchant"),
+  });
+  const result = client.executePayment("PAY-1");
+  await expect(result).rejects.toBeInstanceOf(BkashRequestNotSentError);
+  await expect(result).rejects.toMatchObject({ code: "BKASH_AUTH_CACHE_MISSING", statusCode: 503 });
+  expect(fetchImpl).not.toHaveBeenCalled();
+});
+
+it("does not use a granted token if Supabase cannot store it", async () => {
+  const db = mockCacheDatabase((name) =>
+    name === "bkash_acquire_gateway_token"
+      ? { data: { state: "grant" } }
+      : { data: null, error: { code: "connection_failed" } }
+  );
   const grant = vi.fn().mockResolvedValue({
-    token: "fallback-token",
+    token: "shared-token",
     expiresAtMs: Date.now() + 60_000,
     validForMs: 60_000,
   });
-
-  const cache = new SupabaseBkashTokenCache(db, "fallback-merchant");
-  const token1 = await cache.getOrGrant(grant);
-  expect(token1).toBe("fallback-token");
-  expect(grant).toHaveBeenCalledTimes(1);
-
-  // Subsequent call within validity reuses the memory token without hitting grant again
-  const token2 = await cache.getOrGrant(grant);
-  expect(token2).toBe("fallback-token");
+  await expect(
+    new SupabaseBkashTokenCache(db, "fixture-merchant").getOrGrant(grant)
+  ).rejects.toMatchObject({ code: "BKASH_AUTH_UNAVAILABLE", statusCode: 503 });
   expect(grant).toHaveBeenCalledTimes(1);
 });
 
