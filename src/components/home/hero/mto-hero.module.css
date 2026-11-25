@@ -203,7 +203,14 @@
 }
 
 .titleReadiness {
-  background: linear-gradient(92deg, #04262d 0%, #06404c 22%, #0a6572 52%, #129384 88%, #16a392 100%);
+  background: linear-gradient(
+    92deg,
+    #04262d 0%,
+    #06404c 22%,
+    #0a6572 52%,
+    #129384 88%,
+    #16a392 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -271,7 +278,9 @@
   border-radius: 2px;
   transform: skewX(-16deg);
   flex-shrink: 0;
-  transition: width 220ms ease, transform 220ms ease;
+  transition:
+    width 220ms ease,
+    transform 220ms ease;
   overflow: hidden;
 }
 
@@ -340,7 +349,8 @@
 }
 
 @keyframes statGleam {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -500,7 +510,8 @@
 }
 
 @keyframes countdownPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.6;
     transform: scale(0.9);
   }

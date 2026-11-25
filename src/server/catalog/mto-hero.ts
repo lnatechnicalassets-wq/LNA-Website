@@ -10,7 +10,6 @@ import {
 } from "@/lib/content";
 import { getCourseMentorRoster, getMentorCompanyLogo } from "@/lib/mentors";
 import { formatPoishaToBDT } from "@/lib/money";
-import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
 import { getPublicCatalogFromSupabase } from "@/server/enrollment/service";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
@@ -42,7 +41,6 @@ const cohortDetails = z.object({
 });
 
 export async function getMtoHeroCourse(courses: Course[], batches: Batch[], mentors: Mentor[]) {
-  const { submissionEnabled } = getEnrollmentRuntimeConfig();
   const catalog = await getPublicCatalogFromSupabase().catch(() => null);
   const liveCourse = catalog?.courses.find(({ id }) => id === courseId);
   const course =
@@ -87,9 +85,7 @@ export async function getMtoHeroCourse(courses: Course[], batches: Batch[], ment
 
   const effectiveDeadline =
     deadline ??
-    (batch?.startDate
-      ? `${batch.startDate}T23:59:59+06:00`
-      : "2026-11-30T23:59:59+06:00");
+    (batch?.startDate ? `${batch.startDate}T23:59:59+06:00` : "2026-11-30T23:59:59+06:00");
 
   return {
     copy,
@@ -111,7 +107,7 @@ export async function getMtoHeroCourse(courses: Course[], batches: Batch[], ment
         organization: mentor.organization,
         portrait: mentor.id.includes("anubhab")
           ? "/images/mentors/anubhab-rahman-v2.png"
-          : (mentor.portraitSrc || "/images/mentors/anubhab-rahman-v2.png"),
+          : mentor.portraitSrc || "/images/mentors/anubhab-rahman-v2.png",
         logo: getMentorCompanyLogo(mentor),
       })),
   };

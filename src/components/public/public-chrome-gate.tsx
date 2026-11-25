@@ -26,4 +26,3 @@ export function PublicChromeGate({ header, footer, children }: PublicChromeGateP
     </>
   );
 }
-

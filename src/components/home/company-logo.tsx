@@ -133,7 +133,13 @@ export function CompanyLogo({
       return (
         <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16">
           <circle cx="8" cy="8" r="7" fill="#E41B23" />
-          <path d="M5 8 L7 10 L11 6" stroke="#FAF9F6" strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path
+            d="M5 8 L7 10 L11 6"
+            stroke="#FAF9F6"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+          />
         </svg>
       );
     }

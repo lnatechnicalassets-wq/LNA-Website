@@ -6,11 +6,7 @@
     "organization": "Eastern Bank PLC",
     "bio": "Head of Asset, Retail & SME Banking at Eastern Bank PLC with extensive leadership in corporate lending, credit risk, and banking operations.",
     "portraitSrc": "/images/mentors/mohammad-salekeen-ibrahim.png",
-    "categories": [
-      "Financial Analysis",
-      "Leadership & Career",
-      "Operations & Management"
-    ],
+    "categories": ["Financial Analysis", "Leadership & Career", "Operations & Management"],
     "expertise": [
       "Retail & SME Banking",
       "Asset Management",
@@ -41,10 +37,7 @@
     "organization": "Nagad Ltd.",
     "bio": "Senior Associate Administrator at Nagad Ltd., specializing in executive administration, institutional governance, and corporate operations.",
     "portraitSrc": "/images/mentors/syed-himyanuddin-ahmed.png",
-    "categories": [
-      "Operations & Management",
-      "Leadership & Career"
-    ],
+    "categories": ["Operations & Management", "Leadership & Career"],
     "expertise": [
       "Corporate Administration",
       "Institutional Governance",
@@ -75,10 +68,7 @@
     "organization": "Nagad Ltd.",
     "bio": "Chief Human Resources Officer at Nagad Ltd., driving organizational development, executive talent acquisition, and HR strategy in fintech.",
     "portraitSrc": "/images/mentors/anubhab-rahman-v2.png",
-    "categories": [
-      "Leadership & Career",
-      "Operations & Management"
-    ],
+    "categories": ["Leadership & Career", "Operations & Management"],
     "expertise": [
       "Human Resources Strategy",
       "Executive Recruitment",
@@ -109,16 +99,8 @@
     "organization": "Nagad Ltd.",
     "bio": "Head of HR Strategy & OD at Nagad Ltd., leading organizational design, leadership development frameworks, and MTO performance assessment.",
     "portraitSrc": "/images/mentors/md-manik-hossain.png",
-    "categories": [
-      "Leadership & Career",
-      "Operations & Management"
-    ],
-    "expertise": [
-      "HR Strategy",
-      "Organizational Design",
-      "MTO Assessment",
-      "Talent Frameworks"
-    ],
+    "categories": ["Leadership & Career", "Operations & Management"],
+    "expertise": ["HR Strategy", "Organizational Design", "MTO Assessment", "Talent Frameworks"],
     "careerHistory": [
       {
         "company": "Nagad Ltd.",
@@ -143,10 +125,7 @@
     "organization": "Lead Nation Academy",
     "bio": "CEO & Co-founder of Lead Nation Academy and corporate strategist. Mentor of Workplace Communication, Executive Networking, and Career Acceleration.",
     "portraitSrc": "/images/mentors/mir-hasib.png",
-    "categories": [
-      "Communication & Influence",
-      "Leadership & Career"
-    ],
+    "categories": ["Communication & Influence", "Leadership & Career"],
     "expertise": [
       "Workplace Communication",
       "Executive Networking",
@@ -177,10 +156,7 @@
     "organization": "Modhumoti Bank PLC",
     "bio": "Additional Managing Director at Modhumoti Bank PLC with extensive commercial banking and workflow optimization experience. Mentor of Operations and Workflow Management.",
     "portraitSrc": "/images/mentors/shahnawaj-chowdhury.png",
-    "categories": [
-      "Operations & Management",
-      "Financial Analysis"
-    ],
+    "categories": ["Operations & Management", "Financial Analysis"],
     "expertise": [
       "Operations Management",
       "Workflow Optimization",
@@ -211,16 +187,8 @@
     "organization": "IGLOO",
     "bio": "CEO at IGLOO and corporate leader with decades of executive leadership in FMCG and technology. Mentor of Sales Techniques & Strategies.",
     "portraitSrc": "/images/mentors/gm-kamrul.png",
-    "categories": [
-      "Marketing & Sales",
-      "Leadership & Career"
-    ],
-    "expertise": [
-      "Sales Strategy",
-      "FMCG Leadership",
-      "Revenue Growth",
-      "Market Expansion"
-    ],
+    "categories": ["Marketing & Sales", "Leadership & Career"],
+    "expertise": ["Sales Strategy", "FMCG Leadership", "Revenue Growth", "Market Expansion"],
     "careerHistory": [
       {
         "company": "IGLOO",
@@ -245,10 +213,7 @@
     "organization": "Axentec PLC (a Robi Axiata company)",
     "bio": "Senior General Manager at Axentec PLC (a Robi Axiata company) leading enterprise cloud and IT infrastructure. Mentor of Technology in Business.",
     "portraitSrc": "/images/mentors/istiaque-bhuiyan.png",
-    "categories": [
-      "Technology & AI",
-      "Operations & Management"
-    ],
+    "categories": ["Technology & AI", "Operations & Management"],
     "expertise": [
       "Cloud Infrastructure",
       "Enterprise IT",
@@ -279,16 +244,8 @@
     "organization": "Axentec PLC",
     "bio": "Head of Brand & Communication at Axentec PLC and Founder of Ekshathe Foundation. Mentor of Modern Productivity & Digital Tools.",
     "portraitSrc": "/images/mentors/munaf-chowdhury.png",
-    "categories": [
-      "Technology & AI",
-      "Communication & Influence"
-    ],
-    "expertise": [
-      "Digital Tools",
-      "Productivity Systems",
-      "Brand Communication",
-      "Social Impact"
-    ],
+    "categories": ["Technology & AI", "Communication & Influence"],
+    "expertise": ["Digital Tools", "Productivity Systems", "Brand Communication", "Social Impact"],
     "careerHistory": [
       {
         "company": "Axentec PLC",
@@ -317,16 +274,8 @@
     "organization": "Sheba Platform Ltd (SPL)",
     "bio": "Co-founder of Sheba Platform Ltd (SPL). Industry mentor for Entrepreneurship & Startup Basics, Personal Branding & Career Growth.",
     "portraitSrc": "/images/mentors/ilmul-sajib.png",
-    "categories": [
-      "Entrepreneurship & Strategy",
-      "Leadership & Career"
-    ],
-    "expertise": [
-      "Entrepreneurship",
-      "Startup Basics",
-      "Personal Branding",
-      "Career Growth"
-    ],
+    "categories": ["Entrepreneurship & Strategy", "Leadership & Career"],
+    "expertise": ["Entrepreneurship", "Startup Basics", "Personal Branding", "Career Growth"],
     "careerHistory": [
       {
         "company": "Sheba Platform Ltd",
@@ -351,16 +300,8 @@
     "organization": "e-Courier Limited",
     "bio": "Founder & CEO of e-Courier Limited, pioneering tech logistics and supply chain innovation in Bangladesh. Mentor of Presentation & Public Speaking.",
     "portraitSrc": "/images/mentors/biplob-rahul.png",
-    "categories": [
-      "Communication & Influence",
-      "Entrepreneurship & Strategy"
-    ],
-    "expertise": [
-      "Public Speaking",
-      "Corporate Pitching",
-      "Logistics",
-      "Business Storytelling"
-    ],
+    "categories": ["Communication & Influence", "Entrepreneurship & Strategy"],
+    "expertise": ["Public Speaking", "Corporate Pitching", "Logistics", "Business Storytelling"],
     "careerHistory": [
       {
         "company": "e-Courier Limited",
@@ -385,10 +326,7 @@
     "organization": "Chaldal PLC",
     "bio": "Co-founder & COO at Chaldal PLC, building Bangladesh's premier tech-driven e-grocery ecosystem. Mentor of Customer Experience (CX).",
     "portraitSrc": "/images/mentors/zia-ashraf.png",
-    "categories": [
-      "Operations & Management",
-      "Technology & AI"
-    ],
+    "categories": ["Operations & Management", "Technology & AI"],
     "expertise": [
       "Customer Experience",
       "Operations Management",
@@ -419,9 +357,7 @@
     "organization": "BrandGear Limited",
     "bio": "Managing Director & CEO of BrandGear Limited and seasoned marketing strategist. Mentor of Branding & Integrated Marketing.",
     "portraitSrc": "/images/mentors/sayeda-salma.png",
-    "categories": [
-      "Marketing & Sales"
-    ],
+    "categories": ["Marketing & Sales"],
     "expertise": [
       "Brand Architecture",
       "Integrated Marketing",
@@ -452,11 +388,7 @@
     "organization": "United Commercial Bank PLC",
     "bio": "Chief Communication Officer at United Commercial Bank PLC. Industry mentor of Branding & Marketing, Leadership & Team Management.",
     "portraitSrc": "/images/mentors/zeeshan-huq.png",
-    "categories": [
-      "Marketing & Sales",
-      "Leadership & Career",
-      "Communication & Influence"
-    ],
+    "categories": ["Marketing & Sales", "Leadership & Career", "Communication & Influence"],
     "expertise": [
       "Branding & Marketing",
       "Leadership & Team Management",
@@ -487,15 +419,8 @@
     "organization": "Shohoz.com",
     "bio": "Chief Business Officer at Shohoz.com. Industry mentor of Marketing and Branding.",
     "portraitSrc": "/images/mentors/talat-rahim.png",
-    "categories": [
-      "Marketing & Sales",
-      "Entrepreneurship & Strategy"
-    ],
-    "expertise": [
-      "Marketing and Branding",
-      "Business Growth",
-      "Commercial Strategy"
-    ],
+    "categories": ["Marketing & Sales", "Entrepreneurship & Strategy"],
+    "expertise": ["Marketing and Branding", "Business Growth", "Commercial Strategy"],
     "careerHistory": [
       {
         "company": "Shohoz.com",
