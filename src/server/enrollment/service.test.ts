@@ -7,6 +7,7 @@ import { signMockScenarioToken, type PaymentGatewayClient } from "@/server/payme
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
 import {
   getEnrollmentOutcomeSummaryByToken,
+  getPublicCatalogFromSupabase,
   listAdminEnrollments,
   getAdminEnrollmentDetail,
   lookupEnrollmentStatus,
@@ -2017,6 +2018,233 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       p_attempt_id: "att-rec-2",
       p_next_status: "failed",
       p_failure_reason: "SESSION_EXPIRED_UNCOMPLETED",
+    });
+  });
+
+  it("maps manual bKash duplicate reference, full batch, closed batch, and missing TrxID errors cleanly", async () => {
+    const questions = [
+      { id: "university", label: "University", type: "text" as const, required: true },
+    ];
+    const baseApplicant = {
+      courseId: "mto-readiness",
+      batchId: "batch-mto-2026-01",
+      fullName: "Nadia Sultana",
+      email: "nadia@example.com",
+      whatsapp: "01711223344",
+      transactionId: "BK15A2H90X",
+      answers: { university: "DU" },
+    };
+
+    for (const [code, statusCode] of [
+      ["DUPLICATE_PAYMENT_REFERENCE", 409],
+      ["BATCH_FULL", 409],
+      ["BATCH_CLOSED", 409],
+      ["TRANSACTION_ID_REQUIRED", 400],
+    ] as const) {
+      const { admin } = createServiceAdminMock({
+        rpcHandlers: {
+          submit_public_manual_enrollment: () => ({ data: { ok: false, code }, error: null }),
+        },
+      });
+      await expect(
+        submitManualBkashEnrollment(baseApplicant, {
+          adminOverride: admin,
+          programQuestionsSnapshot: questions,
+        })
+      ).rejects.toMatchObject({ code, statusCode });
+    }
+  });
+
+  it("computes public batch seat occupancy from historical_enrolled_count + count_batch_active_seats and maps enrollment windows", async () => {
+    const seatRpcCalls: string[] = [];
+    const pastIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const futureIso = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const catalogTables: Record<string, Array<Record<string, unknown>>> = {
+      courses: [
+        {
+          id: "course-mto-uuid",
+          slug: "mto-readiness",
+          title: "MTO Readiness Program",
+          subtitle: "Graduate Career Accelerator",
+          category: "Career Readiness",
+          summary: "Summary text for MTO Readiness",
+          description: "Detailed course description for MTO Readiness Program.",
+          learning_outcomes: ["Case mastery"],
+          target_audience: ["Graduates"],
+          prerequisites: [],
+          modules: [{ id: "m1", title: "Module 1", duration: "4w", topics: ["Cases"] }],
+          delivery_mode: "offline",
+          venue: "Dhaka",
+          status: "published",
+          featured: true,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+      ],
+      course_mentors: [],
+      batches: [
+        {
+          id: "batch-open-uuid",
+          course_id: "course-mto-uuid",
+          slug: "batch-mto-open",
+          batch_number: 1,
+          name: "Open Cohort",
+          start_date: "2026-12-01",
+          end_date: "2027-01-31",
+          schedule_description: "Weekends",
+          capacity: 50,
+          historical_enrolled_count: 18,
+          seat_hold_duration_minutes: 30,
+          fee_poisha: 750000,
+          discount_fee_poisha: null,
+          status: "open_for_enrollment",
+          venue: "Dhaka",
+          enrollment_opens_at: null,
+          enrollment_closes_at: null,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+        {
+          id: "batch-future-uuid",
+          course_id: "course-mto-uuid",
+          slug: "batch-mto-future-window",
+          batch_number: 2,
+          name: "Future Window Cohort",
+          start_date: "2027-02-01",
+          end_date: "2027-03-31",
+          schedule_description: "Weekends",
+          capacity: 20,
+          historical_enrolled_count: 15,
+          seat_hold_duration_minutes: 30,
+          fee_poisha: 750000,
+          discount_fee_poisha: null,
+          status: "open_for_enrollment",
+          venue: "Dhaka",
+          enrollment_opens_at: futureIso,
+          enrollment_closes_at: null,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+        {
+          id: "batch-closed-uuid",
+          course_id: "course-mto-uuid",
+          slug: "batch-mto-closed-window",
+          batch_number: 3,
+          name: "Closed Window Cohort",
+          start_date: "2026-10-01",
+          end_date: "2026-11-30",
+          schedule_description: "Weekends",
+          capacity: 20,
+          historical_enrolled_count: 10,
+          seat_hold_duration_minutes: 30,
+          fee_poisha: 750000,
+          discount_fee_poisha: null,
+          status: "open_for_enrollment",
+          venue: "Dhaka",
+          enrollment_opens_at: null,
+          enrollment_closes_at: pastIso,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+        {
+          id: "batch-completed-uuid",
+          course_id: "course-mto-uuid",
+          slug: "batch-mto-completed",
+          batch_number: 4,
+          name: "Completed Cohort",
+          start_date: "2025-09-01",
+          end_date: "2025-11-30",
+          schedule_description: "Weekends",
+          capacity: 40,
+          historical_enrolled_count: 40,
+          seat_hold_duration_minutes: 30,
+          fee_poisha: 0,
+          discount_fee_poisha: null,
+          status: "completed",
+          venue: "Dhaka",
+          enrollment_opens_at: null,
+          enrollment_closes_at: null,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+      ],
+    };
+
+    const catalogAdmin = {
+      from: (table: string) => {
+        const chain: Record<string, unknown> = {
+          select: () => chain,
+          eq: () => chain,
+          is: () => chain,
+          in: () => chain,
+          order: () => chain,
+          then: (onFulfilled: (val: unknown) => unknown, onRejected?: (err: unknown) => unknown) =>
+            Promise.resolve({ data: catalogTables[table] ?? [], error: null }).then(
+              onFulfilled,
+              onRejected
+            ),
+        };
+        return chain;
+      },
+      rpc: async (fn: string, params: Record<string, unknown>) => {
+        expect(fn).toBe("count_batch_active_seats");
+        const id = String(params.p_batch_id);
+        seatRpcCalls.push(id);
+        if (id === "batch-open-uuid") return { data: 9, error: null };
+        if (id === "batch-future-uuid") return { data: 10, error: null };
+        return { data: 0, error: null };
+      },
+    } as unknown as SupabaseClient;
+
+    const { batches } = await getPublicCatalogFromSupabase(catalogAdmin);
+
+    expect(seatRpcCalls).toEqual(["batch-open-uuid", "batch-future-uuid", "batch-closed-uuid"]);
+    expect(batches).toHaveLength(4);
+    expect(batches[0]).toMatchObject({
+      id: "batch-mto-open",
+      capacity: 50,
+      enrolledCount: 27, // 18 historical + 9 active seats
+      status: "open_for_enrollment",
+    });
+    expect(batches[1]).toMatchObject({
+      id: "batch-mto-future-window",
+      capacity: 20,
+      enrolledCount: 20, // clamped: min(20, 15 + 10)
+      status: "upcoming",
+    });
+    expect(batches[2]).toMatchObject({
+      id: "batch-mto-closed-window",
+      status: "in_progress",
+    });
+    expect(batches[3]).toMatchObject({
+      id: "batch-mto-completed",
+      enrolledCount: 40,
+      status: "completed",
     });
   });
 });

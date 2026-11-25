@@ -144,6 +144,15 @@ describe("requireStaff & getStaffSessionContext (Rule R8, FR-AUT-002..004, AT-08
         lookupProfileById: async () => superAdmin,
       })
     ).rejects.toMatchObject({ code: "MFA_REQUIRED", statusCode: 403 });
+
+    await expect(
+      requireStaff("enrollments:read", {
+        isConfigured: () => true,
+        getSessionClient: async () =>
+          makeSessionClient({ userId: "user-sa", currentLevel: "aal2", verifiedTotpCount: 0 }),
+        lookupProfileById: async () => superAdmin,
+      })
+    ).rejects.toMatchObject({ code: "MFA_REQUIRED", statusCode: 403 });
   });
 
   it("allows active super_admin verified at AAL2 with verified TOTP factor", async () => {
