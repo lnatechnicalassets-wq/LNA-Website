@@ -1,5 +1,7 @@
 # LNA Website Scope Revision Addendum (Release v1.0)
 
+> **Supersession Notice (`W0-E01`):** Preserved unchanged as the Release v1.0 historical record. For all LNA v1.1 planning and implementation, conflicting sections of this v1.0 addendum (notably deferred CMS for Events/Mentors/Reviews, internal refund ledger `FR-RFC-002/003`, `ADR 0013` two-step review, and prior phase/PDF exclusions) are superseded by [`docs/SCOPE-REVISION-V1.1.md`](SCOPE-REVISION-V1.1.md) and the governing [`docs/LNA_Rev3.0/`](LNA_Rev3.0/README.md) package.
+
 **Document Version:** 1.0  
 **Effective Date:** 4 November 2026  
 **Status:** Approved by Project Owner & Supervisor  

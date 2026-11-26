@@ -18,3 +18,8 @@ SRS requirements mandate that staff can manage courses, batches, events, mentors
 - Preserves clean Git-based content workflows during development while providing a zero-downtime path to dynamic database administration.
 - Guarantees that unverified marketing or partnership claims cannot be deployed to production.
 
+---
+
+## Rev3.0 Reconciliation Note (`W0-E01`)
+- Per `CMS-10` / `C-08` (`W7-T05`, `W7-T06`), existing static assets (`/images/*`) and JSON seed baselines remain preserved until verified database parity and cutover, **after which production must never silently fall back to stale JSON data** (`D61`, `CMS-10`). Static `/news` remains preserved without a new news CMS (`D61`).
+

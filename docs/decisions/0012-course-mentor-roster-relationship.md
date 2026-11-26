@@ -63,3 +63,8 @@ While unifying these surfaces under a shared `getCourseMentorRoster()` resolver 
 - **Negative / Risks:**
   - Requires updating `CourseSchema` validation and migrating `content/catalog/courses.json` once approved.
 
+---
+
+## Rev3.0 Amendment Note (`W0-E01`)
+- Per `CAT-07` / `CMS-05` / `D49` (`W1-T03`, `W7-T03`), course default mentors (`course_mentors`) act strictly as an editable prefill snapshot when creating new batches and must **never** silently overwrite existing batch mentor assignments (`batch_mentors`). Assigned mentors cannot be deleted and must be hidden instead (`D49`).
+

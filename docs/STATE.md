@@ -1,12 +1,44 @@
 # Project State: Lead Nation Academy (lnabd.org) Rebuild
 
-**Last Updated:** 23 November 2026
+**Last Updated:** 27 November 2026  
+**Governing Baseline:** [`docs/LNA_Rev3.0/`](LNA_Rev3.0/README.md) (`LNA v1.1 Planning Revision 3.0`) & [`docs/SCOPE-REVISION-V1.1.md`](SCOPE-REVISION-V1.1.md)
 
-**Session Context:** Completed bKash sandbox payment UAT (`task/p8-admissions-quick-add`), token caching RPC migrations, and MTO Readiness Hero carousel redesign in `/testrunmto`. Guarded development sandbox routes (`/mtotest` and `/testrunmto`) with `notFound()` in production environments (`process.env.NODE_ENV === "production"`) while keeping the public homepage intact. Replaced Nagad official partner branding with verified vector/PNG assets and trimmed Eastern Bank SVG viewBox. All 13 focused test suites pass (10/10 in `readiness-hero.test.tsx`, 3/3 in `slideshow.test.tsx`), with zero TypeScript errors.
+**Session Context (`W0-E01`):** Completed Wave 0 gap analyses (`W0-G01`–`W0-G09`), installed the governing Rev3.0 planning package (`README.md` + `01`–`05`), and reconciled repository documentation (`AGENTS.md`, `docs/SCOPE-REVISION-V1.1.md`, `docs/SRS.md`, `docs/SCOPE-REVISION-V1.md`, `docs/architecture.md`, `docs/decisions/*`, `docs/DEPENDENCIES.md`, `docs/BKASH-SANDBOX-UAT.md`, `docs/traceability.csv`, `docs/STATE.md`). **`W0-E00` production safety verification remains deferred by the owner (not passed)**; outstanding production checks remain mandatory before production changes or implementation deployment. No application code, tests, dependencies, migrations, environment variables, or database records were modified.
 
 ---
 
-## Homepage MTO hero
+## 0. Rev3.0 Implementation Boundary (`W0`–`W9`)
+
+- **Current Observed Code Baseline (Pre-Rev3.0 Partial Build):**
+  - Public routes (`/`, `/about`, `/courses/[slug]`, `/enroll`, `/status`, `/news`, `/mentors/[slug]`, `/privacy`, `/terms`, `/refund-policy`) + dev previews (`/mtotest`, `/testrunmto` guarded `notFound()` in prod).
+  - Admin routes (`/admin`, `/admin/login`, `/admin/catalog/[section]`, `/admin/enrollments`, `/admin/students`, `/admin/mentors`) with `AAL2` TOTP enforcement for `super_admin` (`admin` role currently holds `[]` zero permissions in `src/server/auth/require-staff.ts`).
+  - Direct bKash client (`src/server/payments/bkash.ts`), fail-closed `SupabaseBkashTokenCache` (`bkash_private.gateway_tokens`, returning `503` if RPC missing — superseding older in-memory fallback notes below), `/api/cron/reconcile-payments`, and `email_outbox` (`EMAIL_DISPATCH_MODE` defaults `"disabled"`).
+  - **18 migrations recorded in production** (`W0-G01`/`W0-G02`: `20261110161500`–`20261123110000`, last two reconciled history-only).
+  - **Conflicting legacy features currently in codebase (to retire in `W2A-T06`):** routine student/admission permanent purge RPCs/actions (`20261116160000`–`180000`, `src/app/admin/record-purge-actions.ts`) and `/api/payments/bkash/sandbox-refund` + `SandboxRefundAction`.
+- **Approved Future Rev3.0 Functionality (`NOT STARTED` / `AC-D01`–`D78` `NOT RUN`):**
+  - `W2A`: Two-role matrix (`Admin` vs `Super Admin`), audit scoping, early shared admin shell (`W2A-T03`), app-enforced `30m/12h` sessions (`W2A-T04`), Turnstile server `siteverify` & Upstash contact rate limit (`W2A-T05`), retirement of production refund & routine purge paths (`W2A-T06`).
+  - `W1`: Decoupled course/batch publication, manual academic lifecycle, `Accept Applications`, unlimited capacity default (MTO unlimited at launch), optional display deadlines, copy/prefill.
+  - `W2B`: Staff directory/invites, last-SA lock, sole-SA recovery runbook, scoped batch/Website/global activity viewers.
+  - `W3`: Email outbox worker (`/api/cron/email-outbox`), persistent DB job leases, Resend `accepted` vs `delivered` webhook, recurring encrypted DB/Auth/Storage backups (`W3-T05`).
+  - `W4`: Unified shared online/manual application fields & question snapshots, 5 paid-batch manual payment options, `Needs Attention`, receipt association/review (`PAY-11`), same-course transfers, SA payment corrections, restricted live checkout (`W4-T10`).
+  - `W5`: Canonical totals, read-only `Transactions`, configurable CSV + true `.xlsx` exports, **`W5-T04` / `PAY-13` / `C-16` branded PDF payment receipts** + confirmation attachment.
+  - `W6`: Manual `Batch Notify Students` & optional start/complete notices.
+  - `W7`: Full 7-section Website CMS, shared media library & reference-safe deletion, structured pages/SEO, central question config, verified DB cutover removing production JSON fallback.
+  - `W8`–`W9`: Admin UX/a11y polish, staged full regression (`UX-E2E-01`–`10`), rehearsed allowlisted cleanup, controlled live test, and owner launch sign-off.
+- **Technical Verification & Environment Gaps Remaining (`W0-E00`, `W0-E02`–`W0-E05`):**
+  - **`W0-E00` (Deferred by Owner — Outstanding Mandatory Checks):** Vercel `Production` vs `Preview` isolation, actual Production `BKASH_CHECKOUT_MODE` / `BKASH_MANUAL_PAYMENT_ENABLED` / `BKASH_SANDBOX_REFUNDS_ENABLED` (note local `.env.local` has `live` and `true` for sandbox UAT), Production Supabase Auth `disable_signup` & verified TOTP factors, Production `payment_attempts`/`batches` read-only SQL inspection, and Vercel auto-deploy/branch settings.
+  - **`W0-E02` / `INF-04`:** Resolve Antigravity PATH Node `v24.15.0` (`C:\nvm4w\nodejs\node.exe`) vs owner PowerShell `26.13.0` (`pnpm 12.16.1`), disposition pre-existing modified tracked file `src/app/admin/catalog/[section]/[id]/edit/publish-action.test.ts`, and resolve historical failing Phase 3/4 tests (`repository.test.ts`, `hero-slider.test.tsx`, `page.test.tsx`).
+  - **`W0-E03` / `INF-01`–`03`:** Provision isolated Dev/CI `PostgreSQL 17.11` + compatible Supabase CLI/Docker (`supabase/config.toml` still has `[inbucket]` + `major_version = 15`), replay all 18 migrations, and establish pgTAP testing before any new SQL migration.
+  - **`W0-E04` / `INF-05`–`08`:** Evaluate ExonHost compatibility before any paid hosting approval; verify live bKash merchant credentials/API version/IP rules (`statusCode: "9999"` previously reported); verify `mail.lnabd.org` Resend DNS/quotas.
+  - **`W0-E05` / `INF-10`:** Establish off-site encrypted DB/Auth/Storage backup target + tested restore drill.
+- **Next Tasks & Prerequisites for `W2A-T01` (First Functional Implementation Task):**
+  1. Complete `W0-E02` (verified clean branch/diff, Node `26.13.0` runtime & baseline verification log).
+  2. Complete/confirm `W0-E00` owner production safety checks before any deployment or production-touching work (isolated local `W2A-T01` waits on `W0-E01` + `W0-E02` + explicit owner task approval for `W2A-T01`).
+  3. **`W2A-T01` Scope Reminder:** Implement shared server role permission contract (`Admin` vs `Super Admin`) and negative Vitest tests while keeping coordinated SQL/server activation safe; **no schema migrations until `W0-E03` isolated DB/pgTAP harness passes**.
+
+---
+
+## Homepage MTO hero (Historical Phase 10 Note)
 
 - The homepage features MTO Readiness with a two-line heavy, forward-slanted live text title treatment (`MTO` in deep ink-teal `#03242a`, `READINESS` in darker-to-brighter teal gradient).
 - The central diagonal strip displays the transparent building PNG (`mto-hero-glass-building.png`) with feathered alpha transition and CSS mask gradient (`mask-image: linear-gradient(to right, transparent 24%, black 35%)`) eliminating the abrupt vertical hard cut so the sloping roofline meets the pearl background (`#f6fafa`) seamlessly.
@@ -20,14 +52,15 @@
 - Auto-rotation runs uninterrupted every 3s without pausing on mouse hover, respecting `prefers-reduced-motion` and `document.hidden`.
 - Unit tests (`mto-hero.test.tsx` 8/8), homepage integration tests (`page.test.tsx` 4/4), TypeScript typecheck (`0` errors) pass. All changes ready for human git review per Rule R14.
 
-## 1. Current Phase and Task
+## 1. Historical Pre-Rev3.0 Phase and Task Record (Superseded by Section 0 / Rev3.0)
+> *(Historical snapshot from 23 Nov 2026 preserved below; do not treat stale notes on token-cache fallback or legacy phases as current Rev3.0 requirements.)*
 - **Current Phase:** Phase 10 / Payments & Enrollment Integration
 - **Current Task:** Fix bKash authentication failure and resilient token caching (`task/p8-admissions-quick-add`)
 - **Task Status:** Fixed bKash v2 token cache fallback (preventing 503 outage on unmigrated Supabase RPC), corrected v2 query endpoint to `/tokenized-checkout/query/payment`, added safe server-side diagnostic logging (zero secrets/PII), unmasked underlying gateway errors, normalized sandbox checkout mode in Zod schema, and verified complete flow with live sandbox integration tests (16/16 payments tests pass, 29/29 enrollment tests pass, 0 typecheck errors, next build clean).
 - **Current Git Branch:** `task/p8-admissions-quick-add`
 - **Base Commit:** `2d31d95` (merged PR #25)
 - **Open Issues:**
-  - **Supabase Token Cache Migration:** Migration `20261123110000_bkash_supabase_token_cache.sql` provides distributed token caching with `bkash_acquire_gateway_token` and `bkash_finish_gateway_token`. While the application now falls back gracefully to in-memory caching and in-flight request deduplication without errors when the RPC is absent, the owner should apply the SQL migration in Supabase to enable shared distributed caching across multiple serverless instances.
+  - **Supabase Token Cache Migration (Historical — Reconciled in `W0-G02`; runtime code is fail-closed `503`):** Migration `20261123110000_bkash_supabase_token_cache.sql` provides distributed token caching with `bkash_acquire_gateway_token` and `bkash_finish_gateway_token`. Production migration history was reconciled in `W0-G02`, and `createLiveBkashClientFromEnv()` strictly requires `SupabaseBkashTokenCache` (`BKASH_AUTH_CACHE_MISSING` `503` if absent).
   - **pgTAP Verification for Migration `20261110235500` on `lna-website-dev`:** Live REST/admin probes on `lna-website-dev` confirmed tables from both [`20261110161500_initial_catalog_and_enrollments.sql`](file:///d:/.internship/LNA/Website%20Development/supabase/migrations/20261110161500_initial_catalog_and_enrollments.sql) and [`20261110235500_enrollment_bkash_outbox_and_staff_profiles.sql`](file:///d:/.internship/LNA/Website%20Development/supabase/migrations/20261110235500_enrollment_bkash_outbox_and_staff_profiles.sql) (`courses`, `batches`, `mentors`, `course_mentors`, `enrollments`, `profiles`, `payment_attempts`, `payment_events`, `email_outbox`, `audit_events`) exist, while `supabase` CLI / `psql` are not installed locally so owner must confirm dev seed [`supabase/seed.sql`](file:///d:/.internship/LNA/Website%20Development/supabase/seed.sql) and run pgTAP suite [`supabase/tests/0002_enrollment_bkash_and_profiles_rls.sql`](file:///d:/.internship/LNA/Website%20Development/supabase/tests/0002_enrollment_bkash_and_profiles_rls.sql) (`58` assertions) against `lna-website-dev` only (never production).
   - **Public Signups & Live `AAL2` Superadmin Login Verification (`FR-AUT-001`..`004`):** Owner confirmed admin login works; verify `"Allow new users to sign up"` is disabled in Supabase Auth Dashboard (`GET /auth/v1/settings` previously reported `"disable_signup": false`).
   - **External Library Warning (`@supabase/auth-js@2.68.0` `_getAuthenticatorAssuranceLevel`):** Static SDK inspection (`node_modules/@supabase/auth-js/dist/module/GoTrueClient.js:1953-1981`) confirms `getAuthenticatorAssuranceLevel()` internally calls `this._useSession()` (`session.user.factors` at line 1973), emitting Supabase's server `getSession()` warning even though `src/` has zero `getSession()` calls and [`src/server/auth/require-staff.ts`](file:///d:/.internship/LNA/Website%20Development/src/server/auth/require-staff.ts) authenticates exclusively via `auth.getUser()`, authoritative `public.profiles`, `mfa.listFactors()` (`getUser()`), and `currentLevel === "aal2"` claim. Keep current SSR packages pinned per `Rule R3`.
