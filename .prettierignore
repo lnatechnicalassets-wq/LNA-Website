@@ -9,3 +9,4 @@ docs/
 .agents/
 AGENTS.md
 *.md
+supabase/.temp/
