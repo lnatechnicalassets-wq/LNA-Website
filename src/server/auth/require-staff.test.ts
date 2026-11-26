@@ -1,8 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { AppError } from "@/lib/errors";
 import {
+  assertStaffContextPermission,
   getStaffSessionContext,
+  requireAllStaffPermissions,
   requireStaff,
+  requireSuperAdmin,
+  type StaffPermission,
   type StaffProfileLookupResult,
   type StaffSessionClientLike,
 } from "./require-staff";
@@ -179,5 +183,157 @@ describe("requireStaff & getStaffSessionContext (Rule R8, FR-AUT-002..004, AT-08
       accountState: "active",
       aal: "aal2",
     });
+  });
+
+  it("denies active AAL2 Admin accounts across all operational and Super Admin permissions until coordinated activation", async () => {
+    const activeAdmin: StaffProfileLookupResult = {
+      id: "user-admin-aal2",
+      email: "ops@lnabd.org",
+      full_name: "Ops Admin",
+      role: "admin",
+      account_state: "active",
+    };
+
+    const guardedPermissions: ReadonlyArray<StaffPermission> = [
+      "overview:read",
+      "catalog:edit",
+      "catalog:publish",
+      "enrollments:read",
+      "enrollments:create",
+      "enrollments:manage",
+      "enrollments:verify-payment",
+      "students:edit",
+      "transactions:read",
+      "reports:export",
+      "cms:edit",
+      "notifications:send",
+      "payments:correct-manual",
+      "staff:manage",
+      "settings:manage",
+      "activity:read-global",
+    ];
+
+    for (const permission of guardedPermissions) {
+      await expect(
+        requireStaff(permission, {
+          isConfigured: () => true,
+          getSessionClient: async () =>
+            makeSessionClient({
+              userId: "user-admin-aal2",
+              currentLevel: "aal2",
+              verifiedTotpCount: 1,
+            }),
+          lookupProfileById: async () => activeAdmin,
+        })
+      ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+    }
+  });
+
+  it("fails closed for unknown profile roles and unknown permission strings", async () => {
+    const unknownRoleProfile: StaffProfileLookupResult = {
+      id: "user-unknown-role",
+      email: "role@lnabd.org",
+      full_name: "Spoofed Role",
+      role: "owner",
+      account_state: "active",
+    };
+
+    await expect(
+      requireStaff("enrollments:read", {
+        isConfigured: () => true,
+        getSessionClient: async () =>
+          makeSessionClient({
+            userId: "user-unknown-role",
+            currentLevel: "aal2",
+            verifiedTotpCount: 1,
+          }),
+        lookupProfileById: async () => unknownRoleProfile,
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+
+    const superAdmin: StaffProfileLookupResult = {
+      id: "user-sa",
+      email: "super@lnabd.org",
+      full_name: "Founder Superadmin",
+      role: "super_admin",
+      account_state: "active",
+    };
+
+    await expect(
+      requireStaff("records:routine-purge" as StaffPermission, {
+        isConfigured: () => true,
+        getSessionClient: async () =>
+          makeSessionClient({ userId: "user-sa", currentLevel: "aal2", verifiedTotpCount: 1 }),
+        lookupProfileById: async () => superAdmin,
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+  });
+
+  it("enforces requireSuperAdmin, requireAllStaffPermissions, and assertStaffContextPermission fail-closed boundaries", async () => {
+    const superAdmin: StaffProfileLookupResult = {
+      id: "user-sa",
+      email: "super@lnabd.org",
+      full_name: "Founder Superadmin",
+      role: "super_admin",
+      account_state: "active",
+    };
+    const activeAdmin: StaffProfileLookupResult = {
+      id: "user-admin",
+      email: "ops@lnabd.org",
+      full_name: "Ops Admin",
+      role: "admin",
+      account_state: "active",
+    };
+
+    await expect(
+      requireSuperAdmin("staff:manage", {
+        isConfigured: () => true,
+        getSessionClient: async () => makeSessionClient({ userId: "user-admin" }),
+        lookupProfileById: async () => activeAdmin,
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+
+    const verifiedSa = await requireSuperAdmin("staff:manage", {
+      isConfigured: () => true,
+      getSessionClient: async () => makeSessionClient({ userId: "user-sa" }),
+      lookupProfileById: async () => superAdmin,
+    });
+    expect(verifiedSa.role).toBe("super_admin");
+
+    await expect(
+      requireAllStaffPermissions([], {
+        isConfigured: () => true,
+        getSessionClient: async () => makeSessionClient({ userId: "user-sa" }),
+        lookupProfileById: async () => superAdmin,
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+
+    const allPermsSa = await requireAllStaffPermissions(
+      ["enrollments:read", "payments:correct-manual", "staff:manage"],
+      {
+        isConfigured: () => true,
+        getSessionClient: async () => makeSessionClient({ userId: "user-sa" }),
+        lookupProfileById: async () => superAdmin,
+      }
+    );
+    expect(allPermsSa.userId).toBe("user-sa");
+
+    expect(() =>
+      assertStaffContextPermission({ ...verifiedSa, role: "admin" }, "staff:manage")
+    ).toThrowError(AppError);
+
+    expect(() =>
+      assertStaffContextPermission(
+        { ...verifiedSa, accountState: "disabled" as unknown as "active" },
+        "enrollments:read"
+      )
+    ).toThrowError(AppError);
+
+    expect(() =>
+      assertStaffContextPermission(
+        { ...verifiedSa, aal: "aal1" as unknown as "aal2" },
+        "enrollments:read"
+      )
+    ).toThrowError(AppError);
   });
 });

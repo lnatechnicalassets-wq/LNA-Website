@@ -5,15 +5,15 @@ import {
   createSupabaseServerClient,
   hasConfiguredSupabaseServerEnv,
 } from "@/server/supabase/clients";
+import {
+  hasActiveRolePermission,
+  isStaffPermission,
+  isStaffRole,
+  type StaffPermission,
+  type StaffRole,
+} from "./permissions";
 
-export type StaffPermission =
-  | "enrollments:read"
-  | "enrollments:create"
-  | "enrollments:verify-payment"
-  | "enrollments:manage"
-  | "catalog:edit";
-
-export type StaffRole = "admin" | "super_admin";
+export type { StaffPermission, StaffRole };
 
 export interface VerifiedStaffContext {
   userId: string;
@@ -71,19 +71,8 @@ export interface StaffAuthDeps {
   lookupProfileById?: (userId: string) => Promise<StaffProfileLookupResult | null>;
 }
 
-const ROLE_PERMISSIONS: Record<StaffRole, ReadonlyArray<StaffPermission>> = {
-  super_admin: [
-    "enrollments:read",
-    "enrollments:create",
-    "enrollments:verify-payment",
-    "enrollments:manage",
-    "catalog:edit",
-  ],
-  admin: [],
-};
-
 function hasPermission(role: StaffRole, permission: StaffPermission): boolean {
-  return ROLE_PERMISSIONS[role].includes(permission);
+  return hasActiveRolePermission(role, permission);
 }
 
 async function defaultLookupProfileById(userId: string): Promise<StaffProfileLookupResult | null> {
@@ -144,12 +133,12 @@ export async function getStaffSessionContext(
     };
   }
 
-  if (profile.role !== "super_admin" && profile.role !== "admin") {
+  if (!isStaffRole(profile.role)) {
     return { ok: false, reason: "forbidden", userId: profile.id, email: profile.email };
   }
 
   const role: StaffRole = profile.role;
-  if (!hasPermission(role, requiredPermission)) {
+  if (!isStaffPermission(requiredPermission) || !hasPermission(role, requiredPermission)) {
     return {
       ok: false,
       reason: "forbidden",
@@ -227,4 +216,59 @@ export async function requireStaff(
     case "forbidden":
       throw new AppError("You do not have permission to access this resource.", "FORBIDDEN", 403);
   }
+}
+
+/**
+ * Reusable fail-closed permission guard for verified server contexts passed into domain services.
+ */
+export function assertStaffContextPermission(
+  staff: VerifiedStaffContext,
+  permission: StaffPermission
+): VerifiedStaffContext {
+  if (staff.accountState !== "active") {
+    throw new AppError("Staff account is disabled or archived.", "ACCOUNT_INACTIVE", 403);
+  }
+  if (staff.aal !== "aal2") {
+    throw new AppError("Authenticator app verification (AAL2) is required.", "MFA_REQUIRED", 403);
+  }
+  if (
+    !isStaffRole(staff.role) ||
+    !isStaffPermission(permission) ||
+    !hasActiveRolePermission(staff.role, permission)
+  ) {
+    throw new AppError("You do not have permission to access this resource.", "FORBIDDEN", 403);
+  }
+  return staff;
+}
+
+/**
+ * Requires an active AAL2 staff session holding ALL listed permissions (empty/unknown list fails closed).
+ */
+export async function requireAllStaffPermissions(
+  permissions: ReadonlyArray<StaffPermission>,
+  deps?: StaffAuthDeps
+): Promise<VerifiedStaffContext> {
+  if (permissions.length === 0 || permissions.some((p) => !isStaffPermission(p))) {
+    throw new AppError("You do not have permission to access this resource.", "FORBIDDEN", 403);
+  }
+  const staff = await requireStaff(permissions[0], deps);
+  for (const permission of permissions.slice(1)) {
+    assertStaffContextPermission(staff, permission);
+  }
+  return staff;
+}
+
+/**
+ * Explicit Super Admin guard for staff lifecycle, settings, manual payment corrections, and global audit.
+ * Denies Admin accounts regardless of future operational Admin permission activation.
+ */
+export async function requireSuperAdmin(
+  permission: StaffPermission = "staff:manage",
+  deps?: StaffAuthDeps
+): Promise<VerifiedStaffContext> {
+  const staff = await requireStaff(permission, deps);
+  if (staff.role !== "super_admin") {
+    throw new AppError("Super Admin access is required for this operation.", "FORBIDDEN", 403);
+  }
+  return staff;
 }
