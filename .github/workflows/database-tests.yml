@@ -1,0 +1,235 @@
+name: Isolated Database Tests
+
+on:
+  push:
+    branches:
+      - task/w0-gap-closing
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isolated-postgres-pgtap:
+    name: PostgreSQL 17 Migrations & pgTAP
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      # Safe empty placeholders solely for supabase/config.toml env() parsing; zero real secrets or hosted targets.
+      OPENAI_API_KEY: ""
+      SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN: ""
+      SUPABASE_AUTH_EXTERNAL_APPLE_SECRET: ""
+      S3_HOST: ""
+      S3_REGION: ""
+      S3_ACCESS_KEY: ""
+      S3_SECRET_KEY: ""
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Verify production isolation safeguards
+        run: |
+          set -euo pipefail
+          for forbidden_var in DATABASE_URL SUPABASE_DB_PASSWORD SUPABASE_SECRET_KEY SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_ID; do
+            if [ -n "${!forbidden_var:-}" ]; then
+              echo "::error::Forbidden hosted credential/variable $forbidden_var is set in CI environment."
+              exit 1
+            fi
+          done
+          if [ -d "supabase/.temp" ]; then
+            echo "::error::Unexpected supabase/.temp directory detected; refusing to risk hosted link."
+            exit 1
+          fi
+
+      - name: Setup pinned Supabase CLI (v2.stable)
+        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: "2.122.1"
+
+      - name: Start isolated local Supabase stack (PostgreSQL 17)
+        run: |
+          set -euo pipefail
+          supabase --version
+          supabase start --exclude studio,imgproxy,edge-runtime,logflare,vector,analytics
+
+      - name: Replay all 18 migrations cleanly and verify PostgreSQL 17 + extensions
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          supabase db reset --local
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;"
+
+          PG_MAJOR="$(psql "$LOCAL_DB_URL" -Atqc "SHOW server_version_num;")"
+          echo "PostgreSQL server_version_num=$PG_MAJOR"
+          if [ "$PG_MAJOR" -lt 170000 ] || [ "$PG_MAJOR" -ge 180000 ]; then
+            echo "::error::Expected PostgreSQL 17.x, got server_version_num=$PG_MAJOR"
+            exit 1
+          fi
+
+          EXT_COUNT="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace WHERE n.nspname = 'extensions' AND e.extname IN ('pgcrypto', 'citext', 'pgtap');")"
+          if [ "$EXT_COUNT" -ne 3 ]; then
+            echo "::error::Missing required extensions in schema 'extensions' (expected 3, got $EXT_COUNT)"
+            exit 1
+          fi
+
+          MIGRATION_FILES="$(ls -1 supabase/migrations/*.sql | wc -l | tr -d ' ')"
+          APPLIED_MIGRATIONS="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Migration files=$MIGRATION_FILES, applied=$APPLIED_MIGRATIONS"
+          if [ "$MIGRATION_FILES" -ne 18 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
+            echo "::error::Migration replay count mismatch."
+            exit 1
+          fi
+
+      - name: Run all 18 pgTAP suites
+        run: |
+          set -euo pipefail
+          TEST_COUNT="$(ls -1 supabase/tests/*.sql | wc -l | tr -d ' ')"
+          if [ "$TEST_COUNT" -ne 18 ]; then
+            echo "::error::Expected 18 pgTAP test files, found $TEST_COUNT"
+            exit 1
+          fi
+          supabase test db --local
+
+      - name: Verify migration 17 -> 18 incremental upgrade on real PG17 stack and run targeted TAP harness
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          M18_PATH: supabase/migrations/20261123110000_bkash_supabase_token_cache.sql
+          T18_PATH: supabase/tests/0018_bkash_supabase_token_cache.sql
+        run: |
+          set -euo pipefail
+          TMP_M18="$(mktemp)"
+          cp "$M18_PATH" "$TMP_M18"
+          restore_m18() {
+            if [ -f "$TMP_M18" ]; then
+              cp "$TMP_M18" "$M18_PATH"
+              rm -f "$TMP_M18"
+            fi
+          }
+          trap restore_m18 EXIT
+
+          rm -f "$M18_PATH"
+          supabase db reset --local
+
+          APPLIED_BEFORE="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Applied migrations before synthetic upgrade=$APPLIED_BEFORE"
+          if [ "$APPLIED_BEFORE" -ne 17 ]; then
+            echo "::error::Expected 17 baseline migrations before upgrade, got $APPLIED_BEFORE"
+            exit 1
+          fi
+
+          restore_m18
+          supabase migration up --local
+
+          APPLIED_AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Applied migrations after synthetic upgrade=$APPLIED_AFTER"
+          if [ "$APPLIED_AFTER" -ne 18 ]; then
+            echo "::error::Expected 18 applied migrations after upgrade, got $APPLIED_AFTER"
+            exit 1
+          fi
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;"
+          supabase test db --local "$T18_PATH"
+
+      - name: Verify bounded two-session lock overlap on real PG17 stack
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          KEY="cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          OWNER_1="11111111-1111-4111-8111-111111111111"
+          OWNER_2="22222222-2222-4222-8222-222222222222"
+
+          WORK_DIR="$(mktemp -d)"
+          PIPE1="$WORK_DIR/s1.fifo"
+          OUT1="$WORK_DIR/s1.out"
+          OUT2="$WORK_DIR/s2.out"
+          mkfifo "$PIPE1"
+          touch "$OUT1" "$OUT2"
+
+          PID1=""
+          PID2=""
+          cleanup() {
+            exec 3>&- 2>/dev/null || true
+            [ -n "$PID1" ] && kill "$PID1" 2>/dev/null || true
+            [ -n "$PID2" ] && kill "$PID2" 2>/dev/null || true
+            rm -rf "$WORK_DIR"
+            psql "$LOCAL_DB_URL" -c "DELETE FROM bkash_private.gateway_tokens WHERE merchant_key = '$KEY';" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "DELETE FROM bkash_private.gateway_tokens WHERE merchant_key = '$KEY';"
+
+          psql "${LOCAL_DB_URL}?application_name=lna_parallel_s1" -v ON_ERROR_STOP=1 -Atq < "$PIPE1" > "$OUT1" &
+          PID1=$!
+          exec 3> "$PIPE1"
+
+          cat >&3 <<EOSQL
+          BEGIN;
+          SELECT public.bkash_acquire_gateway_token('$KEY', '$OWNER_1'::uuid)->>'state';
+          \echo READY_S1
+          EOSQL
+
+          S1_READY=0
+          for _ in $(seq 1 50); do
+            if grep -qx 'READY_S1' "$OUT1" 2>/dev/null; then
+              S1_READY=1
+              break
+            fi
+            sleep 0.1
+          done
+          if [ "$S1_READY" -ne 1 ]; then
+            echo "::error::Session 1 did not acquire lease within bounded timeout."
+            cat "$OUT1" || true
+            exit 1
+          fi
+
+          psql "${LOCAL_DB_URL}?application_name=lna_parallel_s2" -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT public.bkash_acquire_gateway_token('$KEY', '$OWNER_2'::uuid)->>'state';" > "$OUT2" &
+          PID2=$!
+
+          OVERLAP_PROVED=0
+          for _ in $(seq 1 50); do
+            LOCK_WAITERS="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM pg_stat_activity WHERE application_name = 'lna_parallel_s2' AND wait_event_type = 'Lock' AND state = 'active';")"
+            if [ "${LOCK_WAITERS:-0}" -ge 1 ]; then
+              OVERLAP_PROVED=1
+              break
+            fi
+            if ! kill -0 "$PID2" 2>/dev/null; then
+              break
+            fi
+            sleep 0.1
+          done
+          if [ "$OVERLAP_PROVED" -ne 1 ]; then
+            echo "::error::Failed to observe Session 2 blocked on Session 1 row lock in pg_stat_activity."
+            cat "$OUT1" "$OUT2" || true
+            exit 1
+          fi
+
+          cat >&3 <<'EOSQL'
+          COMMIT;
+          \q
+          EOSQL
+          exec 3>&-
+
+          wait "$PID1" "$PID2"
+          PID1=""
+          PID2=""
+
+          STATE1="$(grep -vx 'READY_S1' "$OUT1" | tr -d '[:space:]')"
+          STATE2="$(tr -d '[:space:]' < "$OUT2")"
+          echo "Parallel session lock overlap verified: session1=$STATE1 session2=$STATE2"
+          if [ "$STATE1" != "grant" ] || [ "$STATE2" != "wait" ]; then
+            echo "::error::Expected parallel lease serialization (grant/wait), got $STATE1/$STATE2"
+            exit 1
+          fi
+
+      - name: Clean up isolated local Supabase environment
+        if: always()
+        run: supabase stop --no-backup || true
