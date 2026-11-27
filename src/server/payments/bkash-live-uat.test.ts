@@ -20,13 +20,15 @@ function loadLocalEnv(): Record<string, string> {
 }
 
 describe("bKash Live Sandbox UAT Verification", () => {
-  const env = loadLocalEnv();
+  // Require explicit opt-in before reading .env.local or initializing external sandbox UAT requests.
+  const isLiveUatOptIn = process.env.RUN_BKASH_LIVE_UAT === "true";
+  const env = isLiveUatOptIn ? loadLocalEnv() : {};
   const appKey = env.BKASH_APP_KEY || env.BKASH_CHECKOUT_URL_APP_KEY;
   const appSecret = env.BKASH_APP_SECRET || env.BKASH_CHECKOUT_URL_APP_SECRET;
   const username = env.BKASH_USERNAME || env.BKASH_CHECKOUT_URL_USER_NAME;
   const password = env.BKASH_PASSWORD || env.BKASH_CHECKOUT_URL_PASSWORD;
 
-  const hasCredentials = Boolean(appKey && appSecret && username && password);
+  const hasCredentials = Boolean(isLiveUatOptIn && appKey && appSecret && username && password);
 
   it.runIf(hasCredentials)(
     "successfully grants token and initiates checkout URL on live bKash sandbox even when DB cache RPC is unmigrated",
@@ -38,7 +40,8 @@ describe("bKash Live Sandbox UAT Verification", () => {
             data: null,
             error: {
               code: "PGRST202",
-              message: "Could not find the function public.bkash_acquire_gateway_token in the schema cache",
+              message:
+                "Could not find the function public.bkash_acquire_gateway_token in the schema cache",
             },
           }),
         })) as unknown as Pick<SupabaseClient, "rpc">["rpc"],
@@ -67,7 +70,9 @@ describe("bKash Live Sandbox UAT Verification", () => {
       });
 
       expect(initResult.paymentId).toMatch(/^TR[0-9A-Za-z]+$/);
-      expect(initResult.redirectUrl).toMatch(/^https:\/\/sandbox\.payment\.bkash\.com\/\?paymentId=/);
+      expect(initResult.redirectUrl).toMatch(
+        /^https:\/\/sandbox\.payment\.bkash\.com\/\?paymentId=/
+      );
       expect(initResult.callbackSignature).toBeDefined();
       expect(initResult.sandboxV2).toBe(true);
 

@@ -13,6 +13,9 @@ import { MtoHero } from "@/components/home/hero/mto-hero";
 import { getMtoHeroCourse } from "@/server/catalog/mto-hero";
 import { getPublicMentors } from "@/server/catalog/mentors";
 import { getArchivedCatalogSlugs } from "@/server/catalog/visibility";
+import { getPublicCatalogFromSupabase } from "@/server/enrollment/service";
+import { hasConfiguredSupabaseServerEnv } from "@/server/supabase/clients";
+import { getPublicPartners } from "@/server/catalog/partners";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +30,8 @@ export default async function HomePage() {
   const courseRepo = getCourseRepository();
   const batchRepo = getBatchRepository();
 
+  const live = hasConfiguredSupabaseServerEnv();
+
   // Load homepage data in parallel via clean repository interfaces (Rule R4)
   const [
     partners,
@@ -38,23 +43,31 @@ export default async function HomePage() {
     internships,
     contactConfig,
     archived,
+    liveCatalog,
   ] = await Promise.all([
-    homeRepo.getPartners(),
-    courseRepo.getAllCourses(),
-    batchRepo.getAllBatches(),
+    getPublicPartners(),
+    live ? Promise.resolve([]) : courseRepo.getAllCourses(),
+    live ? Promise.resolve([]) : batchRepo.getAllBatches(),
     getPublicMentors(),
     homeRepo.getReviews(),
     homeRepo.getIrgpData(),
     homeRepo.getInternships(),
     homeRepo.getContactConfig(),
-    getArchivedCatalogSlugs(),
+    live
+      ? Promise.resolve({ courses: new Set<string>(), batches: new Set<string>() })
+      : getArchivedCatalogSlugs(),
+    live
+      ? getPublicCatalogFromSupabase().catch(() => ({ courses: [], batches: [] }))
+      : Promise.resolve(null),
   ]);
-  const courses = allCourses.filter((course) => !archived.courses.has(course.id));
-  const batches = allBatches.filter(
+  const courses = (liveCatalog?.courses ?? allCourses).filter(
+    (course) => !archived.courses.has(course.id)
+  );
+  const batches = (liveCatalog?.batches ?? allBatches).filter(
     (batch) => !archived.courses.has(batch.courseId) && !archived.batches.has(batch.id)
   );
 
-  const program = await getMtoHeroCourse(courses, batches, mentors);
+  const program = await getMtoHeroCourse(courses, batches, mentors, liveCatalog);
 
   return (
     <MentorQuickViewProvider>

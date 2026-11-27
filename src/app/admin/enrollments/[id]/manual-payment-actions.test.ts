@@ -109,4 +109,12 @@ describe("Manual payment review", () => {
     );
     expect(dispatchEmailOutboxById).not.toHaveBeenCalled();
   });
+
+  it("returns stale review guidance when optimistic locking detects a concurrent edit", async () => {
+    rpc.mockResolvedValueOnce({ data: { ok: false, code: "STALE_REVIEW" }, error: null });
+    await expect(reviewManualPayment(target, {}, form())).resolves.toEqual({
+      message: copy.stale,
+    });
+    expect(dispatchEmailOutboxById).not.toHaveBeenCalled();
+  });
 });

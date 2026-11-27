@@ -46,4 +46,3 @@ describe("PublicChromeGate", () => {
     expect(screen.getByText("Admin Desk")).toBeDefined();
   });
 });
-

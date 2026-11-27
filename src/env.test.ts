@@ -6,7 +6,13 @@ import {
   getRequiredBrowserSupabaseConfig,
   validateClientEnvironment,
 } from "./env.client";
-import { serverEnvSchema, getServerEnv, getBkashLiveReadiness } from "./server/env";
+import {
+  serverEnvSchema,
+  getServerEnv,
+  getBkashLiveReadiness,
+  isAdminRuntimeActivationEnabled,
+  isLocalLoopbackSupabaseUrl,
+} from "./server/env";
 import { env } from "./env";
 
 describe("Environment Configuration & Security Isolation (NFR-SEC-02)", () => {
@@ -388,5 +394,108 @@ describe("Environment Configuration & Security Isolation (NFR-SEC-02)", () => {
     });
     expect(JSON.stringify(readiness)).not.toContain(secretAppKey);
     expect(JSON.stringify(readiness)).not.toContain(secretAppSecret);
+  });
+
+  it("restricts ENABLE_ADMIN_ROLE_RUNTIME=true to isolated loopback Supabase URLs outside Vercel Preview/Production", () => {
+    expect(isLocalLoopbackSupabaseUrl("http://127.0.0.1:54321")).toBe(true);
+    expect(isLocalLoopbackSupabaseUrl("http://localhost:54321")).toBe(true);
+    expect(isLocalLoopbackSupabaseUrl("http://[::1]:54321")).toBe(true);
+    expect(isLocalLoopbackSupabaseUrl("https://xyzcompany.supabase.co")).toBe(false);
+    expect(isLocalLoopbackSupabaseUrl("http://localhost.evil.com:54321")).toBe(false);
+    expect(isLocalLoopbackSupabaseUrl("http://127.0.0.1.nip.io:54321")).toBe(false);
+    expect(isLocalLoopbackSupabaseUrl("ftp://127.0.0.1:54321")).toBe(false);
+    expect(isLocalLoopbackSupabaseUrl("not-a-url")).toBe(false);
+
+    // Disabled by default
+    expect(serverEnvSchema.parse({ NODE_ENV: "development" }).ENABLE_ADMIN_ROLE_RUNTIME).toBe(
+      "false"
+    );
+    expect(isAdminRuntimeActivationEnabled({})).toBe(false);
+
+    // Rejects hosted Supabase URL regardless of local APP_URL or sandbox PGW host
+    expect(() =>
+      serverEnvSchema.parse({
+        NODE_ENV: "development",
+        APP_URL: "http://localhost:3000",
+        BKASH_BASE_URL: "https://tokenized.sandbox.bka.sh",
+        NEXT_PUBLIC_SUPABASE_URL: "https://xyzcompany.supabase.co",
+        ENABLE_ADMIN_ROLE_RUNTIME: "true",
+      })
+    ).toThrowError(/CRITICAL SECURITY FAILURE/);
+    expect(
+      isAdminRuntimeActivationEnabled({
+        ENABLE_ADMIN_ROLE_RUNTIME: "true",
+        NEXT_PUBLIC_SUPABASE_URL: "https://xyzcompany.supabase.co",
+        APP_URL: "http://localhost:3000",
+        BKASH_BASE_URL: "https://tokenized.sandbox.bka.sh",
+      })
+    ).toBe(false);
+
+    // Rejects missing or malformed Supabase URLs
+    expect(() =>
+      serverEnvSchema.parse({
+        NODE_ENV: "development",
+        ENABLE_ADMIN_ROLE_RUNTIME: "true",
+      })
+    ).toThrowError(/CRITICAL SECURITY FAILURE/);
+    expect(
+      isAdminRuntimeActivationEnabled({
+        ENABLE_ADMIN_ROLE_RUNTIME: "true",
+        NEXT_PUBLIC_SUPABASE_URL: "malformed-url",
+      })
+    ).toBe(false);
+
+    // Rejects Vercel Preview and Production even with loopback Supabase URL
+    for (const vercelEnv of [
+      { VERCEL_ENV: "preview" },
+      { VERCEL_ENV: "production" },
+      { VERCEL: "1" },
+    ]) {
+      expect(() =>
+        serverEnvSchema.parse({
+          NODE_ENV: "production",
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          ...vercelEnv,
+        })
+      ).toThrowError(/CRITICAL SECURITY FAILURE/);
+      expect(
+        isAdminRuntimeActivationEnabled({
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+          ...vercelEnv,
+        })
+      ).toBe(false);
+    }
+
+    // Allows isolated loopback Supabase URL without relying on domain blacklists
+    const isolatedParsed = serverEnvSchema.parse({
+      NODE_ENV: "test",
+      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+      APP_URL: "https://lnabd.org",
+      BKASH_BASE_URL: "https://tokenized.pay.bka.sh",
+      ENABLE_ADMIN_ROLE_RUNTIME: "true",
+    });
+    expect(isolatedParsed.ENABLE_ADMIN_ROLE_RUNTIME).toBe("true");
+    expect(
+      isAdminRuntimeActivationEnabled(
+        {
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321",
+        },
+        { resolvedSupabaseUrl: "http://localhost:54321" }
+      )
+    ).toBe(true);
+
+    // Fails closed if actual client-resolved Supabase URL differs or points to hosted Supabase
+    expect(
+      isAdminRuntimeActivationEnabled(
+        {
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+        },
+        { resolvedSupabaseUrl: "https://xyzcompany.supabase.co" }
+      )
+    ).toBe(false);
   });
 });

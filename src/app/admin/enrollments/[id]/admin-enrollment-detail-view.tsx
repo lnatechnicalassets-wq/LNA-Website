@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, Mail, CreditCard, Activity, FileText } from "lucide-react";
+import { AdminBreadcrumbs } from "@/components/admin/admin-patterns";
 import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import {
   EnrollmentStatusBadge,
@@ -10,13 +11,14 @@ import {
 } from "@/components/admin/enrollment-status-badge";
 import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { manualPaymentReviewCopy as reviewCopy } from "@/lib/admin-manual-admission";
-import { adminPaths } from "@/lib/admin-navigation";
+import { adminMessage as t, adminPaths } from "@/lib/admin-navigation";
 import { formatPaymentMethodLabel } from "@/lib/enrollment/status";
 import { formatPoishaToBDT } from "@/lib/money";
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
 import type { AdminEnrollmentDetailResult } from "@/server/enrollment/service";
 import { EnrollmentRowActions } from "../enrollment-row-actions";
 import { SandboxRefundAction } from "./sandbox-refund-action";
+import { EmailRetryForm } from "./email-retry-form";
 
 export interface AdminEnrollmentDetailViewProps {
   staff: VerifiedStaffContext;
@@ -74,7 +76,14 @@ export function AdminEnrollmentDetailView({
   return (
     <AdminPortalShell staff={staff} currentPath={`${adminPaths.admissions}/${detail.id}`}>
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 flex-1">
-        <div>
+        <div className="space-y-2">
+          <AdminBreadcrumbs
+            items={[
+              { label: t("overview"), href: adminPaths.overview },
+              { label: t("admissions"), href: adminPaths.admissions },
+              { label: detail.publicRef },
+            ]}
+          />
           <Link
             href="/admin/enrollments"
             className="inline-flex items-center gap-1.5 min-h-[44px] text-xs sm:text-sm font-semibold text-primary-800 hover:underline focus-visible:outline-2 focus-visible:outline-primary-600 rounded"
@@ -132,9 +141,24 @@ export function AdminEnrollmentDetailView({
             </div>
           </CardContent>
           <CardContent className="border-t border-border-subtle px-5 pb-4 pt-3 sm:px-6">
+            <Link
+              href={`${adminPaths.admissions}/${detail.id}/manage`}
+              className="mb-3 inline-flex min-h-9 items-center text-sm font-semibold text-primary-900 underline"
+            >
+              Cancel or transfer admission
+            </Link>
+            {detail.payablePoisha > 0 && detail.verifiedAt && (
+              <a
+                className="mb-3 ml-3 inline-flex min-h-9 items-center text-sm font-semibold text-primary-900 underline"
+                href={`/api/admin/receipts/${encodeURIComponent(detail.id)}`}
+              >
+                Download payment receipt
+              </a>
+            )}
             <EnrollmentRowActions
               item={detail}
               showView={false}
+              allowPurge={process.env.NODE_ENV !== "production" && staff.role === "super_admin"}
               leadingAction={
                 canViewRefund &&
                 refundAttempt?.sandboxRefund &&
@@ -209,7 +233,9 @@ export function AdminEnrollmentDetailView({
                 <div className="py-2.5 flex justify-between gap-4">
                   <dt className="text-text-secondary">Payment method</dt>
                   <dd className="font-semibold text-primary-900 text-right">
-                    {formatPaymentMethodLabel(detail.paymentMethod)}
+                    {detail.staffPaymentDetails?.kind === "partial_fee_waiver"
+                      ? `Partial Fee Waiver · ${formatPaymentMethodLabel(detail.paymentMethod)}`
+                      : formatPaymentMethodLabel(detail.paymentMethod)}
                   </dd>
                 </div>
                 <div className="py-2.5 flex justify-between gap-4">
@@ -217,13 +243,17 @@ export function AdminEnrollmentDetailView({
                   <dd className="font-semibold text-primary-900 text-right">{detail.currency}</dd>
                 </div>
                 <div className="py-2.5 flex justify-between gap-4">
-                  <dt className="text-text-secondary">Base fee</dt>
+                  <dt className="text-text-secondary">
+                    {detail.staffPaymentDetails ? "Adjusted fee" : "Base fee"}
+                  </dt>
                   <dd className="font-semibold text-text-primary text-right">
                     {formatMoneyBdt(detail.baseFeePoisha)}
                   </dd>
                 </div>
                 <div className="py-2.5 flex justify-between gap-4">
-                  <dt className="text-text-secondary">Discount applied</dt>
+                  <dt className="text-text-secondary">
+                    {detail.staffPaymentDetails ? "Waiver applied" : "Discount applied"}
+                  </dt>
                   <dd className="font-semibold text-text-primary text-right">
                     {formatMoneyBdt(detail.discountAmountPoisha)}
                   </dd>
@@ -231,9 +261,32 @@ export function AdminEnrollmentDetailView({
                 <div className="py-2.5 flex justify-between gap-4">
                   <dt className="font-semibold text-primary-900">Final payable amount</dt>
                   <dd className="font-bold text-primary-800 text-base text-right">
-                    {detail.payablePoisha === 0 ? "Free" : formatMoneyBdt(detail.payablePoisha)}
+                    {detail.payablePoisha === 0 && !detail.staffPaymentDetails
+                      ? "Free"
+                      : formatMoneyBdt(detail.payablePoisha)}
                   </dd>
                 </div>
+                {detail.staffPaymentDetails && (
+                  <>
+                    <div className="py-2.5 flex justify-between gap-4">
+                      <dt>Original applicable batch fee</dt>
+                      <dd>{formatMoneyBdt(detail.staffPaymentDetails.originalPayablePoisha)}</dd>
+                    </div>
+                    <div className="py-2.5 flex justify-between gap-4">
+                      <dt>Actual collection</dt>
+                      <dd>{formatMoneyBdt(detail.staffPaymentDetails.collectedPoisha)}</dd>
+                    </div>
+                    {detail.staffPaymentDetails.waiverReason && (
+                      <div className="py-2.5 flex justify-between gap-4">
+                        <dt>Waiver reason</dt>
+                        <dd>{detail.staffPaymentDetails.waiverReason}</dd>
+                      </div>
+                    )}
+                    <p className="py-2 text-text-secondary">
+                      Recorded by staff. No gateway payment was created for this admission.
+                    </p>
+                  </>
+                )}
                 {detail.submittedPaymentRef && (
                   <div className="py-2.5 flex justify-between gap-4">
                     <dt className="text-text-secondary">
@@ -431,7 +484,7 @@ export function AdminEnrollmentDetailView({
                         }
                         size="sm"
                       >
-                        {em.status}
+                        {em.status === "sent" ? "Accepted by provider" : em.status}
                       </Badge>
                     </div>
                     <div className="text-text-secondary break-all">
@@ -441,7 +494,7 @@ export function AdminEnrollmentDetailView({
                       <span>Retries: {em.retryCount}</span>
                       <span>
                         {em.sentAt
-                          ? `Sent ${formatDhakaTimestamp(em.sentAt)}`
+                          ? `Accepted ${formatDhakaTimestamp(em.sentAt)}`
                           : `Queued ${formatDhakaTimestamp(em.createdAt)}`}
                       </span>
                     </div>
@@ -450,6 +503,7 @@ export function AdminEnrollmentDetailView({
                         Provider ID: {em.providerMessageId}
                       </div>
                     )}
+                    {em.status !== "sent" && <EmailRetryForm id={em.id} enrollmentId={detail.id} />}
                     {em.lastError && (
                       <div className="text-status-danger-text font-medium">{em.lastError}</div>
                     )}

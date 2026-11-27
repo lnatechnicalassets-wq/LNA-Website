@@ -19,7 +19,7 @@ export async function archiveCatalogRecord(
   _previous: { message?: string; success?: boolean },
   _data: FormData
 ): Promise<{ message?: string; success?: boolean }> {
-  const staff = await requireStaff("catalog:edit");
+  const staff = await requireStaff("catalog:archive");
   const selected = targetSchema.safeParse(target);
   if (!selected.success) return { message: copy.failed };
   const { id, section, revision, restore } = selected.data;

@@ -1,5 +1,7 @@
 # LNA Website Software Requirements Specification
 
+> **Historical Baseline Notice (`W0-E01`):** This document (`LNA-SRS-001 v1.0`, `Draft for stakeholder review and sign off`, with Approval Record pending) is preserved unchanged as a historical baseline. Conflicting provisions are superseded by [`docs/SCOPE-REVISION-V1.md`](SCOPE-REVISION-V1.md) (`v1.0`), [`docs/SCOPE-REVISION-V1.1.md`](SCOPE-REVISION-V1.1.md) (`v1.1`), and the governing package at [`docs/LNA_Rev3.0/`](LNA_Rev3.0/README.md). Original `docs/source/LNA_Website_SRS.pdf` is unavailable in this repository.
+
 **Document ID:** LNA-SRS-001  
 **Version:** 1.0 (Page headers/footers note Version 2.0; see G11)  
 **Date:** 28 October 2026  

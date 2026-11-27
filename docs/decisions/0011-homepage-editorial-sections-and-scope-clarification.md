@@ -1,7 +1,7 @@
 # 0011. Homepage Editorial Presentation Sections & Scope Clarification
 
-**Status:** Accepted  
-**Date:** 5 November 2026  
+**Status:** Partially Superseded / Amended by LNA Rev3.0 (`CMS-01`–`CMS-10`, `D29`, `D45`–`D53`, `D61`)  
+**Date:** 5 November 2026 (Amended 26 November 2026)  
 **Deciders:** Refat (Owner), Engineering Agent  
 **Citations:** Supervisor Scope Addendum (Release v1.0); SRS Section 4.1, FR-PUB-002, FR-PUB-006; ADR 0004  
 
@@ -50,4 +50,10 @@ A clear architectural distinction is necessary between:
 - Enables a rich, polished editorial homepage experience while strictly honoring the approved seven-module v1 scope.
 - Enforces strict compliance with SRS FR-PUB-006 (manual-only review navigation without autoplay).
 - Preserves zero-dependency motion and WCAG 2.2 AA accessibility requirements.
+
+---
+
+## Rev3.0 Amendment Note (`W0-E01`)
+- **Retained:** Fixed 7-section homepage structure in strict order (`Hero Slider`, `Partners`, `Courses`, `Events`, `Mentors`, `Reviews`, `Footer`), zero-autoplay manual controls where applicable, Class A factual verification (`D29` — excluding unverified claims/placeholders), and no event registration/ticketing or review submission forms (`CMS-04`, `D48`).
+- **Superseded:** Section 2 (`Scope Boundary Enforcement`) prohibitions on admin management of Hero Slides, Partners, Events, Mentors, Reviews, and Footer are superseded by **Rev3.0 Module 4 (`CMS-01`–`CMS-10`, Wave 7)**: all seven sections are admin-managed without duplicating the main Courses editor (`D45`), and empty optional sections hide cleanly (`D29`).
 

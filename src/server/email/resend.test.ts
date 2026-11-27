@@ -6,24 +6,41 @@ function createOutboxAdminStub(row: Record<string, unknown> | null) {
   const updatedPayloads: Array<Record<string, unknown>> = [];
 
   const admin = {
-    from: (table: string) => {
-      expect(table).toBe("email_outbox");
-      return {
-        select: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({
-              data: row,
-              error: null,
-            }),
-          }),
-        }),
-        update: (payload: Record<string, unknown>) => {
-          updatedPayloads.push(payload);
+    rpc: async (fn: string, params: Record<string, unknown>) => {
+      if (fn === "claim_confirmation_email") {
+        if (!row) return { data: { status: "missing" }, error: null };
+        if (row.status === "sent")
           return {
-            eq: async () => ({ error: null }),
+            data: { status: "sent", provider_message_id: row.provider_message_id },
+            error: null,
           };
-        },
-      };
+        const payload = row.payload as Record<string, unknown>;
+        const receipt =
+          row.template === "enrollment_confirmed_paid"
+            ? {
+                receipt_number: `LNA-R-${String(payload.public_ref).replace(/^LNA-/, "")}`,
+                public_ref: payload.public_ref,
+                full_name: payload.full_name,
+                course_title: payload.course_title,
+                batch_name: payload.batch_name,
+                confirmed_at: "2026-11-28T03:00:00Z",
+                collected_poisha: String(payload.payable_poisha),
+                payment_method: payload.payment_method,
+                is_test: false,
+              }
+            : null;
+        return {
+          data: { status: "claimed", outbox: { ...row, dispatch_token: "claim-token" }, receipt },
+          error: null,
+        };
+      }
+      expect(fn).toBe("finish_confirmation_email");
+      updatedPayloads.push({
+        status: params.p_provider_id ? "sent" : "failed",
+        last_error: params.p_error,
+        retry_count: Number(row?.retry_count ?? 0) + (params.p_provider_id ? 0 : 1),
+      });
+      return { data: true, error: null };
     },
   } as unknown as SupabaseClient;
 
@@ -196,11 +213,51 @@ describe("Resend email outbox & templates (FR-PAY-009, NFR-AVL-01)", () => {
     });
 
     expect(res.sent).toBe(false);
-    expect(res.error).toContain("Resend temporary outage");
+    expect(res.error).toBe("EMAIL_PROVIDER_REJECTED");
     expect(updatedPayloads[0]).toMatchObject({
       status: "failed",
       retry_count: 2,
-      last_error: "Resend temporary outage",
+      last_error: "EMAIL_PROVIDER_REJECTED",
     });
+  });
+  it("attaches the stored paid receipt and supplies a stable idempotency key", async () => {
+    process.env = {
+      ...process.env,
+      NODE_ENV: "test",
+      EMAIL_DISPATCH_MODE: "live",
+      RESEND_API_KEY: "re_test_1234567890",
+    };
+    const { admin } = createOutboxAdminStub({
+      id: "paid-1",
+      status: "pending",
+      template: "enrollment_confirmed_paid",
+      recipient_email: "learner@example.com",
+      idempotency_key: "confirm:paid-1",
+      payload: {
+        public_ref: "LNA-W5A0-0001",
+        full_name: "Student",
+        course_title: "MTO",
+        batch_name: "Cohort 1",
+        venue: "Dhaka",
+        start_date: "2026-12-01",
+        payable_poisha: "750001",
+        payment_method: "cash",
+      },
+    });
+    const sender = { send: vi.fn().mockResolvedValue({ id: "accepted" }) };
+    const result = await dispatchEmailOutboxById("paid-1", {
+      adminOverride: admin,
+      senderOverride: sender,
+    });
+    expect(result.sent).toBe(true);
+    expect(sender.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: "confirm:paid-1",
+        attachments: [{ filename: "LNA-R-W5A0-0001.pdf", content: expect.any(String) }],
+      })
+    );
+    expect(
+      Buffer.from(sender.send.mock.calls[0][0].attachments[0].content, "base64").toString("ascii")
+    ).toContain("%PDF-1.4");
   });
 });

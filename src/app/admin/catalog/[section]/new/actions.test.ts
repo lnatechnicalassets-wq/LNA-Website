@@ -33,6 +33,7 @@ const courseFields = {
 };
 const batchFields = {
   course_id: courseId,
+  pricing_mode: "paid",
   batch_number: "2",
   name: "New batch",
   venue: "Dhaka",
@@ -100,6 +101,45 @@ describe("createCatalogDraft", () => {
         discount_fee_poisha: "100025",
       },
     });
+  });
+
+  it("requires explicit pricing and rejects a zero-payable paid batch", async () => {
+    for (const pricing_mode of ["", "paid"]) {
+      const result = await createCatalogDraft(
+        "batches",
+        {},
+        form({ ...batchFields, pricing_mode, fee_poisha: "0", discount_fee_poisha: "" })
+      );
+      expect(result.fieldErrors).toBeDefined();
+    }
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("accepts an explicit free batch with automatic numbering", async () => {
+    await expect(
+      createCatalogDraft(
+        "batches",
+        {},
+        form({
+          ...batchFields,
+          batch_number: "",
+          pricing_mode: "free",
+          fee_poisha: "0",
+          discount_fee_poisha: "",
+        })
+      )
+    ).rejects.toThrow("/admin/catalog/batches?created=1");
+    expect(rpc).toHaveBeenCalledWith(
+      "create_admin_catalog_draft",
+      expect.objectContaining({
+        p_values: expect.objectContaining({
+          pricing_mode: "free",
+          batch_number: null,
+          fee_poisha: "0",
+          discount_fee_poisha: null,
+        }),
+      })
+    );
   });
 
   it("reports a duplicate batch number on the form", async () => {

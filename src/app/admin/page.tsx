@@ -3,13 +3,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { AddStudentLink } from "@/components/admin/add-student-link";
+import { AdminPageHeader } from "@/components/admin/admin-patterns";
 import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { adminMessage as t, adminPaths } from "@/lib/admin-navigation";
 import { AppError } from "@/lib/errors";
 import { requireStaff } from "@/server/auth/require-staff";
 
 export default async function AdminOverviewPage() {
-  const staff = await requireStaff("enrollments:read").catch((error: unknown) => {
+  const staff = await requireStaff("overview:read").catch((error: unknown) => {
     if (!(error instanceof AppError)) throw error;
     if (error.code === "FORBIDDEN" || error.code === "ACCOUNT_INACTIVE") {
       redirect(`${adminPaths.login}?error=forbidden`);
@@ -19,18 +20,17 @@ export default async function AdminOverviewPage() {
 
   return (
     <AdminPortalShell staff={staff} currentPath={adminPaths.overview}>
-      <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold tracking-tight text-primary-900 sm:text-3xl">
-            {t("overview")}
-          </h1>
-          <AddStudentLink />
-        </header>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-4 sm:space-y-5 sm:px-6 sm:py-6 lg:px-8">
+        <AdminPageHeader
+          title={t("overview")}
+          description={t("overviewDescription")}
+          actions={<AddStudentLink />}
+        />
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
           {[
             {
               title: t("admissions"),
-              description: t("overviewDescription"),
+              description: t("admissionsWorkspaceDescription"),
               href: adminPaths.admissions,
               action: t("reviewApplications"),
             },
@@ -40,10 +40,22 @@ export default async function AdminOverviewPage() {
               href: adminPaths.courses,
               action: t("manageCourses"),
             },
+            {
+              title: t("studentDirectory"),
+              description: t("studentWorkspaceDescription"),
+              href: adminPaths.studentDirectory,
+              action: t("manageStudents"),
+            },
+            {
+              title: t("website"),
+              description: t("websiteWorkspaceDescription"),
+              href: adminPaths.mentors,
+              action: t("manageMentors"),
+            },
           ].map(({ title, description, href, action }) => (
             <section
               key={href}
-              className="space-y-4 rounded-xl border border-border-subtle bg-surface-card p-5 sm:p-6"
+              className="space-y-3 rounded-xl border border-border-subtle bg-surface-card p-4 sm:p-5"
             >
               <h2 className="text-lg font-semibold text-primary-900">{title}</h2>
               <p className="text-sm text-text-secondary">{description}</p>

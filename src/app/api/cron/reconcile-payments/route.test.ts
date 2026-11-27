@@ -113,7 +113,7 @@ describe("GET/POST /api/cron/reconcile-payments", () => {
 
     expect(res.status).toBe(200);
     expect(body.ok).toBe(true);
-    expect(mockRequireStaff).toHaveBeenCalledWith("enrollments:read");
+    expect(mockRequireStaff).toHaveBeenCalledWith("enrollments:verify-payment");
     expect(mockReconcilePendingBkashPayments).toHaveBeenCalledWith({
       publicRef: "LNA-2M4K-9P7Q",
       origin: "https://lnabd.org",

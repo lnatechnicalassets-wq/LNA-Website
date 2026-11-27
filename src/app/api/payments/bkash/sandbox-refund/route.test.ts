@@ -5,7 +5,7 @@ import { BkashRefundUnconfirmedError, BkashRequestNotSentError } from "@/server/
 
 const mocks = vi.hoisted(() => ({
   env: vi.fn(),
-  requireStaff: vi.fn(),
+  requireSuperAdmin: vi.fn(),
   verifyAuthentication: vi.fn(),
   refund: vi.fn(),
   from: vi.fn(),
@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/server/env", () => ({ parseCurrentServerEnv: mocks.env }));
-vi.mock("@/server/auth/require-staff", () => ({ requireStaff: mocks.requireStaff }));
+vi.mock("@/server/auth/require-staff", () => ({ requireSuperAdmin: mocks.requireSuperAdmin }));
 vi.mock("@/server/supabase/clients", () => ({
   createSupabaseAdminClient: () => ({ from: mocks.from }),
 }));
@@ -47,7 +47,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   mocks.updates.length = 0;
   mocks.env.mockReturnValue(sandboxEnv);
-  mocks.requireStaff.mockResolvedValue({ userId: "staff-uuid", role: "super_admin" });
+  mocks.requireSuperAdmin.mockResolvedValue({ userId: "staff-uuid", role: "super_admin" });
   mocks.refund.mockResolvedValue({ refundTrxId: "REFUND-1", amountPoisha: "750000" });
   mocks.audit.mockResolvedValue({ error: null });
 });
@@ -55,7 +55,17 @@ beforeEach(() => {
 it("blocks refunds against a production gateway before looking up payment or staff details", async () => {
   mocks.env.mockReturnValue({ ...sandboxEnv, BKASH_BASE_URL: "https://tokenized.pay.bka.sh" });
   expect((await POST(request())).status).toBe(404);
-  expect(mocks.requireStaff).not.toHaveBeenCalled();
+  expect(mocks.requireSuperAdmin).not.toHaveBeenCalled();
+  expect(mocks.refund).not.toHaveBeenCalled();
+});
+
+it("denies Admin bypass attempts on sandbox refunds (Super Admin-only pending W2A-T06)", async () => {
+  mocks.requireSuperAdmin.mockRejectedValueOnce(
+    new AppError("Super Admin access is required.", "FORBIDDEN", 403)
+  );
+  const response = await POST(request());
+  expect(response.status).toBe(403);
+  expect(mocks.requireSuperAdmin).toHaveBeenCalledWith("enrollments:verify-payment");
   expect(mocks.refund).not.toHaveBeenCalled();
 });
 
@@ -105,7 +115,7 @@ it("refunds the validated amount once and records the refund ID", async () => {
   const response = await POST(request());
   expect(response.status).toBe(200);
   await expect(response.json()).resolves.toMatchObject({ refundTrxId: "REFUND-1" });
-  expect(mocks.requireStaff).toHaveBeenCalledWith("enrollments:verify-payment");
+  expect(mocks.requireSuperAdmin).toHaveBeenCalledWith("enrollments:verify-payment");
   expect(mocks.refund).toHaveBeenCalledWith("PAY-1", "TRX-1", 750000n, "invoice-no-1");
   expect(mocks.updates).toContainEqual({
     sandbox_refund_state: "completed",

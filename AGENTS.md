@@ -2,14 +2,15 @@
 
 ## Project
 
-Rebuild of lnabd.org for Lead Nation Academy: public site, admin portal, course application & public status lookup (learner dashboard deferred to post-v1).
-Offline courses only. Paid enrollment through direct bKash payment gateway (BDT) [proposed ADR 0009; previously SSLCOMMERZ].
-Sources of truth, in order: docs/SCOPE-REVISION-V1.md, docs/SRS.md (requirement IDs), docs/architecture.md, docs/decisions/, docs/STATE.md. If a task prompt conflicts with them, STOP and ask.
+Rebuild of lnabd.org for Lead Nation Academy (LNA Rev3.0 baseline): public site, admin portal, unified course application, status/recovery lookup, and branded PDF payment receipts for actual positive collections (`PAY-13` / `C-16`; learner portal/certificates/assessments/refunds deferred or excluded).
+Offline courses only. Paid enrollment through direct bKash payment gateway (BDT) [Accepted ADR 0009; supersedes ADR 0003 SSLCOMMERZ].
+Sources of truth, in order: `docs/LNA_Rev3.0/` (`01_Implementation_Plan_Rev3.0.md`, `02_Master_Decision_Register.md` D01–D78 & C-01–C-16, `03_UI_UX_Specification.md`, `04_User_Workflows.md`, `05_Acceptance_Criteria.md`), `docs/SCOPE-REVISION-V1.1.md`, `docs/SCOPE-REVISION-V1.md` (v1.0 superseded where conflicting), `docs/SRS.md` (historical baseline), `docs/architecture.md`, `docs/decisions/`, `docs/STATE.md`. If a task prompt conflicts with them, STOP and ask.
 
 ## Fixed stack
 
-Next.js 16.x App Router, TypeScript strict, Tailwind 4, Supabase (Postgres, Auth, Storage), Zod, pnpm, Vitest, Playwright, Resend, Upstash, Sentry.
-Versions: package.json and pnpm-lock.yaml. Node: .nvmrc.
+Next.js 16.x App Router, TypeScript strict, Tailwind 4, Supabase (Postgres, Auth, Storage), Zod, pnpm (`12.16.1`), Vitest, Playwright, Resend, Upstash; Sentry and Cloudflare R2 remain optional (`INF-11`/`INF-12`; hosting evaluation pending `W0-E04`).
+Versions: `package.json` and `pnpm-lock.yaml`. Node: `.nvmrc` (`26.13.0`, subject to final hosting compatibility).
+Approved wave sequence: `W0` -> `W2A` -> `W1` -> (`W2B` / `W3` independent when prerequisites pass) -> `W4` -> `W5` -> `W6` -> `W7` -> `W8` -> `W9`.
 
 ## Rules
 
@@ -26,11 +27,11 @@ R8 Security, non-negotiable:
 - Never read a role from user_metadata. Never expose the service key, gateway credentials or any secret to client code. src/server files import "server-only".
 - Validate all input with Zod on the server. Parameterized queries or RPC only. No dangerouslySetInnerHTML.
 - Payment becomes paid only inside confirm_payment() after gateway server-to-server validation (execute + query). Never trust success, fail or cancel redirect data. Browser cancel/fail redirects NEVER release seat holds.
-- Private receipts require short-lived HMAC-SHA256 signature tokens or verified staff sessions.
+- Private receipts and recovery links require short-lived HMAC-SHA256 / scoped verified tokens or authenticated staff sessions (`PAY-13` PDF downloads via staff admission details only).
 - Never weaken or disable RLS, CSP, rate limits, Turnstile or tests to make code pass.
 - Never write real credentials anywhere. .env.example holds names only.
 R9 Database: change schema only with a new forward SQL migration in supabase/migrations. Never edit an applied migration. Every table has RLS enabled and pgTAP tests. No destructive statement without approval.
-R10 Never delete enrollment, payment, refund or audit records. Archive.
+R10 Never delete student, enrollment, payment, receipt or audit records (zero live refund functionality; no routine history purge). Archive or cancel with mandatory reason. Only dependency-free unused draft batches (`CAT-09`/`D08`) or separately owner-approved `W9` launch test cleanup may delete explicitly scoped records.
 R11 Testing & Quality Gates (Risk-Based Testing ADR 0010):
 - Level 0 (Docs & Config): Targeted file check, syntax validation, secret scan. No next build, no Vitest suite.
 - Level 1 (Isolated UI & Content): Targeted lint, tsc --noEmit, affected component test.
@@ -54,7 +55,7 @@ pnpm dev | pnpm verify (lint, typecheck, format:check, unit, build) | pnpm test 
 
 ## Where things live
 
-Scope Addendum docs/SCOPE-REVISION-V1.md | Architecture docs/architecture.md | Decisions docs/decisions/ | Security .agents/rules/10-*| Content .agents/rules/20-* | UI .agents/rules/30-*| Testing .agents/rules/40-* | Database .agents/rules/50-* | Task workflow .agents/workflows/
+Scope Addendum docs/SCOPE-REVISION-V1.1.md (v1.0: docs/SCOPE-REVISION-V1.md) | Rev3.0 Package docs/LNA_Rev3.0/ | Architecture docs/architecture.md | Decisions docs/decisions/ | Security .agents/rules/10-*| Content .agents/rules/20-* | UI .agents/rules/30-*| Testing .agents/rules/40-* | Database .agents/rules/50-* | Task workflow .agents/workflows/
 
 <!-- BEGIN:nextjs-agent-rules -->
 

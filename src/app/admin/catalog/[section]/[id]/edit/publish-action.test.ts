@@ -38,10 +38,10 @@ beforeEach(() => {
 });
 
 describe("publishCatalogDraft", () => {
-  it("requires catalog permission before accessing the database", async () => {
+  it("requires catalog:publish permission before accessing the database", async () => {
     vi.mocked(requireStaff).mockRejectedValueOnce(new Error("Unauthorized"));
     await expect(publishCatalogDraft(target, {}, new FormData())).rejects.toThrow("Unauthorized");
-    expect(requireStaff).toHaveBeenCalledWith("catalog:edit");
+    expect(requireStaff).toHaveBeenCalledWith("catalog:publish");
     expect(rpc).not.toHaveBeenCalled();
   });
 

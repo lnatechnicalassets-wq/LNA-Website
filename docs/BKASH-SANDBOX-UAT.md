@@ -1,5 +1,8 @@
 # bKash sandbox UAT
 
+> **Rev3.0 Production Safety Boundary (`PAY-09`, `TR-08`, `W2A-T06`):**  
+> Production has **zero executable refund capability** and zero refund UI/ledger. The sandbox refund endpoint (`/api/payments/bkash/sandbox-refund`) documented below is strictly isolated to non-production sandbox v2 UAT and is scheduled for explicit retirement from production reachability in `W2A-T06`. Never set `BKASH_SANDBOX_REFUNDS_ENABLED=true` in production, and never run any controlled live payment test without separate owner authorization (`PAY-12`, `C-13`, `W9-T04`).
+
 The hosted payment step is part of `/enroll`. Open a paid batch on a staging deployment and choose **Continue to bKash Checkout** on its payment step. The staging payment step is marked **Sandbox test payment**.
 
 ## Staging setup

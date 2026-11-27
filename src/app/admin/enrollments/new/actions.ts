@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { catalogRecordId } from "@/lib/admin-catalog";
 import { isDuplicateEnrollmentContact } from "@/lib/admin-admissions";
@@ -9,12 +9,22 @@ import {
   manualAdmissionCopy,
   manualAdmissionSchema,
   manualAnswerField,
-  manualPaymentSchema,
   manualStudentFields,
   type ManualAdmissionState,
 } from "@/lib/admin-manual-admission";
+import {
+  parseStaffPayment,
+  paymentDuplicateMessage,
+  referenceReuseMessage,
+  studentConflictMessage,
+} from "@/lib/staff-admission-payment";
 import { adminPaths } from "@/lib/admin-navigation";
-import { getEnrollmentConfig } from "@/lib/enrollment/config";
+import {
+  matchesQuestionVersion,
+  parseQuestionVersionField,
+  staleQuestionsMessage,
+} from "@/lib/enrollment/program-questions";
+import { loadProgramQuestionSets } from "@/server/enrollment/program-questions";
 import { AppError } from "@/lib/errors";
 import { getManualAdmissionBatch } from "@/server/admin/manual-admission";
 import { requireStaff } from "@/server/auth/require-staff";
@@ -30,6 +40,9 @@ const accepted = z.object({
   ok: z.literal(true),
   enrollment_id: catalogRecordId,
   outbox_id: catalogRecordId.nullable(),
+  student_id: catalogRecordId.nullable(),
+  public_ref: z.string(),
+  collected_poisha: z.string().regex(/^\d+$/),
 });
 const rejected = z.object({
   ok: z.literal(false),
@@ -57,7 +70,12 @@ export async function createManualAdmission(
   if (!batch.isOpen) return { message: manualAdmissionCopy.batchClosed };
   if (batch.updated_at !== selected.data.revision) return { message: manualAdmissionCopy.stale };
 
-  const questions = getEnrollmentConfig().programQuestions[batch.courses.slug] ?? [];
+  const questionConfig = await loadProgramQuestionSets([batch.courses.slug]).catch(() => null);
+  if (!questionConfig) return { message: "Application questions could not be loaded. Try again." };
+  const version = questionConfig.programQuestionVersions[batch.courses.slug] ?? 0;
+  if (!matchesQuestionVersion(version, parseQuestionVersionField(formData.get("questionVersion"))))
+    return { message: staleQuestionsMessage };
+  const questions = questionConfig.programQuestions[batch.courses.slug] ?? [];
   const fields = [
     ...manualStudentFields.map(({ name }) => name),
     ...questions.map(({ id }) => manualAnswerField(id)),
@@ -68,19 +86,10 @@ export async function createManualAdmission(
     return { message: manualAdmissionCopy.missing, fieldErrors: saved.error.flatten().fieldErrors };
   }
 
-  const payment =
-    batch.feePoisha === 0n
-      ? null
-      : manualPaymentSchema.safeParse({
-          paymentMethod: formData.get("paymentMethod"),
-          paymentReference: formData.get("paymentReference"),
-        });
-  if (payment && !payment.success) {
-    return {
-      message: manualAdmissionCopy.missing,
-      fieldErrors: payment.error.flatten().fieldErrors,
-    };
-  }
+  const parsedPayment = parseStaffPayment(formData, batch.feePoisha);
+  if (!parsedPayment.ok)
+    return { message: manualAdmissionCopy.missing, fieldErrors: parsedPayment.fieldErrors };
+  const payment = parsedPayment.payment;
 
   const answers = Object.fromEntries(
     questions.flatMap(({ id }) => {
@@ -101,14 +110,20 @@ export async function createManualAdmission(
     p_program_questions_snapshot: questions,
   };
   const admin = createSupabaseAdminClient();
-  const { data, error } = payment
-    ? await admin.rpc("record_staff_manual_enrollment", {
-        ...params,
-        p_payment_method: payment.data.paymentMethod,
-        p_payment_ref: payment.data.paymentReference,
-      })
-    : await admin.rpc("create_staff_enrollment", params);
+  const { data, error } = await admin.rpc("create_confirmed_staff_admission", {
+    ...params,
+    p_kind: payment.kind,
+    p_channel: payment.channel,
+    p_adjusted_poisha: payment.adjustedPoisha,
+    p_waiver_poisha: payment.waiverPoisha,
+    p_payment_ref: payment.reference,
+    p_waiver_reason: payment.reason,
+    p_reuse_ack: payment.reuseAck,
+    p_attested: payment.attested,
+    p_notify: payment.notify,
+  });
   if (error) {
+    if (error.message === "STALE_APPLICATION_QUESTIONS") return { message: staleQuestionsMessage };
     if (isDuplicateEnrollmentContact(error)) return { message: manualAdmissionCopy.duplicate };
     const code = /^(?:[0-9A-Z]{5}|PGRST\d{3})$/.test(error.code) ? error.code : "UNKNOWN";
     console.error("[admin:manual-admission] save failed", { code });
@@ -125,6 +140,15 @@ export async function createManualAdmission(
     switch (result.data.code) {
       case "DUPLICATE_ENROLLMENT":
         return { message: manualAdmissionCopy.duplicate, existingId: result.data.existing_id };
+      case "DUPLICATE_PAYMENT_REFERENCE":
+        return { message: paymentDuplicateMessage };
+      case "REFERENCE_ACK_REQUIRED":
+        return { message: referenceReuseMessage, referenceAckRequired: true };
+      case "STUDENT_CONTACT_CONFLICT":
+        return { message: studentConflictMessage };
+      case "INVALID_PAYMENT":
+      case "INVALID_ADMISSION":
+        return { message: manualAdmissionCopy.missing };
       case "BATCH_FULL":
         return { message: manualAdmissionCopy.full };
       case "BATCH_CLOSED":
@@ -138,9 +162,28 @@ export async function createManualAdmission(
     }
   }
 
+  let email: "accepted" | "queued" | "not_requested" = "not_requested";
   if (result.data.outbox_id) {
-    await dispatchEmailOutboxById(result.data.outbox_id).catch(() => null);
+    const outboxId = result.data.outbox_id;
+    if (process.env.NODE_ENV === "test") {
+      const dispatched = await dispatchEmailOutboxById(outboxId).catch(() => null);
+      email = dispatched?.sent && dispatched.mode === "live" ? "accepted" : "queued";
+    } else {
+      after(async () => {
+        await dispatchEmailOutboxById(outboxId).catch(() => null);
+      });
+      email = "queued";
+    }
   }
   revalidatePath(adminPaths.admissions);
-  redirect(`${adminPaths.admissions}/${result.data.enrollment_id}`);
+  revalidatePath(adminPaths.studentDirectory);
+  return {
+    success: {
+      enrollmentId: result.data.enrollment_id,
+      studentId: result.data.student_id,
+      reference: result.data.public_ref,
+      collectedPoisha: result.data.collected_poisha,
+      email,
+    },
+  };
 }

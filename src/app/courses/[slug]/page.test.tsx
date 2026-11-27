@@ -124,6 +124,21 @@ describe("CourseDetailPage", () => {
     expect(screen.queryByRole("link", { name: /Enroll in MTO Readiness Program/i })).toBeNull();
   });
 
+  it("offers only eligible live free batches when paid checkout is closed", async () => {
+    vi.spyOn(catalogService, "getPublicCatalogFromSupabase").mockResolvedValue({
+      courses: [mtoCourseFixture],
+      batches: [
+        makeBatch(),
+        makeBatch({ id: "free-batch", name: "Free batch", batchNumber: 2, feePoisha: 0 }),
+      ],
+    });
+    render(await CourseDetailPage({ params: Promise.resolve({ slug: "mto-readiness" }) }));
+    expect(screen.getByTestId("course-payable-fee").textContent).toBe("Free");
+    for (const link of screen.getAllByRole("link", { name: /Enroll in MTO Readiness Program/i })) {
+      expect(link.getAttribute("href")).toBe("/enroll?course=mto-readiness&batch=free-batch");
+    }
+  });
+
   it("matches server discounted fee in integer poisha and shows Enroll links only when checkout and batch are open", async () => {
     vi.spyOn(runtimeConfig, "getEnrollmentRuntimeConfig").mockReturnValue({
       checkoutMode: "mock",
@@ -158,6 +173,40 @@ describe("CourseDetailPage", () => {
         "/enroll?course=mto-readiness&batch=batch-mto-2026-01"
       );
     });
+  });
+
+  it("requires a batch choice when multiple eligible batches are available", async () => {
+    vi.spyOn(runtimeConfig, "getEnrollmentRuntimeConfig").mockReturnValue({
+      checkoutMode: "mock",
+      submissionEnabled: true,
+      statusLookupEnabled: true,
+      emailDispatchMode: "disabled",
+      bankTransferEnabled: false,
+    });
+    vi.spyOn(catalogService, "getPublicCatalogFromSupabase").mockResolvedValue({
+      courses: [mtoCourseFixture],
+      batches: [
+        makeBatch(),
+        makeBatch({ id: "second-batch", name: "Second batch", batchNumber: 2, feePoisha: 0 }),
+        makeBatch({ id: "full-batch", name: "Full batch", capacity: 1, enrolledCount: 1 }),
+      ],
+    });
+    render(await CourseDetailPage({ params: Promise.resolve({ slug: "mto-readiness" }) }));
+    const section = screen.getByRole("region", { name: "Available batches" });
+    expect(
+      within(section)
+        .getByRole("link", { name: "Select MTO Readiness Cohort 1" })
+        .getAttribute("href")
+    ).toBe("/enroll?course=mto-readiness&batch=batch-mto-2026-01");
+    expect(
+      within(section).getByRole("link", { name: "Select Second batch" }).getAttribute("href")
+    ).toBe("/enroll?course=mto-readiness&batch=second-batch");
+    expect(within(section).queryByText("Full batch")).toBeNull();
+    expect(screen.getByTestId("course-payable-fee").textContent).toBe("Free to BDT 7,500");
+    for (const link of screen.getAllByRole("link", { name: "Choose a batch" })) {
+      expect(link.getAttribute("href")).toBe("#available-batches");
+    }
+    expect(screen.queryByRole("link", { name: /Enroll in MTO Readiness Program/i })).toBeNull();
   });
 
   it("disables Enroll CTA when live batch is full or upcoming even if checkout is enabled", async () => {

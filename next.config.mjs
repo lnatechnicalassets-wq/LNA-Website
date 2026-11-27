@@ -64,6 +64,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
+    formats: ["image/webp"],
     qualities: [75, 90],
   },
   experimental: {

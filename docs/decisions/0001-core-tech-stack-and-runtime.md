@@ -20,3 +20,10 @@ We adopt the fixed core stack defined in Blueprint Part 3:
 - **Positive:** Unified TypeScript codebase from UI to database RPCs; high-speed edge caching for public traffic; strong static analysis preventing runtime defects.
 - **Negative / Constraints:** Next.js 16 cache and revalidation APIs must be isolated behind dedicated service abstractions (`src/lib/cache/revalidate.ts`) to manage version shifts; Tailwind 4 removes `tailwind.config.js`, requiring CSS-only token imports.
 
+---
+
+## Rev3.0 Reconciliation Note (`W0-E01`)
+- **Runtime Baseline:** `.nvmrc` (`26.13.0`) and `package.json` `engines.node` (`>=26.0.0`, `pnpm 12.16.1` verified in owner PowerShell) supersede the historical `Node.js 24 LTS` reference above, subject to final hosting compatibility (`W0-E02` / `W0-E04`). Resolve local agent PATH mismatch (`v24.15.0` on alternate PATH) before implementation.
+- **Hosting Boundary (`INF-05` / `C-09`):** Commercial hosting compliance is mandatory, **but Vercel Pro is not approved**. Existing ExonHost hosting compatibility must be evaluated before any paid hosting plan is selected (`W0-E04`).
+- **Optional Services:** `Sentry` (`NFR-OBS-01`) and `Cloudflare R2` (`INF-11`) are optional, not mandatory baseline dependencies.
+

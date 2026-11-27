@@ -4,6 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { manualAdmissionCopy as copy } from "@/lib/admin-manual-admission";
 import { AppError } from "@/lib/errors";
+import { getEnrollmentConfig } from "@/lib/enrollment/config";
+import { loadProgramQuestionSets } from "@/server/enrollment/program-questions";
 import { getManualAdmissionBatch } from "@/server/admin/manual-admission";
 import { requireStaff } from "@/server/auth/require-staff";
 import { dispatchEmailOutboxById } from "@/server/email/resend";
@@ -17,6 +19,7 @@ vi.mock("next/navigation", () => ({
   },
 }));
 vi.mock("@/server/admin/manual-admission", () => ({ getManualAdmissionBatch: vi.fn() }));
+vi.mock("@/server/enrollment/program-questions", () => ({ loadProgramQuestionSets: vi.fn() }));
 vi.mock("@/server/auth/require-staff", () => ({ requireStaff: vi.fn() }));
 vi.mock("@/server/email/resend", () => ({ dispatchEmailOutboxById: vi.fn() }));
 vi.mock("@/server/supabase/clients", () => ({ createSupabaseAdminClient: vi.fn() }));
@@ -56,7 +59,9 @@ function application(revision = target.revision) {
   form.set("batchId", target.id);
   form.set("batchRevision", revision);
   form.set("paymentMethod", "bkash");
-  form.set("paymentReference", " transaction-fixture-001 ");
+  form.set("paymentReference", " TXFIXTURE001 ");
+  form.set("adjustedFee", "7500.00");
+  form.set("attested", "on");
   form.set("fullName", "  Fixture Student ");
   form.set("email", " Student@Example.Invalid ");
   form.set("phone", "+880 1711 000001");
@@ -77,6 +82,10 @@ beforeEach(() => {
     aal: "aal2",
   });
   vi.mocked(getManualAdmissionBatch).mockResolvedValue(batch);
+  vi.mocked(loadProgramQuestionSets).mockResolvedValue({
+    programQuestions: getEnrollmentConfig().programQuestions,
+    programQuestionVersions: { "mto-readiness": 0 },
+  });
   vi.mocked(createSupabaseAdminClient).mockReturnValue({ rpc } as unknown as SupabaseClient);
   vi.mocked(dispatchEmailOutboxById).mockResolvedValue({ sent: false, mode: "disabled" });
 });
@@ -89,6 +98,19 @@ describe("Staff manual enrollment", () => {
     });
     expect(requireStaff).toHaveBeenCalledWith("enrollments:create");
     expect(getManualAdmissionBatch).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects outdated question versions before writing admission", async () => {
+    vi.mocked(loadProgramQuestionSets).mockResolvedValue({
+      programQuestions: getEnrollmentConfig().programQuestions,
+      programQuestionVersions: { "mto-readiness": 2 },
+    });
+    const form = application();
+    form.set("questionVersion", "1");
+    await expect(createManualAdmission({}, form)).resolves.toMatchObject({
+      message: expect.stringContaining("questions have changed"),
+    });
     expect(rpc).not.toHaveBeenCalled();
   });
 
@@ -110,7 +132,14 @@ describe("Staff manual enrollment", () => {
 
   it("saves normalized fields without accepting payment state or fees from the form", async () => {
     rpc.mockResolvedValue({
-      data: { ok: true, enrollment_id: enrollmentId, outbox_id: null },
+      data: {
+        ok: true,
+        enrollment_id: enrollmentId,
+        student_id: null,
+        public_ref: "LNA-TEST-0001",
+        collected_poisha: "750000",
+        outbox_id: null,
+      },
       error: null,
     });
     const form = application();
@@ -118,10 +147,10 @@ describe("Staff manual enrollment", () => {
     form.set("payable_poisha", "0");
     form.set("actor_id", enrollmentId);
 
-    await expect(createManualAdmission({}, form)).rejects.toThrow(
-      `/admin/enrollments/${enrollmentId}`
-    );
-    expect(rpc).toHaveBeenCalledWith("record_staff_manual_enrollment", {
+    await expect(createManualAdmission({}, form)).resolves.toMatchObject({
+      success: { enrollmentId },
+    });
+    expect(rpc).toHaveBeenCalledWith("create_confirmed_staff_admission", {
       p_actor_id: actor,
       p_batch_id: target.id,
       p_expected_updated_at: target.revision,
@@ -129,8 +158,15 @@ describe("Staff manual enrollment", () => {
       p_full_name: "Fixture Student",
       p_email: "student@example.invalid",
       p_phone: "01711000001",
-      p_payment_method: "bkash",
-      p_payment_ref: "TRANSACTION-FIXTURE-001",
+      p_kind: "bkash",
+      p_channel: "bkash",
+      p_payment_ref: "TXFIXTURE001",
+      p_adjusted_poisha: "750000",
+      p_waiver_poisha: "0",
+      p_waiver_reason: null,
+      p_reuse_ack: false,
+      p_attested: true,
+      p_notify: false,
       p_answers: {
         university: "Fixture University",
         department: "Business",
@@ -163,18 +199,30 @@ describe("Staff manual enrollment", () => {
   it("reuses the existing confirmation sender when the database queues a free confirmation", async () => {
     vi.mocked(getManualAdmissionBatch).mockResolvedValue({ ...batch, feePoisha: 0n });
     rpc.mockResolvedValue({
-      data: { ok: true, enrollment_id: enrollmentId, outbox_id: outboxId },
+      data: {
+        ok: true,
+        enrollment_id: enrollmentId,
+        student_id: null,
+        public_ref: "LNA-TEST-0001",
+        collected_poisha: "0",
+        outbox_id: outboxId,
+      },
       error: null,
     });
     vi.mocked(dispatchEmailOutboxById).mockRejectedValueOnce(
       new Error("Outbox transport unavailable")
     );
-    await expect(createManualAdmission({}, application())).rejects.toThrow(
-      `/admin/enrollments/${enrollmentId}`
-    );
+    await expect(createManualAdmission({}, application())).resolves.toMatchObject({
+      success: { enrollmentId, email: "queued" },
+    });
     expect(rpc).toHaveBeenCalledWith(
-      "create_staff_enrollment",
-      expect.not.objectContaining({ p_payment_ref: expect.anything() })
+      "create_confirmed_staff_admission",
+      expect.objectContaining({
+        p_kind: "free",
+        p_payment_ref: null,
+        p_adjusted_poisha: "0",
+        p_waiver_poisha: "0",
+      })
     );
     expect(dispatchEmailOutboxById).toHaveBeenCalledWith(outboxId);
   });
@@ -184,21 +232,29 @@ describe("Staff manual enrollment", () => {
     form.set("paymentMethod", "bank_transfer");
     form.set("paymentReference", "");
     await expect(createManualAdmission({}, form)).resolves.toMatchObject({
-      fieldErrors: { paymentReference: [copy.invalidReference] },
+      fieldErrors: { paymentReference: ["Enter a reference (1 to 128 characters)."] },
     });
     expect(rpc).not.toHaveBeenCalled();
     form.set("paymentReference", " bank/001 ");
     rpc.mockResolvedValue({
-      data: { ok: true, enrollment_id: enrollmentId, outbox_id: null },
+      data: {
+        ok: true,
+        enrollment_id: enrollmentId,
+        student_id: null,
+        public_ref: "LNA-TEST-0001",
+        collected_poisha: "750000",
+        outbox_id: null,
+      },
       error: null,
     });
-    await expect(createManualAdmission({}, form)).rejects.toThrow(
-      `/admin/enrollments/${enrollmentId}`
-    );
+    await expect(createManualAdmission({}, form)).resolves.toMatchObject({
+      success: { enrollmentId },
+    });
     expect(rpc).toHaveBeenCalledWith(
-      "record_staff_manual_enrollment",
+      "create_confirmed_staff_admission",
       expect.objectContaining({
-        p_payment_method: "bank_transfer",
+        p_kind: "bank_transfer",
+        p_channel: "bank_transfer",
         p_payment_ref: "BANK/001",
       })
     );

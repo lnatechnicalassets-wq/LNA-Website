@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getEnrollmentConfig } from "@/lib/enrollment/config";
+import { matchesQuestionVersion, staleQuestionsMessage } from "@/lib/enrollment/program-questions";
+import { loadProgramQuestionSets } from "@/server/enrollment/program-questions";
 import { normalizeEmail } from "@/lib/enrollment/status";
 import { AppError } from "@/lib/errors";
 import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
@@ -22,20 +23,6 @@ export async function POST(request: NextRequest) {
   }
 
   const runtime = getEnrollmentRuntimeConfig();
-  if (
-    !runtime.submissionEnabled ||
-    (runtime.checkoutMode === "closed" && !runtime.manualPaymentEnabled)
-  ) {
-    return NextResponse.json(
-      {
-        ok: false,
-        code: "CHECKOUT_CLOSED",
-        message: "Online enrollment is currently closed.",
-      },
-      { status: 503, headers: noStoreHeaders }
-    );
-  }
-
   const hashedIp = extractHashedClientIp(request.headers);
   const ipLimit = await consumeRateLimit("enroll_ip", hashedIp, {
     maxRequests: 15,
@@ -65,6 +52,47 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const expectedPayablePoisha = body.expectedPayablePoisha;
+  const freeRequested = expectedPayablePoisha === 0;
+  if (
+    !freeRequested &&
+    (!runtime.submissionEnabled ||
+      (runtime.checkoutMode === "closed" && !runtime.manualPaymentEnabled))
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "CHECKOUT_CLOSED",
+        message: "Paid online enrollment is currently closed.",
+      },
+      { status: 503, headers: noStoreHeaders }
+    );
+  }
+  if (
+    typeof expectedPayablePoisha !== "number" ||
+    !Number.isSafeInteger(expectedPayablePoisha) ||
+    expectedPayablePoisha < 0
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "FEE_CONFIRMATION_REQUIRED",
+        message: "Review the current fee before applying.",
+      },
+      { status: 400, headers: noStoreHeaders }
+    );
+  }
+  if (body.policyAccepted !== true) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "POLICY_ACCEPTANCE_REQUIRED",
+        message: "Accept the enrollment terms and privacy policy before applying.",
+      },
+      { status: 400, headers: noStoreHeaders }
+    );
+  }
+
   const rawEmail = typeof body.email === "string" ? normalizeEmail(body.email) : "";
   const rawCourseId = typeof body.courseId === "string" ? body.courseId.trim() : "";
   if (rawEmail) {
@@ -84,18 +112,28 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const config = getEnrollmentConfig();
-  const programQuestionsSnapshot = Object.hasOwn(config.programQuestions, rawCourseId)
-    ? config.programQuestions[rawCourseId]
-    : [];
-
   try {
-    const result = runtime.manualPaymentEnabled
-      ? await submitManualBkashEnrollment(body, { programQuestionsSnapshot })
-      : await startEnrollmentCheckout(body, {
-          origin: resolveSafeAppOrigin(request),
-          programQuestionsSnapshot,
-        });
+    const config = await loadProgramQuestionSets([rawCourseId]);
+    const programQuestionsSnapshot = Object.hasOwn(config.programQuestions, rawCourseId)
+      ? config.programQuestions[rawCourseId]
+      : [];
+    const version = Object.hasOwn(config.programQuestionVersions, rawCourseId)
+      ? config.programQuestionVersions[rawCourseId]
+      : 0;
+    if (!matchesQuestionVersion(version, body.questionVersion)) {
+      throw new AppError(staleQuestionsMessage, "STALE_APPLICATION_QUESTIONS", 409);
+    }
+    const result =
+      freeRequested || runtime.manualPaymentEnabled
+        ? await submitManualBkashEnrollment(body, {
+            programQuestionsSnapshot,
+            expectedPayablePoisha,
+          })
+        : await startEnrollmentCheckout(body, {
+            origin: resolveSafeAppOrigin(request),
+            programQuestionsSnapshot,
+            expectedPayablePoisha,
+          });
 
     return NextResponse.json({ ok: true, ...result }, { status: 200, headers: noStoreHeaders });
   } catch (err) {

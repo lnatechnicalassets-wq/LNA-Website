@@ -21,7 +21,7 @@ describe("catalog form validation on blur", () => {
       const untouched = screen.getByLabelText("Venue", { exact: true });
       expect(field.closest("form")?.noValidate).toBe(true);
       expect(field.hasAttribute("required")).toBe(false);
-      expect(field.getAttribute("aria-required")).toBe("true");
+      expect(field.getAttribute("aria-required")).toBe(label === "Batch number" ? "false" : "true");
       fireEvent.focus(field);
       fireEvent.change(field, { target: { value: invalid } });
       expect(field.getAttribute("aria-invalid")).toBe("false");

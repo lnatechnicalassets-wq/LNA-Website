@@ -6,8 +6,7 @@ import type { Mentor } from "@/lib/content";
 import { MentorDisplayCard } from "./mentor-display-card";
 import { useMentorQuickView } from "./mentor-quick-view-context";
 
-const CARD_TRANSITION_MS = 750;
-const DEFAULT_AUTOPLAY_INTERVAL_MS = 2000;
+const DEFAULT_AUTOPLAY_INTERVAL_MS = 5000;
 
 export interface MentorCarouselProps {
   mentors: Mentor[];
@@ -42,10 +41,8 @@ export function MentorCarousel({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
-  const lastNavTimeRef = useRef<number>(0);
   const lastManualClickRef = useRef<number>(0);
   const autoplayTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasRevealedRef = useRef(false);
   const revealTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -57,7 +54,6 @@ export function MentorCarousel({
   // Reset activeIndex whenever mentors list changes (filtering/search/sort)
   useEffect(() => {
     setActiveIndex(defaultIndex);
-    lastNavTimeRef.current = Date.now() - CARD_TRANSITION_MS;
   }, [defaultIndex, mentors]);
 
   // Sync active mentor to quick view context
@@ -92,7 +88,6 @@ export function MentorCarousel({
       setIsInViewport(true);
       setRevealState("settled");
       hasRevealedRef.current = true;
-      lastNavTimeRef.current = Date.now() - CARD_TRANSITION_MS;
       return;
     }
 
@@ -106,12 +101,10 @@ export function MentorCarousel({
           hasRevealedRef.current = true;
           if (prefersReducedMotion) {
             setRevealState("settled");
-            lastNavTimeRef.current = Date.now() - CARD_TRANSITION_MS;
           } else {
             setRevealState("revealing");
             revealTimerRef.current = setTimeout(() => {
               setRevealState("settled");
-              lastNavTimeRef.current = Date.now() - CARD_TRANSITION_MS;
             }, 1300);
           }
         }
@@ -130,7 +123,6 @@ export function MentorCarousel({
   const goToNext = useCallback(
     (_isManual = false) => {
       if (total <= 1) return;
-      lastNavTimeRef.current = Date.now();
       setActiveIndex((prev) => (prev + 1) % total);
     },
     [total]
@@ -139,7 +131,6 @@ export function MentorCarousel({
   const goToPrev = useCallback(
     (_isManual = false) => {
       if (total <= 1) return;
-      lastNavTimeRef.current = Date.now();
       setActiveIndex((prev) => (prev - 1 + total) % total);
     },
     [total]
@@ -148,7 +139,6 @@ export function MentorCarousel({
   const goToIndex = useCallback(
     (index: number, _isManual = false) => {
       if (total <= 1 || index === activeIndex || index < 0 || index >= total) return;
-      lastNavTimeRef.current = Date.now();
       setActiveIndex(index);
     },
     [activeIndex, total]
@@ -198,31 +188,19 @@ export function MentorCarousel({
       clearTimeout(autoplayTimerRef.current);
       autoplayTimerRef.current = null;
     }
-    if (transitionTimerRef.current) {
-      clearTimeout(transitionTimerRef.current);
-      transitionTimerRef.current = null;
-    }
   }, []);
 
-  // Schedule autoplay: 750ms transition + 1250ms post-transition hold = 2000ms total cycle
+  // Schedule autoplay with a readable hold between fixed-slot changes.
   const scheduleAutoplay = useCallback(() => {
     clearAutoplayTimers();
 
     if (!isAutoplayEligible) return;
 
-    // Wait for any active 750ms slide transition to settle, then hold for the remaining cycle time
-    const elapsed = Date.now() - lastNavTimeRef.current;
-    const remainingTransition = Math.max(0, CARD_TRANSITION_MS - elapsed);
-    const postTransitionHoldMs = Math.max(0, autoplayIntervalMs - CARD_TRANSITION_MS);
-
-    transitionTimerRef.current = setTimeout(() => {
-      if (!isAutoplayEligible) return;
-
-      autoplayTimerRef.current = setTimeout(() => {
-        if (!isAutoplayEligible) return;
-        goToNext(false);
-      }, postTransitionHoldMs);
-    }, remainingTransition);
+    // A fresh full interval follows initial reveal, manual navigation, or resume.
+    autoplayTimerRef.current = setTimeout(() => {
+      autoplayTimerRef.current = null;
+      if (isAutoplayEligible) goToNext(false);
+    }, autoplayIntervalMs);
   }, [clearAutoplayTimers, isAutoplayEligible, autoplayIntervalMs, goToNext]);
 
   // Synchronize autoplay scheduling
@@ -316,9 +294,6 @@ export function MentorCarousel({
     );
   }
 
-  const isInitial = revealState === "initial";
-  const isRevealing = revealState === "revealing";
-
   return (
     <div
       ref={containerRef}
@@ -352,8 +327,8 @@ export function MentorCarousel({
       </div>
       {/* 1. Symmetrical 5-Card Layered 3D Carousel Deck */}
       <div
-        style={{ perspective: 1400 }}
-        className="relative h-[420px] sm:h-[440px] xl:h-[460px] w-full flex items-center justify-center overflow-visible"
+        style={{ isolation: "isolate", containerType: "inline-size" }}
+        className="relative h-[420px] sm:h-[440px] xl:h-[460px] w-full flex items-center justify-center overflow-hidden"
       >
         {mentors.map((mentor, index) => {
           const slot = getSlot(index);
@@ -364,102 +339,23 @@ export function MentorCarousel({
           const isSlot2 = slot === 2;
           const isVisible = isSlotMinus2 || isSlotMinus1 || isActive || isSlot1 || isSlot2;
 
-          // 3D Transform & Stacking Properties
-          // 100% OPAQUE - ZERO TRANSPARENCY DEFECT
-          let transformStyle = "translateX(0px) translateZ(-200px) scale(0.7) rotateY(0deg)";
-          let zIndex = 0;
-          let shadowClass = "";
-          let filterStyle = "brightness(1)";
-          let visibilityClass = "opacity-0 pointer-events-none";
-
-          if (isInitial) {
-            // Calm, tightly gathered stack before section scrolls into view
-            if (isActive) {
-              transformStyle =
-                "translateX(0px) translateY(22px) translateZ(-10px) scale(0.96) rotateY(0deg)";
-              zIndex = 30;
-              shadowClass = "shadow-xl shadow-teal-950/50 ring-1 ring-white/50";
-              filterStyle = "brightness(0.96)";
-              visibilityClass = "opacity-90";
-            } else if (isSlotMinus1) {
-              transformStyle =
-                "translateX(-20px) translateY(26px) translateZ(-40px) scale(0.92) rotateY(2deg)";
-              zIndex = 20;
-              shadowClass = "shadow-lg shadow-teal-950/40";
-              filterStyle = "brightness(0.92)";
-              visibilityClass = "opacity-60 hidden sm:block";
-            } else if (isSlot1) {
-              transformStyle =
-                "translateX(20px) translateY(26px) translateZ(-40px) scale(0.92) rotateY(-2deg)";
-              zIndex = 20;
-              shadowClass = "shadow-lg shadow-teal-950/40";
-              filterStyle = "brightness(0.92)";
-              visibilityClass = "opacity-60 hidden sm:block";
-            } else if (isSlotMinus2) {
-              transformStyle =
-                "translateX(-36px) translateY(30px) translateZ(-80px) scale(0.86) rotateY(4deg)";
-              zIndex = 10;
-              shadowClass = "shadow-md shadow-teal-950/30";
-              filterStyle = "brightness(0.88)";
-              visibilityClass = "opacity-0 hidden xl:block";
-            } else if (isSlot2) {
-              transformStyle =
-                "translateX(36px) translateY(30px) translateZ(-80px) scale(0.86) rotateY(-4deg)";
-              zIndex = 10;
-              shadowClass = "shadow-md shadow-teal-950/30";
-              filterStyle = "brightness(0.88)";
-              visibilityClass = "opacity-0 hidden xl:block";
-            }
-          } else {
-            // Fanned-out 5-Card Deck (settled or revealing)
-            if (isActive) {
-              transformStyle =
-                "translateX(0px) translateY(0px) translateZ(30px) rotateY(0deg) scale(1.04)";
-              zIndex = 30;
-              shadowClass = "shadow-2xl shadow-teal-950/70 ring-1 ring-white/60";
-              filterStyle = "brightness(1)";
-              visibilityClass = "opacity-100";
-            } else if (isSlotMinus1) {
-              // Left adjacent: 75-80% horizontal visibility, subtle inward rotateY
-              transformStyle =
-                "translateX(-180px) translateY(0px) translateZ(-40px) rotateY(7deg) scale(0.95)";
-              zIndex = 20;
-              shadowClass = "shadow-xl shadow-teal-950/45";
-              filterStyle = "brightness(0.98)";
-              visibilityClass = "opacity-100 hidden sm:block";
-            } else if (isSlot1) {
-              // Right adjacent: 75-80% horizontal visibility, subtle inward rotateY
-              transformStyle =
-                "translateX(180px) translateY(0px) translateZ(-40px) rotateY(-7deg) scale(0.95)";
-              zIndex = 20;
-              shadowClass = "shadow-xl shadow-teal-950/45";
-              filterStyle = "brightness(0.98)";
-              visibilityClass = "opacity-100 hidden sm:block";
-            } else if (isSlotMinus2) {
-              // Far left: visible on wide desktop
-              transformStyle =
-                "translateX(-335px) translateY(0px) translateZ(-95px) rotateY(12deg) scale(0.88)";
-              zIndex = 10;
-              shadowClass = "shadow-lg shadow-teal-950/30";
-              filterStyle = "brightness(0.94)";
-              visibilityClass = "opacity-100 hidden xl:block";
-            } else if (isSlot2) {
-              // Far right: visible on wide desktop
-              transformStyle =
-                "translateX(335px) translateY(0px) translateZ(-95px) rotateY(-12deg) scale(0.88)";
-              zIndex = 10;
-              shadowClass = "shadow-lg shadow-teal-950/30";
-              filterStyle = "brightness(0.94)";
-              visibilityClass = "opacity-100 hidden xl:block";
-            }
-          }
-
-          // Transition timing: 1.3s smooth fanning during reveal, 750ms standard navigation when settled
-          const transitionStyle = isInitial
-            ? "none"
-            : isRevealing
-              ? "transform 1300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 1300ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 1300ms ease, filter 1300ms ease"
-              : "transform 750ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 750ms ease, filter 750ms ease";
+          // Keep a fixed two-dimensional stacking context. 3D perspective can override
+          // z-index while cards cross, which obscures the active mentor.
+          const distance = Math.abs(slot);
+          const transformStyle = isActive
+            ? "translateX(0) scale(1)"
+            : distance === 1
+              ? `translateX(calc(${slot < 0 ? -1 : 1} * min(21cqw, 180px))) scale(0.94)`
+              : `translateX(calc(${slot < 0 ? -1 : 1} * min(37cqw, 335px))) scale(0.86)`;
+          const zIndex = isActive ? 50 : distance === 1 ? 20 : distance === 2 ? 10 : 0;
+          const visibilityClass = isActive
+            ? "opacity-100"
+            : distance === 1
+              ? "hidden sm:block opacity-100"
+              : distance === 2
+                ? "hidden xl:block opacity-100"
+                : "hidden";
+          const shadowClass = isActive ? "shadow-xl ring-1 ring-white/60" : "shadow-lg";
 
           return (
             <div
@@ -484,16 +380,14 @@ export function MentorCarousel({
               style={{
                 transform: transformStyle,
                 zIndex,
-                filter: filterStyle,
-                transition: transitionStyle,
               }}
-              className={`absolute top-2 w-[230px] sm:w-[248px] xl:w-[260px] h-[400px] sm:h-[420px] xl:h-[440px] rounded-3xl overflow-hidden cursor-pointer bg-[#FAF9F6] border border-white/70 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] will-change-transform ${visibilityClass} ${shadowClass}`}
+              className={`absolute top-2 w-[230px] sm:w-[248px] xl:w-[260px] h-[400px] sm:h-[420px] xl:h-[440px] rounded-3xl overflow-hidden cursor-pointer bg-[#FAF9F6] border border-white/70 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] ${visibilityClass} ${shadowClass}`}
             >
               <MentorDisplayCard
                 mentor={mentor}
                 index={index}
                 active={isActive}
-                priority={isActive || isSlotMinus1 || isSlot1}
+                priority={false}
                 onInfo={isVisible ? () => openQuickView(mentor) : undefined}
                 onControlHover={setIsHoveringControl}
               />
@@ -503,14 +397,7 @@ export function MentorCarousel({
       </div>
 
       {/* 2. Controls & Position Counter (Clean, Minimal, No Pause Button) */}
-      <div
-        style={{
-          opacity: isInitial ? 0 : 1,
-          transform: isInitial ? "translateY(12px)" : "translateY(0px)",
-          transition: "opacity 800ms ease, transform 800ms ease",
-        }}
-        className="flex items-center justify-center gap-3 sm:gap-4 mt-6"
-      >
+      <div className="flex items-center justify-center gap-3 sm:gap-4 mt-6">
         {/* Previous Button */}
         <button
           type="button"

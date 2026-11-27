@@ -1,0 +1,799 @@
+name: Isolated Database Tests
+
+on:
+  push:
+    branches:
+      - task/w0-gap-closing
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isolated-postgres-pgtap:
+    name: PostgreSQL 17 Migrations & pgTAP
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # Safe empty placeholders solely for supabase/config.toml env() parsing; zero real secrets or hosted targets.
+      OPENAI_API_KEY: ""
+      SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN: ""
+      SUPABASE_AUTH_EXTERNAL_APPLE_SECRET: ""
+      S3_HOST: ""
+      S3_REGION: ""
+      S3_ACCESS_KEY: ""
+      S3_SECRET_KEY: ""
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Verify production isolation safeguards
+        run: |
+          set -euo pipefail
+          for forbidden_var in DATABASE_URL SUPABASE_DB_PASSWORD SUPABASE_SECRET_KEY SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_ID; do
+            if [ -n "${!forbidden_var:-}" ]; then
+              echo "::error::Forbidden hosted credential/variable $forbidden_var is set in CI environment."
+              exit 1
+            fi
+          done
+          if [ -d "supabase/.temp" ]; then
+            echo "::error::Unexpected supabase/.temp directory detected; refusing to risk hosted link."
+            exit 1
+          fi
+
+      - name: Setup pinned Supabase CLI (v2.stable)
+        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: "2.122.1"
+
+      - name: Start isolated local Supabase stack (PostgreSQL 17)
+        run: |
+          set -euo pipefail
+          supabase --version
+          supabase start --exclude studio,imgproxy,edge-runtime,logflare,vector,analytics
+
+      - name: Replay all 29 migrations cleanly and verify PostgreSQL 17 + extensions
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          supabase db reset --local
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;"
+
+          PG_MAJOR="$(psql "$LOCAL_DB_URL" -Atqc "SHOW server_version_num;")"
+          echo "PostgreSQL server_version_num=$PG_MAJOR"
+          if [ "$PG_MAJOR" -lt 170000 ] || [ "$PG_MAJOR" -ge 180000 ]; then
+            echo "::error::Expected PostgreSQL 17.x, got server_version_num=$PG_MAJOR"
+            exit 1
+          fi
+
+          EXT_COUNT="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace WHERE n.nspname = 'extensions' AND e.extname IN ('pgcrypto', 'citext', 'pgtap');")"
+          if [ "$EXT_COUNT" -ne 3 ]; then
+            echo "::error::Missing required extensions in schema 'extensions' (expected 3, got $EXT_COUNT)"
+            exit 1
+          fi
+
+          MIGRATION_FILES="$(ls -1 supabase/migrations/*.sql | wc -l | tr -d ' ')"
+          APPLIED_MIGRATIONS="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Migration files=$MIGRATION_FILES, applied=$APPLIED_MIGRATIONS"
+          if [ "$MIGRATION_FILES" -ne 29 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
+            echo "::error::Migration replay count mismatch."
+            exit 1
+          fi
+
+      - name: Run all 29 pgTAP suites
+        run: |
+          set -euo pipefail
+          TEST_COUNT="$(ls -1 supabase/tests/*.sql | wc -l | tr -d ' ')"
+          if [ "$TEST_COUNT" -ne 29 ]; then
+            echo "::error::Expected 29 pgTAP test files, found $TEST_COUNT"
+            exit 1
+          fi
+          supabase test db --local
+
+      - name: Setup Node.js and install dependencies for isolated Supabase Auth integration tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Install workspace packages with pinned pnpm
+        run: |
+          set -euo pipefail
+          npm install -g pnpm@12.16.1
+          pnpm install --frozen-lockfile
+
+      - name: Verify incremental upgrades (17 -> 18 token cache and 18 -> 19 W2A-T02 auth/audit)
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          M18_PATH: supabase/migrations/20261123110000_bkash_supabase_token_cache.sql
+          T18_PATH: supabase/tests/0018_bkash_supabase_token_cache.sql
+          M19_PATH: supabase/migrations/20261127100000_w2a_t02_db_auth_and_audit.sql
+          T19_PATH: supabase/tests/0019_w2a_t02_db_auth_and_audit.sql
+          M20_PATH: supabase/migrations/20261128100000_w1_course_content.sql
+          M21_PATH: supabase/migrations/20261128110000_w4_application_questions.sql
+          M22_PATH: supabase/migrations/20261128120000_w4_public_enrollment.sql
+          M23_PATH: supabase/migrations/20261128130000_w4_staff_admissions.sql
+          M24_PATH: supabase/migrations/20261128140000_w4_bkash_safety.sql
+          M25_PATH: supabase/migrations/20261128150000_w4_payment_attention.sql
+          M26_PATH: supabase/migrations/20261128160000_w4_admission_management.sql
+          M27_PATH: supabase/migrations/20261128170000_w4_application_recovery.sql
+          M28_PATH: supabase/migrations/20261128180000_w5_core_receipts_partners.sql
+          M29_PATH: supabase/migrations/20261128190000_c4_unused_catalog_deletion.sql
+        run: |
+          set -euo pipefail
+          TMP_M18="$(mktemp)"
+          TMP_M19="$(mktemp)"
+          TMP_M20="$(mktemp)"
+          TMP_M21="$(mktemp)"
+          TMP_M22="$(mktemp)"
+          TMP_M23="$(mktemp)"
+          TMP_M24="$(mktemp)"
+          TMP_M25="$(mktemp)"
+          TMP_M26="$(mktemp)"
+          TMP_M27="$(mktemp)"
+          TMP_M28="$(mktemp)"
+          TMP_M29="$(mktemp)"
+          cp "$M18_PATH" "$TMP_M18"
+          cp "$M19_PATH" "$TMP_M19"
+          cp "$M20_PATH" "$TMP_M20"
+          cp "$M21_PATH" "$TMP_M21"
+          cp "$M22_PATH" "$TMP_M22"
+          cp "$M23_PATH" "$TMP_M23"
+          cp "$M24_PATH" "$TMP_M24"
+          cp "$M25_PATH" "$TMP_M25"
+          cp "$M26_PATH" "$TMP_M26"
+          cp "$M27_PATH" "$TMP_M27"
+          cp "$M28_PATH" "$TMP_M28"
+          cp "$M29_PATH" "$TMP_M29"
+          restore_migrations() {
+            if [ -f "$TMP_M18" ]; then
+              cp "$TMP_M18" "$M18_PATH"
+              rm -f "$TMP_M18"
+            fi
+            if [ -f "$TMP_M19" ]; then
+              cp "$TMP_M19" "$M19_PATH"
+              rm -f "$TMP_M19"
+            fi
+            if [ -f "$TMP_M20" ]; then
+              cp "$TMP_M20" "$M20_PATH"
+              rm -f "$TMP_M20"
+            fi
+            if [ -f "$TMP_M21" ]; then
+              cp "$TMP_M21" "$M21_PATH"
+              rm -f "$TMP_M21"
+            fi
+            if [ -f "$TMP_M29" ]; then
+              cp "$TMP_M29" "$M29_PATH"
+              rm -f "$TMP_M29"
+            fi
+            if [ -f "$TMP_M28" ]; then
+              cp "$TMP_M28" "$M28_PATH"
+              rm -f "$TMP_M28"
+            fi
+            if [ -f "$TMP_M27" ]; then
+              cp "$TMP_M27" "$M27_PATH"
+              rm -f "$TMP_M27"
+            fi
+            if [ -f "$TMP_M26" ]; then
+              cp "$TMP_M26" "$M26_PATH"
+              rm -f "$TMP_M26"
+            fi
+            if [ -f "$TMP_M25" ]; then
+              cp "$TMP_M25" "$M25_PATH"
+              rm -f "$TMP_M25"
+            fi
+            if [ -f "$TMP_M24" ]; then
+              cp "$TMP_M24" "$M24_PATH"
+              rm -f "$TMP_M24"
+            fi
+            if [ -f "$TMP_M23" ]; then
+              cp "$TMP_M23" "$M23_PATH"
+              rm -f "$TMP_M23"
+            fi
+            if [ -f "$TMP_M22" ]; then
+              cp "$TMP_M22" "$M22_PATH"
+              rm -f "$TMP_M22"
+            fi
+          }
+          trap restore_migrations EXIT
+
+          rm -f "$M18_PATH" "$M19_PATH" "$M20_PATH" "$M21_PATH" "$M22_PATH" "$M23_PATH" "$M24_PATH" "$M25_PATH" "$M26_PATH" "$M27_PATH" "$M28_PATH" "$M29_PATH"
+          supabase db reset --local
+
+          APPLIED_17="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Applied migrations before 17 -> 18 upgrade=$APPLIED_17"
+          if [ "$APPLIED_17" -ne 17 ]; then
+            echo "::error::Expected 17 baseline migrations before upgrade, got $APPLIED_17"
+            exit 1
+          fi
+
+          cp "$TMP_M18" "$M18_PATH"
+          rm -f "$TMP_M18"
+          supabase migration up --local
+
+          APPLIED_18="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Applied migrations after 17 -> 18 upgrade=$APPLIED_18"
+          if [ "$APPLIED_18" -ne 18 ]; then
+            echo "::error::Expected 18 applied migrations after token-cache upgrade, got $APPLIED_18"
+            exit 1
+          fi
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;"
+          supabase test db --local "$T18_PATH"
+
+          # Verify real application M18 Admin activation fail-closed rejection prior to M19 upgrade
+          STATUS_ENV="$(supabase status -o env)"
+          get_env_val() {
+            printf '%s\n' "$STATUS_ENV" | awk -v k="$1" '
+              index($0, k "=") == 1 {
+                v = substr($0, length(k) + 2)
+                gsub(/^"|"$/, "", v)
+                out = v
+              }
+              END { print out }
+            '
+          }
+
+          LOCAL_API_URL="$(get_env_val API_URL)"
+          LOCAL_PUB_KEY="$(get_env_val PUBLISHABLE_KEY)"
+          if [ -z "$LOCAL_PUB_KEY" ]; then
+            LOCAL_PUB_KEY="$(get_env_val ANON_KEY)"
+          fi
+          LOCAL_SEC_KEY="$(get_env_val SECRET_KEY)"
+          if [ -z "$LOCAL_SEC_KEY" ]; then
+            LOCAL_SEC_KEY="$(get_env_val SERVICE_ROLE_KEY)"
+          fi
+
+          if [[ ! "$LOCAL_API_URL" =~ ^http://(127\.0\.0\.1|localhost):[0-9]+$ ]]; then
+            echo "::error::Refusing non-loopback local API_URL during M18 check: $LOCAL_API_URL"
+            exit 1
+          fi
+          if [ -z "$LOCAL_PUB_KEY" ] || [ -z "$LOCAL_SEC_KEY" ]; then
+            echo "::error::Missing ephemeral local Supabase Auth/service keys during M18 check."
+            exit 1
+          fi
+
+          NEXT_PUBLIC_SUPABASE_URL="$LOCAL_API_URL" \
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$LOCAL_PUB_KEY" \
+          SUPABASE_SECRET_KEY="$LOCAL_SEC_KEY" \
+          APP_URL="http://127.0.0.1:3000" \
+          APP_SECRET="ci_isolated_app_secret_minimum_32_characters_long_01" \
+          BKASH_CHECKOUT_MODE="closed" \
+          RUN_ISOLATED_M18_COMPAT_INT="true" \
+          pnpm vitest run src/server/auth/staff-auth.supabase.integration.test.ts
+
+          # Verify 18 -> 19 incremental upgrade and historical audit row preservation
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "INSERT INTO public.audit_events (actor_role, action, target_entity, target_id, after_state) VALUES ('super_admin', 'ci_pre_upgrade_audit', 'batches', 'pre-19', '{\"history\":true}'::jsonb);"
+
+          cp "$TMP_M19" "$M19_PATH"
+          rm -f "$TMP_M19"
+          supabase migration up --local
+
+          APPLIED_19="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Applied migrations after 18 -> 19 upgrade=$APPLIED_19"
+          if [ "$APPLIED_19" -ne 19 ]; then
+            echo "::error::Expected 19 applied migrations after W2A-T02 upgrade, got $APPLIED_19"
+            exit 1
+          fi
+
+          HIST_PRESERVED="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM public.audit_events WHERE action = 'ci_pre_upgrade_audit' AND audit_scope = 'global' AND after_state->>'history' = 'true';")"
+          if [ "${HIST_PRESERVED:-0}" -ne 1 ]; then
+            echo "::error::Pre-upgrade audit_events history row was not preserved cleanly."
+            exit 1
+          fi
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "DELETE FROM public.audit_events WHERE action = 'ci_pre_upgrade_audit';"
+          supabase test db --local "$T19_PATH"
+
+      - name: Verify bounded two-session lock overlap on real PG17 stack
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          KEY="cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          OWNER_1="11111111-1111-4111-8111-111111111111"
+          OWNER_2="22222222-2222-4222-8222-222222222222"
+
+          WORK_DIR="$(mktemp -d)"
+          PIPE1="$WORK_DIR/s1.fifo"
+          OUT1="$WORK_DIR/s1.out"
+          OUT2="$WORK_DIR/s2.out"
+          mkfifo "$PIPE1"
+          touch "$OUT1" "$OUT2"
+
+          PID1=""
+          PID2=""
+          cleanup() {
+            exec 3>&- 2>/dev/null || true
+            [ -n "$PID1" ] && kill "$PID1" 2>/dev/null || true
+            [ -n "$PID2" ] && kill "$PID2" 2>/dev/null || true
+            rm -rf "$WORK_DIR"
+            psql "$LOCAL_DB_URL" -c "DELETE FROM bkash_private.gateway_tokens WHERE merchant_key = '$KEY';" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "DELETE FROM bkash_private.gateway_tokens WHERE merchant_key = '$KEY';"
+
+          psql "${LOCAL_DB_URL}?application_name=lna_parallel_s1" -v ON_ERROR_STOP=1 -Atq < "$PIPE1" > "$OUT1" &
+          PID1=$!
+          exec 3> "$PIPE1"
+
+          cat >&3 <<EOSQL
+          BEGIN;
+          SELECT public.bkash_acquire_gateway_token('$KEY', '$OWNER_1'::uuid)->>'state';
+          \echo READY_S1
+          EOSQL
+
+          S1_READY=0
+          for _ in $(seq 1 50); do
+            if grep -qx 'READY_S1' "$OUT1" 2>/dev/null; then
+              S1_READY=1
+              break
+            fi
+            sleep 0.1
+          done
+          if [ "$S1_READY" -ne 1 ]; then
+            echo "::error::Session 1 did not acquire lease within bounded timeout."
+            cat "$OUT1" || true
+            exit 1
+          fi
+
+          psql "${LOCAL_DB_URL}?application_name=lna_parallel_s2" -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT public.bkash_acquire_gateway_token('$KEY', '$OWNER_2'::uuid)->>'state';" > "$OUT2" &
+          PID2=$!
+
+          OVERLAP_PROVED=0
+          for _ in $(seq 1 50); do
+            LOCK_WAITERS="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM pg_stat_activity WHERE application_name = 'lna_parallel_s2' AND wait_event_type = 'Lock' AND state = 'active';")"
+            if [ "${LOCK_WAITERS:-0}" -ge 1 ]; then
+              OVERLAP_PROVED=1
+              break
+            fi
+            if ! kill -0 "$PID2" 2>/dev/null; then
+              break
+            fi
+            sleep 0.1
+          done
+          if [ "$OVERLAP_PROVED" -ne 1 ]; then
+            echo "::error::Failed to observe Session 2 blocked on Session 1 row lock in pg_stat_activity."
+            cat "$OUT1" "$OUT2" || true
+            exit 1
+          fi
+
+          cat >&3 <<'EOSQL'
+          COMMIT;
+          \q
+          EOSQL
+          exec 3>&-
+
+          wait "$PID1" "$PID2"
+          PID1=""
+          PID2=""
+
+          STATE1="$(grep -vx 'READY_S1' "$OUT1" | tr -d '[:space:]')"
+          STATE2="$(tr -d '[:space:]' < "$OUT2")"
+          echo "Parallel session lock overlap verified: session1=$STATE1 session2=$STATE2"
+          if [ "$STATE1" != "grant" ] || [ "$STATE2" != "wait" ]; then
+            echo "::error::Expected parallel lease serialization (grant/wait), got $STATE1/$STATE2"
+            exit 1
+          fi
+
+      - name: Verify bounded parallel-session deactivation/write race on real PG17 stack
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          ACTOR_ID="d0000000-0000-4000-8000-000000000001"
+          COURSE_ID="d0000000-0000-4000-8000-000000000002"
+          BATCH_ID="d0000000-0000-4000-8000-000000000003"
+          ENR_ID="d0000000-0000-4000-8000-000000000004"
+
+          WORK_DIR="$(mktemp -d)"
+          PIPE1="$WORK_DIR/deact_s1.fifo"
+          OUT1="$WORK_DIR/deact_s1.out"
+          OUT2="$WORK_DIR/deact_s2.out"
+          ERR2="$WORK_DIR/deact_s2.err"
+          mkfifo "$PIPE1"
+          touch "$OUT1" "$OUT2" "$ERR2"
+
+          PID1=""
+          PID2=""
+          cleanup_deact() {
+            exec 4>&- 2>/dev/null || true
+            [ -n "$PID1" ] && kill "$PID1" 2>/dev/null || true
+            [ -n "$PID2" ] && kill "$PID2" 2>/dev/null || true
+            rm -rf "$WORK_DIR"
+            psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=0 >/dev/null 2>&1 <<EOSQL
+              DELETE FROM public.audit_events WHERE actor_id = '$ACTOR_ID'::uuid OR target_id = '$ENR_ID';
+              DELETE FROM public.enrollments WHERE id = '$ENR_ID'::uuid;
+              DELETE FROM public.batches WHERE id = '$BATCH_ID'::uuid;
+              DELETE FROM public.courses WHERE id = '$COURSE_ID'::uuid;
+              DELETE FROM public.profiles WHERE id = '$ACTOR_ID'::uuid;
+              DELETE FROM auth.users WHERE id = '$ACTOR_ID'::uuid;
+          EOSQL
+          }
+          trap cleanup_deact EXIT
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 <<EOSQL
+            DELETE FROM public.audit_events WHERE actor_id = '$ACTOR_ID'::uuid OR target_id = '$ENR_ID';
+            DELETE FROM public.enrollments WHERE id = '$ENR_ID'::uuid;
+            DELETE FROM public.batches WHERE id = '$BATCH_ID'::uuid;
+            DELETE FROM public.courses WHERE id = '$COURSE_ID'::uuid;
+            DELETE FROM public.profiles WHERE id = '$ACTOR_ID'::uuid;
+            DELETE FROM auth.users WHERE id = '$ACTOR_ID'::uuid;
+
+            INSERT INTO auth.users (id, email)
+            VALUES ('$ACTOR_ID'::uuid, 'ci-deact-race@example.invalid');
+            INSERT INTO public.profiles (id, email, full_name, role, account_state)
+            VALUES ('$ACTOR_ID'::uuid, 'ci-deact-race@example.invalid', 'CI Race Admin', 'admin', 'active');
+            INSERT INTO public.courses (id, slug, title, subtitle, category, summary, description, venue, status, published_at, provenance)
+            VALUES (
+              '$COURSE_ID'::uuid, 'ci-deact-race-course', 'CI Race Course', 'CI deactivation race fixture',
+              'Training', 'Synthetic course summary for CI deactivation test',
+              'Synthetic course description for parallel deactivation race check.',
+              'Dhaka', 'published', now(), '{"class":"B","verified":false,"source":"CI deactivation race"}'::jsonb
+            );
+            INSERT INTO public.batches (id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, fee_poisha, venue, status, provenance)
+            VALUES (
+              '$BATCH_ID'::uuid, '$COURSE_ID'::uuid, 'ci-deact-race-batch', 1, 'CI Race Batch',
+              current_date + 10, current_date + 11, 'Weekend sessions', 10, 100000, 'Dhaka', 'open_for_enrollment',
+              '{"class":"B","verified":false,"source":"CI deactivation race"}'::jsonb
+            );
+            INSERT INTO public.enrollments (id, public_ref, course_id, batch_id, full_name, email, phone, payment_method, payment_status, base_fee_poisha, payable_poisha, status, confirmed_at, is_dev_fixture, fixture_label)
+            VALUES (
+              '$ENR_ID'::uuid, 'LNA-RACE-0001', '$COURSE_ID'::uuid, '$BATCH_ID'::uuid,
+              'CI Race Applicant', 'ci-race-app@example.invalid', '01788000001',
+              'free', 'not_required', 0, 0, 'confirmed', now(), true, 'CI deactivation race fixture'
+            );
+          EOSQL
+
+          # Pre-check: prove the exact mutation succeeds for this active admin as service_role, then restore baseline
+          PRECHECK_RESULT="$(psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -Atq <<EOSQL
+            BEGIN;
+            SET LOCAL ROLE service_role;
+            DO \$\$
+            BEGIN
+              IF current_user IS DISTINCT FROM 'service_role' THEN
+                RAISE EXCEPTION 'PRECHECK_EXPECTED_SERVICE_ROLE_GOT_%', current_user;
+              END IF;
+            END \$\$;
+            SELECT public.manage_staff_enrollment(
+              '$ACTOR_ID'::uuid, '$ENR_ID'::uuid,
+              (SELECT updated_at FROM public.enrollments WHERE id = '$ENR_ID'::uuid),
+              'archive', NULL, NULL, NULL
+            );
+            COMMIT;
+          EOSQL
+          )"
+          if [ "$(echo "$PRECHECK_RESULT" | tr -d '[:space:]')" != "OK" ]; then
+            echo "::error::Expected pre-check archive by active admin to return OK, got '$PRECHECK_RESULT'"
+            exit 1
+          fi
+
+          RESTORE_RESULT="$(psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -Atq <<EOSQL
+            BEGIN;
+            SET LOCAL ROLE service_role;
+            SELECT public.manage_staff_enrollment(
+              '$ACTOR_ID'::uuid, '$ENR_ID'::uuid,
+              (SELECT updated_at FROM public.enrollments WHERE id = '$ENR_ID'::uuid),
+              'restore', NULL, NULL, NULL
+            );
+            COMMIT;
+          EOSQL
+          )"
+          if [ "$(echo "$RESTORE_RESULT" | tr -d '[:space:]')" != "OK" ]; then
+            echo "::error::Expected pre-check restore by active admin to return OK, got '$RESTORE_RESULT'"
+            exit 1
+          fi
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "DELETE FROM public.audit_events WHERE target_id = '$ENR_ID';"
+
+          ENR_UPDATED_AT="$(psql "$LOCAL_DB_URL" -Atqc "SELECT updated_at::text FROM public.enrollments WHERE id = '$ENR_ID'::uuid;")"
+
+          psql "${LOCAL_DB_URL}?application_name=lna_deact_s1" -v ON_ERROR_STOP=1 -Atq < "$PIPE1" > "$OUT1" &
+          PID1=$!
+          exec 4> "$PIPE1"
+
+          cat >&4 <<EOSQL
+          BEGIN;
+          UPDATE public.profiles SET account_state = 'disabled' WHERE id = '$ACTOR_ID'::uuid;
+          \echo READY_DEACT_S1
+          EOSQL
+
+          S1_READY=0
+          for _ in $(seq 1 50); do
+            if grep -qx 'READY_DEACT_S1' "$OUT1" 2>/dev/null; then
+              S1_READY=1
+              break
+            fi
+            sleep 0.1
+          done
+          if [ "$S1_READY" -ne 1 ]; then
+            echo "::error::Session 1 did not acquire profiles row lock within bounded timeout."
+            cat "$OUT1" || true
+            exit 1
+          fi
+
+          psql "${LOCAL_DB_URL}?application_name=lna_deact_s2" -v ON_ERROR_STOP=1 -Atq > "$OUT2" 2> "$ERR2" <<EOSQL &
+          \set VERBOSITY verbose
+          BEGIN;
+          SET LOCAL ROLE service_role;
+          DO \$\$
+          BEGIN
+            IF current_user IS DISTINCT FROM 'service_role' THEN
+              RAISE EXCEPTION 'EXPECTED_SERVICE_ROLE_GOT_%', current_user;
+            END IF;
+          END \$\$;
+          SELECT 'S2_CURRENT_USER=' || current_user;
+          SELECT public.manage_staff_enrollment(
+            '$ACTOR_ID'::uuid, '$ENR_ID'::uuid, '$ENR_UPDATED_AT'::timestamptz,
+            'archive', NULL, NULL, NULL
+          );
+          COMMIT;
+          EOSQL
+          PID2=$!
+
+          OVERLAP_PROVED=0
+          for _ in $(seq 1 50); do
+            LOCK_WAITERS="$(psql "$LOCAL_DB_URL" -Atqc "
+              SELECT count(*)
+              FROM pg_stat_activity s2
+              JOIN pg_stat_activity s1
+                ON s1.pid = ANY(pg_blocking_pids(s2.pid))
+              WHERE s2.application_name = 'lna_deact_s2'
+                AND s2.wait_event_type = 'Lock'
+                AND s2.state = 'active'
+                AND s1.application_name = 'lna_deact_s1'
+                AND EXISTS (
+                  SELECT 1
+                  FROM pg_locks l1
+                  WHERE l1.pid = s1.pid
+                    AND l1.granted
+                    AND l1.locktype = 'relation'
+                    AND l1.relation = 'public.profiles'::regclass
+                    AND l1.mode = 'RowExclusiveLock'
+                );
+            ")"
+            if [ "${LOCK_WAITERS:-0}" -ge 1 ]; then
+              OVERLAP_PROVED=1
+              break
+            fi
+            if ! kill -0 "$PID2" 2>/dev/null; then
+              break
+            fi
+            sleep 0.1
+          done
+          if [ "$OVERLAP_PROVED" -ne 1 ]; then
+            echo "::error::Failed to observe Session 2 blocked by Session 1 profiles lock in pg_stat_activity / pg_blocking_pids."
+            cat "$OUT1" "$OUT2" "$ERR2" || true
+            exit 1
+          fi
+
+          cat >&4 <<'EOSQL'
+          COMMIT;
+          \q
+          EOSQL
+          exec 4>&-
+
+          wait "$PID1"
+          PID1=""
+          set +e
+          wait "$PID2"
+          S2_EXIT=$?
+          set -e
+          PID2=""
+
+          if ! grep -qx 'S2_CURRENT_USER=service_role' "$OUT2"; then
+            echo "::error::Expected Session 2 current_user=service_role before RPC invocation."
+            cat "$OUT2" "$ERR2" || true
+            exit 1
+          fi
+
+          if grep -qi 'SET LOCAL can only be used in transaction blocks' "$ERR2"; then
+            echo "::error::Session 2 triggered out-of-transaction SET LOCAL warning."
+            cat "$ERR2" || true
+            exit 1
+          fi
+
+          if [ "$S2_EXIT" -eq 0 ] || ! grep -q '42501' "$ERR2" || ! grep -q 'STAFF_ENROLLMENT_FORBIDDEN' "$ERR2"; then
+            echo "::error::Expected concurrent write after deactivation commit to fail closed with SQLSTATE 42501 and STAFF_ENROLLMENT_FORBIDDEN (exit=$S2_EXIT)."
+            cat "$OUT2" "$ERR2" || true
+            exit 1
+          fi
+
+          STILL_UNARCHIVED="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM public.enrollments WHERE id = '$ENR_ID'::uuid AND archived_at IS NULL;")"
+          AUDIT_COUNT="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM public.audit_events WHERE target_id = '$ENR_ID' AND action = 'staff_archived_enrollment';")"
+          echo "Deactivation race verified: s2_exit=$S2_EXIT unarchived=$STILL_UNARCHIVED audit_count=$AUDIT_COUNT"
+          if [ "${STILL_UNARCHIVED:-0}" -ne 1 ] || [ "${AUDIT_COUNT:-1}" -ne 0 ]; then
+            echo "::error::Deactivated actor write leaked state or audit record."
+            exit 1
+          fi
+
+      - name: Run application-to-Supabase Auth/AAL2/M19 integration tests (W2A-T03-F01/F02)
+        run: |
+          set -euo pipefail
+          STATUS_ENV="$(supabase status -o env)"
+          # Extract strictly local ephemeral variables safely under set -euo pipefail
+          get_env_val() {
+            printf '%s\n' "$STATUS_ENV" | awk -v k="$1" '
+              index($0, k "=") == 1 {
+                v = substr($0, length(k) + 2)
+                gsub(/^"|"$/, "", v)
+                out = v
+              }
+              END { print out }
+            '
+          }
+
+          LOCAL_API_URL="$(get_env_val API_URL)"
+          LOCAL_PUB_KEY="$(get_env_val PUBLISHABLE_KEY)"
+          if [ -z "$LOCAL_PUB_KEY" ]; then
+            LOCAL_PUB_KEY="$(get_env_val ANON_KEY)"
+          fi
+          LOCAL_SEC_KEY="$(get_env_val SECRET_KEY)"
+          if [ -z "$LOCAL_SEC_KEY" ]; then
+            LOCAL_SEC_KEY="$(get_env_val SERVICE_ROLE_KEY)"
+          fi
+
+          if [[ ! "$LOCAL_API_URL" =~ ^http://(127\.0\.0\.1|localhost):[0-9]+$ ]]; then
+            echo "::error::Refusing non-loopback local API_URL: $LOCAL_API_URL"
+            exit 1
+          fi
+          if [ -z "$LOCAL_PUB_KEY" ] || [ -z "$LOCAL_SEC_KEY" ]; then
+            echo "::error::Missing ephemeral local Supabase Auth/service keys from supabase status."
+            exit 1
+          fi
+
+          export NEXT_PUBLIC_SUPABASE_URL="$LOCAL_API_URL"
+          export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$LOCAL_PUB_KEY"
+          export SUPABASE_SECRET_KEY="$LOCAL_SEC_KEY"
+          export APP_URL="http://127.0.0.1:3000"
+          export APP_SECRET="ci_isolated_app_secret_minimum_32_characters_long_01"
+          export BKASH_CHECKOUT_MODE="closed"
+          export RUN_ISOLATED_SUPABASE_AUTH_INT="true"
+
+          pnpm vitest run src/server/auth/staff-auth.supabase.integration.test.ts
+
+      - name: Verify M19 to M20 course content upgrade
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          BEFORE="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$BEFORE" -eq 19
+          M21_PATH=supabase/migrations/20261128110000_w4_application_questions.sql
+          M22_PATH=supabase/migrations/20261128120000_w4_public_enrollment.sql
+          M23_PATH=supabase/migrations/20261128130000_w4_staff_admissions.sql
+          M24_PATH=supabase/migrations/20261128140000_w4_bkash_safety.sql
+          M25_PATH=supabase/migrations/20261128150000_w4_payment_attention.sql
+          M26_PATH=supabase/migrations/20261128160000_w4_admission_management.sql
+          M27_PATH=supabase/migrations/20261128170000_w4_application_recovery.sql
+          M28_PATH=supabase/migrations/20261128180000_w5_core_receipts_partners.sql
+          M29_PATH=supabase/migrations/20261128190000_c4_unused_catalog_deletion.sql
+          TMP_M22="$(mktemp)"
+          TMP_M23="$(mktemp)"
+          TMP_M24="$(mktemp)"
+          TMP_M25="$(mktemp)"
+          TMP_M26="$(mktemp)"
+          TMP_M27="$(mktemp)"
+          TMP_M28="$(mktemp)"
+          TMP_M29="$(mktemp)"
+          TMP_M21="$(mktemp)"
+          cp "$M21_PATH" "$TMP_M21"
+          cp "$M22_PATH" "$TMP_M22"
+          cp "$M23_PATH" "$TMP_M23"
+          cp "$M24_PATH" "$TMP_M24"
+          cp "$M25_PATH" "$TMP_M25"
+          cp "$M26_PATH" "$TMP_M26"
+          cp "$M27_PATH" "$TMP_M27"
+          cp "$M28_PATH" "$TMP_M28"
+          cp "$M29_PATH" "$TMP_M29"
+          restore_later_migrations() {
+            if [ -f "$TMP_M21" ]; then
+              cp "$TMP_M21" "$M21_PATH"
+              rm -f "$TMP_M21"
+            fi
+            if [ -f "$TMP_M29" ]; then
+              cp "$TMP_M29" "$M29_PATH"
+              rm -f "$TMP_M29"
+            fi
+            if [ -f "$TMP_M28" ]; then
+              cp "$TMP_M28" "$M28_PATH"
+              rm -f "$TMP_M28"
+            fi
+            if [ -f "$TMP_M27" ]; then
+              cp "$TMP_M27" "$M27_PATH"
+              rm -f "$TMP_M27"
+            fi
+            if [ -f "$TMP_M26" ]; then
+              cp "$TMP_M26" "$M26_PATH"
+              rm -f "$TMP_M26"
+            fi
+            if [ -f "$TMP_M25" ]; then
+              cp "$TMP_M25" "$M25_PATH"
+              rm -f "$TMP_M25"
+            fi
+            if [ -f "$TMP_M24" ]; then
+              cp "$TMP_M24" "$M24_PATH"
+              rm -f "$TMP_M24"
+            fi
+            if [ -f "$TMP_M23" ]; then
+              cp "$TMP_M23" "$M23_PATH"
+              rm -f "$TMP_M23"
+            fi
+            if [ -f "$TMP_M22" ]; then
+              cp "$TMP_M22" "$M22_PATH"
+              rm -f "$TMP_M22"
+            fi
+          }
+          trap restore_later_migrations EXIT
+          rm -f "$M21_PATH" "$M22_PATH" "$M23_PATH" "$M24_PATH" "$M25_PATH" "$M26_PATH" "$M27_PATH" "$M28_PATH" "$M29_PATH"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 20
+          supabase test db --local supabase/tests/0020_w1_course_content.sql
+          pnpm vitest run src/lib/course-content.test.ts
+          cp "$TMP_M21" "$M21_PATH"
+          rm -f "$TMP_M21"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 21
+          supabase test db --local supabase/tests/0021_w4_application_questions.sql
+          pnpm vitest run src/lib/enrollment/program-questions.test.ts
+          cp "$TMP_M22" "$M22_PATH"
+          rm -f "$TMP_M22"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 22
+          supabase test db --local supabase/tests/0022_w4_public_enrollment.sql
+          cp "$TMP_M23" "$M23_PATH"
+          rm -f "$TMP_M23"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 23
+          supabase test db --local supabase/tests/0023_w4_staff_admissions.sql
+          cp "$TMP_M24" "$M24_PATH"
+          rm -f "$TMP_M24"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 24
+          supabase test db --local supabase/tests/0024_w4_bkash_safety.sql
+          cp "$TMP_M25" "$M25_PATH"
+          rm -f "$TMP_M25"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 25
+          supabase test db --local supabase/tests/0025_w4_payment_attention.sql
+          cp "$TMP_M26" "$M26_PATH"
+          rm -f "$TMP_M26"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 26
+          supabase test db --local supabase/tests/0026_w4_admission_management.sql
+          cp "$TMP_M27" "$M27_PATH"
+          rm -f "$TMP_M27"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 27
+          supabase test db --local supabase/tests/0027_w4_application_recovery.sql
+          cp "$TMP_M28" "$M28_PATH"
+          rm -f "$TMP_M28"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 28
+          supabase test db --local supabase/tests/0028_w5_core_receipts_partners.sql
+          cp "$TMP_M29" "$M29_PATH"
+          rm -f "$TMP_M29"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 29
+          supabase test db --local supabase/tests/0029_c4_unused_catalog_deletion.sql
+
+      - name: Clean up isolated local Supabase environment
+        if: always()
+        run: supabase stop --no-backup || true

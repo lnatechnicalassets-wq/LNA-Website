@@ -8,21 +8,29 @@ describe("Content Repository Abstraction (Phase 3)", () => {
       const repo = getCourseRepository();
       const courses = await repo.getAllCourses();
 
-      expect(courses.length).toBeGreaterThanOrEqual(3);
+      expect(courses.length).toBe(2);
+      expect(courses.map((c) => c.id)).toEqual(expect.arrayContaining(["mto-readiness", "irgp"]));
       for (const course of courses) {
         expect(course.deliveryMode).toBe("offline");
         expect(course.modules.length).toBeGreaterThan(0);
+        expect(course.mentorIds.length).toBeGreaterThan(0);
         expect(["A", "B"]).toContain(course.provenance.class);
       }
     });
 
     it("retrieves specific course by slug", async () => {
       const repo = getCourseRepository();
-      const course = await repo.getCourseById("executive-leadership");
+      const mtoCourse = await repo.getCourseById("mto-readiness");
 
-      expect(course).not.toBeNull();
-      expect(course?.title).toContain("Executive Leadership");
-      expect(course?.category).toBe("Leadership & Strategy");
+      expect(mtoCourse).not.toBeNull();
+      expect(mtoCourse?.title).toContain("MTO Readiness");
+      expect(mtoCourse?.category).toBe("Career Readiness");
+
+      const irgpCourse = await repo.getCourseById("irgp");
+
+      expect(irgpCourse).not.toBeNull();
+      expect(irgpCourse?.title).toContain("Industry Readiness Graduate Program");
+      expect(irgpCourse?.category).toBe("Industry Readiness");
     });
 
     it("returns null for non-existent course slug", async () => {
@@ -48,7 +56,10 @@ describe("Content Repository Abstraction (Phase 3)", () => {
       const repo = getBatchRepository();
       const batches = await repo.getAllBatches();
 
-      expect(batches.length).toBeGreaterThanOrEqual(3);
+      expect(batches.length).toBe(2);
+      expect(batches.map((b) => b.id)).toEqual(
+        expect.arrayContaining(["batch-mto-2026-01", "batch-irgp-cohort-1"])
+      );
       for (const batch of batches) {
         expect(batch.seatHoldDurationMinutes).toBe(30);
         expect(Number.isInteger(batch.feePoisha)).toBe(true);
@@ -60,12 +71,16 @@ describe("Content Repository Abstraction (Phase 3)", () => {
 
     it("filters batches by courseId", async () => {
       const repo = getBatchRepository();
-      const batches = await repo.getBatchesByCourseId("executive-leadership");
+      const mtoBatches = await repo.getBatchesByCourseId("mto-readiness");
 
-      expect(batches.length).toBeGreaterThan(0);
-      for (const batch of batches) {
-        expect(batch.courseId).toBe("executive-leadership");
-      }
+      expect(mtoBatches.length).toBe(1);
+      expect(mtoBatches[0].courseId).toBe("mto-readiness");
+      expect(mtoBatches[0].feePoisha).toBe(750000);
+
+      const irgpBatches = await repo.getBatchesByCourseId("irgp");
+
+      expect(irgpBatches.length).toBe(1);
+      expect(irgpBatches[0].courseId).toBe("irgp");
     });
 
     it("retrieves open batches for enrollment", async () => {

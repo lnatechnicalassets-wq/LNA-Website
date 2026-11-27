@@ -2,7 +2,7 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { HeroSlider } from "./hero/hero-slider";
 import { MentorQuickViewProvider } from "./mentor-quick-view-context";
-import type { HeroSlide, Mentor } from "@/lib/content";
+import type { Course, HeroSlide, Mentor } from "@/lib/content";
 
 const mockSlides: HeroSlide[] = [
   {
@@ -233,10 +233,92 @@ const mockMentors: Mentor[] = [
   },
 ];
 
+const mockCourses: Course[] = [
+  {
+    id: "mto-readiness",
+    title: "MTO Readiness Program",
+    subtitle: "Graduate Career & Leadership Accelerator",
+    category: "Career Readiness",
+    summary: "Graduate Career & Leadership Accelerator",
+    description:
+      "A practical, industry-focused program to prepare recent graduates for Management Trainee Officer (MTO) opportunities.",
+    learningOutcomes: ["Aptitude test mastery", "Business case simulations"],
+    targetAudience: ["Final-year undergraduate and graduate students"],
+    prerequisites: [],
+    modules: [
+      {
+        id: "mod-mto-01",
+        title: "Corporate Aptitude",
+        duration: "4 Sessions",
+        topics: ["Analytical reasoning"],
+      },
+    ],
+    deliveryMode: "offline",
+    venue: "Designated Executive Venue, Dhaka",
+    status: "published",
+    featured: true,
+    mentorIds: [
+      "mentor-nadia-islam",
+      "mentor-marcus-reed",
+      "mentor-ethan-park",
+      "mentor-riya-sharma",
+      "mentor-lena-chen",
+    ],
+    provenance: {
+      class: "B",
+      verified: false,
+      source: "Mock Seed",
+      verifiedBy: null,
+      verifiedOn: null,
+    },
+  },
+  {
+    id: "irgp",
+    title: "Industry Readiness Graduate Program",
+    subtitle: "Industry-focused learning and career preparation.",
+    category: "Industry Readiness",
+    summary: "Industry-focused practical learning and corporate placement gateway.",
+    description:
+      "A comprehensive, industry-focused program to build real-world skills, professional readiness, and career confidence.",
+    learningOutcomes: ["Practical corporate problem solving"],
+    targetAudience: ["University students"],
+    prerequisites: [],
+    modules: [
+      {
+        id: "mod-irgp-01",
+        title: "Communication & Networking",
+        duration: "Week 1",
+        topics: ["Business correspondence"],
+      },
+    ],
+    deliveryMode: "offline",
+    venue: "AIUB ICE, Banani, Dhaka",
+    status: "published",
+    featured: true,
+    mentorIds: [
+      "mentor-shahnawaj-chowdhury",
+      "mentor-gm-kamrul",
+      "mentor-istiaque-bhuiyan",
+      "mentor-munaf-chowdhury",
+      "mentor-ilmul-sajib",
+      "mentor-biplob-rahul",
+      "mentor-zia-ashraf",
+      "mentor-sayeda-salma",
+    ],
+    provenance: {
+      class: "B",
+      verified: false,
+      source: "Mock Seed",
+      verifiedBy: null,
+      verifiedOn: null,
+    },
+  },
+];
+
 function renderHeroWithContext() {
   return render(
     <MentorQuickViewProvider>
-      <HeroSlider slides={mockSlides} mentors={mockMentors} />
+      <HeroSlider slides={mockSlides} mentors={mockMentors} courses={mockCourses} />
     </MentorQuickViewProvider>
   );
 }

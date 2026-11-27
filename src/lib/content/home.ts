@@ -59,6 +59,7 @@ export const ImpactFigureSchema = z.object({
 });
 
 export const PartnerSchema = z.object({
+  logoSrc: z.string().nullable().optional(),
   id: z.string().min(1),
   name: z.string().min(2),
   sector: z.string().min(2),

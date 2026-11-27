@@ -10,7 +10,7 @@ export const BatchSchema = z
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "startDate must be YYYY-MM-DD"),
     endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "endDate must be YYYY-MM-DD"),
     scheduleDescription: z.string().min(5),
-    capacity: z.number().int().positive(),
+    capacity: z.number().int().positive().nullable(),
     enrolledCount: z.number().int().nonnegative().default(0),
     seatHoldDurationMinutes: z.literal(30), // Rule: 30-minute hold per Module 2 / BR-05
     feePoisha: z.number().int().nonnegative(), // Rule R5: integer poisha only
@@ -24,7 +24,7 @@ export const BatchSchema = z
   .refine((b) => !b.discountFeePoisha || b.discountFeePoisha <= b.feePoisha, {
     message: "discountFeePoisha cannot exceed base feePoisha",
   })
-  .refine((b) => b.enrolledCount <= b.capacity, {
+  .refine((b) => b.capacity === null || b.enrolledCount <= b.capacity, {
     message: "enrolledCount cannot exceed batch capacity",
   });
 
@@ -46,7 +46,10 @@ export function hasBatchDiscount(batch: BatchPricingSummary): boolean {
 }
 
 export function getBatchRemainingSeats(batch: BatchAvailabilitySummary): number {
-  return Math.max(0, batch.capacity - batch.enrolledCount);
+  // Infinity is an internal comparison value only, never serialized or displayed.
+  return batch.capacity === null
+    ? Number.POSITIVE_INFINITY
+    : Math.max(0, batch.capacity - batch.enrolledCount);
 }
 
 /**

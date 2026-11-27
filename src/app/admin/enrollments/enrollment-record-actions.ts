@@ -7,7 +7,7 @@ import { enrollmentActionCopy as copy, isDuplicateEnrollmentContact } from "@/li
 import { manualAdmissionCopy, manualStudentSchema } from "@/lib/admin-manual-admission";
 import { adminEnrollmentsHref, adminPaths } from "@/lib/admin-navigation";
 import { purgeToken, purgeCopy } from "@/lib/admin-record-purge";
-import { requireStaff } from "@/server/auth/require-staff";
+import { requireStaff, requireSuperAdmin } from "@/server/auth/require-staff";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
 const targetSchema = z.object({
@@ -22,12 +22,19 @@ export async function manageEnrollmentRecord(
   _previous: { message?: string; success?: boolean },
   formData: FormData
 ): Promise<{ message?: string; success?: boolean }> {
-  const staff = await requireStaff("enrollments:manage");
   const selected = targetSchema.safeParse(target);
+  const staff =
+    selected.success && selected.data.operation === "delete"
+      ? await requireSuperAdmin("enrollments:manage")
+      : await requireStaff("enrollments:manage");
   if (!selected.success) return { message: copy.failed };
 
   const { id, revision, operation } = selected.data;
   if (operation === "delete") {
+    if (process.env.NODE_ENV === "production")
+      return {
+        message: "Permanent deletion is disabled. Archive or cancel this admission instead.",
+      };
     const confirmation = z
       .string()
       .trim()
@@ -76,14 +83,51 @@ export async function manageEnrollmentRecord(
   if (contact && !contact.success) {
     return { message: contact.error.issues[0]?.message ?? copy.failed };
   }
+  if (operation === "edit" && contact?.success) {
+    const reason = z.string().trim().min(1).max(500).safeParse(formData.get("reason"));
+    if (!reason.success || formData.get("attested") !== "on") {
+      return { message: "Enter a reason and confirm you verified the corrected contact details." };
+    }
+    const { data, error } = await createSupabaseAdminClient().rpc(
+      "correct_staff_admission_contact",
+      {
+        p_actor: staff.userId,
+        p_id: id,
+        p_revision: revision,
+        p_name: contact.data.fullName,
+        p_email: contact.data.email,
+        p_phone: contact.data.phone,
+        p_reason: reason.data,
+        p_attested: true,
+      }
+    );
+    if (isDuplicateEnrollmentContact(error) || data === "DUPLICATE")
+      return { message: manualAdmissionCopy.duplicate };
+    if (data === "STALE") return { message: copy.stale };
+    if (data === "STUDENT_CONTACT_FIRST")
+      return {
+        message:
+          "Update the linked student’s contact details in Students first, then correct this admission.",
+      };
+    if (data === "WORK_IN_PROGRESS")
+      return {
+        message: "Resolve pending payments and unsent emails before correcting this admission.",
+      };
+    if (data === "BUSY") return { message: "This record is busy. Refresh and try again." };
+    if (error || data !== "OK") return { message: copy.failed };
+    revalidatePath(adminPaths.admissions);
+    revalidatePath(`${adminPaths.admissions}/${id}`);
+    revalidatePath(adminPaths.studentDirectory);
+    return { success: true };
+  }
   const { data, error } = await createSupabaseAdminClient().rpc("manage_staff_enrollment", {
     p_actor_id: staff.userId,
     p_enrollment_id: id,
     p_expected_updated_at: revision,
     p_operation: operation,
-    p_name: contact?.data.fullName ?? null,
-    p_email: contact?.data.email ?? null,
-    p_phone: contact?.data.phone ?? null,
+    p_name: null,
+    p_email: null,
+    p_phone: null,
   });
   if (isDuplicateEnrollmentContact(error)) return { message: manualAdmissionCopy.duplicate };
   if (error) return { message: copy.failed };

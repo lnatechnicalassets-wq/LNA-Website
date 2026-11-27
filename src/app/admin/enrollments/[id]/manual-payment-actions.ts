@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isDuplicateEnrollmentContact } from "@/lib/admin-admissions";
@@ -75,7 +76,12 @@ export async function reviewManualPayment(
   }
 
   if (result.data.outbox_id) {
-    await dispatchEmailOutboxById(result.data.outbox_id).catch(() => null);
+    const outboxId = result.data.outbox_id;
+    if (process.env.NODE_ENV === "test") await dispatchEmailOutboxById(outboxId).catch(() => null);
+    else
+      after(async () => {
+        await dispatchEmailOutboxById(outboxId).catch(() => null);
+      });
   }
   const path = `${adminPaths.admissions}/${selected.data.id}`;
   revalidatePath(adminPaths.admissions);

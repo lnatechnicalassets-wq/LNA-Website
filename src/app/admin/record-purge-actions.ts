@@ -2,11 +2,12 @@
 
 import { z } from "zod";
 import { purgeImpact, purgeKind, type PurgeImpact, type PurgeKind } from "@/lib/admin-record-purge";
-import { requireStaff } from "@/server/auth/require-staff";
+import { requireSuperAdmin } from "@/server/auth/require-staff";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
 export async function loadPurgeImpact(kind: PurgeKind, id: string): Promise<PurgeImpact> {
-  const staff = await requireStaff("enrollments:manage");
+  const staff = await requireSuperAdmin("enrollments:manage");
+  if (process.env.NODE_ENV === "production") return { status: "unavailable" };
   if (!purgeKind.safeParse(kind).success || !z.string().uuid().safeParse(id).success) {
     return { status: "not_found" };
   }

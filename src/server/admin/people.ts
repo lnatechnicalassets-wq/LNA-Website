@@ -9,10 +9,10 @@ import { CareerHistoryItemSchema } from "@/lib/content/home";
 import type { PeopleQuery, StudentCourseRow } from "@/lib/admin-people";
 import { adminPaths } from "@/lib/admin-navigation";
 import { AppError } from "@/lib/errors";
-import { requireStaff } from "@/server/auth/require-staff";
+import { requireStaff, type StaffPermission } from "@/server/auth/require-staff";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
-export async function requireDirectoryStaff(permission: "catalog:edit" | "enrollments:manage") {
+export async function requireDirectoryStaff(permission: StaffPermission) {
   return requireStaff(permission).catch((error: unknown) => {
     if (!(error instanceof AppError)) throw error;
     redirect(

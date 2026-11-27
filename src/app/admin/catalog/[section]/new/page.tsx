@@ -5,8 +5,12 @@ import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { catalogRecordId, catalogSection } from "@/lib/admin-catalog";
 import { createCatalogCopy, editCatalogCopy } from "@/lib/admin-catalog-edit";
 import { adminCourseBatchesHref, adminPaths } from "@/lib/admin-navigation";
+import { batchCopyValues } from "@/lib/batch-copy";
+import { batchDefaultsValues } from "@/lib/course-batch-defaults";
+import { getCourseBatchDefaults } from "@/server/admin/course-batch-defaults";
 import { AppError } from "@/lib/errors";
-import { listBatchCourseOptions } from "@/server/admin/catalog";
+import { getAdminCatalogBatchContext, listBatchCourseOptions } from "@/server/admin/catalog";
+import { getCatalogEditRecord } from "@/server/admin/catalog-edit";
 import { requireStaff } from "@/server/auth/require-staff";
 import { EditForm } from "../[id]/edit/edit-form";
 import { createCatalogDraft } from "./actions";
@@ -37,11 +41,39 @@ export default async function NewCatalogPage({
           throw error;
         })
       : [];
-  const requestedCourse = catalogRecordId.safeParse((await searchParams).courseId);
-  const selectedCourse = requestedCourse.success
-    ? courses?.find((course) => course.id === requestedCourse.data)
-    : undefined;
+  const query = await searchParams;
+  const requestedCourse = catalogRecordId.safeParse(query.courseId);
+  const copyRequested = section === "batches" && query.copyFrom !== undefined;
+  const sourceId = catalogRecordId.safeParse(query.copyFrom);
+  const source =
+    copyRequested && sourceId.success && courses
+      ? await Promise.all([
+          getAdminCatalogBatchContext(sourceId.data),
+          getCatalogEditRecord("batches", sourceId.data),
+        ]).catch((error: unknown) => {
+          if (error instanceof AppError && error.code === "ADMIN_CATALOG_UNAVAILABLE") return null;
+          throw error;
+        })
+      : null;
+  const sourceBatch = source?.[0];
+  const sourceRecord = source?.[1];
+  const copyCourse = sourceBatch && courses?.find((course) => course.id === sourceBatch.courseId);
+  const copiedValues =
+    sourceRecord && copyCourse ? batchCopyValues(copyCourse.id, sourceRecord.values) : null;
+  const selectedCourse = copyRequested
+    ? copyCourse || undefined
+    : requestedCourse.success
+      ? courses?.find((course) => course.id === requestedCourse.data)
+      : undefined;
   const needsCourse = section === "batches" && courses?.length === 0;
+  const defaultsRequested = section === "batches" && !copyRequested && query.defaults === "1";
+  const savedDefaults =
+    defaultsRequested && selectedCourse
+      ? await getCourseBatchDefaults(staff.userId, selectedCourse.id)
+      : null;
+  const prefilledDefaults = savedDefaults?.defaults
+    ? batchDefaultsValues(savedDefaults.defaults)
+    : null;
 
   return (
     <AdminPortalShell staff={staff} currentPath={path}>
@@ -57,8 +89,31 @@ export default async function NewCatalogPage({
             {createCatalogCopy[section].title}
           </h1>
           <p className="text-sm text-text-secondary">{createCatalogCopy.draft}</p>
+          {defaultsRequested && (
+            <p role="status" className="text-sm text-text-secondary">
+              {prefilledDefaults
+                ? "Course defaults loaded. Review the settings and choose Free or Paid before creating the draft."
+                : "No saved defaults are available. Enter the batch settings manually."}
+            </p>
+          )}
+          {copiedValues && sourceBatch && (
+            <p
+              role="status"
+              className="rounded-lg border border-border-subtle bg-surface-card p-3 text-sm"
+            >
+              Copying settings from {sourceBatch.name}. Enter a new name, batch number and dates.
+              Student records, payment history and mentor assignments are not copied.
+            </p>
+          )}
         </header>
-        {courses === null ? (
+        {copyRequested && !copiedValues ? (
+          <div role="alert" className="space-y-2 text-sm text-status-danger-text">
+            <p>The source batch could not be copied. Its course may be archived or unavailable.</p>
+            <Link href={`${adminPaths.batches}/new`} className="underline">
+              Create a new batch instead
+            </Link>
+          </div>
+        ) : courses === null ? (
           <p role="alert" className="text-sm text-status-danger-text">
             {editCatalogCopy.readFailed}
           </p>
@@ -77,7 +132,17 @@ export default async function NewCatalogPage({
             section={section}
             mode="create"
             courseOptions={courses}
-            initialValues={selectedCourse ? { course_id: selectedCourse.id } : {}}
+            initialValues={
+              copiedValues ??
+              (selectedCourse
+                ? {
+                    course_id: selectedCourse.id,
+                    ...(prefilledDefaults ?? { capacity: "unlimited" }),
+                  }
+                : section === "batches"
+                  ? { capacity: "unlimited" }
+                  : {})
+            }
             save={createCatalogDraft.bind(null, section)}
           />
         )}

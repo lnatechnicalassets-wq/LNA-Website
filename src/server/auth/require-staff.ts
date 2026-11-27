@@ -1,19 +1,21 @@
 import "server-only";
+import { getClientEnv } from "@/env.client";
 import { AppError } from "@/lib/errors";
 import {
   createSupabaseAdminClient,
   createSupabaseServerClient,
   hasConfiguredSupabaseServerEnv,
 } from "@/server/supabase/clients";
+import { isAdminRuntimeActivationEnabled, parseCurrentServerEnv } from "@/server/env";
+import {
+  hasRuntimeStaffPermission,
+  isStaffPermission,
+  isStaffRole,
+  type StaffPermission,
+  type StaffRole,
+} from "./permissions";
 
-export type StaffPermission =
-  | "enrollments:read"
-  | "enrollments:create"
-  | "enrollments:verify-payment"
-  | "enrollments:manage"
-  | "catalog:edit";
-
-export type StaffRole = "admin" | "super_admin";
+export type { StaffPermission, StaffRole };
 
 export interface VerifiedStaffContext {
   userId: string;
@@ -22,6 +24,11 @@ export interface VerifiedStaffContext {
   role: StaffRole;
   accountState: "active";
   aal: "aal2";
+  /**
+   * True only when an Admin context passed both isolated local-Supabase activation gating
+   * and the M19 column/RPC compatibility check in `getStaffSessionContext`.
+   */
+  adminActivated?: boolean;
 }
 
 export type StaffSessionCheck =
@@ -67,23 +74,52 @@ export interface StaffProfileLookupResult {
 
 export interface StaffAuthDeps {
   isConfigured?: () => boolean;
+  isAdminActivationEnabled?: () => boolean;
+  checkAdminDatabaseCompatibility?: (userId: string) => Promise<boolean>;
+  /** @deprecated Prefer checkAdminDatabaseCompatibility; kept for test injection compatibility. */
+  verifyAdminDatabaseBaseline?: (userId: string) => Promise<boolean>;
   getSessionClient?: () => Promise<StaffSessionClientLike>;
   lookupProfileById?: (userId: string) => Promise<StaffProfileLookupResult | null>;
 }
 
-const ROLE_PERMISSIONS: Record<StaffRole, ReadonlyArray<StaffPermission>> = {
-  super_admin: [
-    "enrollments:read",
-    "enrollments:create",
-    "enrollments:verify-payment",
-    "enrollments:manage",
-    "catalog:edit",
-  ],
-  admin: [],
-};
+/**
+ * Performs a bounded M19 column/RPC compatibility check (`audit_events` M19 columns
+ * and `is_staff_actor_authorized` RPC returning `true`), NOT exhaustive migration
+ * verification. Fails closed on any connection, client, schema, or RPC error.
+ */
+async function defaultCheckAdminM19Compatibility(userId: string): Promise<boolean> {
+  try {
+    const admin = createSupabaseAdminClient();
+    const [auditColsRes, actorRpcRes] = await Promise.all([
+      admin
+        .from("audit_events")
+        .select("reason, audit_scope, batch_id, secondary_batch_id")
+        .limit(0),
+      admin.rpc("is_staff_actor_authorized", {
+        p_actor_id: userId,
+        p_allowed_roles: ["admin"],
+      }),
+    ]);
 
-function hasPermission(role: StaffRole, permission: StaffPermission): boolean {
-  return ROLE_PERMISSIONS[role].includes(permission);
+    if (auditColsRes.error || actorRpcRes.error) {
+      return false;
+    }
+
+    return actorRpcRes.data === true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveDefaultAdminActivationEnabled(): boolean {
+  try {
+    parseCurrentServerEnv();
+    return isAdminRuntimeActivationEnabled(process.env, {
+      resolvedSupabaseUrl: getClientEnv().NEXT_PUBLIC_SUPABASE_URL,
+    });
+  } catch {
+    return false;
+  }
 }
 
 async function defaultLookupProfileById(userId: string): Promise<StaffProfileLookupResult | null> {
@@ -144,12 +180,59 @@ export async function getStaffSessionContext(
     };
   }
 
-  if (profile.role !== "super_admin" && profile.role !== "admin") {
+  if (!isStaffRole(profile.role)) {
     return { ok: false, reason: "forbidden", userId: profile.id, email: profile.email };
   }
 
   const role: StaffRole = profile.role;
-  if (!hasPermission(role, requiredPermission)) {
+  let adminActivated = false;
+
+  if (role === "admin") {
+    let activationEnabled = false;
+    try {
+      activationEnabled = deps?.isAdminActivationEnabled
+        ? deps.isAdminActivationEnabled()
+        : resolveDefaultAdminActivationEnabled();
+    } catch {
+      activationEnabled = false;
+    }
+    if (!activationEnabled) {
+      return {
+        ok: false,
+        reason: "forbidden",
+        userId: profile.id,
+        email: profile.email,
+        role,
+      };
+    }
+
+    let m19Compatible = false;
+    try {
+      const compatibilityCheck =
+        deps?.checkAdminDatabaseCompatibility ??
+        deps?.verifyAdminDatabaseBaseline ??
+        defaultCheckAdminM19Compatibility;
+      m19Compatible = await compatibilityCheck(profile.id);
+    } catch {
+      m19Compatible = false;
+    }
+    if (!m19Compatible) {
+      return {
+        ok: false,
+        reason: "forbidden",
+        userId: profile.id,
+        email: profile.email,
+        role,
+      };
+    }
+
+    adminActivated = true;
+  }
+
+  if (
+    !isStaffPermission(requiredPermission) ||
+    !hasRuntimeStaffPermission(role, requiredPermission, { adminActivated })
+  ) {
     return {
       ok: false,
       reason: "forbidden",
@@ -194,6 +277,7 @@ export async function getStaffSessionContext(
       role,
       accountState: "active",
       aal: "aal2",
+      ...(adminActivated ? { adminActivated: true } : {}),
     },
   };
 }
@@ -227,4 +311,61 @@ export async function requireStaff(
     case "forbidden":
       throw new AppError("You do not have permission to access this resource.", "FORBIDDEN", 403);
   }
+}
+
+/**
+ * Reusable fail-closed permission guard for verified server contexts passed into domain services.
+ */
+export function assertStaffContextPermission(
+  staff: VerifiedStaffContext,
+  permission: StaffPermission
+): VerifiedStaffContext {
+  if (staff.accountState !== "active") {
+    throw new AppError("Staff account is disabled or archived.", "ACCOUNT_INACTIVE", 403);
+  }
+  if (staff.aal !== "aal2") {
+    throw new AppError("Authenticator app verification (AAL2) is required.", "MFA_REQUIRED", 403);
+  }
+  if (
+    !isStaffRole(staff.role) ||
+    !isStaffPermission(permission) ||
+    !hasRuntimeStaffPermission(staff.role, permission, {
+      adminActivated: staff.adminActivated === true,
+    })
+  ) {
+    throw new AppError("You do not have permission to access this resource.", "FORBIDDEN", 403);
+  }
+  return staff;
+}
+
+/**
+ * Requires an active AAL2 staff session holding ALL listed permissions (empty/unknown list fails closed).
+ */
+export async function requireAllStaffPermissions(
+  permissions: ReadonlyArray<StaffPermission>,
+  deps?: StaffAuthDeps
+): Promise<VerifiedStaffContext> {
+  if (permissions.length === 0 || permissions.some((p) => !isStaffPermission(p))) {
+    throw new AppError("You do not have permission to access this resource.", "FORBIDDEN", 403);
+  }
+  const staff = await requireStaff(permissions[0], deps);
+  for (const permission of permissions.slice(1)) {
+    assertStaffContextPermission(staff, permission);
+  }
+  return staff;
+}
+
+/**
+ * Explicit Super Admin guard for staff lifecycle, settings, manual payment corrections, and global audit.
+ * Denies Admin accounts regardless of future operational Admin permission activation.
+ */
+export async function requireSuperAdmin(
+  permission: StaffPermission = "staff:manage",
+  deps?: StaffAuthDeps
+): Promise<VerifiedStaffContext> {
+  const staff = await requireStaff(permission, deps);
+  if (staff.role !== "super_admin") {
+    throw new AppError("Super Admin access is required for this operation.", "FORBIDDEN", 403);
+  }
+  return staff;
 }

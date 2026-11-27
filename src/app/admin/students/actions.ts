@@ -14,11 +14,11 @@ import { purgeToken, purgeCopy } from "@/lib/admin-record-purge";
 import { listPastBatchOptions } from "@/server/admin/people";
 import { listBatchCourseOptions } from "@/server/admin/catalog";
 import { adminPaths } from "@/lib/admin-navigation";
-import { requireStaff } from "@/server/auth/require-staff";
+import { requireStaff, requireSuperAdmin } from "@/server/auth/require-staff";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
 export const saveStudent: PeopleAction = async (target, _previous, form) => {
-  const staff = await requireStaff("enrollments:manage");
+  const staff = await requireStaff("students:edit");
   const selected = personTarget.safeParse(target);
   if (!selected.success) return { message: copy.failed };
   const data = studentInput.safeParse(Object.fromEntries(form));
@@ -32,6 +32,36 @@ export const saveStudent: PeopleAction = async (target, _previous, form) => {
     };
   }
   const profile = data.data;
+  if (operation === "edit" && profile) {
+    const reason = z.string().trim().min(1).max(500).safeParse(form.get("reason"));
+    if (!reason.success || form.get("attested") !== "on") {
+      return {
+        message: "Enter a correction reason and confirm you verified the student’s identity.",
+      };
+    }
+    const { data: result, error } = await createSupabaseAdminClient().rpc(
+      "correct_staff_student_profile",
+      {
+        p_actor: staff.userId,
+        p_id: selected.data.id,
+        p_revision: selected.data.revision,
+        p_name: profile.fullName,
+        p_email: profile.email,
+        p_phone: profile.phone,
+        p_university: profile.university,
+        p_reason: reason.data,
+        p_attested: true,
+      }
+    );
+    if (result === "STALE") return { message: copy.stale };
+    if (result === "DUPLICATE") return { message: copy.duplicate };
+    if (result === "BUSY")
+      return { message: "This student record is busy. Refresh and try again." };
+    if (error || result !== "OK") return { message: copy.failed };
+    revalidatePath(adminPaths.studentDirectory);
+    revalidatePath(adminPaths.admissions);
+    return { success: true };
+  }
   const { data: result, error } = await createSupabaseAdminClient().rpc("manage_staff_student", {
     p_actor: staff.userId,
     p_operation: operation,
@@ -54,7 +84,9 @@ export const saveStudent: PeopleAction = async (target, _previous, form) => {
 };
 
 export const deleteStudent: PeopleAction<StudentDeleteTarget> = async (target, _previous, form) => {
-  const staff = await requireStaff("enrollments:manage");
+  const staff = await requireSuperAdmin("enrollments:manage");
+  if (process.env.NODE_ENV === "production")
+    return { message: "Permanent deletion is disabled. Archive this student instead." };
   const selected = studentDeleteTarget.safeParse(target);
   if (!selected.success) return { message: copy.deleteStudentFailed };
 
@@ -112,7 +144,7 @@ const courseHistoryTarget = z.discriminatedUnion("operation", [
 ]);
 
 export async function saveCourseHistory(input: z.infer<typeof courseHistoryTarget>) {
-  const staff = await requireStaff("enrollments:manage");
+  const staff = await requireStaff("students:edit");
   const parsed = courseHistoryTarget.safeParse(input);
   if (!parsed.success) return { message: copy.invalid };
   const entry = parsed.data;
@@ -132,12 +164,12 @@ export async function saveCourseHistory(input: z.infer<typeof courseHistoryTarge
 }
 
 export async function loadHistoryCourses() {
-  await requireStaff("enrollments:manage");
+  await requireStaff("students:edit");
   return listBatchCourseOptions({ includeArchived: true });
 }
 
 export async function loadHistoryBatches(courseId: string) {
-  await requireStaff("enrollments:manage");
+  await requireStaff("students:edit");
   const parsed = z.string().uuid().parse(courseId);
   return listPastBatchOptions(parsed);
 }

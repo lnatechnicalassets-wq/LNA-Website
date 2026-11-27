@@ -207,7 +207,6 @@ function navigateToPaidPaymentStep(
   fireEvent.change(screen.getByLabelText("Batch"), {
     target: { value: options?.batchId ?? "batch-mto-2026-01" },
   });
-  fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
 
   fireEvent.change(screen.getByLabelText(/Full name/i), { target: { value: "Samira Rahman" } });
   fireEvent.change(screen.getByLabelText(/Email address/i), {
@@ -216,7 +215,6 @@ function navigateToPaidPaymentStep(
   fireEvent.change(screen.getByLabelText(/WhatsApp \/ Phone number/i), {
     target: { value: "01711223344" },
   });
-  fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
 
   fireEvent.change(screen.getByLabelText(/University/i), { target: { value: "Dhaka University" } });
   fireEvent.change(screen.getByLabelText(/Department/i), { target: { value: "Finance" } });
@@ -225,6 +223,7 @@ function navigateToPaidPaymentStep(
   });
   fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
 
+  fireEvent.click(screen.getByRole("checkbox", { name: /I accept the enrollment/i }));
   fireEvent.click(screen.getByRole("button", { name: /Continue to payment/i }));
 }
 
@@ -255,7 +254,6 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
     const change = (label: RegExp, value: string) =>
       fireEvent.change(screen.getByLabelText(label), { target: { value } });
     change(/Full name/i, "Samira Rahman");
@@ -274,6 +272,8 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
     expect(screen.getByText("Open your bKash app and scan this QR code")).toBeDefined();
     expect(screen.queryByTestId("hosted-bkash-checkout-panel")).toBeNull();
     const submit = screen.getByRole("button", { name: "Submit application" });
+    expect((submit as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("checkbox", { name: /I accept the enrollment/i }));
     fireEvent.click(submit);
     expect(onSubmit).not.toHaveBeenCalled();
     expect(
@@ -297,7 +297,24 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
         goals: "Improve my interview skills.",
       },
       transactionId: "BK15A2H90X",
+      expectedPayablePoisha: 550000,
+      policyAccepted: true,
     });
+  });
+
+  it("does not offer a published program without any eligible batch", () => {
+    render(
+      <EnrollmentView
+        courses={testCourses}
+        batches={testBatches.map((batch) =>
+          batch.courseId === "mto-readiness" ? { ...batch, status: "completed" as const } : batch
+        )}
+        config={createOfficialConfig(true)}
+        checkoutMode="mock"
+      />
+    );
+    expect(screen.queryByRole("option", { name: "MTO Readiness Program" })).toBeNull();
+    expect(screen.getByRole("option", { name: "Career Planning Workshop" })).toBeDefined();
   });
 
   it("shows 'Online enrollment is coming soon' and /status link before asking for personal details when closed", () => {
@@ -430,8 +447,9 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
       <EnrollmentView
         courses={testCourses}
         batches={testBatches}
-        config={createOfficialConfig(true)}
-        checkoutMode="mock"
+        config={createOfficialConfig(false)}
+        checkoutMode="closed"
+        freeRegistrationEnabled
         onStartCheckout={startSpy}
       />
     );
@@ -439,7 +457,6 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
     fireEvent.change(screen.getByLabelText("Program"), {
       target: { value: "career-planning-workshop" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
 
     fireEvent.change(screen.getByLabelText(/Full name/i), { target: { value: "Kamal Uddin" } });
     fireEvent.change(screen.getByLabelText(/Email address/i), {
@@ -450,9 +467,15 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /Confirm registration/i }));
+    const confirm = screen.getByRole("button", { name: /Confirm registration/i });
+    expect((confirm as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("checkbox", { name: /I accept the enrollment/i }));
+    fireEvent.click(confirm);
 
     await waitFor(() => expect(screen.getByText("Enrollment confirmed")).toBeDefined());
+    expect(startSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ expectedPayablePoisha: 0, policyAccepted: true })
+    );
     expect(screen.getByTestId("application-id-value").textContent?.trim()).toBe(fixtureRef);
     expect(screen.getByText(/Keep this ID to verify status anytime/i)).toBeDefined();
     expect(document.body.textContent).not.toMatch(/confirmation email/i);
@@ -635,12 +658,12 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
       expect(screen.getByTestId("enrollment-error-summary")).toBeDefined();
       expect(document.activeElement).toBe(screen.getByLabelText("Program"));
 
-      // Advance to Step 2
+      // Choose a batch; applicant fields appear on the same page.
       fireEvent.change(screen.getByLabelText("Program"), { target: { value: "mto-readiness" } });
       fireEvent.change(screen.getByLabelText("Batch"), { target: { value: "batch-mto-2026-01" } });
       fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
 
-      // Submit empty Step 2 -> focuses Full name
+      // Submit incomplete application -> focuses Full name
       fireEvent.click(screen.getByRole("button", { name: /^Continue$/i }));
       expect(screen.getByTestId("enrollment-error-summary")).toBeDefined();
       expect(document.activeElement).toBe(screen.getByLabelText(/Full name/i));

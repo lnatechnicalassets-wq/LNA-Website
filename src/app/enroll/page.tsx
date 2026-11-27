@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { getEnrollmentConfig } from "@/lib/enrollment/config";
+import { loadProgramQuestionSets } from "@/server/enrollment/program-questions";
 import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
 import {
   getEnrollmentOutcomeSummaryByToken,
@@ -32,35 +33,39 @@ export default async function EnrollPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [resolvedParams, { courses, batches }] = await Promise.all([
-    searchParams,
-    getPublicCatalogFromSupabase().catch(() => ({ courses: [], batches: [] })),
-  ]);
-
+  const catalog = getPublicCatalogFromSupabase().catch(() => ({ courses: [], batches: [] }));
+  const outcome = searchParams.then(async (params) => {
+    const outcomeParam = singleQueryParam(params.outcome);
+    const initialOutcome = await getEnrollmentOutcomeSummaryByToken(
+      outcomeParam,
+      singleQueryParam(params.ref),
+      singleQueryParam(params.token)
+    );
+    return { initialOutcome, invalidOutcomeNotice: outcomeParam === "invalid" && !initialOutcome };
+  });
+  const catalogWithQuestions = catalog.then(async ({ courses, batches }) => ({
+    courses,
+    batches,
+    questionConfig: await loadProgramQuestionSets(courses.map((course) => course.id)).catch(
+      () => null
+    ),
+  }));
+  const [{ courses, batches, questionConfig }, { initialOutcome, invalidOutcomeNotice }] =
+    await Promise.all([catalogWithQuestions, outcome]);
   const runtime = getEnrollmentRuntimeConfig();
   const baseConfig = getEnrollmentConfig();
   const effectiveConfig = {
     ...baseConfig,
+    ...(questionConfig ?? { programQuestions: {}, programQuestionVersions: {} }),
     payment: {
       ...baseConfig.payment,
-      submissionEnabled: runtime.submissionEnabled,
+      submissionEnabled: runtime.submissionEnabled && questionConfig !== null,
       bankTransfer: {
         ...baseConfig.payment.bankTransfer,
         enabled: false,
       },
     },
   };
-
-  const outcomeParam = singleQueryParam(resolvedParams.outcome);
-  const refParam = singleQueryParam(resolvedParams.ref);
-  const tokenParam = singleQueryParam(resolvedParams.token);
-
-  const initialOutcome = await getEnrollmentOutcomeSummaryByToken(
-    outcomeParam,
-    refParam,
-    tokenParam
-  );
-  const invalidOutcomeNotice = outcomeParam === "invalid" && !initialOutcome;
 
   return (
     <Suspense
@@ -77,6 +82,7 @@ export default async function EnrollPage({
         checkoutMode={runtime.checkoutMode}
         sandboxPaymentEnabled={runtime.sandboxPaymentEnabled}
         manualPaymentEnabled={runtime.manualPaymentEnabled}
+        freeRegistrationEnabled={questionConfig !== null}
         initialOutcome={initialOutcome}
         invalidOutcomeNotice={invalidOutcomeNotice}
       />

@@ -106,6 +106,24 @@ function RecordMutationForm({
               />
             </label>
           ))}
+        {operation === "edit" && (
+          <>
+            <label className="block space-y-1 text-sm font-medium">
+              <span>Reason for correction</span>
+              <textarea name="reason" required maxLength={500} rows={2} className={fieldClass} />
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="attested" required />
+              <span>
+                I verified these details belong to the same applicant. Previous payment and sent
+                email records will be preserved.
+              </span>
+            </label>
+            <Link href={adminPaths.studentDirectory} className="text-sm font-medium underline">
+              Open Students to update a linked student profile first
+            </Link>
+          </>
+        )}
         {operation === "delete" && <input type="hidden" name="impactToken" value={impactToken} />}
         {operation === "delete" && (
           <label className="block space-y-1 text-sm font-medium">
@@ -143,10 +161,12 @@ function RecordMutationForm({
 export function EnrollmentRowActions({
   item,
   showView = true,
+  allowPurge = true,
   leadingAction,
 }: {
   item: ActionItem;
   showView?: boolean;
+  allowPurge?: boolean;
   leadingAction?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -169,7 +189,7 @@ export function EnrollmentRowActions({
     !item.archivedAt &&
     item.status === "application_in_process" &&
     item.paymentStatus === "pending_verification" &&
-    item.paymentMethod !== "free" &&
+    (item.paymentMethod === "bkash" || item.paymentMethod === "bank_transfer") &&
     item.submittedPaymentRef;
   const archiveOperation = item.archivedAt ? "restore" : "archive";
   const ArchiveIcon = item.archivedAt ? RotateCcw : Archive;
@@ -246,7 +266,7 @@ export function EnrollmentRowActions({
             {copy[archiveOperation]}
           </Button>
         )}
-        {revision && !showView && (
+        {revision && !showView && allowPurge && (
           <Button
             variant="ghost"
             size="sm"
@@ -284,34 +304,36 @@ export function EnrollmentRowActions({
                 <RecordPurgeImpact impact={impact} />
               </>
             )}
-            {open === "confirm" && revision && item.paymentMethod !== "free" && (
-              <>
-                <dl className="grid gap-2 rounded-lg bg-surface-muted p-3 text-sm sm:grid-cols-2">
-                  <div>
-                    <dt className="text-text-secondary">{copy.expectedPayment}</dt>
-                    <dd className="font-semibold">{formatPoishaToBDT(item.payablePoisha)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-text-secondary">
-                      {copy.reference(formatPaymentMethodLabel(item.paymentMethod))}
-                    </dt>
-                    <dd className="break-all font-mono font-semibold">
-                      {item.submittedPaymentRef}
-                    </dd>
-                  </div>
-                </dl>
-                <ManualPaymentReview
-                  paymentMethod={item.paymentMethod}
-                  action={reviewManualPayment.bind(null, {
-                    id: item.id,
-                    revision,
-                    stayOnPage: true,
-                  })}
-                  onSuccess={complete}
-                  cancel={cancel}
-                />
-              </>
-            )}
+            {open === "confirm" &&
+              revision &&
+              (item.paymentMethod === "bkash" || item.paymentMethod === "bank_transfer") && (
+                <>
+                  <dl className="grid gap-2 rounded-lg bg-surface-muted p-3 text-sm sm:grid-cols-2">
+                    <div>
+                      <dt className="text-text-secondary">{copy.expectedPayment}</dt>
+                      <dd className="font-semibold">{formatPoishaToBDT(item.payablePoisha)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-text-secondary">
+                        {copy.reference(formatPaymentMethodLabel(item.paymentMethod))}
+                      </dt>
+                      <dd className="break-all font-mono font-semibold">
+                        {item.submittedPaymentRef}
+                      </dd>
+                    </div>
+                  </dl>
+                  <ManualPaymentReview
+                    paymentMethod={item.paymentMethod}
+                    action={reviewManualPayment.bind(null, {
+                      id: item.id,
+                      revision,
+                      stayOnPage: true,
+                    })}
+                    onSuccess={complete}
+                    cancel={cancel}
+                  />
+                </>
+              )}
             {open === "delete" && !mayDelete && (
               <div className="flex flex-wrap justify-end gap-2">
                 {cancel}

@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, LogOut, Menu, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, LogOut, Menu } from "lucide-react";
 import { SkipLink } from "@/components/public/skip-link";
 import { Badge, Button } from "@/components/ui";
+import { BrandLogo } from "@/components/ui/demo-logo";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { adminMessage as t, adminNavigation, adminPaths } from "@/lib/admin-navigation";
+import {
+  adminAccountNavItem,
+  adminMessage as t,
+  adminPaths,
+  getAdminNavigation,
+} from "@/lib/admin-navigation";
 import { cn } from "@/lib/utils";
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
 
@@ -30,7 +36,9 @@ function linkIsActive(currentPath: string, href: string) {
     currentPath === href ||
     (href !== adminPaths.overview && currentPath.startsWith(href + "/")) ||
     (href === adminPaths.courses &&
-      (currentPath === adminPaths.batches || currentPath.startsWith(adminPaths.batches + "/")))
+      (currentPath === adminPaths.batches || currentPath.startsWith(adminPaths.batches + "/"))) ||
+    (href === adminPaths.website &&
+      (currentPath === adminPaths.mentors || currentPath.startsWith(adminPaths.mentors + "/")))
   );
 }
 
@@ -75,27 +83,32 @@ function AdminSidebar({
   onSignOut,
   onNavigate,
 }: AdminSidebarProps) {
+  const modules = getAdminNavigation(staff.role);
+  const AccountIcon = adminAccountNavItem.icon;
+
   return (
     <>
       <nav aria-label={t("navigation")} className="min-h-0 flex-1 overflow-y-auto p-4">
         <ul className="space-y-1">
-          {adminNavigation.map(({ label, href, icon: Icon }) => (
-            <li key={label}>
+          {modules.map(({ id, label, href, icon: Icon, children }) => (
+            <li key={id}>
               <AdminNavLink href={href} currentPath={currentPath} onNavigate={onNavigate}>
                 <Icon className="size-4 shrink-0" aria-hidden="true" />
                 {t(label)}
               </AdminNavLink>
-              {label === "courses" && (
-                <ul className="ml-4 mt-1 border-l border-border-subtle pl-2">
-                  <li>
-                    <AdminNavLink
-                      href={adminPaths.batches}
-                      currentPath={currentPath}
-                      onNavigate={onNavigate}
-                    >
-                      {t("batches")}
-                    </AdminNavLink>
-                  </li>
+              {children && children.length > 0 && (
+                <ul className="ml-4 mt-1 space-y-1 border-l border-border-subtle pl-2">
+                  {children.map((child) => (
+                    <li key={child.href}>
+                      <AdminNavLink
+                        href={child.href}
+                        currentPath={currentPath}
+                        onNavigate={onNavigate}
+                      >
+                        {t(child.label)}
+                      </AdminNavLink>
+                    </li>
+                  ))}
                 </ul>
               )}
             </li>
@@ -103,26 +116,35 @@ function AdminSidebar({
         </ul>
       </nav>
 
-      <div className="shrink-0 space-y-3 border-t border-border-subtle p-4">
+      <div className="shrink-0 space-y-2 border-t border-border-subtle p-3">
+        <AdminNavLink
+          href={adminAccountNavItem.href}
+          currentPath={currentPath}
+          onNavigate={onNavigate}
+        >
+          <AccountIcon className="size-4 shrink-0" aria-hidden="true" />
+          {t(adminAccountNavItem.label)}
+        </AdminNavLink>
         <Link
-          href={adminPaths.website}
+          href={adminPaths.publicSite}
           className={cn(rowClassName, idleRowClassName)}
           onClick={onNavigate}
         >
           <ArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
           {t("viewWebsite")}
         </Link>
-        <div className="space-y-2 rounded-lg bg-primary-50 px-3 py-3">
-          <p className="break-words text-sm font-semibold">{staff.fullName}</p>
-          <p className="break-all text-xs text-text-secondary">{staff.email}</p>
-          <div className="flex flex-wrap gap-1.5">
-            <Badge variant="primary" size="sm">
+        <div className="space-y-1 rounded-lg bg-surface-subtle px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <p className="min-w-0 break-words text-sm font-semibold text-primary-900">
+              {staff.fullName}
+            </p>
+            <Badge variant="primary" size="sm" className="shrink-0">
               {t(staff.role === "super_admin" ? "superAdmin" : "admin")}
             </Badge>
-            <Badge variant="success" size="sm">
-              {t("assuranceLevel")}
-            </Badge>
           </div>
+          <p className="truncate text-xs text-text-secondary" title={staff.email}>
+            {staff.email}
+          </p>
         </div>
         <Button
           variant="outline"
@@ -141,10 +163,19 @@ function AdminSidebar({
 function PortalBrand({ inverse = false }: { inverse?: boolean }) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-800 text-text-inverse">
-        <ShieldCheck className="size-5" aria-hidden="true" />
-      </span>
-      <span className={cn("text-sm font-bold", inverse ? "text-text-inverse" : "text-primary-900")}>
+      <BrandLogo
+        variant="crest"
+        size="sm"
+        inverted={inverse}
+        showText={false}
+        className="shrink-0"
+      />
+      <span
+        className={cn(
+          "truncate text-sm font-bold tracking-tight",
+          inverse ? "text-text-inverse" : "text-primary-900"
+        )}
+      >
         {t("portalTitle")}
       </span>
     </div>
@@ -197,14 +228,14 @@ export function AdminPortalShell({
       <SkipLink targetId="admin-page-content" label={t("skipNavigation")} />
 
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border-subtle bg-surface-card lg:flex">
-        <div className="space-y-3 bg-primary-900 px-4 py-4">
+        <div className="bg-primary-900 px-4 py-3.5">
           <PortalBrand inverse />
         </div>
         <AdminSidebar {...sidebarProps} />
       </aside>
 
       <div className="min-w-0 flex-1">
-        <div className="sticky top-0 z-40 flex min-h-16 items-center justify-between gap-3 border-b border-border-subtle bg-surface-card px-4 lg:hidden">
+        <div className="sticky top-0 z-40 flex min-h-14 items-center justify-between gap-3 border-b border-border-subtle bg-surface-card px-4 lg:hidden">
           <PortalBrand />
           <Dialog open={drawerOpen} onOpenChange={setDrawerOpen}>
             <DialogTrigger asChild>
@@ -217,9 +248,10 @@ export function AdminPortalShell({
                 <Menu className="size-5" aria-hidden="true" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="inset-y-0 left-0 top-0 flex h-dvh max-h-none w-[min(20rem,90vw)] max-w-none translate-none flex-col gap-0 overflow-y-auto rounded-none border-0 border-r p-0 duration-0 data-[state=open]:animate-none data-[state=closed]:animate-none [&>button]:right-2 [&>button]:top-2 [&>button]:grid [&>button]:size-11 [&>button]:place-items-center">
-              <div className="space-y-2 border-b border-border-subtle py-4 pr-16 pl-4">
-                <DialogTitle>{t("navigation")}</DialogTitle>
+            <DialogContent className="inset-y-0 left-0 top-0 flex h-dvh max-h-none w-[min(20rem,90vw)] max-w-none translate-none flex-col gap-0 overflow-y-auto rounded-none border-0 border-r p-0 duration-0 data-[state=open]:animate-none data-[state=closed]:animate-none [&>button]:right-2 [&>button]:top-1.5 [&>button]:grid [&>button]:size-11 [&>button]:place-items-center [&>button]:text-text-inverse [&>button:hover]:bg-primary-800">
+              <div className="border-b border-border-subtle bg-primary-900 py-3 pr-14 pl-4">
+                <PortalBrand inverse />
+                <DialogTitle className="sr-only">{t("navigation")}</DialogTitle>
                 <DialogDescription className="sr-only">{t("menuDescription")}</DialogDescription>
               </div>
               <AdminSidebar {...sidebarProps} onNavigate={() => setDrawerOpen(false)} />

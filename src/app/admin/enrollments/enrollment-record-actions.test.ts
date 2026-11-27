@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { manageEnrollmentRecord } from "./enrollment-record-actions";
 import { enrollmentActionCopy as copy } from "@/lib/admin-admissions";
 
-const { rpc, requireStaff, revalidatePath } = vi.hoisted(() => ({
+const { rpc, requireStaff, requireSuperAdmin, revalidatePath } = vi.hoisted(() => ({
   rpc: vi.fn(),
   requireStaff: vi.fn(),
+  requireSuperAdmin: vi.fn(),
   revalidatePath: vi.fn(),
 }));
-vi.mock("@/server/auth/require-staff", () => ({ requireStaff }));
+vi.mock("@/server/auth/require-staff", () => ({ requireStaff, requireSuperAdmin }));
 vi.mock("@/server/supabase/clients", () => ({ createSupabaseAdminClient: () => ({ rpc }) }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
@@ -27,14 +28,22 @@ describe("Permanent admission deletion", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     requireStaff.mockResolvedValue({ userId: "fixture-staff" });
+    requireSuperAdmin.mockResolvedValue({ userId: "fixture-sa", role: "super_admin" });
   });
 
-  it("authorizes the action and rejects an invalid confirmation before querying the database", async () => {
+  it("enforces requireSuperAdmin for delete while checking enrollments:manage for operational archive", async () => {
     expect(await manageEnrollmentRecord(target, {}, confirmation("wrong format"))).toEqual({
       message: copy.deleteMismatch,
     });
-    expect(requireStaff).toHaveBeenCalledWith("enrollments:manage");
+    expect(requireSuperAdmin).toHaveBeenCalledWith("enrollments:manage");
+    expect(requireStaff).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
+
+    rpc.mockResolvedValueOnce({ data: "OK", error: null });
+    expect(
+      await manageEnrollmentRecord({ ...target, operation: "archive" }, {}, new FormData())
+    ).toEqual({ success: true });
+    expect(requireStaff).toHaveBeenCalledWith("enrollments:manage");
   });
 
   it("passes the revision and normalized application ID and refreshes only on success", async () => {
@@ -43,7 +52,7 @@ describe("Permanent admission deletion", () => {
       success: true,
     });
     expect(rpc).toHaveBeenCalledWith("purge_staff_record", {
-      p_actor: "fixture-staff",
+      p_actor: "fixture-sa",
       p_id: target.id,
       p_revision: target.revision,
       p_confirmation: "LNA-D3V7-0001",
@@ -60,5 +69,35 @@ describe("Permanent admission deletion", () => {
     });
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("Admission contact correction", () => {
+  it("requires an attested correction reason and uses the audited contact RPC", async () => {
+    vi.resetAllMocks();
+    requireStaff.mockResolvedValue({ userId: "fixture-staff" });
+    const edit = { ...target, operation: "edit" as const };
+    const form = new FormData();
+    form.set("fullName", "Test Student");
+    form.set("email", "Updated@Example.invalid");
+    form.set("phone", "+8801711223344");
+    expect(await manageEnrollmentRecord(edit, {}, form)).toMatchObject({
+      message: expect.stringContaining("reason"),
+    });
+    expect(rpc).not.toHaveBeenCalled();
+    form.set("reason", "Verified applicant correction");
+    form.set("attested", "on");
+    rpc.mockResolvedValue({ data: "OK", error: null });
+    expect(await manageEnrollmentRecord(edit, {}, form)).toEqual({ success: true });
+    expect(rpc).toHaveBeenCalledWith("correct_staff_admission_contact", {
+      p_actor: "fixture-staff",
+      p_id: edit.id,
+      p_revision: edit.revision,
+      p_name: "Test Student",
+      p_email: "updated@example.invalid",
+      p_phone: "01711223344",
+      p_reason: "Verified applicant correction",
+      p_attested: true,
+    });
   });
 });

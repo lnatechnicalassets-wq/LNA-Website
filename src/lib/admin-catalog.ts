@@ -94,7 +94,8 @@ export const catalogArchiveCopy = {
   cancel: "Cancel",
   hidden:
     "This item will be hidden from the public catalog. Existing enrollment records and history are retained.",
-  restored: "This item will return to its previous catalog status.",
+  restored:
+    "This item will return to its previous catalog status. Check whether public applications may reopen.",
   saved: "Catalog updated.",
   stale: "This item changed. Refresh the catalog before trying again.",
   failed: "The catalog item could not be updated.",

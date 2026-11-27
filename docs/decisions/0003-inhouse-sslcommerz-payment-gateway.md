@@ -1,6 +1,6 @@
 # 0003. In-House SSLCOMMERZ Hosted Checkout Client
 
-**Status:** Accepted  
+**Status:** Superseded by [ADR 0009](0009-direct-bkash-payment-gateway.md) (Direct bKash Payment Gateway)  
 **Date:** 3 November 2026  
 **Deciders:** Refat (Owner), Engineering Agent  
 **Citations:** Blueprint Part 3.1, 3.2, 7.4; SRS Section 9.1, Business Rule BR-02  

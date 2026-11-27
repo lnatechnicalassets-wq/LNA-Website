@@ -7,6 +7,7 @@ import { signMockScenarioToken, type PaymentGatewayClient } from "@/server/payme
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
 import {
   getEnrollmentOutcomeSummaryByToken,
+  getPublicCatalogFromSupabase,
   listAdminEnrollments,
   getAdminEnrollmentDetail,
   lookupEnrollmentStatus,
@@ -174,6 +175,34 @@ function createServiceAdminMock(state: MockTableState) {
     from: (table: string) => makeChain(table),
     rpc: async (fn: string, params: Record<string, unknown>) => {
       rpcCalls.push({ fn, params });
+      if (fn === "claim_confirmation_email" && state.emailOutboxSelectSingle) {
+        const row = state.emailOutboxSelectSingle;
+        if (row.status === "sent")
+          return {
+            data: { status: "sent", provider_message_id: row.provider_message_id },
+            error: null,
+          };
+        const payload = row.payload as Record<string, unknown>;
+        const receipt =
+          row.template === "enrollment_confirmed_paid"
+            ? {
+                receipt_number: `LNA-R-${String(payload.public_ref).replace(/^LNA-/, "")}`,
+                public_ref: payload.public_ref,
+                full_name: payload.full_name,
+                course_title: payload.course_title,
+                batch_name: payload.batch_name,
+                confirmed_at: "2026-11-28T03:00:00Z",
+                collected_poisha: String(payload.payable_poisha),
+                payment_method: payload.payment_method,
+                is_test: false,
+              }
+            : null;
+        return {
+          data: { status: "claimed", outbox: { ...row, dispatch_token: "test-claim" }, receipt },
+          error: null,
+        };
+      }
+      if (fn === "finish_confirmation_email") return { data: true, error: null };
       const handler = state.rpcHandlers?.[fn];
       if (!handler) {
         return { data: null, error: { message: `Unhandled RPC ${fn}` } };
@@ -250,6 +279,51 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
           p_trx_id: "BK15A2H90X",
         },
       },
+    ]);
+  });
+
+  it("rejects a changed fee from the checked public RPC before creating any gateway attempt", async () => {
+    const { admin, rpcCalls } = createServiceAdminMock({
+      rpcHandlers: {
+        start_checked_public_enrollment: () => ({
+          data: { ok: false, code: "FEE_CHANGED" },
+          error: null,
+        }),
+      },
+    });
+    const applicant = {
+      courseId: "mto-readiness",
+      batchId: "batch-mto-2026-01",
+      fullName: "Nadia Sultana",
+      email: "nadia@example.com",
+      whatsapp: "01711223344",
+      answers: {},
+    };
+    await expect(
+      startEnrollmentCheckout(applicant, {
+        origin: "http://localhost:3000",
+        checkoutModeOverride: "mock",
+        adminOverride: admin,
+        programQuestionsSnapshot: [],
+        expectedPayablePoisha: 750000,
+      })
+    ).rejects.toMatchObject({ code: "FEE_CHANGED", statusCode: 409 });
+    await expect(
+      submitManualBkashEnrollment(applicant, {
+        adminOverride: admin,
+        programQuestionsSnapshot: [],
+        expectedPayablePoisha: 0,
+      })
+    ).rejects.toMatchObject({ code: "FEE_CHANGED", statusCode: 409 });
+    expect(
+      rpcCalls.map(({ fn, params }) => ({
+        fn,
+        mode: params.p_mode,
+        fee: params.p_expected_payable_poisha,
+      }))
+    ).toEqual([
+      { fn: "start_checked_public_enrollment", mode: "hosted", fee: 750000 },
+      { fn: "start_checked_public_enrollment", mode: "free", fee: 0 },
     ]);
   });
 
@@ -1124,13 +1198,20 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       listAdminEnrollments({ page: 1 }, { ...SAMPLE_STAFF, role: "admin" }, emptyAdmin)
     ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
 
+    const activatedAdminList = await listAdminEnrollments(
+      { page: 1 },
+      { ...SAMPLE_STAFF, role: "admin", adminActivated: true },
+      emptyAdmin
+    );
+    expect(activatedAdminList.items).toEqual([]);
+
     await expect(
       getAdminEnrollmentDetail(
         "11111111-2222-3333-4444-555555555555",
         { ...SAMPLE_STAFF, aal: "aal1" as unknown as "aal2" },
         emptyAdmin
       )
-    ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+    ).rejects.toMatchObject({ code: "MFA_REQUIRED", statusCode: 403 });
 
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { admin: failingAdmin } = createServiceAdminMock({
@@ -1875,7 +1956,7 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     });
   });
 
-  it("reconcilePendingBkashPayments() recovers stalled completed payment and closes stale uncompleted sessions safely", async () => {
+  it("reconcilePendingBkashPayments() recovers stalled completed payment without treating stale Initiated as failure", async () => {
     process.env = {
       ...process.env,
       NODE_ENV: "test",
@@ -1946,6 +2027,8 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
         ],
       },
       rpcHandlers: {
+        claim_bkash_reconciliation: () => ({ data: true, error: null }),
+        release_bkash_reconciliation: () => ({ data: true, error: null }),
         confirm_payment: () => ({
           data: { ok: true, status: "validated", already_validated: false, outbox_id: "ob-rec-1" },
           error: null,
@@ -1998,9 +2081,9 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       checkoutMode: "mock",
       checked: 2,
       confirmed: 1,
-      failed: 1,
+      failed: 0,
       reviewHold: 0,
-      stillPending: 0,
+      stillPending: 1,
       skipped: 1,
     });
     expect(emailSpy.send).not.toHaveBeenCalled();
@@ -2013,10 +2096,249 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       p_trx_id: "TRX-CRON-999",
       p_verified_poisha: "750000",
     });
-    expect(rpcCalls.find((c) => c.fn === "record_payment_outcome")?.params).toMatchObject({
-      p_attempt_id: "att-rec-2",
-      p_next_status: "failed",
-      p_failure_reason: "SESSION_EXPIRED_UNCOMPLETED",
+    expect(rpcCalls.find((c) => c.fn === "record_payment_outcome")).toBeUndefined();
+    expect(rpcCalls.filter((c) => c.fn === "claim_bkash_reconciliation")).toHaveLength(2);
+    expect(rpcCalls.filter((c) => c.fn === "release_bkash_reconciliation")).toHaveLength(2);
+    expect(gatewayMock.executePayment).not.toHaveBeenCalled();
+  });
+
+  it("maps manual bKash duplicate reference, full batch, closed batch, and missing TrxID errors cleanly", async () => {
+    const questions = [
+      { id: "university", label: "University", type: "text" as const, required: true },
+    ];
+    const baseApplicant = {
+      courseId: "mto-readiness",
+      batchId: "batch-mto-2026-01",
+      fullName: "Nadia Sultana",
+      email: "nadia@example.com",
+      whatsapp: "01711223344",
+      transactionId: "BK15A2H90X",
+      answers: { university: "DU" },
+    };
+
+    for (const [code, statusCode] of [
+      ["DUPLICATE_PAYMENT_REFERENCE", 409],
+      ["BATCH_FULL", 409],
+      ["BATCH_CLOSED", 409],
+      ["TRANSACTION_ID_REQUIRED", 400],
+    ] as const) {
+      const { admin } = createServiceAdminMock({
+        rpcHandlers: {
+          submit_public_manual_enrollment: () => ({ data: { ok: false, code }, error: null }),
+        },
+      });
+      await expect(
+        submitManualBkashEnrollment(baseApplicant, {
+          adminOverride: admin,
+          programQuestionsSnapshot: questions,
+        })
+      ).rejects.toMatchObject({ code, statusCode });
+    }
+  });
+
+  it("computes public batch seat occupancy from historical_enrolled_count + count_batch_active_seats and maps enrollment windows", async () => {
+    const seatRpcCalls: string[] = [];
+    const pastIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const futureIso = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const catalogTables: Record<string, Array<Record<string, unknown>>> = {
+      courses: [
+        {
+          id: "course-mto-uuid",
+          slug: "mto-readiness",
+          title: "MTO Readiness Program",
+          subtitle: "Graduate Career Accelerator",
+          category: "Career Readiness",
+          summary: "Summary text for MTO Readiness",
+          description: "Detailed course description for MTO Readiness Program.",
+          learning_outcomes: ["Case mastery"],
+          target_audience: ["Graduates"],
+          prerequisites: [],
+          modules: [{ id: "m1", title: "Module 1", duration: "4w", topics: ["Cases"] }],
+          delivery_mode: "offline",
+          venue: "Dhaka",
+          status: "published",
+          featured: true,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+      ],
+      course_mentors: [],
+      batches: [
+        {
+          id: "batch-open-uuid",
+          course_id: "course-mto-uuid",
+          slug: "batch-mto-open",
+          batch_number: 1,
+          name: "Open Cohort",
+          start_date: "2026-12-01",
+          end_date: "2027-01-31",
+          schedule_description: "Weekends",
+          capacity: 50,
+          historical_enrolled_count: 18,
+          seat_hold_duration_minutes: 30,
+          fee_poisha: 750000,
+          discount_fee_poisha: null,
+          status: "open_for_enrollment",
+          venue: "Dhaka",
+          enrollment_opens_at: null,
+          enrollment_closes_at: null,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+        {
+          id: "batch-future-uuid",
+          course_id: "course-mto-uuid",
+          slug: "batch-mto-future-window",
+          batch_number: 2,
+          name: "Future Window Cohort",
+          start_date: "2027-02-01",
+          end_date: "2027-03-31",
+          schedule_description: "Weekends",
+          capacity: 20,
+          historical_enrolled_count: 15,
+          seat_hold_duration_minutes: 30,
+          fee_poisha: 750000,
+          discount_fee_poisha: null,
+          status: "open_for_enrollment",
+          venue: "Dhaka",
+          enrollment_opens_at: futureIso,
+          enrollment_closes_at: null,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+        {
+          id: "batch-closed-uuid",
+          course_id: "course-mto-uuid",
+          slug: "batch-mto-closed-window",
+          batch_number: 3,
+          name: "Closed Window Cohort",
+          start_date: "2026-10-01",
+          end_date: "2026-11-30",
+          schedule_description: "Weekends",
+          capacity: 20,
+          historical_enrolled_count: 10,
+          seat_hold_duration_minutes: 30,
+          fee_poisha: 750000,
+          discount_fee_poisha: null,
+          status: "open_for_enrollment",
+          venue: "Dhaka",
+          enrollment_opens_at: null,
+          enrollment_closes_at: pastIso,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+        {
+          id: "batch-completed-uuid",
+          course_id: "course-mto-uuid",
+          slug: "batch-mto-completed",
+          batch_number: 4,
+          name: "Completed Cohort",
+          start_date: "2025-09-01",
+          end_date: "2025-11-30",
+          schedule_description: "Weekends",
+          capacity: 40,
+          historical_enrolled_count: 40,
+          seat_hold_duration_minutes: 30,
+          fee_poisha: 0,
+          discount_fee_poisha: null,
+          status: "completed",
+          venue: "Dhaka",
+          enrollment_opens_at: null,
+          enrollment_closes_at: null,
+          provenance: {
+            class: "B",
+            verified: false,
+            source: "Test fixture",
+            verifiedBy: null,
+            verifiedOn: null,
+          },
+        },
+      ],
+    };
+
+    catalogTables.batches[0].batch_mentors = [
+      { display_order: 1, mentors: { slug: "second-mentor" } },
+      { display_order: 0, mentors: [{ slug: "first-mentor" }] },
+    ];
+    catalogTables.batches.push({
+      ...catalogTables.batches[0],
+      id: "batch-off-uuid",
+      slug: "batch-explicit-off",
+      batch_number: 5,
+      accept_applications: false,
+    });
+    const catalogAdmin = {
+      from: (table: string) => {
+        const chain: Record<string, unknown> = {
+          select: () => chain,
+          eq: () => chain,
+          is: () => chain,
+          in: () => chain,
+          order: () => chain,
+          then: (onFulfilled: (val: unknown) => unknown, onRejected?: (err: unknown) => unknown) =>
+            Promise.resolve({ data: catalogTables[table] ?? [], error: null }).then(
+              onFulfilled,
+              onRejected
+            ),
+        };
+        return chain;
+      },
+      rpc: async (fn: string, params: Record<string, unknown>) => {
+        expect(fn).toBe("count_batch_active_seats");
+        const id = String(params.p_batch_id);
+        seatRpcCalls.push(id);
+        if (id === "batch-open-uuid") return { data: 9, error: null };
+        if (id === "batch-future-uuid") return { data: 10, error: null };
+        return { data: 0, error: null };
+      },
+    } as unknown as SupabaseClient;
+
+    const { batches } = await getPublicCatalogFromSupabase(catalogAdmin);
+
+    expect(seatRpcCalls).toEqual(["batch-open-uuid", "batch-future-uuid", "batch-closed-uuid"]);
+    expect(batches).toHaveLength(5);
+    expect(batches[0].batchMentorIds).toEqual(["first-mentor", "second-mentor"]);
+    expect(batches[4]).toMatchObject({ id: "batch-explicit-off", status: "upcoming" });
+    expect(batches[0]).toMatchObject({
+      id: "batch-mto-open",
+      capacity: 50,
+      enrolledCount: 27, // 18 historical + 9 active seats
+      status: "open_for_enrollment",
+    });
+    expect(batches[1]).toMatchObject({
+      id: "batch-mto-future-window",
+      capacity: 20,
+      enrolledCount: 20, // clamped: min(20, 15 + 10)
+      status: "upcoming",
+    });
+    expect(batches[2]).toMatchObject({
+      id: "batch-mto-closed-window",
+      status: "in_progress",
+    });
+    expect(batches[3]).toMatchObject({
+      id: "batch-mto-completed",
+      enrolledCount: 40,
+      status: "completed",
     });
   });
 });

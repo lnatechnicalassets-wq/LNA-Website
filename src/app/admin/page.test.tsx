@@ -27,8 +27,10 @@ describe("Admin Overview", () => {
 
     render(await AdminOverviewPage());
 
-    expect(requireStaff).toHaveBeenCalledWith("enrollments:read");
+    expect(requireStaff).toHaveBeenCalledWith("overview:read");
     expect(screen.getByRole("heading", { name: "Overview", level: 1 })).toBeDefined();
+    expect(screen.queryByRole("navigation", { name: "Breadcrumb" })).toBeNull();
+    expect(screen.queryByText(/AAL2|M19|Rev3\.0|session verified/i)).toBeNull();
     expect(screen.getByRole("link", { name: "Add student" }).getAttribute("href")).toBe(
       "/admin/enrollments/new"
     );
@@ -37,6 +39,12 @@ describe("Admin Overview", () => {
     );
     expect(screen.getByRole("link", { name: "Manage courses" }).getAttribute("href")).toBe(
       "/admin/catalog/courses"
+    );
+    expect(screen.getByRole("link", { name: "Open students" }).getAttribute("href")).toBe(
+      "/admin/students"
+    );
+    expect(screen.getByRole("link", { name: "Manage mentors" }).getAttribute("href")).toBe(
+      "/admin/mentors"
     );
   });
 

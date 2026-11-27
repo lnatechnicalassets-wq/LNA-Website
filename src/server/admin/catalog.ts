@@ -36,7 +36,7 @@ const batchRecord = z.object({
   start_date: z.string().date(),
   end_date: z.string().date(),
   venue: z.string(),
-  capacity: z.number().int().positive(),
+  capacity: z.number().int().positive().nullable(),
   fee_poisha: catalogPoisha,
   discount_fee_poisha: catalogPoisha.nullable(),
   status: catalogStatuses.batches,

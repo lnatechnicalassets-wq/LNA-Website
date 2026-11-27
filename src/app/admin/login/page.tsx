@@ -1,5 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
+import { adminPaths, sanitizeAdminReturnPath } from "@/lib/admin-navigation";
 import { getStaffSessionContext } from "@/server/auth/require-staff";
 import { AdminLoginView, type AdminLoginStep } from "./admin-login-view";
 
@@ -18,11 +19,11 @@ export default async function AdminLoginPage({
 }) {
   const [resolvedParams, session] = await Promise.all([
     searchParams,
-    getStaffSessionContext("enrollments:read"),
+    getStaffSessionContext("overview:read"),
   ]);
 
   if (session.ok) {
-    redirect("/admin/enrollments");
+    redirect(sanitizeAdminReturnPath(singleParam(resolvedParams.next), adminPaths.admissions));
   }
 
   const queryError = singleParam(resolvedParams.error);
@@ -35,7 +36,7 @@ export default async function AdminLoginPage({
   } else if (session.reason === "forbidden" || queryError === "forbidden") {
     initialStep = "denied";
     deniedMessage =
-      "Your authenticated user is not listed as an active super_admin in public.profiles.";
+      "Your authenticated account does not have active staff permissions for this portal.";
   } else if (session.reason === "inactive") {
     initialStep = "denied";
     deniedMessage = "This staff account is currently suspended or archived.";
@@ -52,4 +53,3 @@ export default async function AdminLoginPage({
     />
   );
 }
-

@@ -48,7 +48,7 @@ async function handleReconcile(request: NextRequest, method: "GET" | "POST") {
         );
       }
 
-      await requireStaff("enrollments:read");
+      await requireStaff("enrollments:verify-payment");
     }
 
     let publicRef = request.nextUrl.searchParams.get("ref")?.trim() || undefined;

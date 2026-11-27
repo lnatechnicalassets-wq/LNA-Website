@@ -31,10 +31,10 @@ SELECT ok(NOT has_function_privilege('authenticated', 'public.create_staff_enrol
 SET LOCAL ROLE service_role;
 
 SELECT throws_ok($sql$
-  SELECT public.create_staff_enrollment('77777777-7777-4777-8777-777777777777', id, updated_at,
+  SELECT public.create_staff_enrollment('99999999-9999-4999-8999-999999999999', id, updated_at,
     'LNA-MAN0-0001', 'Fixture Student', 'paid@example.invalid', '01711000001', '{}', '[]')
   FROM public.batches WHERE slug = 'pgtap-staff-paid'
-$sql$, '42501', 'STAFF_ENROLLMENT_FORBIDDEN', 'Regular admin cannot create an enrollment');
+$sql$, '42501', 'STAFF_ENROLLMENT_FORBIDDEN', 'Unknown actor cannot create an enrollment');
 
 SELECT throws_ok($sql$
   SELECT public.create_staff_enrollment('66666666-6666-4666-8666-666666666666', id, updated_at,

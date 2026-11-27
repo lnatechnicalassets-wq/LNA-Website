@@ -24,9 +24,12 @@ import type {
   EnrollmentOutcomeType,
   ProgramQuestion,
 } from "@/lib/enrollment/types";
-import type { VerifiedStaffContext } from "@/server/auth/require-staff";
+import {
+  assertStaffContextPermission,
+  type VerifiedStaffContext,
+} from "@/server/auth/require-staff";
 import { parseCurrentServerEnv } from "@/server/env";
-import { dispatchEmailOutboxById, type OutboxEmailSender } from "@/server/email/resend";
+import { scheduleConfirmationEmail, type OutboxEmailSender } from "@/server/email/resend";
 import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
 import {
   BkashRequestNotSentError,
@@ -94,6 +97,7 @@ export interface PublicCatalogCourse {
 
 export interface PublicCatalogBatch {
   enrollmentClosesAt?: string;
+  batchMentorIds?: string[];
   id: string;
   courseId: string;
   batchNumber: number;
@@ -101,7 +105,7 @@ export interface PublicCatalogBatch {
   startDate: string;
   endDate: string;
   scheduleDescription: string;
-  capacity: number;
+  capacity: number | null;
   enrolledCount: number;
   seatHoldDurationMinutes: 30;
   feePoisha: number;
@@ -150,7 +154,7 @@ export interface AdminEnrollmentListItem {
   courseTitle: string;
   batchSlug: string;
   batchName: string;
-  paymentMethod: "bkash" | "free" | "bank_transfer";
+  paymentMethod: "bkash" | "free" | "bank_transfer" | "cash" | "full_fee_waiver";
   paymentStatus: string;
   status: string;
   payablePoisha: number;
@@ -229,7 +233,7 @@ export interface AdminEnrollmentDetailResult {
   batchVenue: string;
   answers: Record<string, string>;
   programQuestionsSnapshot: ProgramQuestion[];
-  paymentMethod: "bkash" | "free" | "bank_transfer";
+  paymentMethod: "bkash" | "free" | "bank_transfer" | "cash" | "full_fee_waiver";
   paymentStatus: string;
   submittedPaymentRef: string | null;
   isStaffManualPayment: boolean;
@@ -239,6 +243,14 @@ export interface AdminEnrollmentDetailResult {
   baseFeePoisha: number;
   discountAmountPoisha: number;
   payablePoisha: number;
+  staffPaymentDetails?: {
+    kind: string;
+    originalPayablePoisha: number;
+    adjustedPoisha: number;
+    waiverPoisha: number;
+    collectedPoisha: number;
+    waiverReason: string | null;
+  };
   currency: string;
   status: string;
   holdExpiresAt: string | null;
@@ -419,29 +431,42 @@ export async function getPublicCatalogFromSupabase(
   }
 
   const admin = adminOverride ?? createSupabaseAdminClient();
+  const loadBatches = (includeIntake: boolean) => {
+    const query = admin.from("batches");
+    const selected = includeIntake
+      ? query.select(
+          "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance, accept_applications, batch_mentors(display_order,mentors(slug))"
+        )
+      : query.select(
+          "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance, batch_mentors(display_order,mentors(slug))"
+        );
+    return selected
+      .in("status", ["upcoming", "open_for_enrollment", "in_progress", "completed"])
+      .eq("is_dev_fixture", false)
+      .is("archived_at", null)
+      .order("batch_number", { ascending: true });
+  };
 
-  const [coursesRes, courseMentorsRes, batchesRes] = await Promise.all([
+  const [coursesRes, courseMentorsRes, initialBatchesRes] = await Promise.all([
     admin
       .from("courses")
       .select(
         "id, slug, title, subtitle, category, summary, description, learning_outcomes, target_audience, prerequisites, modules, delivery_mode, venue, status, featured, provenance"
       )
       .eq("status", "published")
+      .eq("is_dev_fixture", false)
       .is("archived_at", null)
       .order("featured", { ascending: false }),
     admin
       .from("course_mentors")
       .select("course_id, display_order, mentors(slug)")
       .order("display_order", { ascending: true }),
-    admin
-      .from("batches")
-      .select(
-        "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance"
-      )
-      .in("status", ["upcoming", "open_for_enrollment", "in_progress", "completed"])
-      .is("archived_at", null)
-      .order("batch_number", { ascending: true }),
+    loadBatches(true),
   ]);
+  // Only a missing migration column permits the legacy read. Other failures
+  // must not be mistaken for a successfully loaded catalog.
+  const batchesRes =
+    initialBatchesRes.error?.code === "42703" ? await loadBatches(false) : initialBatchesRes;
 
   if (coursesRes.error || batchesRes.error) {
     throw new AppError(
@@ -489,27 +514,63 @@ export async function getPublicCatalogFromSupabase(
   const nowMs = Date.now();
   const batches: PublicCatalogBatch[] = [];
 
-  for (const row of batchesRes.data ?? []) {
+  const batchRows = batchesRes.data ?? [];
+  const seatResults = new Map<string, { count: number; failed: boolean }>();
+  for (let offset = 0; offset < batchRows.length; offset += 8) {
+    await Promise.all(
+      batchRows.slice(offset, offset + 8).map(async (row) => {
+        if (!courseSlugByUuid.has(String(row.course_id))) return;
+        const intake = (row as { accept_applications?: unknown }).accept_applications;
+        // An explicitly closed batch never needs a live seat count for public enrollment.
+        if (intake === false) return;
+        if (
+          row.status !== "open_for_enrollment" &&
+          !(intake === true && ["upcoming", "in_progress"].includes(String(row.status)))
+        )
+          return;
+        const result = await admin.rpc("count_batch_active_seats", { p_batch_id: row.id });
+        seatResults.set(String(row.id), {
+          count: result.error || result.data === null ? 0 : parseSafeIntegerPoisha(result.data),
+          failed: Boolean(result.error || result.data === null),
+        });
+      })
+    );
+  }
+  for (const row of batchRows) {
     const courseSlug = courseSlugByUuid.get(String(row.course_id));
     if (!courseSlug) continue;
 
-    let activeSeats = 0;
-    if (row.status === "open_for_enrollment") {
-      const seatCountRes = await admin.rpc("count_batch_active_seats", {
-        p_batch_id: row.id,
-      });
-      if (!seatCountRes.error && seatCountRes.data !== null) {
-        activeSeats = parseSafeIntegerPoisha(seatCountRes.data);
-      }
-    }
+    const explicitIntake = (row as { accept_applications?: unknown }).accept_applications;
+    const configured = typeof explicitIntake === "boolean";
+    const stageEligible = ["upcoming", "open_for_enrollment", "in_progress"].includes(
+      String(row.status)
+    );
+    const explicitlyOpen = configured && explicitIntake === true && stageEligible;
+    const seatResult = seatResults.get(String(row.id));
+    const activeSeats = seatResult?.count ?? 0;
+    const seatCountFailed = seatResult?.failed ?? false;
 
-    const capacity = parseSafeIntegerPoisha(row.capacity);
+    const capacity = row.capacity === null ? null : parseSafeIntegerPoisha(row.capacity);
     const historicalCount = parseSafeIntegerPoisha(row.historical_enrolled_count ?? 0);
-    const totalOccupied = Math.min(capacity, historicalCount + activeSeats);
+    const totalOccupied =
+      capacity === null
+        ? historicalCount + activeSeats
+        : seatCountFailed
+          ? capacity
+          : Math.min(capacity, historicalCount + activeSeats);
 
     let effectiveStatus = row.status as PublicCatalogBatch["status"];
-    if (effectiveStatus === "open_for_enrollment") {
-      if (row.enrollment_opens_at && new Date(String(row.enrollment_opens_at)).getTime() > nowMs) {
+    if (configured) {
+      // Preserve the public DTO contract while the admin uses academic stages.
+      if (explicitlyOpen && !seatCountFailed) effectiveStatus = "open_for_enrollment";
+      else if (effectiveStatus === "open_for_enrollment") effectiveStatus = "upcoming";
+    } else if (effectiveStatus === "open_for_enrollment") {
+      if (seatCountFailed) {
+        effectiveStatus = "upcoming";
+      } else if (
+        row.enrollment_opens_at &&
+        new Date(String(row.enrollment_opens_at)).getTime() > nowMs
+      ) {
         effectiveStatus = "upcoming";
       } else if (
         row.enrollment_closes_at &&
@@ -519,7 +580,27 @@ export async function getPublicCatalogFromSupabase(
       }
     }
 
+    const batchMentorRows = z
+      .array(
+        z.object({
+          display_order: z.number(),
+          mentors: z
+            .union([z.object({ slug: z.string() }), z.array(z.object({ slug: z.string() }))])
+            .nullable(),
+        })
+      )
+      .safeParse((row as { batch_mentors?: unknown }).batch_mentors);
+    const batchMentorIds = batchMentorRows.success
+      ? batchMentorRows.data
+          .sort((a, b) => a.display_order - b.display_order)
+          .flatMap(({ mentors }) => {
+            const mentor = unwrapRelation(mentors);
+            return mentor ? [mentor.slug] : [];
+          })
+      : undefined;
+
     batches.push({
+      ...(batchMentorIds !== undefined ? { batchMentorIds } : {}),
       id: String(row.slug),
       courseId: courseSlug,
       batchNumber: parseSafeIntegerPoisha(row.batch_number),
@@ -534,7 +615,8 @@ export async function getPublicCatalogFromSupabase(
       ...(row.discount_fee_poisha !== null && row.discount_fee_poisha !== undefined
         ? { discountFeePoisha: parseSafeIntegerPoisha(row.discount_fee_poisha) }
         : {}),
-      ...(typeof row.enrollment_closes_at === "string"
+      ...(typeof row.enrollment_closes_at === "string" &&
+      (!configured || Date.parse(row.enrollment_closes_at) > nowMs)
         ? { enrollmentClosesAt: row.enrollment_closes_at }
         : {}),
       status: effectiveStatus,
@@ -605,7 +687,12 @@ function validateEnrollmentSubmission(
   };
 }
 
+const feeChangedMessage =
+  "The batch fee changed. Reload the application and review the new amount before submitting. If you already paid, keep your receipt and contact Admissions.";
+
 const manualEnrollmentErrors: Record<string, { message: string; status: number }> = {
+  FEE_CHANGED: { message: feeChangedMessage, status: 409 },
+  CHECKOUT_CLOSED: { message: "Paid online enrollment is currently closed.", status: 503 },
   BATCH_NOT_FOUND: { message: "Selected batch could not be found.", status: 404 },
   BATCH_CLOSED: { message: "Enrollment is no longer open for this batch.", status: 409 },
   BATCH_FULL: { message: "No seats remain available for this batch.", status: 409 },
@@ -630,6 +717,7 @@ export async function submitManualBkashEnrollment(
   rawInput: unknown,
   options: {
     programQuestionsSnapshot: ProgramQuestion[];
+    expectedPayablePoisha?: number;
     adminOverride?: SupabaseClient;
     emailSenderOverride?: OutboxEmailSender;
   }
@@ -647,11 +735,21 @@ export async function submitManualBkashEnrollment(
   }
 
   const admin = options.adminOverride ?? createSupabaseAdminClient();
-  const { data: rawResult, error } = await admin.rpc("submit_public_manual_enrollment", {
-    ...enrollment,
-    p_public_ref: generateSecureEnrollmentReference(),
-    p_trx_id: transactionId || null,
-  });
+  const checked = options.expectedPayablePoisha !== undefined;
+  const { data: rawResult, error } = await admin.rpc(
+    checked ? "start_checked_public_enrollment" : "submit_public_manual_enrollment",
+    {
+      ...enrollment,
+      p_public_ref: generateSecureEnrollmentReference(),
+      p_trx_id: transactionId || null,
+      ...(checked
+        ? {
+            p_expected_payable_poisha: options.expectedPayablePoisha,
+            p_mode: options.expectedPayablePoisha === 0 ? "free" : "manual",
+          }
+        : {}),
+    }
+  );
 
   const parsed = z
     .discriminatedUnion("ok", [
@@ -667,6 +765,13 @@ export async function submitManualBkashEnrollment(
     ])
     .safeParse(rawResult);
 
+  if (error?.message === "STALE_APPLICATION_QUESTIONS") {
+    throw new AppError(
+      "Application questions changed. Reload and review them. Keep any existing payment receipt; do not pay again.",
+      "STALE_APPLICATION_QUESTIONS",
+      409
+    );
+  }
   const code = isDuplicateEnrollmentContact(error)
     ? "DUPLICATE_ENROLLMENT"
     : !error && parsed.success && !parsed.data.ok
@@ -686,7 +791,7 @@ export async function submitManualBkashEnrollment(
 
   const saved = parsed.data;
   if (saved.outbox_id) {
-    await dispatchEmailOutboxById(saved.outbox_id, {
+    await scheduleConfirmationEmail(saved.outbox_id, {
       senderOverride: options.emailSenderOverride,
       adminOverride: options.adminOverride,
     }).catch(() => null);
@@ -705,6 +810,7 @@ export async function startEnrollmentCheckout(
   options: {
     origin: string;
     programQuestionsSnapshot: ProgramQuestion[];
+    expectedPayablePoisha?: number;
     adminOverride?: SupabaseClient;
     gatewayOverride?: PaymentGatewayClient;
     emailSenderOverride?: OutboxEmailSender;
@@ -721,11 +827,29 @@ export async function startEnrollmentCheckout(
   const admin = options.adminOverride ?? createSupabaseAdminClient();
   const publicRef = generateSecureEnrollmentReference();
 
-  const { data: rpcRaw, error: rpcError } = await admin.rpc("start_enrollment", {
-    p_public_ref: publicRef,
-    ...enrollment,
-  });
+  const checked = options.expectedPayablePoisha !== undefined;
+  const { data: rpcRaw, error: rpcError } = await admin.rpc(
+    checked ? "start_checked_public_enrollment" : "start_enrollment",
+    {
+      p_public_ref: publicRef,
+      ...enrollment,
+      ...(checked
+        ? {
+            p_expected_payable_poisha: options.expectedPayablePoisha,
+            p_mode: "hosted",
+            p_trx_id: null,
+          }
+        : {}),
+    }
+  );
 
+  if (rpcError?.message === "STALE_APPLICATION_QUESTIONS") {
+    throw new AppError(
+      "Application questions changed. Reload and review them before applying.",
+      "STALE_APPLICATION_QUESTIONS",
+      409
+    );
+  }
   if (isDuplicateEnrollmentContact(rpcError)) {
     throw new AppError(
       "An active application or confirmed enrollment already uses this email or phone number in the selected batch.",
@@ -744,6 +868,9 @@ export async function startEnrollmentCheckout(
   const rpc = rpcRaw as Record<string, unknown>;
   if (rpc.ok !== true) {
     const errCode = String(rpc.code ?? "ENROLLMENT_REJECTED");
+    if (errCode === "FEE_CHANGED") {
+      throw new AppError(feeChangedMessage, "FEE_CHANGED", 409);
+    }
     if (errCode === "BATCH_NOT_FOUND") {
       throw new AppError("Selected batch could not be found.", "BATCH_NOT_FOUND", 404);
     }
@@ -771,7 +898,7 @@ export async function startEnrollmentCheckout(
     const outboxId = rpc.outbox_id ? String(rpc.outbox_id) : null;
     if (outboxId) {
       // NFR-AVL-01: Outbox persistence guarantees confirmation; provider blip never blocks registration
-      await dispatchEmailOutboxById(outboxId, {
+      await scheduleConfirmationEmail(outboxId, {
         senderOverride: options.emailSenderOverride,
         adminOverride: options.adminOverride,
       }).catch(() => null);
@@ -837,9 +964,9 @@ export async function startEnrollmentCheckout(
     try {
       await admin.rpc("record_payment_outcome", {
         p_attempt_id: attemptId,
-        p_next_status: "failed",
+        p_next_status: createdPaymentId ? "pending" : "failed",
         p_payment_id: createdPaymentId,
-        p_failure_reason: "BKASH_CREATE_FAILED",
+        p_failure_reason: createdPaymentId ? "CALLBACK_UNVERIFIED" : "BKASH_CREATE_FAILED",
         p_gateway_status_code: "CREATE_ERROR",
         p_gateway_status_message: "Unable to initiate bKash checkout session",
       });
@@ -912,6 +1039,13 @@ export async function retryEnrollmentCheckout(
         410
       );
     }
+    if (code === "PAYMENT_UNRESOLVED") {
+      throw new AppError(
+        "A previous payment is unresolved. Check its status before paying again.",
+        code,
+        409
+      );
+    }
     if (code === "ALREADY_CONFIRMED") {
       throw new AppError("This enrollment is already confirmed.", "ALREADY_CONFIRMED", 409);
     }
@@ -970,9 +1104,9 @@ export async function retryEnrollmentCheckout(
     try {
       await admin.rpc("record_payment_outcome", {
         p_attempt_id: attemptId,
-        p_next_status: "failed",
+        p_next_status: createdPaymentId ? "pending" : "failed",
         p_payment_id: createdPaymentId,
-        p_failure_reason: "BKASH_RETRY_CREATE_FAILED",
+        p_failure_reason: createdPaymentId ? "CALLBACK_UNVERIFIED" : "BKASH_RETRY_CREATE_FAILED",
         p_gateway_status_code: "CREATE_ERROR",
         p_gateway_status_message: "Unable to initiate retry bKash checkout",
       });
@@ -988,7 +1122,7 @@ export async function retryEnrollmentCheckout(
 }
 
 /**
- * Authoritative bKash callback processor implementing Rule 10 §2 (T1, T2, T3, FR-PAY-005..009):
+ * Authoritative bKash callback processor implementing Rule 10 Ã‚Â§2 (T1, T2, T3, FR-PAY-005..009):
  * 1. Saves redacted callback payload in append-only payment_events.
  * 2. Resolves payment_attempts + enforces idempotent terminal checks.
  * 3. Cancel/failure browser redirects NEVER release 30-min seat holds.
@@ -1033,7 +1167,7 @@ export async function processBkashCallback(
   const { data: attempt, error: attemptError } = await admin
     .from("payment_attempts")
     .select(
-      "id, enrollment_id, tran_id, payment_id, amount_poisha, currency, status, bkash_callback_signature_hash"
+      "id, enrollment_id, tran_id, payment_id, amount_poisha, currency, status, bkash_callback_signature_hash, bkash_sandbox_v2"
     )
     .eq("payment_id", paymentId)
     .maybeSingle();
@@ -1044,7 +1178,16 @@ export async function processBkashCallback(
   if (!attempt) return invalidResult;
 
   const verifiedScenario = verifyMockScenarioToken(params.mockSig, paymentId);
-  const checkoutMode = getEnrollmentRuntimeConfig().checkoutMode;
+  const callbackRuntime = getEnrollmentRuntimeConfig();
+  const checkoutMode = callbackRuntime.checkoutMode;
+  if (
+    !options.gatewayOverride &&
+    checkoutMode !== "closed" &&
+    (paymentId.startsWith("MOCKPAY-") !== (checkoutMode === "mock") ||
+      (checkoutMode === "live" &&
+        Boolean(attempt.bkash_sandbox_v2) !== Boolean(callbackRuntime.sandboxPaymentEnabled)))
+  )
+    return invalidResult;
   if (attempt.bkash_callback_signature_hash) {
     if (!matchesBkashCallbackSignature(attempt.bkash_callback_signature_hash, params.signature)) {
       return invalidResult;
@@ -1092,12 +1235,39 @@ export async function processBkashCallback(
   };
 
   // 1. Strict Idempotency Guards (FR-PAY-006, AT-03)
-  if (attempt.status === "validated" || enrollmentRow.status === "confirmed") {
+  if (attempt.status === "validated") {
+    const outcome =
+      enrollmentRow.status === "confirmed"
+        ? "confirmed"
+        : enrollmentRow.status === "cancelled"
+          ? "cancelled"
+          : enrollmentRow.status === "review_hold"
+            ? "review_hold"
+            : "pending";
     return {
-      outcome: "confirmed",
+      outcome,
       alreadyProcessed: true,
       applicationReference: publicRef,
-      redirectUrl: buildRedirect("confirmed"),
+      redirectUrl: buildRedirect(outcome),
+    };
+  }
+  if (enrollmentRow.status === "confirmed" || enrollmentRow.status === "cancelled") {
+    // A different checkout is no longer eligible to Execute. Query it later for
+    // evidence of any already-completed payment without charging again.
+    if (["initiated", "pending"].includes(attempt.status)) {
+      await admin
+        .from("payment_attempts")
+        .update({ failure_reason: "CALLBACK_UNVERIFIED" })
+        .eq("id", attempt.id)
+        .in("status", ["initiated", "pending"])
+        .is("failure_reason", null);
+    }
+    const outcome = enrollmentRow.status === "confirmed" ? "confirmed" : "cancelled";
+    return {
+      outcome,
+      alreadyProcessed: true,
+      applicationReference: publicRef,
+      redirectUrl: buildRedirect(outcome),
     };
   }
 
@@ -1129,6 +1299,7 @@ export async function processBkashCallback(
 
   // Only one callback may move a gateway attempt forward. A replay never sends
   // Execute twice, including while the first request is in flight.
+  if (checkoutMode === "closed" && !options.gatewayOverride) return result("pending");
   const gateway =
     statusParam === "success"
       ? (options.gatewayOverride ?? getPaymentGatewayClient(cleanOrigin))
@@ -1161,7 +1332,7 @@ export async function processBkashCallback(
     code: string,
     message: string
   ) => {
-    const { error } = await admin.rpc("record_payment_outcome", {
+    const { data: recorded, error } = await admin.rpc("record_payment_outcome", {
       p_attempt_id: attempt.id,
       p_next_status: nextStatus,
       p_payment_id: paymentId,
@@ -1171,8 +1342,22 @@ export async function processBkashCallback(
     });
     if (error)
       throw new AppError("Unable to save payment outcome.", "BKASH_OUTCOME_SAVE_FAILED", 503);
+    const actual = recorded?.status;
+    if (actual === "validated") return result("pending"); // reload authoritative enrollment state
+    if (["pending", "failed", "cancelled", "review_hold"].includes(actual)) {
+      return result(actual as EnrollmentOutcomeType);
+    }
     return result(nextStatus);
   };
+
+  if (checkoutMode === "live" && statusParam !== "success") {
+    return recordOutcome(
+      "pending",
+      "CALLBACK_UNVERIFIED",
+      "PENDING",
+      "Awaiting gateway status verification."
+    );
+  }
 
   if (statusParam === "cancel") {
     return recordOutcome("cancelled", "USER_CANCELLED", "CANCEL", "bKash checkout was cancelled.");
@@ -1204,8 +1389,14 @@ export async function processBkashCallback(
         .update({ failure_reason: null, bkash_execute_claimed: false })
         .eq("id", attempt.id)
         .eq("failure_reason", "EXECUTE_STARTED");
+      throw error;
     }
-    throw error;
+    return recordOutcome(
+      "pending",
+      EXECUTE_NO_RESPONSE,
+      "UNKNOWN",
+      "Execute outcome is uncertain. Awaiting gateway verification."
+    );
   }
 
   const recordGatewayResponse = (
@@ -1245,7 +1436,9 @@ export async function processBkashCallback(
 
     if (
       ["Failed", "Cancelled"].includes(verified.transactionStatus) &&
-      verified.paymentId === paymentId
+      verified.paymentId === paymentId &&
+      verified.merchantInvoiceNumber === attempt.tran_id &&
+      !verified.trxId
     ) {
       return recordOutcome(
         "failed",
@@ -1256,7 +1449,20 @@ export async function processBkashCallback(
     }
     if (verified.transactionStatus !== "Completed") return pending;
   } else if (execRes.outcome !== "completed" || execRes.transactionStatus !== "Completed") {
-    return recordOutcome("failed", "GATEWAY_DECLINED", execRes.statusCode, execRes.statusMessage);
+    const definitiveDecline =
+      !execRes.trxId &&
+      ((execRes.paymentId === paymentId &&
+        execRes.merchantInvoiceNumber === attempt.tran_id &&
+        ["Failed", "Cancelled"].includes(execRes.transactionStatus)) ||
+        (execRes.paymentId === paymentId && execRes.statusCode === "2023"));
+    return definitiveDecline
+      ? recordOutcome("failed", "GATEWAY_DECLINED", execRes.statusCode, execRes.statusMessage)
+      : recordOutcome(
+          "pending",
+          EXECUTE_NO_RESPONSE,
+          execRes.statusCode,
+          "Execute outcome is uncertain. Awaiting gateway verification."
+        );
   }
 
   const trxId = verified.trxId?.trim();
@@ -1311,7 +1517,7 @@ export async function processBkashCallback(
 
     if (!alreadyValidated && outboxId) {
       // Decoupled confirmation email dispatch (NFR-AVL-01)
-      await dispatchEmailOutboxById(outboxId, {
+      await scheduleConfirmationEmail(outboxId, {
         senderOverride: options.emailSenderOverride,
         adminOverride: options.adminOverride,
       }).catch(() => null);
@@ -1377,6 +1583,8 @@ export async function getEnrollmentOutcomeSummaryByToken(
   const dbStatus = String(row.status);
   if (dbStatus === "confirmed") {
     derivedOutcome = "confirmed";
+  } else if (dbStatus === "cancelled") {
+    derivedOutcome = "cancelled";
   } else if (dbStatus === "review_hold") {
     derivedOutcome = "review_hold";
   } else if (requestedOutcome === "cancelled") {
@@ -1499,15 +1707,9 @@ function sanitizePostgrestSearchTerm(input: string): string {
     .slice(0, 80);
 }
 
-function assertVerifiedSuperAdmin(staff: VerifiedStaffContext): void {
-  if (staff.role !== "super_admin" || staff.accountState !== "active" || staff.aal !== "aal2") {
-    throw new AppError("You do not have permission to access this resource.", "FORBIDDEN", 403);
-  }
-}
-
 /**
- * Superadmin read-only enrollment listing with search, status filtering, and pagination.
- * Caller MUST already be verified by requireStaff("enrollments:read").
+ * Staff read-only enrollment listing with search, status filtering, and pagination.
+ * Enforces enrollments:read on the verified staff context (fail-closed for unactivated Admin).
  */
 export async function listAdminEnrollments(
   filters: {
@@ -1523,7 +1725,7 @@ export async function listAdminEnrollments(
   staff: VerifiedStaffContext,
   adminOverride?: SupabaseClient
 ): Promise<AdminEnrollmentListResult> {
-  assertVerifiedSuperAdmin(staff);
+  assertStaffContextPermission(staff, "enrollments:read");
 
   const admin = adminOverride ?? createSupabaseAdminClient();
   const page = Math.max(1, filters.page ?? 1);
@@ -1631,7 +1833,7 @@ export async function getAdminEnrollmentDetail(
   staff: VerifiedStaffContext,
   adminOverride?: SupabaseClient
 ): Promise<AdminEnrollmentDetailResult | null> {
-  assertVerifiedSuperAdmin(staff);
+  assertStaffContextPermission(staff, "enrollments:read");
 
   const admin = adminOverride ?? createSupabaseAdminClient();
   const trimmed = idOrRef.trim();
@@ -1642,17 +1844,23 @@ export async function getAdminEnrollmentDetail(
     return null;
   }
 
-  let query = admin
-    .from("enrollments")
-    .select(
-      "id, public_ref, full_name, email, phone, answers, program_questions_snapshot, payment_method, payment_status, submitted_payment_ref, staff_payment_recorded_by, applicant_payment_submitted, archived_at, legacy_duplicate_phone, base_fee_poisha, discount_amount_poisha, payable_poisha, currency, status, hold_expires_at, verified_at, confirmed_at, verification_notes, is_dev_fixture, fixture_label, created_at, updated_at, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name, start_date, venue)"
-    );
-
-  query = isUuid
-    ? query.eq("id", trimmed)
-    : query.eq("public_ref", normalizeApplicationRef(trimmed));
-
-  const { data: row, error } = await query.maybeSingle();
+  const detailColumns =
+    "id, public_ref, full_name, email, phone, answers, program_questions_snapshot, payment_method, payment_status, submitted_payment_ref, staff_payment_recorded_by, applicant_payment_submitted, archived_at, legacy_duplicate_phone, base_fee_poisha, discount_amount_poisha, payable_poisha, currency, status, hold_expires_at, verified_at, confirmed_at, verification_notes, is_dev_fixture, fixture_label, created_at, updated_at, courses(slug, title), batches!enrollments_batch_id_fkey(slug, name, start_date, venue)";
+  const loadDetail = <Columns extends string>(columns: Columns) => {
+    const query = admin.from("enrollments").select(columns);
+    return (
+      isUuid ? query.eq("id", trimmed) : query.eq("public_ref", normalizeApplicationRef(trimmed))
+    ).maybeSingle();
+  };
+  const initialDetail = await loadDetail(`${detailColumns}, staff_payment_details` as const);
+  const legacyDetail =
+    initialDetail.error?.code === "42703" ? await loadDetail(detailColumns) : null;
+  const error = legacyDetail ? legacyDetail.error : initialDetail.error;
+  const row = legacyDetail
+    ? legacyDetail.data
+      ? { ...legacyDetail.data, staff_payment_details: null }
+      : null
+    : initialDetail.data;
   if (error) {
     console.error("[admin:enrollments] detail query failed", {
       code: error.code ?? null,
@@ -1769,6 +1977,23 @@ export async function getAdminEnrollmentDetail(
     programQuestionsSnapshot: Array.isArray(row.program_questions_snapshot)
       ? (row.program_questions_snapshot as ProgramQuestion[])
       : [],
+    ...(row.staff_payment_details && typeof row.staff_payment_details === "object"
+      ? {
+          staffPaymentDetails: {
+            kind: String(row.staff_payment_details.kind),
+            originalPayablePoisha: parseSafeIntegerPoisha(
+              row.staff_payment_details.original_payable_poisha
+            ),
+            adjustedPoisha: parseSafeIntegerPoisha(row.staff_payment_details.adjusted_poisha),
+            waiverPoisha: parseSafeIntegerPoisha(row.staff_payment_details.waiver_poisha),
+            collectedPoisha: parseSafeIntegerPoisha(row.staff_payment_details.collected_poisha),
+            waiverReason:
+              typeof row.staff_payment_details.waiver_reason === "string"
+                ? row.staff_payment_details.waiver_reason
+                : null,
+          },
+        }
+      : {}),
     paymentMethod: row.payment_method as AdminEnrollmentDetailResult["paymentMethod"],
     paymentStatus: String(row.payment_status),
     submittedPaymentRef: row.submitted_payment_ref ? String(row.submitted_payment_ref) : null,
@@ -1855,7 +2080,8 @@ export async function reconcilePendingBkashPayments(
     emailSenderOverride?: OutboxEmailSender;
   } = {}
 ): Promise<ReconcilePendingBkashResult> {
-  const runtimeMode = getEnrollmentRuntimeConfig().checkoutMode;
+  const runtime = getEnrollmentRuntimeConfig();
+  const runtimeMode = runtime.checkoutMode;
   if (runtimeMode === "closed" && !options.gatewayOverride) {
     return {
       checkoutMode: "closed",
@@ -1894,15 +2120,19 @@ export async function reconcilePendingBkashPayments(
 
   const limit = Math.min(25, Math.max(1, options.maxAttempts ?? 15));
   const minAgeMs = Math.max(0, options.minAgeSeconds ?? (options.publicRef ? 0 : 60)) * 1000;
-  const staleInitiatedMs = Math.max(1, options.staleInitiatedMinutes ?? 20) * 60 * 1000;
 
   let attemptsQuery = admin
     .from("payment_attempts")
     .select(
-      "id, enrollment_id, tran_id, payment_id, trx_id, amount_poisha, currency, status, created_at, updated_at"
+      "id, enrollment_id, tran_id, payment_id, trx_id, amount_poisha, currency, status, created_at, updated_at, bkash_sandbox_v2"
     )
     .eq("gateway", "bkash")
-    .eq("failure_reason", EXECUTE_NO_RESPONSE)
+    .in("failure_reason", [
+      EXECUTE_NO_RESPONSE,
+      "EXECUTE_STARTED",
+      "CALLBACK_STARTED",
+      "CALLBACK_UNVERIFIED",
+    ])
     .in("status", ["initiated", "pending"])
     .not("payment_id", "is", null)
     .order("updated_at", { ascending: true })
@@ -1928,6 +2158,7 @@ export async function reconcilePendingBkashPayments(
     status: string;
     created_at: string;
     updated_at: string;
+    bkash_sandbox_v2?: boolean;
   }>;
 
   if (rows.length === 0) {
@@ -1972,7 +2203,7 @@ export async function reconcilePendingBkashPayments(
   const nowMs = Date.now();
   const eligibleRows = rows.filter((row) => {
     const enrollment = enrollmentMap.get(String(row.enrollment_id));
-    if (!enrollment || enrollment.status === "review_hold") {
+    if (!enrollment) {
       return false;
     }
     const createdMs = new Date(row.updated_at ?? row.created_at).getTime();
@@ -2015,149 +2246,165 @@ export async function reconcilePendingBkashPayments(
       continue;
     }
 
-    summary.checked += 1;
-
-    let queryRes: PaymentStatusResult;
-    try {
-      queryRes = await gateway.queryPaymentStatus(paymentId, {
-        tranId: String(attempt.tran_id),
-        amountPoisha: parseBigIntPoisha(attempt.amount_poisha),
-      });
-    } catch {
-      summary.stillPending += 1;
+    // Do not send mock references to a real gateway, or fabricate real receipts in mock mode.
+    if (
+      !options.gatewayOverride &&
+      (paymentId.startsWith("MOCKPAY-") !== (runtimeMode === "mock") ||
+        (runtimeMode === "live" &&
+          Boolean(attempt.bkash_sandbox_v2) !== Boolean(runtime.sandboxPaymentEnabled)))
+    ) {
+      summary.skipped += 1;
       continue;
     }
-
-    await admin.from("payment_events").insert({
-      payment_attempt_id: attempt.id,
-      tran_id: attempt.tran_id,
-      payment_id: paymentId,
-      source: "query_status",
-      event_status: queryRes.transactionStatus,
-      redacted_payload: queryRes.rawRedacted,
+    const owner = crypto.randomUUID();
+    const { data: claimed, error: claimError } = await admin.rpc("claim_bkash_reconciliation", {
+      p_attempt_id: attempt.id,
+      p_owner: owner,
     });
-
-    const effectiveTrxId = (queryRes.trxId || "").trim();
-    const queryCompleted =
-      queryRes.transactionStatus === "Completed" &&
-      queryRes.statusCode === "0000" &&
-      Boolean(effectiveTrxId);
-
-    if (queryRes.transactionStatus === "Completed" && !effectiveTrxId) {
-      await admin.rpc("record_payment_outcome", {
-        p_attempt_id: attempt.id,
-        p_next_status: "review_hold",
-        p_payment_id: paymentId,
-        p_failure_reason: "MISSING_TRX_ID",
-        p_gateway_status_code: queryRes.statusCode || "MISMATCH",
-        p_gateway_status_message:
-          "Completed payment status missing gateway trxID during reconciliation",
-      });
-      summary.reviewHold += 1;
+    if (claimError || claimed !== true) {
+      summary.skipped += 1;
       continue;
     }
-
-    if (queryCompleted) {
-      const mismatch =
-        queryRes.paymentId !== paymentId
-          ? "PAYMENT_ID_MISMATCH"
-          : queryRes.merchantInvoiceNumber !== attempt.tran_id
-            ? "INVOICE_MISMATCH"
-            : null;
-      if (mismatch) {
-        await admin.rpc("record_payment_outcome", {
-          p_attempt_id: attempt.id,
-          p_next_status: "review_hold",
-          p_payment_id: paymentId,
-          p_failure_reason: mismatch,
-          p_gateway_status_code: queryRes.statusCode || "MISMATCH",
-          p_gateway_status_message: "Gateway invoice reference mismatch during reconciliation",
+    summary.checked += 1;
+    try {
+      let queryRes: PaymentStatusResult;
+      try {
+        queryRes = await gateway.queryPaymentStatus(paymentId, {
+          tranId: String(attempt.tran_id),
+          amountPoisha: parseBigIntPoisha(attempt.amount_poisha),
         });
-
-        await admin.from("audit_events").insert({
-          actor_role: "system",
-          action: "payment_flagged_review_hold",
-          target_entity: "payment_attempts",
-          target_id: attempt.id,
-          after_state: {
-            expected_tran_id: attempt.tran_id,
-            query_tran_id: queryRes.merchantInvoiceNumber,
-          },
-        });
-
-        summary.reviewHold += 1;
-        continue;
-      }
-
-      const verifiedPoisha = queryRes.amountPoisha ?? 0n;
-      const effectiveCurrency = (queryRes.currency || "UNKNOWN").trim().toUpperCase();
-
-      const { data: confirmRaw, error: confirmError } = await admin.rpc("confirm_payment", {
-        p_attempt_id: attempt.id,
-        p_payment_id: paymentId,
-        p_trx_id: effectiveTrxId,
-        p_verified_poisha: verifiedPoisha.toString(),
-        p_currency: effectiveCurrency || "UNKNOWN",
-        p_gateway_status_code: queryRes.statusCode || "0000",
-        p_gateway_status_message: queryRes.statusMessage || "Reconciled via queryPaymentStatus",
-      });
-
-      if (confirmError || !confirmRaw || typeof confirmRaw !== "object") {
+      } catch {
         summary.stillPending += 1;
         continue;
       }
 
-      const confirmRes = confirmRaw as Record<string, unknown>;
-      const confirmStatus = String(confirmRes.status ?? "");
-      if (confirmStatus === "validated" || confirmStatus === "already_validated") {
-        const alreadyValidated = Boolean(confirmRes.already_validated);
-        const outboxId = confirmRes.outbox_id ? String(confirmRes.outbox_id) : null;
-        if (!alreadyValidated && outboxId) {
-          await dispatchEmailOutboxById(outboxId, {
-            senderOverride: options.emailSenderOverride,
-            adminOverride: options.adminOverride,
-          }).catch(() => null);
-        }
-        if (alreadyValidated) {
-          summary.skipped += 1;
-        } else {
-          summary.confirmed += 1;
-        }
-      } else {
-        summary.reviewHold += 1;
-      }
-      continue;
-    }
-
-    const queryDeclined =
-      queryRes.transactionStatus === "Cancelled" || queryRes.transactionStatus === "Failed";
-    const createdMs = new Date(String(attempt.created_at)).getTime();
-    const isHoldExpired = Boolean(
-      enrollment.hold_expires_at && new Date(String(enrollment.hold_expires_at)).getTime() <= nowMs
-    );
-    const isStaleInitiated =
-      (queryRes.transactionStatus === "Initiated" || queryRes.transactionStatus === "Unknown") &&
-      Number.isFinite(createdMs) &&
-      (isHoldExpired || nowMs - createdMs >= staleInitiatedMs);
-
-    if (!effectiveTrxId && (queryDeclined || isStaleInitiated)) {
-      await admin.rpc("record_payment_outcome", {
-        p_attempt_id: attempt.id,
-        p_next_status: "failed",
-        p_payment_id: paymentId,
-        p_failure_reason: queryDeclined
-          ? "GATEWAY_DECLINED_RECONCILED"
-          : "SESSION_EXPIRED_UNCOMPLETED",
-        p_gateway_status_code: queryRes.statusCode || queryRes.transactionStatus.toUpperCase(),
-        p_gateway_status_message:
-          queryRes.statusMessage ||
-          `Reconciled terminal gateway status=${queryRes.transactionStatus}`,
+      await admin.from("payment_events").insert({
+        payment_attempt_id: attempt.id,
+        tran_id: attempt.tran_id,
+        payment_id: paymentId,
+        source: "query_status",
+        event_status: queryRes.transactionStatus,
+        redacted_payload: queryRes.rawRedacted,
       });
-      summary.failed += 1;
-      continue;
-    }
 
-    summary.stillPending += 1;
+      const effectiveTrxId = (queryRes.trxId || "").trim();
+      const queryCompleted =
+        queryRes.transactionStatus === "Completed" &&
+        queryRes.statusCode === "0000" &&
+        Boolean(effectiveTrxId);
+
+      if (queryRes.transactionStatus === "Completed" && !effectiveTrxId) {
+        await admin.rpc("record_payment_outcome", {
+          p_attempt_id: attempt.id,
+          p_next_status: "review_hold",
+          p_payment_id: paymentId,
+          p_failure_reason: "MISSING_TRX_ID",
+          p_gateway_status_code: queryRes.statusCode || "MISMATCH",
+          p_gateway_status_message:
+            "Completed payment status missing gateway trxID during reconciliation",
+        });
+        summary.reviewHold += 1;
+        continue;
+      }
+
+      if (queryCompleted) {
+        const mismatch =
+          queryRes.paymentId !== paymentId
+            ? "PAYMENT_ID_MISMATCH"
+            : queryRes.merchantInvoiceNumber !== attempt.tran_id
+              ? "INVOICE_MISMATCH"
+              : null;
+        if (mismatch) {
+          await admin.rpc("record_payment_outcome", {
+            p_attempt_id: attempt.id,
+            p_next_status: "review_hold",
+            p_payment_id: paymentId,
+            p_failure_reason: mismatch,
+            p_gateway_status_code: queryRes.statusCode || "MISMATCH",
+            p_gateway_status_message: "Gateway invoice reference mismatch during reconciliation",
+          });
+
+          await admin.from("audit_events").insert({
+            actor_role: "system",
+            action: "payment_flagged_review_hold",
+            target_entity: "payment_attempts",
+            target_id: attempt.id,
+            after_state: {
+              expected_tran_id: attempt.tran_id,
+              query_tran_id: queryRes.merchantInvoiceNumber,
+            },
+          });
+
+          summary.reviewHold += 1;
+          continue;
+        }
+
+        const verifiedPoisha = queryRes.amountPoisha ?? 0n;
+        const effectiveCurrency = (queryRes.currency || "UNKNOWN").trim().toUpperCase();
+
+        const { data: confirmRaw, error: confirmError } = await admin.rpc("confirm_payment", {
+          p_attempt_id: attempt.id,
+          p_payment_id: paymentId,
+          p_trx_id: effectiveTrxId,
+          p_verified_poisha: verifiedPoisha.toString(),
+          p_currency: effectiveCurrency || "UNKNOWN",
+          p_gateway_status_code: queryRes.statusCode || "0000",
+          p_gateway_status_message: queryRes.statusMessage || "Reconciled via queryPaymentStatus",
+        });
+
+        if (confirmError || !confirmRaw || typeof confirmRaw !== "object") {
+          summary.stillPending += 1;
+          continue;
+        }
+
+        const confirmRes = confirmRaw as Record<string, unknown>;
+        const confirmStatus = String(confirmRes.status ?? "");
+        if (confirmStatus === "validated" || confirmStatus === "already_validated") {
+          const alreadyValidated = Boolean(confirmRes.already_validated);
+          const outboxId = confirmRes.outbox_id ? String(confirmRes.outbox_id) : null;
+          if (!alreadyValidated && outboxId) {
+            await scheduleConfirmationEmail(outboxId, {
+              senderOverride: options.emailSenderOverride,
+              adminOverride: options.adminOverride,
+            }).catch(() => null);
+          }
+          if (alreadyValidated) {
+            summary.skipped += 1;
+          } else {
+            summary.confirmed += 1;
+          }
+        } else {
+          summary.reviewHold += 1;
+        }
+        continue;
+      }
+
+      const queryDeclined =
+        (queryRes.transactionStatus === "Cancelled" || queryRes.transactionStatus === "Failed") &&
+        queryRes.paymentId === paymentId &&
+        queryRes.merchantInvoiceNumber === attempt.tran_id;
+
+      // Age alone never proves non-payment. Keep Initiated/Unknown/Pending unresolved.
+      if (!effectiveTrxId && queryDeclined) {
+        const { error: outcomeError } = await admin.rpc("record_payment_outcome", {
+          p_attempt_id: attempt.id,
+          p_next_status: "failed",
+          p_payment_id: paymentId,
+          p_failure_reason: "GATEWAY_DECLINED_RECONCILED",
+          p_gateway_status_code: queryRes.statusCode || queryRes.transactionStatus.toUpperCase(),
+          p_gateway_status_message:
+            queryRes.statusMessage || "Gateway confirmed a terminal decline.",
+        });
+        if (outcomeError) summary.stillPending += 1;
+        else summary.failed += 1;
+        continue;
+      }
+
+      summary.stillPending += 1;
+    } finally {
+      // Owner fencing prevents an older worker from releasing a newer worker's lease.
+      await admin.rpc("release_bkash_reconciliation", { p_attempt_id: attempt.id, p_owner: owner });
+    }
   }
 
   return summary;
