@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { manageEnrollmentRecord } from "./enrollment-record-actions";
 import { enrollmentActionCopy as copy } from "@/lib/admin-admissions";
 
-const { rpc, requireStaff, revalidatePath } = vi.hoisted(() => ({
+const { rpc, requireStaff, requireSuperAdmin, revalidatePath } = vi.hoisted(() => ({
   rpc: vi.fn(),
   requireStaff: vi.fn(),
+  requireSuperAdmin: vi.fn(),
   revalidatePath: vi.fn(),
 }));
-vi.mock("@/server/auth/require-staff", () => ({ requireStaff }));
+vi.mock("@/server/auth/require-staff", () => ({ requireStaff, requireSuperAdmin }));
 vi.mock("@/server/supabase/clients", () => ({ createSupabaseAdminClient: () => ({ rpc }) }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
@@ -27,14 +28,22 @@ describe("Permanent admission deletion", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     requireStaff.mockResolvedValue({ userId: "fixture-staff" });
+    requireSuperAdmin.mockResolvedValue({ userId: "fixture-sa", role: "super_admin" });
   });
 
-  it("authorizes the action and rejects an invalid confirmation before querying the database", async () => {
+  it("enforces requireSuperAdmin for delete while checking enrollments:manage for operational archive", async () => {
     expect(await manageEnrollmentRecord(target, {}, confirmation("wrong format"))).toEqual({
       message: copy.deleteMismatch,
     });
-    expect(requireStaff).toHaveBeenCalledWith("enrollments:manage");
+    expect(requireSuperAdmin).toHaveBeenCalledWith("enrollments:manage");
+    expect(requireStaff).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
+
+    rpc.mockResolvedValueOnce({ data: "OK", error: null });
+    expect(
+      await manageEnrollmentRecord({ ...target, operation: "archive" }, {}, new FormData())
+    ).toEqual({ success: true });
+    expect(requireStaff).toHaveBeenCalledWith("enrollments:manage");
   });
 
   it("passes the revision and normalized application ID and refreshes only on success", async () => {
@@ -43,7 +52,7 @@ describe("Permanent admission deletion", () => {
       success: true,
     });
     expect(rpc).toHaveBeenCalledWith("purge_staff_record", {
-      p_actor: "fixture-staff",
+      p_actor: "fixture-sa",
       p_id: target.id,
       p_revision: target.revision,
       p_confirmation: "LNA-D3V7-0001",

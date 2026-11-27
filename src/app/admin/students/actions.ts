@@ -14,11 +14,11 @@ import { purgeToken, purgeCopy } from "@/lib/admin-record-purge";
 import { listPastBatchOptions } from "@/server/admin/people";
 import { listBatchCourseOptions } from "@/server/admin/catalog";
 import { adminPaths } from "@/lib/admin-navigation";
-import { requireStaff } from "@/server/auth/require-staff";
+import { requireStaff, requireSuperAdmin } from "@/server/auth/require-staff";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
 export const saveStudent: PeopleAction = async (target, _previous, form) => {
-  const staff = await requireStaff("enrollments:manage");
+  const staff = await requireStaff("students:edit");
   const selected = personTarget.safeParse(target);
   if (!selected.success) return { message: copy.failed };
   const data = studentInput.safeParse(Object.fromEntries(form));
@@ -54,7 +54,7 @@ export const saveStudent: PeopleAction = async (target, _previous, form) => {
 };
 
 export const deleteStudent: PeopleAction<StudentDeleteTarget> = async (target, _previous, form) => {
-  const staff = await requireStaff("enrollments:manage");
+  const staff = await requireSuperAdmin("enrollments:manage");
   const selected = studentDeleteTarget.safeParse(target);
   if (!selected.success) return { message: copy.deleteStudentFailed };
 
@@ -112,7 +112,7 @@ const courseHistoryTarget = z.discriminatedUnion("operation", [
 ]);
 
 export async function saveCourseHistory(input: z.infer<typeof courseHistoryTarget>) {
-  const staff = await requireStaff("enrollments:manage");
+  const staff = await requireStaff("students:edit");
   const parsed = courseHistoryTarget.safeParse(input);
   if (!parsed.success) return { message: copy.invalid };
   const entry = parsed.data;
@@ -132,12 +132,12 @@ export async function saveCourseHistory(input: z.infer<typeof courseHistoryTarge
 }
 
 export async function loadHistoryCourses() {
-  await requireStaff("enrollments:manage");
+  await requireStaff("students:edit");
   return listBatchCourseOptions({ includeArchived: true });
 }
 
 export async function loadHistoryBatches(courseId: string) {
-  await requireStaff("enrollments:manage");
+  await requireStaff("students:edit");
   const parsed = z.string().uuid().parse(courseId);
   return listPastBatchOptions(parsed);
 }

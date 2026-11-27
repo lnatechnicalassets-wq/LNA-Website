@@ -140,15 +140,39 @@ export function hasTargetRolePermission(role: unknown, permission: unknown): boo
 }
 
 /**
- * Evaluates currently active runtime permissions enforced by requireStaff().
- * Preserves existing Super Admin capabilities while keeping Admin operational grants inactive
- * until W2A-T02/W2A-T03 coordinated database and server activation.
+ * Evaluates currently active runtime permissions enforced by static defaults.
+ * Preserves existing Super Admin capabilities while keeping static Admin defaults inactive
+ * so unactivated or hosted M18 environments fail closed.
  */
 export function hasActiveRolePermission(role: unknown, permission: unknown): boolean {
   if (!isStaffRole(role) || !isStaffPermission(permission)) {
     return false;
   }
   return ACTIVE_PERMISSION_SETS[role].has(permission);
+}
+
+/**
+ * Evaluates coordinated runtime permissions (W2A-T03).
+ * Admin operational capabilities are evaluated ONLY when the caller has verified both:
+ * 1) explicit opt-in (`ENABLE_ADMIN_ROLE_RUNTIME=true`) against an isolated loopback Supabase URL
+ *    outside Vercel Preview/Production, and
+ * 2) M19 compatibility check (`audit_events` M19 columns + `is_staff_actor_authorized` RPC;
+ *    not exhaustive migration verification).
+ * Super Admin always retains its approved target matrix; Super Admin-only permissions
+ * and globally prohibited operations always deny Admin regardless of activation.
+ */
+export function hasRuntimeStaffPermission(
+  role: unknown,
+  permission: unknown,
+  options: { adminActivated: boolean }
+): boolean {
+  if (!isStaffRole(role) || !isStaffPermission(permission)) {
+    return false;
+  }
+  if (role === "super_admin") {
+    return TARGET_PERMISSION_SETS.super_admin.has(permission);
+  }
+  return options.adminActivated === true && TARGET_PERMISSION_SETS.admin.has(permission);
 }
 
 export type StaffSurfaceKind = "page" | "action" | "api" | "rpc" | "service";
@@ -168,8 +192,11 @@ export interface StaffAccessInventoryEntry {
     | StaffPermission
     | "session_same_origin"
     | "cron_or_staff_read"
+    | "cron_secret_or_enrollments_verify_payment"
     | "public_published_or_catalog_edit"
-    | "service_super_admin_guard";
+    | "public_published_or_cms_read"
+    | "service_super_admin_guard"
+    | "super_admin_only_transition";
   readonly targetPermission:
     | StaffPermission
     | "authenticated_self"
@@ -220,7 +247,7 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     id: "admin-overview-page",
     kind: "page",
     location: "src/app/admin/page.tsx",
-    currentPermission: "enrollments:read",
+    currentPermission: "overview:read",
     targetPermission: "overview:read",
     transitionPolicy: "target_matrix",
     rpcs: [],
@@ -229,18 +256,18 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     id: "admin-login-page",
     kind: "page",
     location: "src/app/admin/login/page.tsx",
-    currentPermission: "enrollments:read",
+    currentPermission: "overview:read",
     targetPermission: "overview:read",
     transitionPolicy: "target_matrix",
     rpcs: [],
     coordinatedRefactorNote:
-      "Calls getStaffSessionContext to redirect already-verified AAL2 staff cleanly",
+      "Calls getStaffSessionContext('overview:read') to redirect already-verified AAL2 staff cleanly",
   },
   {
     id: "admin-catalog-list-page",
     kind: "page",
     location: "src/app/admin/catalog/[section]/page.tsx",
-    currentPermission: "enrollments:read",
+    currentPermission: "catalog:read",
     targetPermission: "catalog:read",
     transitionPolicy: "target_matrix",
     rpcs: [],
@@ -262,7 +289,7 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     targetPermission: "catalog:edit",
     transitionPolicy: "target_matrix",
     rpcs: ["create_admin_catalog_draft"],
-    coordinatedRefactorNote: "W2A-T02 actor/role RPC audit & Admin scope activation",
+    coordinatedRefactorNote: "W2A-T02 actor/role RPC audit & isolated M19 Admin activation",
   },
   {
     id: "admin-catalog-edit-page",
@@ -287,21 +314,21 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     id: "admin-catalog-publish-action",
     kind: "action",
     location: "src/app/admin/catalog/[section]/[id]/edit/publish-action.ts",
-    currentPermission: "catalog:edit",
+    currentPermission: "catalog:publish",
     targetPermission: "catalog:publish",
     transitionPolicy: "target_matrix",
     rpcs: ["publish_admin_catalog_draft"],
-    coordinatedRefactorNote: "W2A-T02/W1-T03 transition to explicit catalog:publish",
+    coordinatedRefactorNote: "Aligned to explicit catalog:publish in W2A-T03",
   },
   {
     id: "admin-catalog-archive-action",
     kind: "action",
     location: "src/app/admin/catalog/[section]/catalog-archive-action.ts",
-    currentPermission: "catalog:edit",
+    currentPermission: "catalog:archive",
     targetPermission: "catalog:archive",
     transitionPolicy: "target_matrix",
     rpcs: ["archive_staff_catalog"],
-    coordinatedRefactorNote: "W2A-T02/W1-T03 transition to explicit catalog:archive",
+    coordinatedRefactorNote: "Aligned to explicit catalog:archive in W2A-T03",
   },
   {
     id: "admin-catalog-batch-mentors-action",
@@ -314,10 +341,21 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     coordinatedRefactorNote: "W2A-T02 actor/role RPC refactor",
   },
   {
+    id: "admin-website-page",
+    kind: "page",
+    location: "src/app/admin/website/page.tsx",
+    currentPermission: "cms:read",
+    targetPermission: "cms:read",
+    transitionPolicy: "target_matrix",
+    rpcs: [],
+    coordinatedRefactorNote:
+      "W2A-T03 shared shell Website module landing linking to Mentors editor",
+  },
+  {
     id: "admin-mentors-page",
     kind: "page",
     location: "src/app/admin/mentors/page.tsx",
-    currentPermission: "catalog:edit",
+    currentPermission: "cms:read",
     targetPermission: "cms:read",
     transitionPolicy: "target_matrix",
     rpcs: [],
@@ -326,11 +364,11 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     id: "admin-mentors-action",
     kind: "action",
     location: "src/app/admin/mentors/actions.ts",
-    currentPermission: "catalog:edit",
+    currentPermission: "cms:edit",
     targetPermission: "cms:edit",
     transitionPolicy: "target_matrix",
     rpcs: ["save_staff_mentor_profile"],
-    coordinatedRefactorNote: "W2A-T02 actor/role RPC refactor; W7 aligns Website CMS scope",
+    coordinatedRefactorNote: "W2A-T02 actor/role RPC refactor; W7 expands Website CMS scope",
   },
   {
     id: "legacy-mentor-rpc",
@@ -341,18 +379,18 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     transitionPolicy: "target_matrix",
     rpcs: ["manage_staff_mentor"],
     coordinatedRefactorNote:
-      "Service-only SQL RPC present from 20261116050000; superseded in UI by save_staff_mentor_profile, audit/retire in W2A-T02",
+      "Service-only SQL RPC present from 20261116050000; superseded in UI by save_staff_mentor_profile",
   },
   {
     id: "api-mentor-media",
     kind: "api",
     location: "src/app/api/mentor-media/[asset]/route.ts",
-    currentPermission: "public_published_or_catalog_edit",
+    currentPermission: "public_published_or_cms_read",
     targetPermission: "public_published_or_cms_read",
     transitionPolicy: "public_published_or_admin_preview",
     rpcs: [],
     coordinatedRefactorNote:
-      "Public unauthenticated read when asset is referenced by published, non-fixture, non-archived mentor; otherwise requires requireStaff('catalog:edit') (target 'cms:read') for unpublished/archived/fixture staff previews",
+      "Public unauthenticated read when asset is referenced by published, non-fixture, non-archived mentor; otherwise requires requireStaff('cms:read') for unpublished/archived/fixture staff previews",
   },
   {
     id: "admin-enrollments-list-page",
@@ -362,7 +400,6 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     targetPermission: "enrollments:read",
     transitionPolicy: "target_matrix",
     rpcs: [],
-    coordinatedRefactorNote: "Service layer calls assertVerifiedSuperAdmin(staff) until W2A-T03",
   },
   {
     id: "admin-enrollments-detail-page",
@@ -372,18 +409,17 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     targetPermission: "enrollments:read",
     transitionPolicy: "target_matrix",
     rpcs: [],
-    coordinatedRefactorNote: "Service layer calls assertVerifiedSuperAdmin(staff) until W2A-T03",
   },
   {
     id: "admin-enrollments-service-reads",
     kind: "service",
     location: "src/server/enrollment/service.ts#listAdminEnrollments+getAdminEnrollmentDetail",
-    currentPermission: "service_super_admin_guard",
+    currentPermission: "enrollments:read",
     targetPermission: "enrollments:read",
     transitionPolicy: "target_matrix",
     rpcs: [],
     coordinatedRefactorNote:
-      "Hardcoded assertVerifiedSuperAdmin(staff) kept until coordinated W2A-T03 Admin enrollment activation",
+      "Enforces assertStaffContextPermission(staff, 'enrollments:read') requiring active AAL2 Super Admin or isolated M19-activated Admin",
   },
   {
     id: "admin-enrollments-new-page",
@@ -428,18 +464,18 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     id: "admin-enrollments-record-actions-purge",
     kind: "action",
     location: "src/app/admin/enrollments/enrollment-record-actions.ts#delete",
-    currentPermission: "enrollments:manage",
+    currentPermission: "super_admin_only_transition",
     targetPermission: "retire_w2a_t06",
     transitionPolicy: "super_admin_only_until_w2a_t06",
     rpcs: ["purge_staff_record"],
     coordinatedRefactorNote:
-      "Super Admin-only during transition pending W2A-T06 retirement; future Admin activation must NOT grant access",
+      "Enforces requireSuperAdmin('enrollments:manage') pending W2A-T06 retirement; Admin denied",
   },
   {
     id: "admin-students-page",
     kind: "page",
     location: "src/app/admin/students/page.tsx",
-    currentPermission: "enrollments:manage",
+    currentPermission: "students:read",
     targetPermission: "students:read",
     transitionPolicy: "target_matrix",
     rpcs: [],
@@ -448,33 +484,34 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     id: "admin-students-actions-edit",
     kind: "action",
     location: "src/app/admin/students/actions.ts#saveStudent+history",
-    currentPermission: "enrollments:manage",
+    currentPermission: "students:edit",
     targetPermission: "students:edit",
     transitionPolicy: "target_matrix",
     rpcs: ["manage_staff_student", "manage_staff_course_history"],
-    coordinatedRefactorNote: "Operational student/history RPCs aligned in W2A-T02",
+    coordinatedRefactorNote:
+      "Operational student/history actions aligned to students:edit in W2A-T03",
   },
   {
     id: "admin-students-actions-purge",
     kind: "action",
     location: "src/app/admin/students/actions.ts#deleteStudent",
-    currentPermission: "enrollments:manage",
+    currentPermission: "super_admin_only_transition",
     targetPermission: "retire_w2a_t06",
     transitionPolicy: "super_admin_only_until_w2a_t06",
     rpcs: ["purge_staff_record"],
     coordinatedRefactorNote:
-      "Super Admin-only during transition pending W2A-T06 retirement; future Admin activation must NOT grant access",
+      "Enforces requireSuperAdmin('enrollments:manage') pending W2A-T06 retirement; Admin denied",
   },
   {
     id: "admin-record-purge-preview-action",
     kind: "action",
     location: "src/app/admin/record-purge-actions.ts",
-    currentPermission: "enrollments:manage",
+    currentPermission: "super_admin_only_transition",
     targetPermission: "retire_w2a_t06",
     transitionPolicy: "super_admin_only_until_w2a_t06",
     rpcs: ["preview_staff_record_purge"],
     coordinatedRefactorNote:
-      "Super Admin-only during transition pending W2A-T06 retirement; future Admin activation must NOT grant access",
+      "Enforces requireSuperAdmin('enrollments:manage') pending W2A-T06 retirement; Admin denied",
   },
   {
     id: "legacy-purge-rpcs-db",
@@ -485,29 +522,72 @@ export const STAFF_ACCESS_INVENTORY: ReadonlyArray<StaffAccessInventoryEntry> = 
     transitionPolicy: "super_admin_only_until_w2a_t06",
     rpcs: ["purge_staff_dev_admission", "purge_staff_student", "purge_staff_admission"],
     coordinatedRefactorNote:
-      "Legacy SQL purge RPCs (plus helper functions) are Super Admin-only until explicitly dropped/retired in W2A-T06; future Admin activation must NOT grant access",
+      "Legacy SQL purge RPCs (plus helper functions) are Super Admin-only until explicitly dropped/retired in W2A-T06",
   },
   {
     id: "api-payments-sandbox-refund",
     kind: "api",
     location: "src/app/api/payments/bkash/sandbox-refund/route.ts",
-    currentPermission: "enrollments:verify-payment",
+    currentPermission: "super_admin_only_transition",
     targetPermission: "retire_w2a_t06",
     transitionPolicy: "super_admin_only_until_w2a_t06",
     rpcs: [],
     coordinatedRefactorNote:
-      "Live refund prohibited in production; Super Admin-only during transition pending W2A-T06 retirement; future Admin activation must NOT grant access",
+      "Live refund prohibited in production; enforces requireSuperAdmin('enrollments:verify-payment') pending W2A-T06 retirement",
   },
   {
     id: "api-cron-reconcile-payments",
     kind: "api",
     location: "src/app/api/cron/reconcile-payments/route.ts",
-    currentPermission: "cron_or_staff_read",
+    currentPermission: "cron_secret_or_enrollments_verify_payment",
     targetPermission: "cron_secret_or_enrollments_verify_payment",
     transitionPolicy: "cron_secret_or_staff_permission",
     rpcs: ["record_payment_outcome", "confirm_payment"],
     coordinatedRefactorNote:
-      "Preserves separate Authorization: Bearer CRON_SECRET timing-safe machine auth path alongside same-origin authenticated staff fallback (current enrollments:read -> target enrollments:verify-payment)",
+      "Preserves separate Authorization: Bearer CRON_SECRET timing-safe machine auth path alongside same-origin authenticated staff fallback (enrollments:verify-payment)",
+  },
+  {
+    id: "admin-transactions-page",
+    kind: "page",
+    location: "src/app/admin/transactions/page.tsx",
+    currentPermission: "transactions:read",
+    targetPermission: "transactions:read",
+    transitionPolicy: "target_matrix",
+    rpcs: [],
+    coordinatedRefactorNote: "W2A-T03 shared shell module; full read-only ledger ships in W5-T02",
+  },
+  {
+    id: "admin-reports-page",
+    kind: "page",
+    location: "src/app/admin/reports/page.tsx",
+    currentPermission: "reports:read",
+    targetPermission: "reports:read",
+    transitionPolicy: "target_matrix",
+    rpcs: [],
+    coordinatedRefactorNote:
+      "W2A-T03 shared shell module; canonical exports/totals ship in W5-T01/T03",
+  },
+  {
+    id: "admin-settings-page",
+    kind: "page",
+    location: "src/app/admin/settings/page.tsx",
+    currentPermission: "settings:manage",
+    targetPermission: "settings:manage",
+    transitionPolicy: "target_matrix",
+    rpcs: [],
+    coordinatedRefactorNote:
+      "Super Admin-only via requireSuperAdmin('settings:manage'); hidden from Admin navigation",
+  },
+  {
+    id: "admin-account-page",
+    kind: "page",
+    location: "src/app/admin/account/page.tsx",
+    currentPermission: "account:manage-self",
+    targetPermission: "account:manage-self",
+    transitionPolicy: "target_matrix",
+    rpcs: [],
+    coordinatedRefactorNote:
+      "Accessible to both authorized roles; self-service MFA/password replacement added in W2B-T03",
   },
   {
     id: "api-admin-logout",

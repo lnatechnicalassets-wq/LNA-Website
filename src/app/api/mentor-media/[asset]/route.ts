@@ -27,7 +27,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ass
 
   if (!published.length) {
     try {
-      await requireStaff("catalog:edit");
+      await requireStaff("cms:read");
     } catch {
       return unavailable(404);
     }

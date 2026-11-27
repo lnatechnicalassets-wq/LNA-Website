@@ -7,7 +7,7 @@ import { enrollmentActionCopy as copy, isDuplicateEnrollmentContact } from "@/li
 import { manualAdmissionCopy, manualStudentSchema } from "@/lib/admin-manual-admission";
 import { adminEnrollmentsHref, adminPaths } from "@/lib/admin-navigation";
 import { purgeToken, purgeCopy } from "@/lib/admin-record-purge";
-import { requireStaff } from "@/server/auth/require-staff";
+import { requireStaff, requireSuperAdmin } from "@/server/auth/require-staff";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
 const targetSchema = z.object({
@@ -22,8 +22,11 @@ export async function manageEnrollmentRecord(
   _previous: { message?: string; success?: boolean },
   formData: FormData
 ): Promise<{ message?: string; success?: boolean }> {
-  const staff = await requireStaff("enrollments:manage");
   const selected = targetSchema.safeParse(target);
+  const staff =
+    selected.success && selected.data.operation === "delete"
+      ? await requireSuperAdmin("enrollments:manage")
+      : await requireStaff("enrollments:manage");
   if (!selected.success) return { message: copy.failed };
 
   const { id, revision, operation } = selected.data;

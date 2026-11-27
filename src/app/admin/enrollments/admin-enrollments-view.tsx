@@ -476,7 +476,7 @@ export function AdminEnrollmentsView({
                       </div>
                     </div>
                     <div className="col-span-2 flex justify-end border-t border-border-subtle pt-2 @4xl:col-span-1 @4xl:border-0 @4xl:pt-0">
-                      <EnrollmentRowActions item={item} />
+                      <EnrollmentRowActions item={item} allowPurge={staff.role === "super_admin"} />
                     </div>
                   </li>
                 ))}

@@ -1,12 +1,14 @@
 import "server-only";
+import { getClientEnv } from "@/env.client";
 import { AppError } from "@/lib/errors";
 import {
   createSupabaseAdminClient,
   createSupabaseServerClient,
   hasConfiguredSupabaseServerEnv,
 } from "@/server/supabase/clients";
+import { isAdminRuntimeActivationEnabled, parseCurrentServerEnv } from "@/server/env";
 import {
-  hasActiveRolePermission,
+  hasRuntimeStaffPermission,
   isStaffPermission,
   isStaffRole,
   type StaffPermission,
@@ -22,6 +24,11 @@ export interface VerifiedStaffContext {
   role: StaffRole;
   accountState: "active";
   aal: "aal2";
+  /**
+   * True only when an Admin context passed both isolated local-Supabase activation gating
+   * and the M19 column/RPC compatibility check in `getStaffSessionContext`.
+   */
+  adminActivated?: boolean;
 }
 
 export type StaffSessionCheck =
@@ -67,12 +74,52 @@ export interface StaffProfileLookupResult {
 
 export interface StaffAuthDeps {
   isConfigured?: () => boolean;
+  isAdminActivationEnabled?: () => boolean;
+  checkAdminDatabaseCompatibility?: (userId: string) => Promise<boolean>;
+  /** @deprecated Prefer checkAdminDatabaseCompatibility; kept for test injection compatibility. */
+  verifyAdminDatabaseBaseline?: (userId: string) => Promise<boolean>;
   getSessionClient?: () => Promise<StaffSessionClientLike>;
   lookupProfileById?: (userId: string) => Promise<StaffProfileLookupResult | null>;
 }
 
-function hasPermission(role: StaffRole, permission: StaffPermission): boolean {
-  return hasActiveRolePermission(role, permission);
+/**
+ * Performs a bounded M19 column/RPC compatibility check (`audit_events` M19 columns
+ * and `is_staff_actor_authorized` RPC returning `true`), NOT exhaustive migration
+ * verification. Fails closed on any connection, client, schema, or RPC error.
+ */
+async function defaultCheckAdminM19Compatibility(userId: string): Promise<boolean> {
+  try {
+    const admin = createSupabaseAdminClient();
+    const [auditColsRes, actorRpcRes] = await Promise.all([
+      admin
+        .from("audit_events")
+        .select("reason, audit_scope, batch_id, secondary_batch_id")
+        .limit(0),
+      admin.rpc("is_staff_actor_authorized", {
+        p_actor_id: userId,
+        p_allowed_roles: ["admin"],
+      }),
+    ]);
+
+    if (auditColsRes.error || actorRpcRes.error) {
+      return false;
+    }
+
+    return actorRpcRes.data === true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveDefaultAdminActivationEnabled(): boolean {
+  try {
+    parseCurrentServerEnv();
+    return isAdminRuntimeActivationEnabled(process.env, {
+      resolvedSupabaseUrl: getClientEnv().NEXT_PUBLIC_SUPABASE_URL,
+    });
+  } catch {
+    return false;
+  }
 }
 
 async function defaultLookupProfileById(userId: string): Promise<StaffProfileLookupResult | null> {
@@ -138,7 +185,54 @@ export async function getStaffSessionContext(
   }
 
   const role: StaffRole = profile.role;
-  if (!isStaffPermission(requiredPermission) || !hasPermission(role, requiredPermission)) {
+  let adminActivated = false;
+
+  if (role === "admin") {
+    let activationEnabled = false;
+    try {
+      activationEnabled = deps?.isAdminActivationEnabled
+        ? deps.isAdminActivationEnabled()
+        : resolveDefaultAdminActivationEnabled();
+    } catch {
+      activationEnabled = false;
+    }
+    if (!activationEnabled) {
+      return {
+        ok: false,
+        reason: "forbidden",
+        userId: profile.id,
+        email: profile.email,
+        role,
+      };
+    }
+
+    let m19Compatible = false;
+    try {
+      const compatibilityCheck =
+        deps?.checkAdminDatabaseCompatibility ??
+        deps?.verifyAdminDatabaseBaseline ??
+        defaultCheckAdminM19Compatibility;
+      m19Compatible = await compatibilityCheck(profile.id);
+    } catch {
+      m19Compatible = false;
+    }
+    if (!m19Compatible) {
+      return {
+        ok: false,
+        reason: "forbidden",
+        userId: profile.id,
+        email: profile.email,
+        role,
+      };
+    }
+
+    adminActivated = true;
+  }
+
+  if (
+    !isStaffPermission(requiredPermission) ||
+    !hasRuntimeStaffPermission(role, requiredPermission, { adminActivated })
+  ) {
     return {
       ok: false,
       reason: "forbidden",
@@ -183,6 +277,7 @@ export async function getStaffSessionContext(
       role,
       accountState: "active",
       aal: "aal2",
+      ...(adminActivated ? { adminActivated: true } : {}),
     },
   };
 }
@@ -234,7 +329,9 @@ export function assertStaffContextPermission(
   if (
     !isStaffRole(staff.role) ||
     !isStaffPermission(permission) ||
-    !hasActiveRolePermission(staff.role, permission)
+    !hasRuntimeStaffPermission(staff.role, permission, {
+      adminActivated: staff.adminActivated === true,
+    })
   ) {
     throw new AppError("You do not have permission to access this resource.", "FORBIDDEN", 403);
   }

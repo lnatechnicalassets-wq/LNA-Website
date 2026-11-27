@@ -133,6 +133,9 @@ const baseServerEnvObject = z
     // Supabase Secret Key (Admin / Server-only)
     SUPABASE_SECRET_KEY: z.string().optional(),
 
+    // Coordinated Admin runtime activation (W2A-T03: explicit isolated local-Supabase opt-in only)
+    ENABLE_ADMIN_ROLE_RUNTIME: z.enum(["true", "false"]).default("false"),
+
     // bKash Gateway Credentials & Mode (ADR 0009 - Standardized BKASH_* Server-Only)
     BKASH_CHECKOUT_MODE: z
       .preprocess((val) => (val === "sandbox" ? "live" : val), z.enum(["closed", "mock", "live"]))
@@ -306,7 +309,134 @@ const baseServerEnvObject = z
     }
   });
 
-export const serverEnvSchema = z.preprocess(resolveBkashEnvAliases, baseServerEnvObject);
+const LOOPBACK_SUPABASE_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]", "::1"]);
+
+/**
+ * Validates that a resolved Supabase URL strictly targets an exact loopback host.
+ * Rejects hosted Supabase domains, arbitrary hostnames, embedded credentials, and malformed URLs.
+ */
+export function isLocalLoopbackSupabaseUrl(rawUrl: unknown): boolean {
+  if (typeof rawUrl !== "string") {
+    return false;
+  }
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return false;
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return false;
+  }
+  if (parsed.username || parsed.password) {
+    return false;
+  }
+
+  return LOOPBACK_SUPABASE_HOSTS.has(parsed.hostname.toLowerCase());
+}
+
+export interface AdminRuntimeIsolationResult {
+  allowed: boolean;
+  reason?: string;
+}
+
+/**
+ * Evaluates whether ENABLE_ADMIN_ROLE_RUNTIME=true is strictly isolated to a local
+ * loopback Supabase instance outside Vercel Preview/Production environments (W2A-T03-F01).
+ */
+export function evaluateAdminRuntimeIsolation(
+  envSource: Record<string, string | undefined> = process.env,
+  options?: { resolvedSupabaseUrl?: string | undefined }
+): AdminRuntimeIsolationResult {
+  if (envSource.ENABLE_ADMIN_ROLE_RUNTIME !== "true") {
+    return { allowed: false, reason: "ENABLE_ADMIN_ROLE_RUNTIME is disabled." };
+  }
+
+  const vercelFlag = envSource.VERCEL?.trim();
+  const vercelEnv = envSource.VERCEL_ENV?.trim().toLowerCase();
+  if (
+    vercelFlag === "1" ||
+    vercelEnv === "production" ||
+    vercelEnv === "preview" ||
+    Boolean(vercelEnv)
+  ) {
+    return {
+      allowed: false,
+      reason: "ENABLE_ADMIN_ROLE_RUNTIME is forbidden in Vercel Preview/Production environments.",
+    };
+  }
+
+  const hasClientResolvedUrl = Boolean(options && "resolvedSupabaseUrl" in options);
+  if (hasClientResolvedUrl && !isLocalLoopbackSupabaseUrl(options?.resolvedSupabaseUrl)) {
+    return {
+      allowed: false,
+      reason:
+        "ENABLE_ADMIN_ROLE_RUNTIME requires resolved Supabase URL to target an exact loopback host.",
+    };
+  }
+
+  const envSupabaseUrl = envSource.NEXT_PUBLIC_SUPABASE_URL;
+  if ("NEXT_PUBLIC_SUPABASE_URL" in envSource) {
+    if (!isLocalLoopbackSupabaseUrl(envSupabaseUrl)) {
+      return {
+        allowed: false,
+        reason:
+          "ENABLE_ADMIN_ROLE_RUNTIME requires NEXT_PUBLIC_SUPABASE_URL to target an exact loopback host.",
+      };
+    }
+    if (hasClientResolvedUrl && options?.resolvedSupabaseUrl) {
+      try {
+        if (
+          new URL(options.resolvedSupabaseUrl).origin !== new URL(envSupabaseUrl!.trim()).origin
+        ) {
+          return {
+            allowed: false,
+            reason:
+              "Resolved Supabase URL does not match NEXT_PUBLIC_SUPABASE_URL loopback origin.",
+          };
+        }
+      } catch {
+        return {
+          allowed: false,
+          reason: "Malformed Supabase URL during isolation validation.",
+        };
+      }
+    }
+  } else if (!hasClientResolvedUrl) {
+    return {
+      allowed: false,
+      reason: "ENABLE_ADMIN_ROLE_RUNTIME requires an explicit loopback NEXT_PUBLIC_SUPABASE_URL.",
+    };
+  }
+
+  return { allowed: true };
+}
+
+export const serverEnvSchema = z
+  .unknown()
+  .superRefine((raw, ctx) => {
+    const rec =
+      raw && typeof raw === "object" && !Array.isArray(raw)
+        ? (raw as Record<string, string | undefined>)
+        : undefined;
+    if (rec?.ENABLE_ADMIN_ROLE_RUNTIME === "true") {
+      const isolation = evaluateAdminRuntimeIsolation(rec);
+      if (!isolation.allowed) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["ENABLE_ADMIN_ROLE_RUNTIME"],
+          message: `CRITICAL SECURITY FAILURE: ${isolation.reason}`,
+        });
+      }
+    }
+  })
+  .pipe(z.preprocess(resolveBkashEnvAliases, baseServerEnvObject));
 
 export type ServerEnv = z.infer<typeof baseServerEnvObject>;
 
@@ -458,4 +588,19 @@ export const serverEnv: ServerEnv = new Proxy({} as ServerEnv, {
  */
 export function parseCurrentServerEnv(): ServerEnv {
   return validateServerEnvironment(process.env);
+}
+
+/**
+ * Returns true ONLY when Admin runtime activation is explicitly opted in and isolated to
+ * a local loopback Supabase URL outside Vercel Preview/Production environments (W2A-T03-F01).
+ */
+export function isAdminRuntimeActivationEnabled(
+  envSource: Record<string, string | undefined> = process.env,
+  options?: { resolvedSupabaseUrl?: string | undefined }
+): boolean {
+  try {
+    return evaluateAdminRuntimeIsolation(envSource, options).allowed;
+  } catch {
+    return false;
+  }
 }

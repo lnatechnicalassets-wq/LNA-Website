@@ -5,12 +5,15 @@ import { revalidatePath } from "next/cache";
 import { peopleCopy as copy } from "@/lib/admin-people";
 import { purgeCopy } from "@/lib/admin-record-purge";
 import { AppError } from "@/lib/errors";
-import { requireStaff } from "@/server/auth/require-staff";
+import { requireStaff, requireSuperAdmin } from "@/server/auth/require-staff";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 import { deleteStudent, saveCourseHistory, saveStudent } from "./actions";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-vi.mock("@/server/auth/require-staff", () => ({ requireStaff: vi.fn() }));
+vi.mock("@/server/auth/require-staff", () => ({
+  requireStaff: vi.fn(),
+  requireSuperAdmin: vi.fn(),
+}));
 vi.mock("@/server/supabase/clients", () => ({ createSupabaseAdminClient: vi.fn() }));
 
 const actorId = "aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -53,16 +56,24 @@ beforeEach(() => {
     accountState: "active",
     aal: "aal2",
   });
+  vi.mocked(requireSuperAdmin).mockResolvedValue({
+    userId: actorId,
+    email: "sa@example.invalid",
+    fullName: "Fixture SA",
+    role: "super_admin",
+    accountState: "active",
+    aal: "aal2",
+  });
   vi.mocked(createSupabaseAdminClient).mockReturnValue({ rpc } as unknown as SupabaseClient);
 });
 
 describe("Student directory actions characterization", () => {
-  it("enforces enrollments:manage and maps optimistic locking and duplicate contact states in saveStudent", async () => {
+  it("enforces students:edit and maps optimistic locking and duplicate contact states in saveStudent", async () => {
     vi.mocked(requireStaff).mockRejectedValueOnce(new AppError("Forbidden", "FORBIDDEN", 403));
     await expect(
       saveStudent({ operation: "edit", id: studentId, revision }, {}, studentForm())
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(requireStaff).toHaveBeenCalledWith("enrollments:manage");
+    expect(requireStaff).toHaveBeenCalledWith("students:edit");
     expect(rpc).not.toHaveBeenCalled();
 
     rpc.mockResolvedValueOnce({ data: "STALE", error: null });
@@ -97,7 +108,14 @@ describe("Student directory actions characterization", () => {
   });
 
   it("enforces actor derivation, optimistic locking, impact token, and payment protection in deleteStudent", async () => {
+    vi.mocked(requireSuperAdmin).mockRejectedValueOnce(new AppError("Forbidden", "FORBIDDEN", 403));
     const target = { id: studentId, revision, operation: "delete" as const };
+    await expect(deleteStudent(target, {}, deleteForm())).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(requireSuperAdmin).toHaveBeenCalledWith("enrollments:manage");
+    expect(rpc).not.toHaveBeenCalled();
+
     rpc.mockResolvedValueOnce({ data: "STALE", error: null });
     await expect(deleteStudent(target, {}, deleteForm())).resolves.toEqual({
       message: copy.stale,

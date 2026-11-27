@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, Mail, CreditCard, Activity, FileText } from "lucide-react";
+import { AdminBreadcrumbs } from "@/components/admin/admin-patterns";
 import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import {
   EnrollmentStatusBadge,
@@ -10,7 +11,7 @@ import {
 } from "@/components/admin/enrollment-status-badge";
 import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { manualPaymentReviewCopy as reviewCopy } from "@/lib/admin-manual-admission";
-import { adminPaths } from "@/lib/admin-navigation";
+import { adminMessage as t, adminPaths } from "@/lib/admin-navigation";
 import { formatPaymentMethodLabel } from "@/lib/enrollment/status";
 import { formatPoishaToBDT } from "@/lib/money";
 import type { VerifiedStaffContext } from "@/server/auth/require-staff";
@@ -74,7 +75,14 @@ export function AdminEnrollmentDetailView({
   return (
     <AdminPortalShell staff={staff} currentPath={`${adminPaths.admissions}/${detail.id}`}>
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 flex-1">
-        <div>
+        <div className="space-y-2">
+          <AdminBreadcrumbs
+            items={[
+              { label: t("overview"), href: adminPaths.overview },
+              { label: t("admissions"), href: adminPaths.admissions },
+              { label: detail.publicRef },
+            ]}
+          />
           <Link
             href="/admin/enrollments"
             className="inline-flex items-center gap-1.5 min-h-[44px] text-xs sm:text-sm font-semibold text-primary-800 hover:underline focus-visible:outline-2 focus-visible:outline-primary-600 rounded"
@@ -135,6 +143,7 @@ export function AdminEnrollmentDetailView({
             <EnrollmentRowActions
               item={detail}
               showView={false}
+              allowPurge={staff.role === "super_admin"}
               leadingAction={
                 canViewRefund &&
                 refundAttempt?.sandboxRefund &&

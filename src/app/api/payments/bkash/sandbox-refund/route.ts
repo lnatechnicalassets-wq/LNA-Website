@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { AppError } from "@/lib/errors";
-import { requireStaff } from "@/server/auth/require-staff";
+import { requireSuperAdmin } from "@/server/auth/require-staff";
 import { parseCurrentServerEnv } from "@/server/env";
 import {
   BkashRefundUnconfirmedError,
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     if (!verifySameOriginRequest(request)) {
       throw new AppError("Cross-origin requests are not allowed.", "CSRF_ORIGIN_MISMATCH", 403);
     }
-    const staff = await requireStaff("enrollments:verify-payment");
+    const staff = await requireSuperAdmin("enrollments:verify-payment");
     const input = requestBody.safeParse(await request.json().catch(() => null));
     if (!input.success) {
       throw new AppError("A valid payment attempt ID is required.", "INVALID_PAYMENT_ATTEMPT", 400);

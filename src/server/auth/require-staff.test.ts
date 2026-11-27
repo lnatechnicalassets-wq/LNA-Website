@@ -1,5 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { AppError } from "@/lib/errors";
+import { isAdminRuntimeActivationEnabled } from "@/server/env";
+import * as supabaseClients from "@/server/supabase/clients";
 import {
   assertStaffContextPermission,
   getStaffSessionContext,
@@ -335,5 +337,257 @@ describe("requireStaff & getStaffSessionContext (Rule R8, FR-AUT-002..004, AT-08
         "enrollments:read"
       )
     ).toThrowError(AppError);
+
+    expect(() =>
+      assertStaffContextPermission({ ...verifiedSa, role: "admin" }, "enrollments:read")
+    ).toThrowError(AppError);
+
+    expect(
+      assertStaffContextPermission(
+        { ...verifiedSa, role: "admin", adminActivated: true },
+        "enrollments:read"
+      ).role
+    ).toBe("admin");
+  });
+
+  describe("W2A-T03 coordinated Admin activation and M19 compatibility gate", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllEnvs();
+    });
+
+    const activeAdminProfile: StaffProfileLookupResult = {
+      id: "user-admin-m19",
+      email: "ops@lnabd.org",
+      full_name: "Ops Admin",
+      role: "admin",
+      account_state: "active",
+    };
+
+    it("fails closed unless explicitly enabled for an isolated loopback Supabase URL outside Vercel Preview/Production", () => {
+      expect(isAdminRuntimeActivationEnabled({})).toBe(false);
+      expect(
+        isAdminRuntimeActivationEnabled({
+          ENABLE_ADMIN_ROLE_RUNTIME: "false",
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+        })
+      ).toBe(false);
+      expect(
+        isAdminRuntimeActivationEnabled({
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          NEXT_PUBLIC_SUPABASE_URL: "https://xyzcompany.supabase.co",
+        })
+      ).toBe(false);
+      expect(
+        isAdminRuntimeActivationEnabled({
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          NEXT_PUBLIC_SUPABASE_URL: "not-a-valid-url",
+        })
+      ).toBe(false);
+      expect(
+        isAdminRuntimeActivationEnabled({
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          VERCEL_ENV: "production",
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+        })
+      ).toBe(false);
+      expect(
+        isAdminRuntimeActivationEnabled({
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          VERCEL_ENV: "preview",
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+        })
+      ).toBe(false);
+      expect(
+        isAdminRuntimeActivationEnabled({
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          VERCEL: "1",
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+        })
+      ).toBe(false);
+      expect(
+        isAdminRuntimeActivationEnabled(
+          {
+            ENABLE_ADMIN_ROLE_RUNTIME: "true",
+            NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+          },
+          { resolvedSupabaseUrl: "https://xyzcompany.supabase.co" }
+        )
+      ).toBe(false);
+      expect(
+        isAdminRuntimeActivationEnabled(
+          {
+            ENABLE_ADMIN_ROLE_RUNTIME: "true",
+            NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+          },
+          { resolvedSupabaseUrl: "http://127.0.0.1:54321" }
+        )
+      ).toBe(true);
+      expect(
+        isAdminRuntimeActivationEnabled({
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321",
+        })
+      ).toBe(true);
+      expect(
+        isAdminRuntimeActivationEnabled({
+          ENABLE_ADMIN_ROLE_RUNTIME: "true",
+          NEXT_PUBLIC_SUPABASE_URL: "http://[::1]:54321",
+        })
+      ).toBe(true);
+    });
+
+    it("denies active AAL2 Admin when isolated activation flag is off, rejects hosted env, or fails M19 compatibility", async () => {
+      await expect(
+        requireStaff("overview:read", {
+          isConfigured: () => true,
+          isAdminActivationEnabled: () => false,
+          checkAdminDatabaseCompatibility: async () => true,
+          getSessionClient: async () =>
+            makeSessionClient({ userId: activeAdminProfile.id, currentLevel: "aal2" }),
+          lookupProfileById: async () => activeAdminProfile,
+        })
+      ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+
+      await expect(
+        requireStaff("overview:read", {
+          isConfigured: () => true,
+          isAdminActivationEnabled: () => true,
+          checkAdminDatabaseCompatibility: async () => false,
+          getSessionClient: async () =>
+            makeSessionClient({ userId: activeAdminProfile.id, currentLevel: "aal2" }),
+          lookupProfileById: async () => activeAdminProfile,
+        })
+      ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+
+      vi.stubEnv("ENABLE_ADMIN_ROLE_RUNTIME", "true");
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://hosted-project.supabase.co");
+      await expect(
+        requireStaff("overview:read", {
+          isConfigured: () => true,
+          checkAdminDatabaseCompatibility: async () => true,
+          getSessionClient: async () =>
+            makeSessionClient({ userId: activeAdminProfile.id, currentLevel: "aal2" }),
+          lookupProfileById: async () => activeAdminProfile,
+        })
+      ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+    });
+
+    it("fails closed against incompatible M18 schemas and unexpected DB/connection errors during compatibility checks", async () => {
+      vi.spyOn(supabaseClients, "createSupabaseAdminClient").mockReturnValueOnce({
+        from: () => ({
+          select: () => ({
+            limit: async () => ({
+              data: null,
+              error: { code: "42703", message: "column audit_scope does not exist" },
+            }),
+          }),
+        }),
+        rpc: async () => ({
+          data: null,
+          error: { code: "PGRST202", message: "Could not find is_staff_actor_authorized" },
+        }),
+      } as unknown as ReturnType<typeof supabaseClients.createSupabaseAdminClient>);
+
+      await expect(
+        requireStaff("overview:read", {
+          isConfigured: () => true,
+          isAdminActivationEnabled: () => true,
+          getSessionClient: async () =>
+            makeSessionClient({ userId: activeAdminProfile.id, currentLevel: "aal2" }),
+          lookupProfileById: async () => activeAdminProfile,
+        })
+      ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+
+      // Thrown connection/client exception during default compatibility check must fail closed
+      vi.spyOn(supabaseClients, "createSupabaseAdminClient").mockImplementationOnce(() => {
+        throw new Error("ECONNREFUSED local socket");
+      });
+      await expect(
+        requireStaff("overview:read", {
+          isConfigured: () => true,
+          isAdminActivationEnabled: () => true,
+          getSessionClient: async () =>
+            makeSessionClient({ userId: activeAdminProfile.id, currentLevel: "aal2" }),
+          lookupProfileById: async () => activeAdminProfile,
+        })
+      ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+
+      // Rejected RPC promise or thrown activation check must also fail closed
+      vi.spyOn(supabaseClients, "createSupabaseAdminClient").mockReturnValueOnce({
+        from: () => ({
+          select: () => ({
+            limit: async () => ({ data: [], error: null }),
+          }),
+        }),
+        rpc: async () => {
+          throw new Error("network timeout");
+        },
+      } as unknown as ReturnType<typeof supabaseClients.createSupabaseAdminClient>);
+      await expect(
+        requireStaff("overview:read", {
+          isConfigured: () => true,
+          isAdminActivationEnabled: () => true,
+          getSessionClient: async () =>
+            makeSessionClient({ userId: activeAdminProfile.id, currentLevel: "aal2" }),
+          lookupProfileById: async () => activeAdminProfile,
+        })
+      ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+    });
+
+    it("accepts M19 compatibility check (columns + RPC) and grants operational permissions while denying Super Admin-only permissions", async () => {
+      vi.spyOn(supabaseClients, "createSupabaseAdminClient").mockReturnValue({
+        from: () => ({
+          select: () => ({
+            limit: async () => ({ data: [], error: null }),
+          }),
+        }),
+        rpc: async () => ({ data: true, error: null }),
+      } as unknown as ReturnType<typeof supabaseClients.createSupabaseAdminClient>);
+
+      const aal1Check = await getStaffSessionContext("overview:read", {
+        isConfigured: () => true,
+        isAdminActivationEnabled: () => true,
+        getSessionClient: async () =>
+          makeSessionClient({
+            userId: activeAdminProfile.id,
+            currentLevel: "aal1",
+            verifiedTotpCount: 1,
+          }),
+        lookupProfileById: async () => activeAdminProfile,
+      });
+      expect(aal1Check).toMatchObject({ ok: false, reason: "mfa_required", role: "admin" });
+
+      const staff = await requireStaff("enrollments:read", {
+        isConfigured: () => true,
+        isAdminActivationEnabled: () => true,
+        getSessionClient: async () =>
+          makeSessionClient({ userId: activeAdminProfile.id, currentLevel: "aal2" }),
+        lookupProfileById: async () => activeAdminProfile,
+      });
+      expect(staff).toMatchObject({
+        userId: activeAdminProfile.id,
+        role: "admin",
+        adminActivated: true,
+        aal: "aal2",
+      });
+
+      for (const superOnly of [
+        "settings:manage",
+        "staff:manage",
+        "payments:correct-manual",
+        "activity:read-global",
+      ] as const) {
+        await expect(
+          requireStaff(superOnly, {
+            isConfigured: () => true,
+            isAdminActivationEnabled: () => true,
+            getSessionClient: async () =>
+              makeSessionClient({ userId: activeAdminProfile.id, currentLevel: "aal2" }),
+            lookupProfileById: async () => activeAdminProfile,
+          })
+        ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+      }
+    });
   });
 });

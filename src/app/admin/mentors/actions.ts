@@ -14,7 +14,7 @@ import { requireStaff } from "@/server/auth/require-staff";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
 export const saveMentor: PeopleAction = async (target, _previous, form) => {
-  const staff = await requireStaff("catalog:edit");
+  const staff = await requireStaff("cms:edit");
   const selected = personTarget.safeParse(target);
   if (!selected.success) return { message: copy.failed };
 

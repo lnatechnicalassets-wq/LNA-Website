@@ -35,12 +35,12 @@ beforeEach(() => {
 });
 
 describe("Catalog archive action characterization", () => {
-  it("requires catalog:edit before invoking archive_staff_catalog", async () => {
+  it("requires catalog:archive before invoking archive_staff_catalog", async () => {
     vi.mocked(requireStaff).mockRejectedValueOnce(new AppError("Forbidden", "FORBIDDEN", 403));
     await expect(archiveCatalogRecord(target, {}, new FormData())).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
-    expect(requireStaff).toHaveBeenCalledWith("catalog:edit");
+    expect(requireStaff).toHaveBeenCalledWith("catalog:archive");
     expect(rpc).not.toHaveBeenCalled();
   });
 

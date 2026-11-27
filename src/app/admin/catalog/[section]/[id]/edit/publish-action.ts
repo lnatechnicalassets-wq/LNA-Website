@@ -20,7 +20,7 @@ export async function publishCatalogDraft(
   _previous: { message?: string; reloadRequired?: boolean },
   _formData: FormData
 ): Promise<{ message?: string; reloadRequired?: boolean }> {
-  const staff = await requireStaff("catalog:edit");
+  const staff = await requireStaff("catalog:publish");
   const result = targetSchema.safeParse(target);
   if (!result.success) return { message: catalogPublishCopy.unavailable };
   const { section, id, revision } = result.data;

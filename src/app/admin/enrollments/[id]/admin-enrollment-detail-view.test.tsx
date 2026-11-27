@@ -233,4 +233,25 @@ describe("AdminEnrollmentDetailView (/admin/enrollments/[id])", () => {
     const confirm = screen.getByRole<HTMLButtonElement>("button", { name: "Confirm refund" });
     expect(confirm.disabled).toBe(false);
   });
+
+  it("hides legacy purge delete and sandbox refund controls for Admin role", () => {
+    render(
+      <AdminEnrollmentDetailView
+        staff={{ ...SAMPLE_STAFF, role: "admin", adminActivated: true }}
+        detail={{
+          ...SAMPLE_DETAIL,
+          paymentAttempts: [
+            {
+              ...SAMPLE_DETAIL.paymentAttempts[0],
+              sandboxRefund: { state: null, trxId: null },
+            },
+          ],
+        }}
+        sandboxRefundEnabled
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /Delete/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Refund sandbox payment/i })).toBeNull();
+  });
 });

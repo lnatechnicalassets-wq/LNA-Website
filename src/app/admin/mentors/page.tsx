@@ -20,7 +20,7 @@ export default async function MentorsDirectory({
 }: {
   searchParams: Promise<Record<string, unknown>>;
 }) {
-  const staff = await requireDirectoryStaff("catalog:edit");
+  const staff = await requireDirectoryStaff("cms:read");
   const filters = peopleQuery.parse(await searchParams);
   const [{ items, hasNext }, assets] = await Promise.all([
     listStaffMentors(filters),

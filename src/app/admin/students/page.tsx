@@ -61,7 +61,7 @@ export default async function StudentsDirectory({
 }: {
   searchParams: Promise<Record<string, unknown>>;
 }) {
-  const staff = await requireDirectoryStaff("enrollments:manage");
+  const staff = await requireDirectoryStaff("students:read");
   const filters = peopleQuery.parse(await searchParams);
   const isArchived = Boolean(filters.archived);
   const { items, hasNext, totalCount } = await listStaffStudents(filters);
@@ -229,6 +229,7 @@ export default async function StudentsDirectory({
                           revision: student.updated_at,
                           archived: Boolean(student.archived_at),
                         }}
+                        allowPurge={staff.role === "super_admin"}
                         courses={student.courses}
                         details={<StudentDetails student={student} />}
                         fields={

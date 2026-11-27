@@ -143,10 +143,12 @@ function RecordMutationForm({
 export function EnrollmentRowActions({
   item,
   showView = true,
+  allowPurge = true,
   leadingAction,
 }: {
   item: ActionItem;
   showView?: boolean;
+  allowPurge?: boolean;
   leadingAction?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -246,7 +248,7 @@ export function EnrollmentRowActions({
             {copy[archiveOperation]}
           </Button>
         )}
-        {revision && !showView && (
+        {revision && !showView && allowPurge && (
           <Button
             variant="ghost"
             size="sm"

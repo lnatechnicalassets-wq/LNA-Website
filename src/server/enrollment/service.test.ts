@@ -1125,13 +1125,20 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       listAdminEnrollments({ page: 1 }, { ...SAMPLE_STAFF, role: "admin" }, emptyAdmin)
     ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
 
+    const activatedAdminList = await listAdminEnrollments(
+      { page: 1 },
+      { ...SAMPLE_STAFF, role: "admin", adminActivated: true },
+      emptyAdmin
+    );
+    expect(activatedAdminList.items).toEqual([]);
+
     await expect(
       getAdminEnrollmentDetail(
         "11111111-2222-3333-4444-555555555555",
         { ...SAMPLE_STAFF, aal: "aal1" as unknown as "aal2" },
         emptyAdmin
       )
-    ).rejects.toMatchObject({ code: "FORBIDDEN", statusCode: 403 });
+    ).rejects.toMatchObject({ code: "MFA_REQUIRED", statusCode: 403 });
 
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { admin: failingAdmin } = createServiceAdminMock({

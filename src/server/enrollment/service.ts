@@ -24,7 +24,10 @@ import type {
   EnrollmentOutcomeType,
   ProgramQuestion,
 } from "@/lib/enrollment/types";
-import type { VerifiedStaffContext } from "@/server/auth/require-staff";
+import {
+  assertStaffContextPermission,
+  type VerifiedStaffContext,
+} from "@/server/auth/require-staff";
 import { parseCurrentServerEnv } from "@/server/env";
 import { dispatchEmailOutboxById, type OutboxEmailSender } from "@/server/email/resend";
 import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
@@ -1499,15 +1502,9 @@ function sanitizePostgrestSearchTerm(input: string): string {
     .slice(0, 80);
 }
 
-function assertVerifiedSuperAdmin(staff: VerifiedStaffContext): void {
-  if (staff.role !== "super_admin" || staff.accountState !== "active" || staff.aal !== "aal2") {
-    throw new AppError("You do not have permission to access this resource.", "FORBIDDEN", 403);
-  }
-}
-
 /**
- * Superadmin read-only enrollment listing with search, status filtering, and pagination.
- * Caller MUST already be verified by requireStaff("enrollments:read").
+ * Staff read-only enrollment listing with search, status filtering, and pagination.
+ * Enforces enrollments:read on the verified staff context (fail-closed for unactivated Admin).
  */
 export async function listAdminEnrollments(
   filters: {
@@ -1523,7 +1520,7 @@ export async function listAdminEnrollments(
   staff: VerifiedStaffContext,
   adminOverride?: SupabaseClient
 ): Promise<AdminEnrollmentListResult> {
-  assertVerifiedSuperAdmin(staff);
+  assertStaffContextPermission(staff, "enrollments:read");
 
   const admin = adminOverride ?? createSupabaseAdminClient();
   const page = Math.max(1, filters.page ?? 1);
@@ -1631,7 +1628,7 @@ export async function getAdminEnrollmentDetail(
   staff: VerifiedStaffContext,
   adminOverride?: SupabaseClient
 ): Promise<AdminEnrollmentDetailResult | null> {
-  assertVerifiedSuperAdmin(staff);
+  assertStaffContextPermission(staff, "enrollments:read");
 
   const admin = adminOverride ?? createSupabaseAdminClient();
   const trimmed = idOrRef.trim();

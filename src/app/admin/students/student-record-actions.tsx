@@ -17,11 +17,13 @@ export function StudentRecordActions({
   courses,
   details,
   fields,
+  allowPurge = true,
 }: {
   student: { id: string; name: string; email: string; revision: string; archived: boolean };
   courses: StudentCourseRow[];
   details: ReactNode;
   fields: ReactNode;
+  allowPurge?: boolean;
 }) {
   const [open, setOpen] = useState<Operation | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -75,16 +77,18 @@ export function StudentRecordActions({
             onCloseAutoFocus={returnFocus}
           >
             {details}
-            <div className="border-t border-border-subtle pt-3">
-              <Button
-                variant="ghost"
-                className="text-status-danger-text hover:bg-status-danger-bg"
-                onClick={() => switchTo("delete")}
-              >
-                <Trash2 aria-hidden="true" className="size-4" />
-                {copy.deleteStudent}
-              </Button>
-            </div>
+            {allowPurge && (
+              <div className="border-t border-border-subtle pt-3">
+                <Button
+                  variant="ghost"
+                  className="text-status-danger-text hover:bg-status-danger-bg"
+                  onClick={() => switchTo("delete")}
+                >
+                  <Trash2 aria-hidden="true" className="size-4" />
+                  {copy.deleteStudent}
+                </Button>
+              </div>
+            )}
           </PersonDialogContent>
         )}
         {open === "courses" && (
@@ -97,7 +101,7 @@ export function StudentRecordActions({
             <StudentCourseHistory studentId={id} courses={courses} archived={archived} />
           </PersonDialogContent>
         )}
-        {open === "delete" && (
+        {open === "delete" && allowPurge && (
           <PersonDialogContent
             title={copy.deleteStudentTitle(name)}
             description={copy.studentDangerDescription}

@@ -17,7 +17,7 @@ jobs:
   isolated-postgres-pgtap:
     name: PostgreSQL 17 Migrations & pgTAP
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       # Safe empty placeholders solely for supabase/config.toml env() parsing; zero real secrets or hosted targets.
       OPENAI_API_KEY: ""
@@ -97,6 +97,17 @@ jobs:
           fi
           supabase test db --local
 
+      - name: Setup Node.js and install dependencies for isolated Supabase Auth integration tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Install workspace packages with pinned pnpm
+        run: |
+          set -euo pipefail
+          npm install -g pnpm@12.16.1
+          pnpm install --frozen-lockfile
+
       - name: Verify incremental upgrades (17 -> 18 token cache and 18 -> 19 W2A-T02 auth/audit)
         env:
           LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
@@ -145,6 +156,47 @@ jobs:
 
           psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;"
           supabase test db --local "$T18_PATH"
+
+          # Verify real application M18 Admin activation fail-closed rejection prior to M19 upgrade
+          STATUS_ENV="$(supabase status -o env)"
+          get_env_val() {
+            printf '%s\n' "$STATUS_ENV" | awk -v k="$1" '
+              index($0, k "=") == 1 {
+                v = substr($0, length(k) + 2)
+                gsub(/^"|"$/, "", v)
+                out = v
+              }
+              END { print out }
+            '
+          }
+
+          LOCAL_API_URL="$(get_env_val API_URL)"
+          LOCAL_PUB_KEY="$(get_env_val PUBLISHABLE_KEY)"
+          if [ -z "$LOCAL_PUB_KEY" ]; then
+            LOCAL_PUB_KEY="$(get_env_val ANON_KEY)"
+          fi
+          LOCAL_SEC_KEY="$(get_env_val SECRET_KEY)"
+          if [ -z "$LOCAL_SEC_KEY" ]; then
+            LOCAL_SEC_KEY="$(get_env_val SERVICE_ROLE_KEY)"
+          fi
+
+          if [[ ! "$LOCAL_API_URL" =~ ^http://(127\.0\.0\.1|localhost):[0-9]+$ ]]; then
+            echo "::error::Refusing non-loopback local API_URL during M18 check: $LOCAL_API_URL"
+            exit 1
+          fi
+          if [ -z "$LOCAL_PUB_KEY" ] || [ -z "$LOCAL_SEC_KEY" ]; then
+            echo "::error::Missing ephemeral local Supabase Auth/service keys during M18 check."
+            exit 1
+          fi
+
+          NEXT_PUBLIC_SUPABASE_URL="$LOCAL_API_URL" \
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$LOCAL_PUB_KEY" \
+          SUPABASE_SECRET_KEY="$LOCAL_SEC_KEY" \
+          APP_URL="http://127.0.0.1:3000" \
+          APP_SECRET="ci_isolated_app_secret_minimum_32_characters_long_01" \
+          BKASH_CHECKOUT_MODE="closed" \
+          RUN_ISOLATED_M18_COMPAT_INT="true" \
+          pnpm vitest run src/server/auth/staff-auth.supabase.integration.test.ts
 
           # Verify 18 -> 19 incremental upgrade and historical audit row preservation
           psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "INSERT INTO public.audit_events (actor_role, action, target_entity, target_id, after_state) VALUES ('super_admin', 'ci_pre_upgrade_audit', 'batches', 'pre-19', '{\"history\":true}'::jsonb);"
@@ -491,6 +543,51 @@ jobs:
             echo "::error::Deactivated actor write leaked state or audit record."
             exit 1
           fi
+
+      - name: Run application-to-Supabase Auth/AAL2/M19 integration tests (W2A-T03-F01/F02)
+        run: |
+          set -euo pipefail
+          STATUS_ENV="$(supabase status -o env)"
+          # Extract strictly local ephemeral variables safely under set -euo pipefail
+          get_env_val() {
+            printf '%s\n' "$STATUS_ENV" | awk -v k="$1" '
+              index($0, k "=") == 1 {
+                v = substr($0, length(k) + 2)
+                gsub(/^"|"$/, "", v)
+                out = v
+              }
+              END { print out }
+            '
+          }
+
+          LOCAL_API_URL="$(get_env_val API_URL)"
+          LOCAL_PUB_KEY="$(get_env_val PUBLISHABLE_KEY)"
+          if [ -z "$LOCAL_PUB_KEY" ]; then
+            LOCAL_PUB_KEY="$(get_env_val ANON_KEY)"
+          fi
+          LOCAL_SEC_KEY="$(get_env_val SECRET_KEY)"
+          if [ -z "$LOCAL_SEC_KEY" ]; then
+            LOCAL_SEC_KEY="$(get_env_val SERVICE_ROLE_KEY)"
+          fi
+
+          if [[ ! "$LOCAL_API_URL" =~ ^http://(127\.0\.0\.1|localhost):[0-9]+$ ]]; then
+            echo "::error::Refusing non-loopback local API_URL: $LOCAL_API_URL"
+            exit 1
+          fi
+          if [ -z "$LOCAL_PUB_KEY" ] || [ -z "$LOCAL_SEC_KEY" ]; then
+            echo "::error::Missing ephemeral local Supabase Auth/service keys from supabase status."
+            exit 1
+          fi
+
+          export NEXT_PUBLIC_SUPABASE_URL="$LOCAL_API_URL"
+          export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$LOCAL_PUB_KEY"
+          export SUPABASE_SECRET_KEY="$LOCAL_SEC_KEY"
+          export APP_URL="http://127.0.0.1:3000"
+          export APP_SECRET="ci_isolated_app_secret_minimum_32_characters_long_01"
+          export BKASH_CHECKOUT_MODE="closed"
+          export RUN_ISOLATED_SUPABASE_AUTH_INT="true"
+
+          pnpm vitest run src/server/auth/staff-auth.supabase.integration.test.ts
 
       - name: Clean up isolated local Supabase environment
         if: always()

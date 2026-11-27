@@ -10,6 +10,7 @@ import {
   SUPER_ADMIN_ONLY_PERMISSIONS,
   TARGET_ROLE_PERMISSIONS,
   hasActiveRolePermission,
+  hasRuntimeStaffPermission,
   hasTargetRolePermission,
   isStaffPermission,
   isStaffRole,
@@ -39,12 +40,26 @@ describe("W2A-T01 permission architecture & role matrix contract (SEC-01, SEC-02
     }
   });
 
-  it("keeps newly defined Admin capabilities inactive until coordinated W2A-T02/W2A-T03 activation", () => {
+  it("keeps static Admin defaults empty and gates runtime Admin permissions behind explicit activation", () => {
     expect(COORDINATED_ADMIN_ACTIVATION_READY).toBe(false);
     expect(ACTIVE_ROLE_PERMISSIONS.admin).toEqual([]);
 
     for (const permission of STAFF_PERMISSIONS) {
       expect(hasActiveRolePermission("admin", permission)).toBe(false);
+      expect(hasRuntimeStaffPermission("admin", permission, { adminActivated: false })).toBe(false);
+    }
+
+    for (const operational of ADMIN_OPERATIONAL_PERMISSIONS) {
+      expect(hasRuntimeStaffPermission("admin", operational, { adminActivated: true })).toBe(true);
+    }
+    for (const restricted of SUPER_ADMIN_ONLY_PERMISSIONS) {
+      expect(hasRuntimeStaffPermission("admin", restricted, { adminActivated: true })).toBe(false);
+    }
+    for (const prohibited of PROHIBITED_STAFF_OPERATIONS) {
+      expect(hasRuntimeStaffPermission("admin", prohibited, { adminActivated: true })).toBe(false);
+      expect(hasRuntimeStaffPermission("super_admin", prohibited, { adminActivated: true })).toBe(
+        false
+      );
     }
   });
 
@@ -104,8 +119,11 @@ describe("W2A-T01 permission architecture & role matrix contract (SEC-01, SEC-02
     const nonPermissionCurrent = new Set([
       "session_same_origin",
       "cron_or_staff_read",
+      "cron_secret_or_enrollments_verify_payment",
       "public_published_or_catalog_edit",
+      "public_published_or_cms_read",
       "service_super_admin_guard",
+      "super_admin_only_transition",
     ]);
     const nonPermissionTarget = new Set([
       "authenticated_self",
@@ -153,7 +171,7 @@ describe("W2A-T01 permission architecture & role matrix contract (SEC-01, SEC-02
     // Mentor media distinguishes public published reads from authenticated staff previews
     const mentorMedia = STAFF_ACCESS_INVENTORY.find((item) => item.id === "api-mentor-media");
     expect(mentorMedia).toMatchObject({
-      currentPermission: "public_published_or_catalog_edit",
+      currentPermission: "public_published_or_cms_read",
       targetPermission: "public_published_or_cms_read",
       transitionPolicy: "public_published_or_admin_preview",
     });
@@ -163,10 +181,18 @@ describe("W2A-T01 permission architecture & role matrix contract (SEC-01, SEC-02
       (item) => item.id === "api-cron-reconcile-payments"
     );
     expect(cronReconcile).toMatchObject({
-      currentPermission: "cron_or_staff_read",
+      currentPermission: "cron_secret_or_enrollments_verify_payment",
       targetPermission: "cron_secret_or_enrollments_verify_payment",
       transitionPolicy: "cron_secret_or_staff_permission",
     });
+
+    // Settings stays Super Admin-only in W2A-T03
+    const settingsPage = STAFF_ACCESS_INVENTORY.find((item) => item.id === "admin-settings-page");
+    expect(settingsPage).toMatchObject({
+      currentPermission: "settings:manage",
+      targetPermission: "settings:manage",
+    });
+    expect(isSurfaceEligibleForFutureAdminActivation(settingsPage!)).toBe(false);
 
     expect(mappedRpcs).toEqual(
       new Set([

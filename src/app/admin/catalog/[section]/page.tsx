@@ -53,7 +53,7 @@ export default async function AdminCatalogPage({
   const sectionResult = catalogSection.safeParse((await params).section);
   if (!sectionResult.success) notFound();
 
-  const staff = await requireStaff("enrollments:read").catch((error: unknown) => {
+  const staff = await requireStaff("catalog:read").catch((error: unknown) => {
     if (!(error instanceof AppError)) throw error;
     if (error.code === "FORBIDDEN" || error.code === "ACCOUNT_INACTIVE") {
       redirect(`${adminPaths.login}?error=forbidden`);
