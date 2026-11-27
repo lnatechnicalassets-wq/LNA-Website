@@ -12,7 +12,7 @@ import {
   adminMessage,
   adminPaths,
 } from "@/lib/admin-navigation";
-import { DeleteBatchDraftForm } from "@/components/admin/delete-batch-draft-form";
+import { DeleteCatalogForm } from "@/components/admin/delete-catalog-form";
 import { AppError } from "@/lib/errors";
 import { getBatchMentorRoster } from "@/server/admin/batch-mentors";
 import { getAdminCatalogBatchContext } from "@/server/admin/catalog";
@@ -28,7 +28,7 @@ import { CourseMentorEditor } from "./course-mentor-editor";
 import { CourseQuestionsEditor } from "./course-questions-editor";
 import { EditForm } from "./edit-form";
 import { CourseBatchDefaultsEditor } from "./course-batch-defaults-editor";
-import { deleteUnusedBatchDraft } from "./delete-draft-action";
+import { deleteUnusedCatalog } from "./delete-catalog-action";
 import { publishCatalogDraft } from "./publish-action";
 
 const route = z.object({ section: catalogSection, id: z.string().uuid() });
@@ -132,6 +132,14 @@ export default async function CatalogEditPage({
               archived={record.archived}
             />
           )}
+          {record !== "unavailable" && (
+            <a
+              href="#delete-catalog"
+              className="inline-flex min-h-11 items-center rounded-lg border border-rose-200 px-4 text-sm font-semibold text-status-danger-text"
+            >
+              Delete {section === "courses" ? "course" : "batch"}
+            </a>
+          )}
         </header>
         {record === "unavailable" || record.archived ? (
           <p role="alert" className="text-sm text-status-danger-text">
@@ -200,11 +208,6 @@ export default async function CatalogEditPage({
                 )}
               </section>
             )}
-            {batch && record.status === "draft" && (
-              <DeleteBatchDraftForm
-                save={deleteUnusedBatchDraft.bind(null, { id, revision: record.revision })}
-              />
-            )}
             {record.status === "draft" && (
               <CatalogPublishControl
                 section={section}
@@ -212,6 +215,13 @@ export default async function CatalogEditPage({
               />
             )}
           </>
+        )}
+        {record !== "unavailable" && (
+          <DeleteCatalogForm
+            section={section}
+            title={record.values[section === "courses" ? "title" : "name"]}
+            save={deleteUnusedCatalog.bind(null, { section, id, revision: record.revision })}
+          />
         )}
       </section>
     </AdminPortalShell>

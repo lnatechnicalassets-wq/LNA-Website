@@ -352,7 +352,6 @@ export function MentorSlideshow({
                         loading={position === 0 && cycle === 0 ? undefined : "eager"}
                         fetchPriority={upcoming && !active ? "low" : undefined}
                         sizes="(max-width: 1024px) 100vw, 750px"
-                        quality={90}
                       />
                     </div>
                   </div>

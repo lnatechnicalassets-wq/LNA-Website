@@ -302,6 +302,21 @@ describe("EnrollmentView flow (Hosted bKash Checkout v1)", () => {
     });
   });
 
+  it("does not offer a published program without any eligible batch", () => {
+    render(
+      <EnrollmentView
+        courses={testCourses}
+        batches={testBatches.map((batch) =>
+          batch.courseId === "mto-readiness" ? { ...batch, status: "completed" as const } : batch
+        )}
+        config={createOfficialConfig(true)}
+        checkoutMode="mock"
+      />
+    );
+    expect(screen.queryByRole("option", { name: "MTO Readiness Program" })).toBeNull();
+    expect(screen.getByRole("option", { name: "Career Planning Workshop" })).toBeDefined();
+  });
+
   it("shows 'Online enrollment is coming soon' and /status link before asking for personal details when closed", () => {
     render(
       <EnrollmentView

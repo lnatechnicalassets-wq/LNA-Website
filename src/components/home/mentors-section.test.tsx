@@ -433,6 +433,17 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
     expect(screen.getAllByText("Marcus Reed").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Lena Chen").length).toBeGreaterThanOrEqual(1);
 
+    const active = screen
+      .getAllByTestId("mentor-card")
+      .find((card) => card.getAttribute("aria-hidden") === "false");
+    expect(active?.style.zIndex).toBe("50");
+    expect(active?.style.transform).toBe("translateX(0) scale(1)");
+    expect(
+      screen
+        .getAllByTestId("mentor-card")
+        .every((card) => !card.style.transform.includes("translateZ"))
+    ).toBe(true);
+
     // Info buttons replace ambiguous '+' triggers
     expect(screen.getAllByText(/^Info$/).length).toBe(5);
     expect(screen.getByRole("button", { name: /view mentor info for nadia islam/i })).toBeDefined();
@@ -574,7 +585,7 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
     fireEvent.keyDown(carousel, { key: " " });
   });
 
-  it("rotates mentors automatically at 2-second intervals and resumes after manual navigation", () => {
+  it("rotates mentors automatically at five-second intervals and restarts after manual navigation", () => {
     vi.useFakeTimers();
     try {
       render(
@@ -584,45 +595,24 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
       );
 
       expect(screen.getByText(/03 \/ 05 mentors/i)).toBeDefined();
-
-      // Should not rotate before initial 1250ms post-settle hold completes
-      act(() => {
-        vi.advanceTimersByTime(1100);
-      });
+      act(() => vi.advanceTimersByTime(4999));
       expect(screen.getByText(/03 \/ 05 mentors/i)).toBeDefined();
-
-      // First advance completes at 1250ms (since jsdom has no IntersectionObserver reveal delay)
-      act(() => {
-        vi.advanceTimersByTime(200);
-      });
+      act(() => vi.advanceTimersByTime(1));
       expect(screen.getByText(/04 \/ 05 mentors/i)).toBeDefined();
 
-      // Subsequent rotations happen at exact 2-second (2000ms = 750ms transition + 1250ms hold) intervals
-      act(() => {
-        vi.advanceTimersByTime(1900);
-      });
+      act(() => vi.advanceTimersByTime(4999));
       expect(screen.getByText(/04 \/ 05 mentors/i)).toBeDefined();
-
-      act(() => {
-        vi.advanceTimersByTime(150);
-      });
+      act(() => vi.advanceTimersByTime(1));
       expect(screen.getByText(/05 \/ 05 mentors/i)).toBeDefined();
 
-      // Manual click triggers immediate update and starts a fresh 2-second cycle
+      // Navigate partway through a cycle; the old deadline must not survive.
+      act(() => vi.advanceTimersByTime(2000));
       const nextBtn = screen.getByRole("button", { name: /next mentor/i });
-      act(() => {
-        fireEvent.click(nextBtn);
-      });
+      act(() => fireEvent.click(nextBtn));
       expect(screen.getByText(/01 \/ 05 mentors/i)).toBeDefined();
-
-      act(() => {
-        vi.advanceTimersByTime(1900);
-      });
+      act(() => vi.advanceTimersByTime(4999));
       expect(screen.getByText(/01 \/ 05 mentors/i)).toBeDefined();
-
-      act(() => {
-        vi.advanceTimersByTime(150);
-      });
+      act(() => vi.advanceTimersByTime(1));
       expect(screen.getByText(/02 \/ 05 mentors/i)).toBeDefined();
     } finally {
       vi.useRealTimers();
@@ -664,9 +654,9 @@ describe("MentorsSection - 5-Card Layered Editorial Showcase", () => {
       });
       expect(screen.queryByRole("dialog")).toBeNull();
 
-      act(() => {
-        vi.advanceTimersByTime(1300);
-      });
+      act(() => vi.advanceTimersByTime(4999));
+      expect(screen.getByText(/03 \/ 05 mentors/i)).toBeDefined();
+      act(() => vi.advanceTimersByTime(1));
       expect(screen.getByText(/04 \/ 05 mentors/i)).toBeDefined();
     } finally {
       vi.useRealTimers();

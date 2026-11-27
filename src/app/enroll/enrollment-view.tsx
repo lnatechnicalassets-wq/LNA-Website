@@ -235,6 +235,14 @@ export function EnrollmentView({
     [courses]
   );
 
+  const enrollmentCourses = useMemo(
+    () =>
+      publishedCourses.filter((course) =>
+        batches.some((batch) => batch.courseId === course.id && canBatchAcceptApplications(batch))
+      ),
+    [publishedCourses, batches]
+  );
+
   const initialSelection = resolveInitialUrlSelection(
     urlCourseId,
     urlBatchId,
@@ -277,12 +285,17 @@ export function EnrollmentView({
   const [activePosterIndex, setActivePosterIndex] = useState(0);
 
   useEffect(() => {
+    if (
+      state.courseId !== "mto-readiness" ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
     const timer = window.setInterval(() => {
       if (typeof document !== "undefined" && document.hidden) return;
       setActivePosterIndex((prev) => (prev + 1) % ENROLLMENT_POSTERS.length);
-    }, 2500);
+    }, 5000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [state.courseId]);
 
   useEffect(() => {
     return () => {
@@ -1153,11 +1166,19 @@ export function EnrollmentView({
                           className="w-full min-h-[44px] appearance-none px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs cursor-pointer pr-10"
                         >
                           <option value="">
-                            {publishedCourses.length > 0
+                            {enrollmentCourses.length > 0
                               ? "Select a program"
-                              : "No published programs available"}
+                              : "No programs currently accepting applications"}
                           </option>
-                          {publishedCourses.map((c) => (
+                          {selectedCourse &&
+                            !enrollmentCourses.some(
+                              (course) => course.id === selectedCourse.id
+                            ) && (
+                              <option value={selectedCourse.id} disabled>
+                                {selectedCourse.title} (not accepting applications)
+                              </option>
+                            )}
+                          {enrollmentCourses.map((c) => (
                             <option key={c.id} value={c.id}>
                               {c.title}
                             </option>
@@ -2232,7 +2253,7 @@ export function EnrollmentView({
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : state.courseId === "mto-readiness" ? (
               <div className="relative w-full aspect-[3/4] max-w-[480px] xl:max-w-[520px] mx-auto rounded-2xl overflow-hidden shadow-xl border border-border-subtle bg-[#08272f]">
                 {ENROLLMENT_POSTERS.map((poster, index) => (
                   <div
@@ -2255,6 +2276,19 @@ export function EnrollmentView({
                     />
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div className="flex min-h-[360px] w-full max-w-[520px] mx-auto flex-col justify-center rounded-2xl border border-[#C5E2E5] bg-[#EAF4F5] p-8 sm:p-12">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#086477]">
+                  Lead Nation Academy
+                </p>
+                <h2 className="mt-4 font-serif text-3xl font-bold text-[#172E35]">
+                  Your next learning experience
+                </h2>
+                <p className="mt-4 text-base leading-relaxed text-[#526E77]">
+                  {selectedCourse?.summary ||
+                    "Choose an available program and cohort to begin your application."}
+                </p>
               </div>
             )}
           </div>

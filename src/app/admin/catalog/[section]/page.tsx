@@ -66,15 +66,17 @@ export default async function AdminCatalogPage({
   const copy = catalogCopy[section];
   const queryParams = await searchParams;
   const successMessage =
-    queryParams.draftDeleted === "1" && section === "batches"
-      ? "Unused batch draft deleted."
-      : queryParams.published === "1"
-        ? catalogPublishCopy[section].success
-        : queryParams.created === "1"
-          ? createCatalogCopy[section].saved
-          : queryParams.saved === "1"
-            ? editCatalogCopy.saved
-            : undefined;
+    queryParams.deleted === "1"
+      ? `Unused ${section === "courses" ? "course" : "batch"} deleted.`
+      : queryParams.draftDeleted === "1" && section === "batches"
+        ? "Unused batch draft deleted."
+        : queryParams.published === "1"
+          ? catalogPublishCopy[section].success
+          : queryParams.created === "1"
+            ? createCatalogCopy[section].saved
+            : queryParams.saved === "1"
+              ? editCatalogCopy.saved
+              : undefined;
   const filters = parseCatalogFilters(section, queryParams);
 
   const courseScope = catalogRecordId
