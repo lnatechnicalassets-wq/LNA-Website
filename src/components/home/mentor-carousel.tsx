@@ -493,7 +493,7 @@ export function MentorCarousel({
                 mentor={mentor}
                 index={index}
                 active={isActive}
-                priority={isActive || isSlotMinus1 || isSlot1}
+                priority={false}
                 onInfo={isVisible ? () => openQuickView(mentor) : undefined}
                 onControlHover={setIsHoveringControl}
               />

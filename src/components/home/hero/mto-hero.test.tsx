@@ -36,6 +36,21 @@ const mockProgram: MtoHeroCourse = {
 };
 
 describe("MtoHero Component", () => {
+  it("initially renders only the first two mentor portraits and prioritizes the visible one", () => {
+    const roster = Array.from({ length: 5 }, (_, index) => ({
+      ...mockProgram.roster[0],
+      id: `mentor-fixture-${index}`,
+      portrait: `/images/mentors/fixture-${index}.png`,
+    }));
+    const { container } = render(<MtoHero program={{ ...mockProgram, roster }} />);
+    const portraits = Array.from(container.querySelectorAll("[data-mentor] img")).filter((img) =>
+      img.getAttribute("src")?.includes("fixture-")
+    );
+    expect(portraits).toHaveLength(2);
+    expect(portraits[0].getAttribute("fetchpriority")).toBe("high");
+    expect(portraits[1].getAttribute("loading")).toBe("lazy");
+  });
+
   it("renders the eyebrow with two lines and teal rule", () => {
     render(<MtoHero program={mockProgram} />);
     expect(screen.getByText("MANAGEMENT TRAINEE")).toBeDefined();

@@ -34,10 +34,13 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: CoursePageProps): Promise<Metadata> {
   const { slug } = await params;
   const courseRepo = getCourseRepository();
+  const live = hasConfiguredSupabaseServerEnv();
   const [liveCatalog, repoCourse, archived] = await Promise.all([
     getCourseDetailCatalog(),
-    courseRepo.getCourseById(slug),
-    getArchivedCatalogSlugs(),
+    live ? Promise.resolve(null) : courseRepo.getCourseById(slug),
+    live
+      ? Promise.resolve({ courses: new Set<string>(), batches: new Set<string>() })
+      : getArchivedCatalogSlugs(),
   ]);
   const course =
     liveCatalog.courses.find((item) => item.id === slug) ??
@@ -59,13 +62,16 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
   const { slug } = await params;
   const courseRepo = getCourseRepository();
   const batchRepo = getBatchRepository();
+  const live = hasConfiguredSupabaseServerEnv();
 
   const [liveCatalog, repoCourse, repoBatches, allMentors, archived] = await Promise.all([
     getCourseDetailCatalog(),
-    courseRepo.getCourseById(slug),
-    batchRepo.getBatchesByCourseId(slug),
+    live ? Promise.resolve(null) : courseRepo.getCourseById(slug),
+    live ? Promise.resolve([]) : batchRepo.getBatchesByCourseId(slug),
     getPublicMentors(),
-    getArchivedCatalogSlugs(),
+    live
+      ? Promise.resolve({ courses: new Set<string>(), batches: new Set<string>() })
+      : getArchivedCatalogSlugs(),
   ]);
   const runtime = getEnrollmentRuntimeConfig();
 

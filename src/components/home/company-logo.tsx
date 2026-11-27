@@ -330,6 +330,8 @@ export function OfficialCompanyLogo({
         }`}
       >
         <img
+          loading="lazy"
+          decoding="async"
           src={src}
           alt={alt}
           title={alt}
@@ -354,6 +356,8 @@ export function OfficialCompanyLogo({
         }`}
       >
         <img
+          loading="lazy"
+          decoding="async"
           src={src}
           alt={alt}
           title={alt}
@@ -444,6 +448,8 @@ export function OfficialCompanyLogo({
 
   return (
     <img
+      loading="lazy"
+      decoding="async"
       src={src}
       alt={alt}
       title={alt}

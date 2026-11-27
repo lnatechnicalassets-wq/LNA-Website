@@ -97,6 +97,7 @@ export interface PublicCatalogCourse {
 
 export interface PublicCatalogBatch {
   enrollmentClosesAt?: string;
+  batchMentorIds?: string[];
   id: string;
   courseId: string;
   batchNumber: number;
@@ -434,10 +435,10 @@ export async function getPublicCatalogFromSupabase(
     const query = admin.from("batches");
     const selected = includeIntake
       ? query.select(
-          "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance, accept_applications"
+          "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance, accept_applications, batch_mentors(display_order,mentors(slug))"
         )
       : query.select(
-          "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance"
+          "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance, batch_mentors(display_order,mentors(slug))"
         );
     return selected
       .in("status", ["upcoming", "open_for_enrollment", "in_progress", "completed"])
@@ -520,6 +521,8 @@ export async function getPublicCatalogFromSupabase(
       batchRows.slice(offset, offset + 8).map(async (row) => {
         if (!courseSlugByUuid.has(String(row.course_id))) return;
         const intake = (row as { accept_applications?: unknown }).accept_applications;
+        // An explicitly closed batch never needs a live seat count for public enrollment.
+        if (intake === false) return;
         if (
           row.status !== "open_for_enrollment" &&
           !(intake === true && ["upcoming", "in_progress"].includes(String(row.status)))
@@ -577,7 +580,27 @@ export async function getPublicCatalogFromSupabase(
       }
     }
 
+    const batchMentorRows = z
+      .array(
+        z.object({
+          display_order: z.number(),
+          mentors: z
+            .union([z.object({ slug: z.string() }), z.array(z.object({ slug: z.string() }))])
+            .nullable(),
+        })
+      )
+      .safeParse((row as { batch_mentors?: unknown }).batch_mentors);
+    const batchMentorIds = batchMentorRows.success
+      ? batchMentorRows.data
+          .sort((a, b) => a.display_order - b.display_order)
+          .flatMap(({ mentors }) => {
+            const mentor = unwrapRelation(mentors);
+            return mentor ? [mentor.slug] : [];
+          })
+      : undefined;
+
     batches.push({
+      ...(batchMentorIds !== undefined ? { batchMentorIds } : {}),
       id: String(row.slug),
       courseId: courseSlug,
       batchNumber: parseSafeIntegerPoisha(row.batch_number),

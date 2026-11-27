@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ChevronRight, Clock3 } from "lucide-react";
 import type { MtoHeroCourse } from "@/server/catalog/mto-hero";
+import { usesMentorMediaSource } from "@/lib/mentor-media";
 import { OfficialCompanyLogo } from "../company-logo";
 import styles from "./mto-hero.module.css";
 
@@ -123,9 +124,10 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
 
   useEffect(() => {
     if (roster.length < 2) return;
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     const timer = window.setInterval(() => {
-      if (typeof document !== "undefined" && document.hidden) return;
-      setActiveIndex((index) => (index + 1) % roster.length);
+      if (document.hidden || reducedMotion?.matches) return;
+      setActiveIndex((index) => index + 1);
     }, 3000);
     return () => window.clearInterval(timer);
   }, [roster.length]);
@@ -143,7 +145,8 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
                   src="/images/mto-hero-glass-building.png"
                   alt=""
                   fill
-                  priority
+                  loading="lazy"
+                  fetchPriority="low"
                   sizes="(min-width: 75rem) 45vw, (min-width: 48rem) 55vw, 100vw"
                   className={styles.buildingImage}
                 />
@@ -232,7 +235,8 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
                       src="/images/mto-hero-glass-building.png"
                       alt=""
                       fill
-                      priority
+                      loading="lazy"
+                      fetchPriority="low"
                       sizes="(min-width: 48rem) 50vw, 100vw"
                       className={styles.buildingImage}
                     />
@@ -254,22 +258,26 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
                         data-mentor={mentor.id}
                         data-active={active === index}
                       >
-                        {mentor.portrait && (
-                          <Image
-                            src={
-                              mentor.id.includes("anubhab")
-                                ? "/images/mentors/anubhab-rahman-v2.png"
-                                : mentor.portrait
-                            }
-                            alt=""
-                            fill
-                            sizes="(min-width: 75rem) 35vw, (min-width: 48rem) 50vw, 100vw"
-                            loading={index < 2 ? "eager" : "lazy"}
-                            fetchPriority={index === 0 ? "high" : "auto"}
-                            unoptimized
-                            className={styles.portraitImg}
-                          />
-                        )}
+                        {mentor.portrait &&
+                          (index === active ||
+                            index === (active + 1) % roster.length ||
+                            (activeIndex > 0 &&
+                              index === (active - 1 + roster.length) % roster.length)) && (
+                            <Image
+                              src={
+                                mentor.id.includes("anubhab")
+                                  ? "/images/mentors/anubhab-rahman-v2.png"
+                                  : mentor.portrait
+                              }
+                              alt=""
+                              fill
+                              sizes="(min-width: 75rem) 35vw, (min-width: 48rem) 50vw, 100vw"
+                              loading={index === active ? "eager" : "lazy"}
+                              fetchPriority={index === active ? "high" : "low"}
+                              unoptimized={usesMentorMediaSource(mentor.portrait)}
+                              className={styles.portraitImg}
+                            />
+                          )}
                       </div>
                     ))}
                   </div>

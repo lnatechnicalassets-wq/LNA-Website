@@ -2276,6 +2276,17 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       ],
     };
 
+    catalogTables.batches[0].batch_mentors = [
+      { display_order: 1, mentors: { slug: "second-mentor" } },
+      { display_order: 0, mentors: [{ slug: "first-mentor" }] },
+    ];
+    catalogTables.batches.push({
+      ...catalogTables.batches[0],
+      id: "batch-off-uuid",
+      slug: "batch-explicit-off",
+      batch_number: 5,
+      accept_applications: false,
+    });
     const catalogAdmin = {
       from: (table: string) => {
         const chain: Record<string, unknown> = {
@@ -2305,7 +2316,9 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     const { batches } = await getPublicCatalogFromSupabase(catalogAdmin);
 
     expect(seatRpcCalls).toEqual(["batch-open-uuid", "batch-future-uuid", "batch-closed-uuid"]);
-    expect(batches).toHaveLength(4);
+    expect(batches).toHaveLength(5);
+    expect(batches[0].batchMentorIds).toEqual(["first-mentor", "second-mentor"]);
+    expect(batches[4]).toMatchObject({ id: "batch-explicit-off", status: "upcoming" });
     expect(batches[0]).toMatchObject({
       id: "batch-mto-open",
       capacity: 50,

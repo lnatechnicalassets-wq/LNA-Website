@@ -66,9 +66,13 @@ export async function getMtoHeroCourse(
     liveBatches.at(-1);
   const batch = liveBatch ?? batches.find((entry) => entry.courseId === courseId);
   let mentorIds = course.mentorIds;
-  let deadline: string | null = null;
+  let deadline: string | null = liveBatch?.enrollmentClosesAt ?? null;
 
-  if (liveBatch) {
+  // The public catalog already contains the cohort roster and deadline.
+  // Keep the compatibility lookup only for callers without the embedded roster.
+  if (liveBatch?.batchMentorIds !== undefined) {
+    if (liveBatch.batchMentorIds.length > 0) mentorIds = liveBatch.batchMentorIds;
+  } else if (liveBatch) {
     const { data, error } = await createSupabaseAdminClient()
       .from("batches")
       .select("enrollment_closes_at,batch_mentors(display_order,mentors(slug))")

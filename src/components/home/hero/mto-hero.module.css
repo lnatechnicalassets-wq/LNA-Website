@@ -1372,17 +1372,7 @@
 /* ===================================================================
    Entrance Animations & Reduced Motion
    =================================================================== */
-@media (prefers-reduced-motion: no-preference) {
-  .intro {
-    animation: arrive 540ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
-  .portraits,
-  .profileColumn {
-    animation: arrive 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-}
-
+/* Keep the first paint visible immediately; animate only subsequent interactions. */
 @media (prefers-reduced-motion: reduce) {
   .digitNumber,
   .countdownPulse,
