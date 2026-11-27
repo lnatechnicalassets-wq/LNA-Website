@@ -6,7 +6,13 @@ import { AdminPortalShell } from "@/components/admin/admin-portal-shell";
 import { CatalogPublishControl } from "@/components/admin/catalog-publish-control";
 import { batchMentorCopy, catalogSection } from "@/lib/admin-catalog";
 import { editCatalogCopy } from "@/lib/admin-catalog-edit";
-import { adminCourseBatchesHref, adminMessage, adminPaths } from "@/lib/admin-navigation";
+import {
+  adminCourseBatchesHref,
+  adminEnrollmentsHref,
+  adminMessage,
+  adminPaths,
+} from "@/lib/admin-navigation";
+import { DeleteBatchDraftForm } from "@/components/admin/delete-batch-draft-form";
 import { AppError } from "@/lib/errors";
 import { getBatchMentorRoster } from "@/server/admin/batch-mentors";
 import { getAdminCatalogBatchContext } from "@/server/admin/catalog";
@@ -15,16 +21,23 @@ import { requireStaff } from "@/server/auth/require-staff";
 import { CatalogArchiveControl } from "../../catalog-archive-control";
 import { saveBatchMentors } from "./batch-mentor-actions";
 import { BatchMentorForm } from "./batch-mentor-form";
+import { BatchIntakeEditor } from "./batch-intake-editor";
 import { saveCatalogEdit } from "./actions";
+import { CourseContentEditor } from "./course-content-editor";
+import { CourseMentorEditor } from "./course-mentor-editor";
 import { EditForm } from "./edit-form";
+import { CourseBatchDefaultsEditor } from "./course-batch-defaults-editor";
+import { deleteUnusedBatchDraft } from "./delete-draft-action";
 import { publishCatalogDraft } from "./publish-action";
 
 const route = z.object({ section: catalogSection, id: z.string().uuid() });
 
 export default async function CatalogEditPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ section: string; id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const target = route.safeParse(await params);
   if (!target.success) notFound();
@@ -70,10 +83,44 @@ export default async function CatalogEditPage({
             {adminMessage("filterCourse")} · {batch.courseTitle}
           </Link>
         )}
+        {batch && (
+          <nav
+            aria-label="Batch workspace"
+            className="flex flex-wrap gap-3 text-sm font-semibold text-primary-900"
+          >
+            <Link
+              aria-current="page"
+              href={`${adminPaths.batches}/${id}/edit`}
+              className="rounded-lg border border-border-default bg-surface-muted px-4 py-3"
+            >
+              Details
+            </Link>
+            <Link
+              href={adminEnrollmentsHref({ view: "students", batchId: id })}
+              className="rounded-lg border border-border-default px-4 py-3"
+            >
+              Students
+            </Link>
+            <Link
+              href={adminEnrollmentsHref({ batchId: id })}
+              className="rounded-lg border border-border-default px-4 py-3"
+            >
+              Applications
+            </Link>
+          </nav>
+        )}
         <header className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-bold text-primary-900 sm:text-3xl">
             {editCatalogCopy[section].title}
           </h1>
+          {batch && record !== "unavailable" && (
+            <Link
+              href={`${adminPaths.batches}/new?copyFrom=${encodeURIComponent(id)}`}
+              className="inline-flex min-h-11 items-center rounded-lg border border-border-default px-4 text-sm font-medium text-primary-900 hover:bg-surface-muted"
+            >
+              Copy as new batch
+            </Link>
+          )}
           {record !== "unavailable" && (
             <CatalogArchiveControl
               key={record.revision}
@@ -96,6 +143,34 @@ export default async function CatalogEditPage({
               initialValues={record.values}
               save={saveCatalogEdit.bind(null, { section, id, revision: record.revision })}
             />
+            {section === "courses" && (
+              <CourseContentEditor
+                id={id}
+                actorId={staff.userId}
+                saved={(await searchParams)?.contentSaved === "1"}
+              />
+            )}
+            {section === "courses" && (
+              <CourseMentorEditor
+                id={id}
+                actorId={staff.userId}
+                saved={(await searchParams)?.mentorsSaved === "1"}
+              />
+            )}
+            {section === "courses" && (
+              <CourseBatchDefaultsEditor
+                id={id}
+                actorId={staff.userId}
+                saved={(await searchParams)?.defaultsSaved === "1"}
+              />
+            )}
+            {batch && (
+              <BatchIntakeEditor
+                id={id}
+                actorId={staff.userId}
+                saved={(await searchParams)?.intakeSaved === "1"}
+              />
+            )}
             {batch && (
               <section
                 id="batch-mentors"
@@ -116,6 +191,11 @@ export default async function CatalogEditPage({
                   </p>
                 )}
               </section>
+            )}
+            {batch && record.status === "draft" && (
+              <DeleteBatchDraftForm
+                save={deleteUnusedBatchDraft.bind(null, { id, revision: record.revision })}
+              />
             )}
             {record.status === "draft" && (
               <CatalogPublishControl

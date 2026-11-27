@@ -57,7 +57,7 @@ jobs:
           supabase --version
           supabase start --exclude studio,imgproxy,edge-runtime,logflare,vector,analytics
 
-      - name: Replay all 19 migrations cleanly and verify PostgreSQL 17 + extensions
+      - name: Replay all 20 migrations cleanly and verify PostgreSQL 17 + extensions
         env:
           LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
@@ -82,17 +82,17 @@ jobs:
           MIGRATION_FILES="$(ls -1 supabase/migrations/*.sql | wc -l | tr -d ' ')"
           APPLIED_MIGRATIONS="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
           echo "Migration files=$MIGRATION_FILES, applied=$APPLIED_MIGRATIONS"
-          if [ "$MIGRATION_FILES" -ne 19 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
+          if [ "$MIGRATION_FILES" -ne 20 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
             echo "::error::Migration replay count mismatch."
             exit 1
           fi
 
-      - name: Run all 19 pgTAP suites
+      - name: Run all 20 pgTAP suites
         run: |
           set -euo pipefail
           TEST_COUNT="$(ls -1 supabase/tests/*.sql | wc -l | tr -d ' ')"
-          if [ "$TEST_COUNT" -ne 19 ]; then
-            echo "::error::Expected 19 pgTAP test files, found $TEST_COUNT"
+          if [ "$TEST_COUNT" -ne 20 ]; then
+            echo "::error::Expected 20 pgTAP test files, found $TEST_COUNT"
             exit 1
           fi
           supabase test db --local
@@ -115,12 +115,15 @@ jobs:
           T18_PATH: supabase/tests/0018_bkash_supabase_token_cache.sql
           M19_PATH: supabase/migrations/20261127100000_w2a_t02_db_auth_and_audit.sql
           T19_PATH: supabase/tests/0019_w2a_t02_db_auth_and_audit.sql
+          M20_PATH: supabase/migrations/20261128100000_w1_course_content.sql
         run: |
           set -euo pipefail
           TMP_M18="$(mktemp)"
           TMP_M19="$(mktemp)"
+          TMP_M20="$(mktemp)"
           cp "$M18_PATH" "$TMP_M18"
           cp "$M19_PATH" "$TMP_M19"
+          cp "$M20_PATH" "$TMP_M20"
           restore_migrations() {
             if [ -f "$TMP_M18" ]; then
               cp "$TMP_M18" "$M18_PATH"
@@ -130,10 +133,14 @@ jobs:
               cp "$TMP_M19" "$M19_PATH"
               rm -f "$TMP_M19"
             fi
+            if [ -f "$TMP_M20" ]; then
+              cp "$TMP_M20" "$M20_PATH"
+              rm -f "$TMP_M20"
+            fi
           }
           trap restore_migrations EXIT
 
-          rm -f "$M18_PATH" "$M19_PATH"
+          rm -f "$M18_PATH" "$M19_PATH" "$M20_PATH"
           supabase db reset --local
 
           APPLIED_17="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
@@ -588,6 +595,19 @@ jobs:
           export RUN_ISOLATED_SUPABASE_AUTH_INT="true"
 
           pnpm vitest run src/server/auth/staff-auth.supabase.integration.test.ts
+
+      - name: Verify M19 to M20 course content upgrade
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          BEFORE="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$BEFORE" -eq 19
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 20
+          supabase test db --local supabase/tests/0020_w1_course_content.sql
+          pnpm vitest run src/lib/course-content.test.ts
 
       - name: Clean up isolated local Supabase environment
         if: always()

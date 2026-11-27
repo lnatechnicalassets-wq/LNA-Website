@@ -104,7 +104,7 @@ export interface PublicCatalogBatch {
   startDate: string;
   endDate: string;
   scheduleDescription: string;
-  capacity: number;
+  capacity: number | null;
   enrolledCount: number;
   seatHoldDurationMinutes: 30;
   feePoisha: number;
@@ -422,8 +422,22 @@ export async function getPublicCatalogFromSupabase(
   }
 
   const admin = adminOverride ?? createSupabaseAdminClient();
+  const loadBatches = (includeIntake: boolean) => {
+    const query = admin.from("batches");
+    const selected = includeIntake
+      ? query.select(
+          "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance, accept_applications"
+        )
+      : query.select(
+          "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance"
+        );
+    return selected
+      .in("status", ["upcoming", "open_for_enrollment", "in_progress", "completed"])
+      .is("archived_at", null)
+      .order("batch_number", { ascending: true });
+  };
 
-  const [coursesRes, courseMentorsRes, batchesRes] = await Promise.all([
+  const [coursesRes, courseMentorsRes, initialBatchesRes] = await Promise.all([
     admin
       .from("courses")
       .select(
@@ -436,15 +450,12 @@ export async function getPublicCatalogFromSupabase(
       .from("course_mentors")
       .select("course_id, display_order, mentors(slug)")
       .order("display_order", { ascending: true }),
-    admin
-      .from("batches")
-      .select(
-        "id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, historical_enrolled_count, seat_hold_duration_minutes, fee_poisha, discount_fee_poisha, status, venue, enrollment_opens_at, enrollment_closes_at, provenance"
-      )
-      .in("status", ["upcoming", "open_for_enrollment", "in_progress", "completed"])
-      .is("archived_at", null)
-      .order("batch_number", { ascending: true }),
+    loadBatches(true),
   ]);
+  // Only a missing migration column permits the legacy read. Other failures
+  // must not be mistaken for a successfully loaded catalog.
+  const batchesRes =
+    initialBatchesRes.error?.code === "42703" ? await loadBatches(false) : initialBatchesRes;
 
   if (coursesRes.error || batchesRes.error) {
     throw new AppError(
@@ -496,23 +507,46 @@ export async function getPublicCatalogFromSupabase(
     const courseSlug = courseSlugByUuid.get(String(row.course_id));
     if (!courseSlug) continue;
 
+    const explicitIntake = (row as { accept_applications?: unknown }).accept_applications;
+    const configured = typeof explicitIntake === "boolean";
+    const stageEligible = ["upcoming", "open_for_enrollment", "in_progress"].includes(
+      String(row.status)
+    );
+    const explicitlyOpen = configured && explicitIntake === true && stageEligible;
     let activeSeats = 0;
-    if (row.status === "open_for_enrollment") {
+    let seatCountFailed = false;
+    if (row.status === "open_for_enrollment" || explicitlyOpen) {
       const seatCountRes = await admin.rpc("count_batch_active_seats", {
         p_batch_id: row.id,
       });
       if (!seatCountRes.error && seatCountRes.data !== null) {
         activeSeats = parseSafeIntegerPoisha(seatCountRes.data);
+      } else {
+        seatCountFailed = true;
       }
     }
 
-    const capacity = parseSafeIntegerPoisha(row.capacity);
+    const capacity = row.capacity === null ? null : parseSafeIntegerPoisha(row.capacity);
     const historicalCount = parseSafeIntegerPoisha(row.historical_enrolled_count ?? 0);
-    const totalOccupied = Math.min(capacity, historicalCount + activeSeats);
+    const totalOccupied =
+      capacity === null
+        ? historicalCount + activeSeats
+        : seatCountFailed
+          ? capacity
+          : Math.min(capacity, historicalCount + activeSeats);
 
     let effectiveStatus = row.status as PublicCatalogBatch["status"];
-    if (effectiveStatus === "open_for_enrollment") {
-      if (row.enrollment_opens_at && new Date(String(row.enrollment_opens_at)).getTime() > nowMs) {
+    if (configured) {
+      // Preserve the public DTO contract while the admin uses academic stages.
+      if (explicitlyOpen && !seatCountFailed) effectiveStatus = "open_for_enrollment";
+      else if (effectiveStatus === "open_for_enrollment") effectiveStatus = "upcoming";
+    } else if (effectiveStatus === "open_for_enrollment") {
+      if (seatCountFailed) {
+        effectiveStatus = "upcoming";
+      } else if (
+        row.enrollment_opens_at &&
+        new Date(String(row.enrollment_opens_at)).getTime() > nowMs
+      ) {
         effectiveStatus = "upcoming";
       } else if (
         row.enrollment_closes_at &&
@@ -537,7 +571,8 @@ export async function getPublicCatalogFromSupabase(
       ...(row.discount_fee_poisha !== null && row.discount_fee_poisha !== undefined
         ? { discountFeePoisha: parseSafeIntegerPoisha(row.discount_fee_poisha) }
         : {}),
-      ...(typeof row.enrollment_closes_at === "string"
+      ...(typeof row.enrollment_closes_at === "string" &&
+      (!configured || Date.parse(row.enrollment_closes_at) > nowMs)
         ? { enrollmentClosesAt: row.enrollment_closes_at }
         : {}),
       status: effectiveStatus,

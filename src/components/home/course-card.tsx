@@ -78,7 +78,7 @@ export function CourseCard({
 }: CourseCardProps) {
   const { openQuickView } = useMentorQuickView();
 
-  const isCompleted = batch?.status === "completed" || course.id === "irgp";
+  const isCompleted = batch?.status === "completed" || (course.id === "irgp" && !batch);
   const isOpenForEnrollment = !isCompleted && batch?.status === "open_for_enrollment";
 
   // Financial calculation via integer poisha (Rule R5)
@@ -88,7 +88,8 @@ export function CourseCard({
     feePoisha !== undefined && discountFeePoisha !== undefined && discountFeePoisha < feePoisha;
   const effectiveFeePoisha = discountFeePoisha ?? feePoisha;
 
-  const remainingSeats = batch ? Math.max(0, batch.capacity - batch.enrolledCount) : null;
+  const remainingSeats =
+    batch && batch.capacity !== null ? Math.max(0, batch.capacity - batch.enrolledCount) : null;
   const formattedStartDate = formatBatchStartDate(batch?.startDate);
   const compactVenue = formatCompactVenue(course.venue || batch?.venue);
   const scheduleText = batch?.scheduleDescription || `${course.modules.length} Modules`;

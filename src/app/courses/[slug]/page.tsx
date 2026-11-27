@@ -75,11 +75,9 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
     return null;
   }
 
-  // Prefer open batch with remaining seats matching server availability rules
+  const eligibleBatches = batches.filter((batch) => canBatchAcceptApplications(batch));
   const activeBatch =
-    batches.find((b) => canBatchAcceptApplications(b)) ??
-    batches.find((b) => b.status === "open_for_enrollment") ??
-    batches[0];
+    eligibleBatches[0] ?? batches.find((b) => b.status === "open_for_enrollment") ?? batches[0];
 
   // Course mentors (resolved via shared canonical roster lookup from course.mentorIds)
   const courseMentors = getCourseMentorRoster(allMentors, course);
@@ -88,6 +86,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
     <CourseDetailView
       course={course}
       batch={activeBatch}
+      eligibleBatches={eligibleBatches}
       mentors={courseMentors}
       submissionEnabled={runtime.submissionEnabled && serverCatalogReadyForCourse}
     />

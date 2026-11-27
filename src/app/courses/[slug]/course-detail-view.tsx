@@ -35,6 +35,7 @@ import { OfficialCompanyLogo } from "@/components/home/company-logo";
 export interface CourseDetailViewProps {
   course: Course;
   batch?: Batch;
+  eligibleBatches?: Batch[];
   mentors: Mentor[];
   submissionEnabled?: boolean;
 }
@@ -50,6 +51,7 @@ const COURSE_TABS: Array<{ id: TabType; label: string }> = [
 export function CourseDetailView({
   course,
   batch,
+  eligibleBatches = [],
   mentors,
   submissionEnabled = false,
 }: CourseDetailViewProps) {
@@ -66,8 +68,12 @@ export function CourseDetailView({
 
   const isMto = course.id === "mto-readiness" || course.id === "mto";
   const isIrgp = course.id === "irgp";
-  const isCompleted = isIrgp || batch?.status === "completed";
+  const isCompleted = batch?.status === "completed" || (isIrgp && !batch);
   const hasProgramShowcase = isMto || isIrgp;
+  const choices = eligibleBatches.filter(
+    (item) => item.courseId === course.id && canBatchAcceptApplications(item)
+  );
+  const multipleBatches = choices.length > 1;
 
   // Financial calculations via integer poisha aligned with server start_enrollment() (Rule R5)
   const formatBdt = (poisha: number) =>
@@ -76,9 +82,18 @@ export function CourseDetailView({
   const hasBatchFee = batch !== undefined;
   const baseFeePoisha = batch?.feePoisha ?? 0;
   const payablePoisha = batch ? getBatchPayablePoisha(batch) : 0;
-  const hasDiscount = batch ? hasBatchDiscount(batch) : false;
+  const hasDiscount = !multipleBatches && batch ? hasBatchDiscount(batch) : false;
   const formattedBaseFee = formatBdt(baseFeePoisha);
-  const formattedPayableFee = hasBatchFee ? formatBdt(payablePoisha) : "Fee announced soon";
+  const fees = choices.map(getBatchPayablePoisha);
+  const minFee = multipleBatches ? Math.min(...fees) : payablePoisha;
+  const maxFee = multipleBatches ? Math.max(...fees) : payablePoisha;
+  const formattedPayableFee = multipleBatches
+    ? minFee === maxFee
+      ? formatBdt(minFee)
+      : `${formatBdt(minFee)} to ${formatBdt(maxFee)}`
+    : hasBatchFee
+      ? formatBdt(payablePoisha)
+      : "Fee announced soon";
 
   // Batch & checkout availability gates
   const remainingSeats = batch ? getBatchRemainingSeats(batch) : 0;
@@ -87,10 +102,15 @@ export function CourseDetailView({
     batch && batch.status === "open_for_enrollment" && remainingSeats <= 0
   );
   const canEnroll = Boolean(!isCompleted && submissionEnabled && isBatchOpen);
+  const enrollmentHref = multipleBatches
+    ? "#available-batches"
+    : `/enroll?course=${course.id}&batch=${batch?.id || ""}`;
+  const enrollmentLabel = multipleBatches ? "Choose a batch" : `Enroll in ${course.title}`;
 
-  const scheduleSummary =
-    batch?.scheduleDescription ||
-    (isMto ? "16 sessions · 1.5h each" : isIrgp ? "10 focus areas" : "Schedule announced soon");
+  const scheduleSummary = multipleBatches
+    ? "Compare schedules in available batches"
+    : batch?.scheduleDescription ||
+      (isMto ? "16 sessions · 1.5h each" : isIrgp ? "10 focus areas" : "Schedule announced soon");
   const mentorCountLabel =
     mentors.length > 0
       ? `${mentors.length} industry mentor${mentors.length === 1 ? "" : "s"}`
@@ -253,7 +273,7 @@ export function CourseDetailView({
 
     return (
       <div className="bg-white rounded-2xl border border-[#E5ECEE] p-6 sm:p-7 shadow-xs">
-        {isIrgp ? (
+        {isIrgp && isCompleted ? (
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77] block">
               PROGRAM STATUS
@@ -318,7 +338,7 @@ export function CourseDetailView({
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#526E77]">
                 {hasDiscount ? "PROGRAM FEE · DISCOUNTED" : "PROGRAM FEE"}
               </span>
-              {canEnroll && batch?.batchNumber && (
+              {canEnroll && !multipleBatches && batch?.batchNumber && (
                 <span className="text-[11px] font-semibold text-[#166534] bg-[#DCFCE7] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
                   Cohort {batch.batchNumber}
                 </span>
@@ -363,10 +383,10 @@ export function CourseDetailView({
 
             {canEnroll ? (
               <Link
-                href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}
+                href={enrollmentHref}
                 className="w-full min-h-[44px] py-3.5 px-4 rounded-xl bg-[#086477] hover:bg-[#064654] text-white font-bold text-xs sm:text-sm shadow-xs inline-flex items-center justify-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
               >
-                <span>Enroll in {course.title}</span>
+                <span>{enrollmentLabel}</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             ) : (
@@ -446,10 +466,10 @@ export function CourseDetailView({
           <div className="shrink-0">
             {canEnroll ? (
               <Link
-                href={`/enroll?course=${course.id}&batch=${batch?.id || ""}`}
+                href={enrollmentHref}
                 className="min-h-[44px] rounded-full px-6 py-2.5 bg-[#086477] hover:bg-[#064654] text-white font-semibold text-xs sm:text-sm shadow-sm transition-colors duration-200 inline-flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
               >
-                <span>Enroll in {course.title}</span>
+                <span>{enrollmentLabel}</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             ) : (
@@ -462,6 +482,64 @@ export function CourseDetailView({
             )}
           </div>
         </div>
+
+        {canEnroll && multipleBatches && (
+          <section
+            id="available-batches"
+            aria-labelledby="available-batches-title"
+            className="mt-6 scroll-mt-24 rounded-2xl border border-[#C5E2E5] bg-white p-4 sm:p-6"
+          >
+            <h2 id="available-batches-title" className="text-xl font-bold text-[#172E35]">
+              Available batches
+            </h2>
+            <p className="mt-1 text-sm text-[#526E77]">
+              Compare the dates, schedule, venue and fee before choosing your batch.
+            </p>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {choices.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex flex-col gap-3 rounded-xl border border-[#C5E2E5] p-4"
+                >
+                  <h3 className="font-semibold text-[#172E35]">{item.name}</h3>
+                  <dl className="space-y-2 text-sm text-[#526E77]">
+                    <div>
+                      <dt className="font-medium">Dates</dt>
+                      <dd>
+                        {item.startDate} to {item.endDate}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium">Schedule</dt>
+                      <dd>{item.scheduleDescription}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium">Venue</dt>
+                      <dd>{item.venue}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium">Payable fee</dt>
+                      <dd className="font-semibold text-[#172E35]">
+                        {hasBatchDiscount(item) && (
+                          <span className="mr-2 font-normal line-through text-[#526E77]">
+                            {formatBdt(item.feePoisha)}
+                          </span>
+                        )}
+                        {formatBdt(getBatchPayablePoisha(item))}
+                      </dd>
+                    </div>
+                  </dl>
+                  <Link
+                    href={`/enroll?course=${course.id}&batch=${item.id}`}
+                    className="mt-auto inline-flex min-h-11 items-center justify-center rounded-lg bg-[#086477] px-4 py-2 text-center text-sm font-semibold text-white hover:bg-[#064654] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                  >
+                    Select {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* ============================================================ */}
         {/* 2. WIDE CLASSROOM OR PROGRAM BANNER                          */}

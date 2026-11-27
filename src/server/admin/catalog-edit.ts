@@ -27,7 +27,7 @@ const batchRecord = recordMeta.extend({
   start_date: z.string().date(),
   end_date: z.string().date(),
   schedule_description: z.string(),
-  capacity: z.number().int(),
+  capacity: z.number().int().positive().nullable(),
   fee_poisha: catalogPoisha.transform(poishaToTakaString),
   discount_fee_poisha: catalogPoisha.transform(poishaToTakaString).nullable(),
 });
@@ -49,7 +49,10 @@ export async function getCatalogEditRecord(section: CatalogSection, id: string) 
   const { status, archived_at, updated_at, ...values } = parsed.data;
   return {
     values: Object.fromEntries(
-      Object.entries(values).map(([field, value]) => [field, value == null ? "" : String(value)])
+      Object.entries(values).map(([field, value]) => [
+        field,
+        field === "capacity" && value === null ? "unlimited" : value == null ? "" : String(value),
+      ])
     ),
     revision: updated_at,
     status,

@@ -130,13 +130,24 @@ export function EditForm({
               event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
             ) => {
               const value = event.currentTarget.value;
-              setValues((current) => ({ ...current, [name]: value }));
+              setValues((current) => ({
+                ...current,
+                [name]: value,
+                ...(mode === "create" &&
+                name === "course_id" &&
+                !current.capacity &&
+                courseOptions.some(
+                  (course) => course.id === value && course.slug === "mto-readiness"
+                )
+                  ? { capacity: "unlimited" }
+                  : {}),
+              }));
             },
             onBlur: (
               event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
             ) => handleBlur(name, event.currentTarget.value),
             className: `${inputClassName} ${error ? "border-status-danger-border" : "border-border-default"}`,
-            "aria-required": name !== "discount_fee_poisha",
+            "aria-required": name !== "discount_fee_poisha" && name !== "batch_number",
             "aria-invalid": Boolean(error),
             "aria-describedby":
               [hint && `${name}-hint`, error && `${name}-error`].filter(Boolean).join(" ") ||
@@ -150,8 +161,46 @@ export function EditForm({
               <label htmlFor={name} className="block text-sm font-medium">
                 {label}
               </label>
+              {name === "capacity" && (
+                <label className="flex items-center gap-2 py-1 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={values.capacity === "unlimited"}
+                    onChange={(event) => {
+                      const value = event.currentTarget.checked ? "unlimited" : "";
+                      setValues((current) => ({ ...current, capacity: value }));
+                      setLocalErrors((current) => ({ ...current, capacity: undefined }));
+                    }}
+                  />
+                  Unlimited capacity
+                </label>
+              )}
               {type === "textarea" ? (
                 <textarea {...props} rows={4} />
+              ) : type === "pricing" ? (
+                <select
+                  {...props}
+                  onChange={(event) => {
+                    const pricing_mode = event.currentTarget.value;
+                    setValues((current) => ({
+                      ...current,
+                      pricing_mode,
+                      ...(pricing_mode === "free"
+                        ? { fee_poisha: "0", discount_fee_poisha: "" }
+                        : {}),
+                    }));
+                    setLocalErrors((current) => ({
+                      ...current,
+                      pricing_mode: undefined,
+                      fee_poisha: undefined,
+                      discount_fee_poisha: undefined,
+                    }));
+                  }}
+                >
+                  <option value="">Choose Free or Paid</option>
+                  <option value="free">Free</option>
+                  <option value="paid">Paid</option>
+                </select>
               ) : type === "select" ? (
                 <select {...props}>
                   <option value="">{createCatalogCopy.chooseCourse}</option>
@@ -165,8 +214,14 @@ export function EditForm({
                 <input
                   {...props}
                   type={type === "date" ? "date" : "text"}
+                  readOnly={name === "capacity" && values.capacity === "unlimited"}
                   inputMode={
-                    type === "money" ? "decimal" : type === "integer" ? "numeric" : undefined
+                    type === "money"
+                      ? "decimal"
+                      : type === "integer" ||
+                          (name === "capacity" && values.capacity !== "unlimited")
+                        ? "numeric"
+                        : undefined
                   }
                 />
               )}

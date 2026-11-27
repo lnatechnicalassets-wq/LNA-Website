@@ -66,13 +66,15 @@ export default async function AdminCatalogPage({
   const copy = catalogCopy[section];
   const queryParams = await searchParams;
   const successMessage =
-    queryParams.published === "1"
-      ? catalogPublishCopy[section].success
-      : queryParams.created === "1"
-        ? createCatalogCopy[section].saved
-        : queryParams.saved === "1"
-          ? editCatalogCopy.saved
-          : undefined;
+    queryParams.draftDeleted === "1" && section === "batches"
+      ? "Unused batch draft deleted."
+      : queryParams.published === "1"
+        ? catalogPublishCopy[section].success
+        : queryParams.created === "1"
+          ? createCatalogCopy[section].saved
+          : queryParams.saved === "1"
+            ? editCatalogCopy.saved
+            : undefined;
   const filters = parseCatalogFilters(section, queryParams);
 
   const courseScope = catalogRecordId
@@ -265,7 +267,7 @@ export default async function AdminCatalogPage({
                                 </div>
                                 <div>
                                   <dt className="text-text-secondary">{catalogCopy.capacity}</dt>
-                                  <dd>{record.capacity}</dd>
+                                  <dd>{record.capacity ?? "Unlimited"}</dd>
                                 </div>
                                 <div>
                                   <dt className="text-text-secondary">{catalogCopy.listFee}</dt>
@@ -315,7 +317,10 @@ export default async function AdminCatalogPage({
                                         },
                                         {
                                           label: catalogCopy.capacity,
-                                          value: String(record.capacity),
+                                          value:
+                                            record.capacity === null
+                                              ? "Unlimited"
+                                              : String(record.capacity),
                                         },
                                         {
                                           label: catalogCopy.listFee,

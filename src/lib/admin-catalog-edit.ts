@@ -83,7 +83,10 @@ export const batchEditSchema = z
     name: field(3, 160),
     schedule_description: field(5, 2000),
     venue: field(3, 240),
-    capacity: positiveInteger,
+    capacity: z
+      .literal("unlimited")
+      .transform(() => null)
+      .or(positiveInteger),
   })
   .and(batchDates)
   .and(batchFees);
@@ -103,7 +106,12 @@ export const editFields = {
     { name: "start_date", label: "Start date", type: "date" },
     { name: "end_date", label: "End date", type: "date" },
     { name: "schedule_description", label: "Schedule", type: "textarea" },
-    { name: "capacity", label: "Capacity", type: "integer" },
+    {
+      name: "capacity",
+      label: "Capacity",
+      type: "text",
+      hint: "Choose unlimited capacity or enter a positive seat limit.",
+    },
     { name: "fee_poisha", label: "List fee (BDT)", type: "money" },
     { name: "discount_fee_poisha", label: "Discounted fee (BDT, optional)", type: "money" },
   ],
@@ -131,12 +139,39 @@ export const courseCreateSchema = courseEditSchema.extend({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, createCatalogCopy.slugHint),
 });
 
-export const batchCreateSchema = batchEditSchema.and(
-  z.object({
-    course_id: z.string().uuid(createCatalogCopy.chooseCourse),
-    batch_number: positiveInteger,
-  })
-);
+export const batchCreateSchema = batchEditSchema
+  .and(
+    z.object({
+      course_id: z.string().uuid(createCatalogCopy.chooseCourse),
+      batch_number: z
+        .literal("")
+        .transform(() => null)
+        .or(positiveInteger),
+      pricing_mode: z.enum(["free", "paid"], { message: "Choose Free or Paid." }),
+    })
+  )
+  .superRefine((value, context) => {
+    if (
+      !/^\d+$/.test(value.fee_poisha) ||
+      (value.discount_fee_poisha !== null && !/^\d+$/.test(value.discount_fee_poisha))
+    )
+      return;
+    const payable = BigInt(value.discount_fee_poisha ?? value.fee_poisha);
+    if (value.pricing_mode === "free" && BigInt(value.fee_poisha) !== 0n) {
+      context.addIssue({
+        code: "custom",
+        path: ["fee_poisha"],
+        message: "A free batch must have a zero list fee.",
+      });
+    }
+    if (value.pricing_mode === "paid" && payable <= 0n) {
+      context.addIssue({
+        code: "custom",
+        path: ["fee_poisha"],
+        message: "A paid batch must have a positive payable fee.",
+      });
+    }
+  });
 
 export const createFields = {
   courses: [
@@ -146,7 +181,13 @@ export const createFields = {
   ],
   batches: [
     { name: "course_id", label: "Course", type: "select" },
-    { name: "batch_number", label: "Batch number", type: "integer" },
+    {
+      name: "batch_number",
+      label: "Batch number",
+      type: "integer",
+      hint: "Leave blank to assign the next number automatically.",
+    },
+    { name: "pricing_mode", label: "Batch pricing", type: "pricing" },
     ...editFields.batches,
   ],
 } as const;
