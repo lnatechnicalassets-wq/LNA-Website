@@ -57,7 +57,7 @@ jobs:
           supabase --version
           supabase start --exclude studio,imgproxy,edge-runtime,logflare,vector,analytics
 
-      - name: Replay all 18 migrations cleanly and verify PostgreSQL 17 + extensions
+      - name: Replay all 19 migrations cleanly and verify PostgreSQL 17 + extensions
         env:
           LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
@@ -82,60 +82,92 @@ jobs:
           MIGRATION_FILES="$(ls -1 supabase/migrations/*.sql | wc -l | tr -d ' ')"
           APPLIED_MIGRATIONS="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
           echo "Migration files=$MIGRATION_FILES, applied=$APPLIED_MIGRATIONS"
-          if [ "$MIGRATION_FILES" -ne 18 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
+          if [ "$MIGRATION_FILES" -ne 19 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
             echo "::error::Migration replay count mismatch."
             exit 1
           fi
 
-      - name: Run all 18 pgTAP suites
+      - name: Run all 19 pgTAP suites
         run: |
           set -euo pipefail
           TEST_COUNT="$(ls -1 supabase/tests/*.sql | wc -l | tr -d ' ')"
-          if [ "$TEST_COUNT" -ne 18 ]; then
-            echo "::error::Expected 18 pgTAP test files, found $TEST_COUNT"
+          if [ "$TEST_COUNT" -ne 19 ]; then
+            echo "::error::Expected 19 pgTAP test files, found $TEST_COUNT"
             exit 1
           fi
           supabase test db --local
 
-      - name: Verify migration 17 -> 18 incremental upgrade on real PG17 stack and run targeted TAP harness
+      - name: Verify incremental upgrades (17 -> 18 token cache and 18 -> 19 W2A-T02 auth/audit)
         env:
           LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
           M18_PATH: supabase/migrations/20261123110000_bkash_supabase_token_cache.sql
           T18_PATH: supabase/tests/0018_bkash_supabase_token_cache.sql
+          M19_PATH: supabase/migrations/20261127100000_w2a_t02_db_auth_and_audit.sql
+          T19_PATH: supabase/tests/0019_w2a_t02_db_auth_and_audit.sql
         run: |
           set -euo pipefail
           TMP_M18="$(mktemp)"
+          TMP_M19="$(mktemp)"
           cp "$M18_PATH" "$TMP_M18"
-          restore_m18() {
+          cp "$M19_PATH" "$TMP_M19"
+          restore_migrations() {
             if [ -f "$TMP_M18" ]; then
               cp "$TMP_M18" "$M18_PATH"
               rm -f "$TMP_M18"
             fi
+            if [ -f "$TMP_M19" ]; then
+              cp "$TMP_M19" "$M19_PATH"
+              rm -f "$TMP_M19"
+            fi
           }
-          trap restore_m18 EXIT
+          trap restore_migrations EXIT
 
-          rm -f "$M18_PATH"
+          rm -f "$M18_PATH" "$M19_PATH"
           supabase db reset --local
 
-          APPLIED_BEFORE="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
-          echo "Applied migrations before synthetic upgrade=$APPLIED_BEFORE"
-          if [ "$APPLIED_BEFORE" -ne 17 ]; then
-            echo "::error::Expected 17 baseline migrations before upgrade, got $APPLIED_BEFORE"
+          APPLIED_17="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Applied migrations before 17 -> 18 upgrade=$APPLIED_17"
+          if [ "$APPLIED_17" -ne 17 ]; then
+            echo "::error::Expected 17 baseline migrations before upgrade, got $APPLIED_17"
             exit 1
           fi
 
-          restore_m18
+          cp "$TMP_M18" "$M18_PATH"
+          rm -f "$TMP_M18"
           supabase migration up --local
 
-          APPLIED_AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
-          echo "Applied migrations after synthetic upgrade=$APPLIED_AFTER"
-          if [ "$APPLIED_AFTER" -ne 18 ]; then
-            echo "::error::Expected 18 applied migrations after upgrade, got $APPLIED_AFTER"
+          APPLIED_18="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Applied migrations after 17 -> 18 upgrade=$APPLIED_18"
+          if [ "$APPLIED_18" -ne 18 ]; then
+            echo "::error::Expected 18 applied migrations after token-cache upgrade, got $APPLIED_18"
             exit 1
           fi
 
           psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;"
           supabase test db --local "$T18_PATH"
+
+          # Verify 18 -> 19 incremental upgrade and historical audit row preservation
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "INSERT INTO public.audit_events (actor_role, action, target_entity, target_id, after_state) VALUES ('super_admin', 'ci_pre_upgrade_audit', 'batches', 'pre-19', '{\"history\":true}'::jsonb);"
+
+          cp "$TMP_M19" "$M19_PATH"
+          rm -f "$TMP_M19"
+          supabase migration up --local
+
+          APPLIED_19="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          echo "Applied migrations after 18 -> 19 upgrade=$APPLIED_19"
+          if [ "$APPLIED_19" -ne 19 ]; then
+            echo "::error::Expected 19 applied migrations after W2A-T02 upgrade, got $APPLIED_19"
+            exit 1
+          fi
+
+          HIST_PRESERVED="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM public.audit_events WHERE action = 'ci_pre_upgrade_audit' AND audit_scope = 'global' AND after_state->>'history' = 'true';")"
+          if [ "${HIST_PRESERVED:-0}" -ne 1 ]; then
+            echo "::error::Pre-upgrade audit_events history row was not preserved cleanly."
+            exit 1
+          fi
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "DELETE FROM public.audit_events WHERE action = 'ci_pre_upgrade_audit';"
+          supabase test db --local "$T19_PATH"
 
       - name: Verify bounded two-session lock overlap on real PG17 stack
         env:
@@ -227,6 +259,236 @@ jobs:
           echo "Parallel session lock overlap verified: session1=$STATE1 session2=$STATE2"
           if [ "$STATE1" != "grant" ] || [ "$STATE2" != "wait" ]; then
             echo "::error::Expected parallel lease serialization (grant/wait), got $STATE1/$STATE2"
+            exit 1
+          fi
+
+      - name: Verify bounded parallel-session deactivation/write race on real PG17 stack
+        env:
+          LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          ACTOR_ID="d0000000-0000-4000-8000-000000000001"
+          COURSE_ID="d0000000-0000-4000-8000-000000000002"
+          BATCH_ID="d0000000-0000-4000-8000-000000000003"
+          ENR_ID="d0000000-0000-4000-8000-000000000004"
+
+          WORK_DIR="$(mktemp -d)"
+          PIPE1="$WORK_DIR/deact_s1.fifo"
+          OUT1="$WORK_DIR/deact_s1.out"
+          OUT2="$WORK_DIR/deact_s2.out"
+          ERR2="$WORK_DIR/deact_s2.err"
+          mkfifo "$PIPE1"
+          touch "$OUT1" "$OUT2" "$ERR2"
+
+          PID1=""
+          PID2=""
+          cleanup_deact() {
+            exec 4>&- 2>/dev/null || true
+            [ -n "$PID1" ] && kill "$PID1" 2>/dev/null || true
+            [ -n "$PID2" ] && kill "$PID2" 2>/dev/null || true
+            rm -rf "$WORK_DIR"
+            psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=0 >/dev/null 2>&1 <<EOSQL
+              DELETE FROM public.audit_events WHERE actor_id = '$ACTOR_ID'::uuid OR target_id = '$ENR_ID';
+              DELETE FROM public.enrollments WHERE id = '$ENR_ID'::uuid;
+              DELETE FROM public.batches WHERE id = '$BATCH_ID'::uuid;
+              DELETE FROM public.courses WHERE id = '$COURSE_ID'::uuid;
+              DELETE FROM public.profiles WHERE id = '$ACTOR_ID'::uuid;
+              DELETE FROM auth.users WHERE id = '$ACTOR_ID'::uuid;
+          EOSQL
+          }
+          trap cleanup_deact EXIT
+
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 <<EOSQL
+            DELETE FROM public.audit_events WHERE actor_id = '$ACTOR_ID'::uuid OR target_id = '$ENR_ID';
+            DELETE FROM public.enrollments WHERE id = '$ENR_ID'::uuid;
+            DELETE FROM public.batches WHERE id = '$BATCH_ID'::uuid;
+            DELETE FROM public.courses WHERE id = '$COURSE_ID'::uuid;
+            DELETE FROM public.profiles WHERE id = '$ACTOR_ID'::uuid;
+            DELETE FROM auth.users WHERE id = '$ACTOR_ID'::uuid;
+
+            INSERT INTO auth.users (id, email)
+            VALUES ('$ACTOR_ID'::uuid, 'ci-deact-race@example.invalid');
+            INSERT INTO public.profiles (id, email, full_name, role, account_state)
+            VALUES ('$ACTOR_ID'::uuid, 'ci-deact-race@example.invalid', 'CI Race Admin', 'admin', 'active');
+            INSERT INTO public.courses (id, slug, title, subtitle, category, summary, description, venue, status, published_at, provenance)
+            VALUES (
+              '$COURSE_ID'::uuid, 'ci-deact-race-course', 'CI Race Course', 'CI deactivation race fixture',
+              'Training', 'Synthetic course summary for CI deactivation test',
+              'Synthetic course description for parallel deactivation race check.',
+              'Dhaka', 'published', now(), '{"class":"B","verified":false,"source":"CI deactivation race"}'::jsonb
+            );
+            INSERT INTO public.batches (id, course_id, slug, batch_number, name, start_date, end_date, schedule_description, capacity, fee_poisha, venue, status, provenance)
+            VALUES (
+              '$BATCH_ID'::uuid, '$COURSE_ID'::uuid, 'ci-deact-race-batch', 1, 'CI Race Batch',
+              current_date + 10, current_date + 11, 'Weekend sessions', 10, 100000, 'Dhaka', 'open_for_enrollment',
+              '{"class":"B","verified":false,"source":"CI deactivation race"}'::jsonb
+            );
+            INSERT INTO public.enrollments (id, public_ref, course_id, batch_id, full_name, email, phone, payment_method, payment_status, base_fee_poisha, payable_poisha, status, confirmed_at, is_dev_fixture, fixture_label)
+            VALUES (
+              '$ENR_ID'::uuid, 'LNA-RACE-0001', '$COURSE_ID'::uuid, '$BATCH_ID'::uuid,
+              'CI Race Applicant', 'ci-race-app@example.invalid', '01788000001',
+              'free', 'not_required', 0, 0, 'confirmed', now(), true, 'CI deactivation race fixture'
+            );
+          EOSQL
+
+          # Pre-check: prove the exact mutation succeeds for this active admin as service_role, then restore baseline
+          PRECHECK_RESULT="$(psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -Atq <<EOSQL
+            BEGIN;
+            SET LOCAL ROLE service_role;
+            DO \$\$
+            BEGIN
+              IF current_user IS DISTINCT FROM 'service_role' THEN
+                RAISE EXCEPTION 'PRECHECK_EXPECTED_SERVICE_ROLE_GOT_%', current_user;
+              END IF;
+            END \$\$;
+            SELECT public.manage_staff_enrollment(
+              '$ACTOR_ID'::uuid, '$ENR_ID'::uuid,
+              (SELECT updated_at FROM public.enrollments WHERE id = '$ENR_ID'::uuid),
+              'archive', NULL, NULL, NULL
+            );
+            COMMIT;
+          EOSQL
+          )"
+          if [ "$(echo "$PRECHECK_RESULT" | tr -d '[:space:]')" != "OK" ]; then
+            echo "::error::Expected pre-check archive by active admin to return OK, got '$PRECHECK_RESULT'"
+            exit 1
+          fi
+
+          RESTORE_RESULT="$(psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -Atq <<EOSQL
+            BEGIN;
+            SET LOCAL ROLE service_role;
+            SELECT public.manage_staff_enrollment(
+              '$ACTOR_ID'::uuid, '$ENR_ID'::uuid,
+              (SELECT updated_at FROM public.enrollments WHERE id = '$ENR_ID'::uuid),
+              'restore', NULL, NULL, NULL
+            );
+            COMMIT;
+          EOSQL
+          )"
+          if [ "$(echo "$RESTORE_RESULT" | tr -d '[:space:]')" != "OK" ]; then
+            echo "::error::Expected pre-check restore by active admin to return OK, got '$RESTORE_RESULT'"
+            exit 1
+          fi
+          psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c "DELETE FROM public.audit_events WHERE target_id = '$ENR_ID';"
+
+          ENR_UPDATED_AT="$(psql "$LOCAL_DB_URL" -Atqc "SELECT updated_at::text FROM public.enrollments WHERE id = '$ENR_ID'::uuid;")"
+
+          psql "${LOCAL_DB_URL}?application_name=lna_deact_s1" -v ON_ERROR_STOP=1 -Atq < "$PIPE1" > "$OUT1" &
+          PID1=$!
+          exec 4> "$PIPE1"
+
+          cat >&4 <<EOSQL
+          BEGIN;
+          UPDATE public.profiles SET account_state = 'disabled' WHERE id = '$ACTOR_ID'::uuid;
+          \echo READY_DEACT_S1
+          EOSQL
+
+          S1_READY=0
+          for _ in $(seq 1 50); do
+            if grep -qx 'READY_DEACT_S1' "$OUT1" 2>/dev/null; then
+              S1_READY=1
+              break
+            fi
+            sleep 0.1
+          done
+          if [ "$S1_READY" -ne 1 ]; then
+            echo "::error::Session 1 did not acquire profiles row lock within bounded timeout."
+            cat "$OUT1" || true
+            exit 1
+          fi
+
+          psql "${LOCAL_DB_URL}?application_name=lna_deact_s2" -v ON_ERROR_STOP=1 -Atq > "$OUT2" 2> "$ERR2" <<EOSQL &
+          \set VERBOSITY verbose
+          BEGIN;
+          SET LOCAL ROLE service_role;
+          DO \$\$
+          BEGIN
+            IF current_user IS DISTINCT FROM 'service_role' THEN
+              RAISE EXCEPTION 'EXPECTED_SERVICE_ROLE_GOT_%', current_user;
+            END IF;
+          END \$\$;
+          SELECT 'S2_CURRENT_USER=' || current_user;
+          SELECT public.manage_staff_enrollment(
+            '$ACTOR_ID'::uuid, '$ENR_ID'::uuid, '$ENR_UPDATED_AT'::timestamptz,
+            'archive', NULL, NULL, NULL
+          );
+          COMMIT;
+          EOSQL
+          PID2=$!
+
+          OVERLAP_PROVED=0
+          for _ in $(seq 1 50); do
+            LOCK_WAITERS="$(psql "$LOCAL_DB_URL" -Atqc "
+              SELECT count(*)
+              FROM pg_stat_activity s2
+              JOIN pg_stat_activity s1
+                ON s1.pid = ANY(pg_blocking_pids(s2.pid))
+              WHERE s2.application_name = 'lna_deact_s2'
+                AND s2.wait_event_type = 'Lock'
+                AND s2.state = 'active'
+                AND s1.application_name = 'lna_deact_s1'
+                AND EXISTS (
+                  SELECT 1
+                  FROM pg_locks l1
+                  WHERE l1.pid = s1.pid
+                    AND l1.granted
+                    AND l1.locktype = 'relation'
+                    AND l1.relation = 'public.profiles'::regclass
+                    AND l1.mode = 'RowExclusiveLock'
+                );
+            ")"
+            if [ "${LOCK_WAITERS:-0}" -ge 1 ]; then
+              OVERLAP_PROVED=1
+              break
+            fi
+            if ! kill -0 "$PID2" 2>/dev/null; then
+              break
+            fi
+            sleep 0.1
+          done
+          if [ "$OVERLAP_PROVED" -ne 1 ]; then
+            echo "::error::Failed to observe Session 2 blocked by Session 1 profiles lock in pg_stat_activity / pg_blocking_pids."
+            cat "$OUT1" "$OUT2" "$ERR2" || true
+            exit 1
+          fi
+
+          cat >&4 <<'EOSQL'
+          COMMIT;
+          \q
+          EOSQL
+          exec 4>&-
+
+          wait "$PID1"
+          PID1=""
+          set +e
+          wait "$PID2"
+          S2_EXIT=$?
+          set -e
+          PID2=""
+
+          if ! grep -qx 'S2_CURRENT_USER=service_role' "$OUT2"; then
+            echo "::error::Expected Session 2 current_user=service_role before RPC invocation."
+            cat "$OUT2" "$ERR2" || true
+            exit 1
+          fi
+
+          if grep -qi 'SET LOCAL can only be used in transaction blocks' "$ERR2"; then
+            echo "::error::Session 2 triggered out-of-transaction SET LOCAL warning."
+            cat "$ERR2" || true
+            exit 1
+          fi
+
+          if [ "$S2_EXIT" -eq 0 ] || ! grep -q '42501' "$ERR2" || ! grep -q 'STAFF_ENROLLMENT_FORBIDDEN' "$ERR2"; then
+            echo "::error::Expected concurrent write after deactivation commit to fail closed with SQLSTATE 42501 and STAFF_ENROLLMENT_FORBIDDEN (exit=$S2_EXIT)."
+            cat "$OUT2" "$ERR2" || true
+            exit 1
+          fi
+
+          STILL_UNARCHIVED="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM public.enrollments WHERE id = '$ENR_ID'::uuid AND archived_at IS NULL;")"
+          AUDIT_COUNT="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM public.audit_events WHERE target_id = '$ENR_ID' AND action = 'staff_archived_enrollment';")"
+          echo "Deactivation race verified: s2_exit=$S2_EXIT unarchived=$STILL_UNARCHIVED audit_count=$AUDIT_COUNT"
+          if [ "${STILL_UNARCHIVED:-0}" -ne 1 ] || [ "${AUDIT_COUNT:-1}" -ne 0 ]; then
+            echo "::error::Deactivated actor write leaked state or audit record."
             exit 1
           fi
 

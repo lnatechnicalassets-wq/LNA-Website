@@ -62,8 +62,8 @@ SELECT is((SELECT count(*) FROM public.email_outbox o JOIN public.enrollments e 
 SELECT is(public.start_enrollment('pgtap-offline-review', 'pgtap-offline-first', 'LNA-MAN1-0050', 'Fixture Student',
   'lna-man1-0001@example.invalid', '01711000001', '{}', '[]')->>'code',
   'DUPLICATE_ENROLLMENT', 'Public checkout cannot overwrite a manual reference');
-SELECT throws_ok($$ SELECT pg_temp.review_payment('LNA-MAN1-0001', 550025, 'approve', '77777777-7777-4777-8777-777777777777') $$,
-  '42501', 'STAFF_PAYMENT_REVIEW_FORBIDDEN', 'An ordinary admin cannot bypass the Super Admin check');
+SELECT throws_ok($$ SELECT pg_temp.review_payment('LNA-MAN1-0001', 550025, 'approve', '99999999-9999-4999-8999-999999999999') $$,
+  '42501', 'STAFF_PAYMENT_REVIEW_FORBIDDEN', 'An unknown actor cannot bypass staff authorization');
 SELECT is(pg_temp.review_payment('LNA-MAN1-0001', 550024)->>'code', 'AMOUNT_MISMATCH', 'Exact credited amount is required');
 
 UPDATE public.batches SET enrollment_closes_at = now() - interval '1 minute' WHERE slug = 'pgtap-offline-first';

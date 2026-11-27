@@ -76,9 +76,9 @@ SELECT ok((SELECT slug = 'mentor-' || id::text AND company_logo_src = '/images/p
 SELECT is(pg_temp.mentor_change('archive'), 'OK', 'Super Admin can archive a mentor');
 SELECT is(pg_temp.mentor_change('restore'), 'OK', 'Super Admin can restore an archived mentor');
 SELECT throws_ok($$ SELECT public.manage_staff_student(
-  '77777777-7777-4777-8777-777777777777', 'create', NULL, NULL, 'Fixture Applicant',
+  '99999999-9999-4999-8999-999999999999', 'create', NULL, NULL, 'Fixture Applicant',
   'other@example.invalid', '01711001201', NULL, NULL, NULL, NULL) $$,
-  '42501', NULL, 'A regular admin cannot write student profiles');
+  '42501', NULL, 'An unknown actor cannot write student profiles');
 
 SELECT is(pg_temp.student_change('create', 'alumni@example.invalid', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
   'INVALID', 'An upcoming cohort cannot be recorded as completed');
