@@ -25,7 +25,6 @@ export const HeroSlideSchema = z.object({
   secondaryCtaText: z.string().optional(),
   secondaryCtaHref: z.string().optional(),
   badgeText: z.string().optional(),
-  logoSrc: z.string().nullable().optional(),
   startDate: z.string().optional(),
   classStartLabel: z.string().optional(),
   classStartDate: z.string().optional(),
@@ -60,6 +59,7 @@ export const ImpactFigureSchema = z.object({
 });
 
 export const PartnerSchema = z.object({
+  logoSrc: z.string().nullable().optional(),
   id: z.string().min(1),
   name: z.string().min(2),
   sector: z.string().min(2),
