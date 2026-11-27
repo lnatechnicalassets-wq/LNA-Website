@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { getEnrollmentConfig } from "@/lib/enrollment/config";
+import { loadProgramQuestionSets } from "@/server/enrollment/program-questions";
 import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
 import {
   getEnrollmentOutcomeSummaryByToken,
@@ -39,11 +40,15 @@ export default async function EnrollPage({
 
   const runtime = getEnrollmentRuntimeConfig();
   const baseConfig = getEnrollmentConfig();
+  const questionConfig = await loadProgramQuestionSets(courses.map((course) => course.id)).catch(
+    () => null
+  );
   const effectiveConfig = {
     ...baseConfig,
+    ...(questionConfig ?? { programQuestions: {}, programQuestionVersions: {} }),
     payment: {
       ...baseConfig.payment,
-      submissionEnabled: runtime.submissionEnabled,
+      submissionEnabled: runtime.submissionEnabled && questionConfig !== null,
       bankTransfer: {
         ...baseConfig.payment.bankTransfer,
         enabled: false,
@@ -77,6 +82,7 @@ export default async function EnrollPage({
         checkoutMode={runtime.checkoutMode}
         sandboxPaymentEnabled={runtime.sandboxPaymentEnabled}
         manualPaymentEnabled={runtime.manualPaymentEnabled}
+        freeRegistrationEnabled={questionConfig !== null}
         initialOutcome={initialOutcome}
         invalidOutcomeNotice={invalidOutcomeNotice}
       />

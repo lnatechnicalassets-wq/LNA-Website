@@ -6,13 +6,15 @@ import { StatusLookupView } from "./status-lookup-view";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Application Status — Lead Nation Academy",
+  title: "Find My Application — Lead Nation Academy",
   description:
-    "Check your Lead Nation Academy program application status using your LNA Application ID and email address or phone number.",
+    "Check your Lead Nation Academy program application status through a secure email link.",
+  robots: { index: false, follow: false },
+  referrer: "no-referrer",
   openGraph: {
-    title: "Application Status — Lead Nation Academy",
+    title: "Find My Application — Lead Nation Academy",
     description:
-      "Check your Lead Nation Academy program application status using your LNA Application ID and email address or phone number.",
+      "Check your Lead Nation Academy program application status through a secure email link.",
   },
 };
 
@@ -27,7 +29,9 @@ export default function ApplicationStatusPage() {
         </div>
       }
     >
-      <StatusLookupView enabled={runtime.statusLookupEnabled} />
+      <StatusLookupView
+        enabled={runtime.statusLookupEnabled && runtime.emailDispatchMode === "live"}
+      />
     </Suspense>
   );
 }

@@ -20,7 +20,7 @@ const headers = { "Cache-Control": "no-store" };
 export async function POST(request: Request) {
   try {
     const env = parseCurrentServerEnv();
-    if (!isBkashSandboxRefundEnabled(env)) {
+    if (env.NODE_ENV === "production" || !isBkashSandboxRefundEnabled(env)) {
       throw new AppError("Sandbox refunds are unavailable.", "BKASH_REFUND_DISABLED", 404);
     }
     if (!verifySameOriginRequest(request)) {

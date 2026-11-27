@@ -25,6 +25,7 @@ export const HeroSlideSchema = z.object({
   secondaryCtaText: z.string().optional(),
   secondaryCtaHref: z.string().optional(),
   badgeText: z.string().optional(),
+  logoSrc: z.string().nullable().optional(),
   startDate: z.string().optional(),
   classStartLabel: z.string().optional(),
   classStartDate: z.string().optional(),

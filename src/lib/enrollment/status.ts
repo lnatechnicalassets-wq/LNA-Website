@@ -6,7 +6,7 @@ export type ApplicationStatusValue =
   | "Reservation expired"
   | "Cancelled";
 
-export type StatusPaymentMethod = PaymentMethod | "free";
+export type StatusPaymentMethod = PaymentMethod | "free" | "cash" | "full_fee_waiver";
 
 export type VerificationContactType = "email" | "phone";
 
@@ -65,6 +65,10 @@ export function formatPaymentMethodLabel(method: StatusPaymentMethod): string {
       return "bKash";
     case "bank_transfer":
       return "Bank Transfer";
+    case "cash":
+      return "Cash";
+    case "full_fee_waiver":
+      return "Full Fee Waiver";
     case "free":
       return "Free Registration";
   }

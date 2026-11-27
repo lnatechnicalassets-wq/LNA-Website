@@ -175,6 +175,34 @@ function createServiceAdminMock(state: MockTableState) {
     from: (table: string) => makeChain(table),
     rpc: async (fn: string, params: Record<string, unknown>) => {
       rpcCalls.push({ fn, params });
+      if (fn === "claim_confirmation_email" && state.emailOutboxSelectSingle) {
+        const row = state.emailOutboxSelectSingle;
+        if (row.status === "sent")
+          return {
+            data: { status: "sent", provider_message_id: row.provider_message_id },
+            error: null,
+          };
+        const payload = row.payload as Record<string, unknown>;
+        const receipt =
+          row.template === "enrollment_confirmed_paid"
+            ? {
+                receipt_number: `LNA-R-${String(payload.public_ref).replace(/^LNA-/, "")}`,
+                public_ref: payload.public_ref,
+                full_name: payload.full_name,
+                course_title: payload.course_title,
+                batch_name: payload.batch_name,
+                confirmed_at: "2026-11-28T03:00:00Z",
+                collected_poisha: String(payload.payable_poisha),
+                payment_method: payload.payment_method,
+                is_test: false,
+              }
+            : null;
+        return {
+          data: { status: "claimed", outbox: { ...row, dispatch_token: "test-claim" }, receipt },
+          error: null,
+        };
+      }
+      if (fn === "finish_confirmation_email") return { data: true, error: null };
       const handler = state.rpcHandlers?.[fn];
       if (!handler) {
         return { data: null, error: { message: `Unhandled RPC ${fn}` } };
@@ -251,6 +279,51 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
           p_trx_id: "BK15A2H90X",
         },
       },
+    ]);
+  });
+
+  it("rejects a changed fee from the checked public RPC before creating any gateway attempt", async () => {
+    const { admin, rpcCalls } = createServiceAdminMock({
+      rpcHandlers: {
+        start_checked_public_enrollment: () => ({
+          data: { ok: false, code: "FEE_CHANGED" },
+          error: null,
+        }),
+      },
+    });
+    const applicant = {
+      courseId: "mto-readiness",
+      batchId: "batch-mto-2026-01",
+      fullName: "Nadia Sultana",
+      email: "nadia@example.com",
+      whatsapp: "01711223344",
+      answers: {},
+    };
+    await expect(
+      startEnrollmentCheckout(applicant, {
+        origin: "http://localhost:3000",
+        checkoutModeOverride: "mock",
+        adminOverride: admin,
+        programQuestionsSnapshot: [],
+        expectedPayablePoisha: 750000,
+      })
+    ).rejects.toMatchObject({ code: "FEE_CHANGED", statusCode: 409 });
+    await expect(
+      submitManualBkashEnrollment(applicant, {
+        adminOverride: admin,
+        programQuestionsSnapshot: [],
+        expectedPayablePoisha: 0,
+      })
+    ).rejects.toMatchObject({ code: "FEE_CHANGED", statusCode: 409 });
+    expect(
+      rpcCalls.map(({ fn, params }) => ({
+        fn,
+        mode: params.p_mode,
+        fee: params.p_expected_payable_poisha,
+      }))
+    ).toEqual([
+      { fn: "start_checked_public_enrollment", mode: "hosted", fee: 750000 },
+      { fn: "start_checked_public_enrollment", mode: "free", fee: 0 },
     ]);
   });
 
@@ -1883,7 +1956,7 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
     });
   });
 
-  it("reconcilePendingBkashPayments() recovers stalled completed payment and closes stale uncompleted sessions safely", async () => {
+  it("reconcilePendingBkashPayments() recovers stalled completed payment without treating stale Initiated as failure", async () => {
     process.env = {
       ...process.env,
       NODE_ENV: "test",
@@ -1954,6 +2027,8 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
         ],
       },
       rpcHandlers: {
+        claim_bkash_reconciliation: () => ({ data: true, error: null }),
+        release_bkash_reconciliation: () => ({ data: true, error: null }),
         confirm_payment: () => ({
           data: { ok: true, status: "validated", already_validated: false, outbox_id: "ob-rec-1" },
           error: null,
@@ -2006,9 +2081,9 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       checkoutMode: "mock",
       checked: 2,
       confirmed: 1,
-      failed: 1,
+      failed: 0,
       reviewHold: 0,
-      stillPending: 0,
+      stillPending: 1,
       skipped: 1,
     });
     expect(emailSpy.send).not.toHaveBeenCalled();
@@ -2021,11 +2096,10 @@ describe("Enrollment & bKash Service (FR-ENR-*, FR-PAY-*, FR-ADM-001)", () => {
       p_trx_id: "TRX-CRON-999",
       p_verified_poisha: "750000",
     });
-    expect(rpcCalls.find((c) => c.fn === "record_payment_outcome")?.params).toMatchObject({
-      p_attempt_id: "att-rec-2",
-      p_next_status: "failed",
-      p_failure_reason: "SESSION_EXPIRED_UNCOMPLETED",
-    });
+    expect(rpcCalls.find((c) => c.fn === "record_payment_outcome")).toBeUndefined();
+    expect(rpcCalls.filter((c) => c.fn === "claim_bkash_reconciliation")).toHaveLength(2);
+    expect(rpcCalls.filter((c) => c.fn === "release_bkash_reconciliation")).toHaveLength(2);
+    expect(gatewayMock.executePayment).not.toHaveBeenCalled();
   });
 
   it("maps manual bKash duplicate reference, full batch, closed batch, and missing TrxID errors cleanly", async () => {

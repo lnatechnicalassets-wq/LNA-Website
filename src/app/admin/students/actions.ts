@@ -32,6 +32,36 @@ export const saveStudent: PeopleAction = async (target, _previous, form) => {
     };
   }
   const profile = data.data;
+  if (operation === "edit" && profile) {
+    const reason = z.string().trim().min(1).max(500).safeParse(form.get("reason"));
+    if (!reason.success || form.get("attested") !== "on") {
+      return {
+        message: "Enter a correction reason and confirm you verified the student’s identity.",
+      };
+    }
+    const { data: result, error } = await createSupabaseAdminClient().rpc(
+      "correct_staff_student_profile",
+      {
+        p_actor: staff.userId,
+        p_id: selected.data.id,
+        p_revision: selected.data.revision,
+        p_name: profile.fullName,
+        p_email: profile.email,
+        p_phone: profile.phone,
+        p_university: profile.university,
+        p_reason: reason.data,
+        p_attested: true,
+      }
+    );
+    if (result === "STALE") return { message: copy.stale };
+    if (result === "DUPLICATE") return { message: copy.duplicate };
+    if (result === "BUSY")
+      return { message: "This student record is busy. Refresh and try again." };
+    if (error || result !== "OK") return { message: copy.failed };
+    revalidatePath(adminPaths.studentDirectory);
+    revalidatePath(adminPaths.admissions);
+    return { success: true };
+  }
   const { data: result, error } = await createSupabaseAdminClient().rpc("manage_staff_student", {
     p_actor: staff.userId,
     p_operation: operation,
@@ -55,6 +85,8 @@ export const saveStudent: PeopleAction = async (target, _previous, form) => {
 
 export const deleteStudent: PeopleAction<StudentDeleteTarget> = async (target, _previous, form) => {
   const staff = await requireSuperAdmin("enrollments:manage");
+  if (process.env.NODE_ENV === "production")
+    return { message: "Permanent deletion is disabled. Archive this student instead." };
   const selected = studentDeleteTarget.safeParse(target);
   if (!selected.success) return { message: copy.deleteStudentFailed };
 

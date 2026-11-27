@@ -11,6 +11,7 @@ import {
 import { getCourseMentorRoster, getMentorCompanyLogo } from "@/lib/mentors";
 import { formatPoishaToBDT } from "@/lib/money";
 import { getPublicCatalogFromSupabase } from "@/server/enrollment/service";
+import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
 import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
 const courseId = "mto-readiness";
@@ -40,8 +41,17 @@ const cohortDetails = z.object({
   ),
 });
 
-export async function getMtoHeroCourse(courses: Course[], batches: Batch[], mentors: Mentor[]) {
-  const catalog = await getPublicCatalogFromSupabase().catch(() => null);
+export async function getMtoHeroCourse(
+  courses: Course[],
+  batches: Batch[],
+  mentors: Mentor[],
+  providedCatalog?: Awaited<ReturnType<typeof getPublicCatalogFromSupabase>> | null
+) {
+  const catalog =
+    providedCatalog === undefined
+      ? await getPublicCatalogFromSupabase().catch(() => null)
+      : providedCatalog;
+  const authoritative = providedCatalog !== undefined && providedCatalog !== null;
   const liveCourse = catalog?.courses.find(({ id }) => id === courseId);
   const course =
     liveCourse ?? courses.find(({ id, status }) => id === courseId && status === "published");
@@ -83,15 +93,24 @@ export async function getMtoHeroCourse(courses: Course[], batches: Batch[], ment
   const enrollBatchId = targetBatch?.id ?? "batch-mto-2026-01";
   const enrollHref = `/enroll?${new URLSearchParams({ course: courseId, batch: enrollBatchId })}`;
 
-  const effectiveDeadline =
-    deadline ??
-    (batch?.startDate ? `${batch.startDate}T23:59:59+06:00` : "2026-11-30T23:59:59+06:00");
+  const effectiveDeadline = authoritative
+    ? bookable && deadline && Date.parse(deadline) > Date.now()
+      ? deadline
+      : null
+    : (deadline ??
+      (batch?.startDate ? `${batch.startDate}T23:59:59+06:00` : "2026-11-30T23:59:59+06:00"));
+  const canEnroll =
+    !authoritative ||
+    Boolean(
+      bookable &&
+        (getBatchPayablePoisha(bookable) === 0 || getEnrollmentRuntimeConfig().submissionEnabled)
+    );
 
   return {
     copy,
     programHref: `/courses/${courseId}`,
-    enrollHref: enrollHref as string | null,
-    limited: true,
+    enrollHref: canEnroll ? enrollHref : null,
+    limited: !authoritative,
     deadline: effectiveDeadline as string | null,
     stats: [
       batch?.scheduleDescription,

@@ -8,12 +8,13 @@ import {
   type ManualAdmissionBatchOption,
 } from "@/lib/admin-manual-admission";
 import { adminPaths } from "@/lib/admin-navigation";
-import { getEnrollmentConfig } from "@/lib/enrollment/config";
+import { loadProgramQuestionSets } from "@/server/enrollment/program-questions";
 import { AppError } from "@/lib/errors";
 import { formatPoishaToBDT } from "@/lib/money";
 import { listOpenManualAdmissionBatches } from "@/server/admin/manual-admission";
 import { requireStaff } from "@/server/auth/require-staff";
 import { createManualAdmission } from "./actions";
+import { lookupExistingStudent } from "./student-lookup-action";
 import { ManualAdmissionForm } from "./manual-admission-form";
 
 export const dynamic = "force-dynamic";
@@ -40,19 +41,25 @@ export default async function ManualAdmissionPage({
     if (error instanceof AppError && error.code === "ADMIN_CATALOG_UNAVAILABLE") return null;
     throw error;
   });
-  const questions = getEnrollmentConfig().programQuestions;
+  const questionConfig = await loadProgramQuestionSets(
+    batches?.map((batch) => batch.courses.slug) ?? []
+  ).catch(() => null);
   const options: ManualAdmissionBatchOption[] =
-    batches?.map((batch) => ({
-      id: batch.id,
-      courseId: batch.course_id,
-      courseTitle: batch.courses.title,
-      name: batch.name,
-      startDate: batch.start_date,
-      revision: batch.updated_at,
-      fee: batch.feePoisha === 0n ? copy.free : formatPoishaToBDT(batch.feePoisha),
-      isFree: batch.feePoisha === 0n,
-      questions: questions[batch.courses.slug] ?? [],
-    })) ?? [];
+    (questionConfig
+      ? batches?.map((batch) => ({
+          id: batch.id,
+          courseId: batch.course_id,
+          courseTitle: batch.courses.title,
+          name: batch.name,
+          startDate: batch.start_date,
+          revision: batch.updated_at,
+          fee: batch.feePoisha === 0n ? copy.free : formatPoishaToBDT(batch.feePoisha),
+          feePoisha: batch.feePoisha.toString(),
+          isFree: batch.feePoisha === 0n,
+          questions: questionConfig.programQuestions[batch.courses.slug] ?? [],
+          questionVersion: questionConfig.programQuestionVersions[batch.courses.slug] ?? 0,
+        }))
+      : []) ?? [];
   const retryHref = requestedBatchId
     ? `${adminPaths.addStudent}?${new URLSearchParams({ batchId: requestedBatchId })}`
     : adminPaths.addStudent;
@@ -77,13 +84,17 @@ export default async function ManualAdmissionPage({
               batches={options}
               initialBatchId={requestedBatchId}
               save={createManualAdmission}
+              lookup={lookupExistingStudent}
             />
           </>
         ) : (
           <div className="rounded-xl border border-border-subtle bg-surface-card p-4 text-sm text-text-secondary">
-            <p>{batches ? copy.noOpenBatches : copy.choicesUnavailable}</p>
-            <Link href={batches ? adminPaths.batches : retryHref} className={linkClass}>
-              {batches ? copy.browseBatches : copy.retry}
+            <p>{batches && questionConfig ? copy.noOpenBatches : copy.choicesUnavailable}</p>
+            <Link
+              href={batches && questionConfig ? adminPaths.batches : retryHref}
+              className={linkClass}
+            >
+              {batches && questionConfig ? copy.browseBatches : copy.retry}
             </Link>
           </div>
         )}

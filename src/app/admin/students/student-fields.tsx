@@ -54,6 +54,31 @@ export function StudentFields({
           />
         </label>
       ))}
+      {profile && (
+        <div className="space-y-3 sm:col-span-2">
+          <label className="block space-y-1 text-sm font-medium">
+            <span>Reason for correction</span>
+            <textarea
+              name="reason"
+              required
+              maxLength={500}
+              rows={2}
+              className={peopleFieldClass}
+            />
+          </label>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" name="attested" required />
+            <span>
+              I verified that the new contact details belong to this student. Older application
+              recovery links will become invalid.
+            </span>
+          </label>
+          <p className="text-xs text-text-secondary">
+            Existing admission and sent email records remain unchanged. Correct the affected
+            admissions separately if needed.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

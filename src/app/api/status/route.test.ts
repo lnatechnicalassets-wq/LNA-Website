@@ -1,144 +1,93 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-
-const mockGetEnrollmentRuntimeConfig = vi.fn();
-const mockLookupEnrollmentStatus = vi.fn();
-const mockConsumeRateLimit = vi.fn();
-
-vi.mock("@/server/enrollment/config", () => ({
-  getEnrollmentRuntimeConfig: () => mockGetEnrollmentRuntimeConfig(),
+const { runtime, limit, send, redeem, deferred } = vi.hoisted(() => ({
+  runtime: vi.fn(),
+  limit: vi.fn(),
+  send: vi.fn(),
+  redeem: vi.fn(),
+  deferred: vi.fn(),
 }));
-
-vi.mock("@/server/enrollment/service", async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>;
-  return {
-    ...actual,
-    lookupEnrollmentStatus: (...args: unknown[]) => mockLookupEnrollmentStatus(...args),
-  };
-});
-
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  after: deferred,
+}));
+vi.mock("@/server/enrollment/config", () => ({ getEnrollmentRuntimeConfig: runtime }));
+vi.mock("@/server/enrollment/recovery", () => ({
+  sendApplicationRecovery: send,
+  redeemApplicationRecovery: redeem,
+}));
 vi.mock("@/server/ratelimit/limiter", () => ({
-  extractHashedClientIp: () => "hashed-ip-status",
-  consumeRateLimit: (...args: unknown[]) => mockConsumeRateLimit(...args),
+  consumeRateLimit: limit,
+  extractHashedClientIp: () => "status-ip",
 }));
-
 import { POST } from "./route";
 
-describe("POST /api/status", () => {
+function request(body: unknown, origin = "http://localhost:3000") {
+  return new NextRequest("http://localhost:3000/api/status", {
+    method: "POST",
+    headers: { origin, "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+describe("POST /api/status recovery", () => {
   beforeEach(() => {
-    mockGetEnrollmentRuntimeConfig.mockReturnValue({
-      checkoutMode: "mock",
-      submissionEnabled: true,
-      statusLookupEnabled: true,
-      isMockMode: true,
-      bankTransferEnabled: false,
-    });
-    mockConsumeRateLimit.mockResolvedValue({
-      allowed: true,
-      remaining: 24,
-      resetAtMs: Date.now() + 60000,
-    });
+    vi.resetAllMocks();
+    runtime.mockReturnValue({ statusLookupEnabled: true, emailDispatchMode: "live" });
+    limit.mockResolvedValue({ allowed: true });
   });
-
-  afterEach(() => {
-    vi.clearAllMocks();
+  it("rejects cross-origin and disabled requests", async () => {
+    expect((await POST(request({}, "https://evil.example"))).status).toBe(403);
+    runtime.mockReturnValue({ statusLookupEnabled: false });
+    expect((await POST(request({}))).status).toBe(503);
+    expect(deferred).not.toHaveBeenCalled();
   });
-
-  it("rejects cross-origin POST requests with HTTP 403", async () => {
-    const req = new NextRequest("http://localhost:3000/api/status", {
-      method: "POST",
-      headers: {
-        origin: "https://attacker.example",
-        "content-type": "application/json",
+  it("rate limits and refuses legacy contact-only lookup", async () => {
+    limit.mockResolvedValueOnce({ allowed: false });
+    expect(
+      (await POST(request({ action: "request", email: "student@example.invalid" }))).status
+    ).toBe(429);
+    expect(
+      (
+        await POST(
+          request({
+            applicationId: "LNA-ABCD-0001",
+            verificationType: "phone",
+            contactValue: "01711223344",
+          })
+        )
+      ).status
+    ).toBe(400);
+    expect(redeem).not.toHaveBeenCalled();
+  });
+  it("responds generically before database or email delivery", async () => {
+    const first = await POST(
+      request({ action: "request", email: " Known@Example.invalid ", reference: "lna-abcd-0001" })
+    );
+    const second = await POST(request({ action: "request", email: "unknown@example.invalid" }));
+    expect(first.status).toBe(202);
+    expect(first.headers.get("cache-control")).toBe("no-store");
+    expect(await first.json()).toEqual(await second.json());
+    expect(send).not.toHaveBeenCalled();
+    await deferred.mock.calls[0][0]();
+    expect(send).toHaveBeenCalledWith("known@example.invalid", "LNA-ABCD-0001");
+  });
+  it("requires a valid one-time token and does not allow guessed references", async () => {
+    expect((await POST(request({ action: "redeem", token: "LNA-ABCD-0001" }))).status).toBe(400);
+    expect(redeem).not.toHaveBeenCalled();
+    redeem.mockResolvedValueOnce(null);
+    expect((await POST(request({ action: "redeem", token: "a".repeat(64) }))).status).toBe(400);
+    const applications = [
+      {
+        reference: "LNA-ABCD-0001",
+        course: "MTO",
+        batch: "Batch 1",
+        status: "confirmed",
+        paymentStatus: "verified",
       },
-      body: JSON.stringify({
-        applicationId: "LNA-2M4K-9P7Q",
-        verificationType: "email",
-        contactValue: "user@example.com",
-      }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(403);
-    expect(res.headers.get("cache-control")).toBe("no-store");
-  });
-
-  it("returns HTTP 503 when status lookup is disabled and 429 when rate limited", async () => {
-    mockGetEnrollmentRuntimeConfig.mockReturnValueOnce({
-      checkoutMode: "closed",
-      submissionEnabled: false,
-      statusLookupEnabled: false,
-      isMockMode: false,
-      bankTransferEnabled: false,
-    });
-
-    const disabledReq = new NextRequest("http://localhost:3000/api/status", {
-      method: "POST",
-      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    const disabledRes = await POST(disabledReq);
-    expect(disabledRes.status).toBe(503);
-
-    mockConsumeRateLimit.mockResolvedValueOnce({
-      allowed: false,
-      remaining: 0,
-      resetAtMs: Date.now() + 60000,
-    });
-    const limitedReq = new NextRequest("http://localhost:3000/api/status", {
-      method: "POST",
-      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    const limitedRes = await POST(limitedReq);
-    expect(limitedRes.status).toBe(429);
-  });
-
-  it("returns uniform null result without leaking PII when lookup returns null or safe summary", async () => {
-    mockLookupEnrollmentStatus.mockResolvedValueOnce(null);
-
-    const notFoundReq = new NextRequest("http://localhost:3000/api/status", {
-      method: "POST",
-      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
-      body: JSON.stringify({
-        applicationId: "LNA-2M4K-9P7Q",
-        verificationType: "email",
-        contactValue: "wrong@example.com",
-      }),
-    });
-    const notFoundRes = await POST(notFoundReq);
-    expect(notFoundRes.status).toBe(200);
-    expect(await notFoundRes.json()).toEqual({ ok: true, found: false, result: null });
-
-    mockLookupEnrollmentStatus.mockResolvedValueOnce({
-      applicationReference: "LNA-2M4K-9P7Q",
-      fullName: "Nadia Sultana",
-      courseTitle: "MTO Readiness Program",
-      batchName: "MTO Cohort 1",
-      paymentMethod: "bkash",
-      status: "Enrollment confirmed",
-    });
-
-    const foundReq = new NextRequest("http://localhost:3000/api/status", {
-      method: "POST",
-      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
-      body: JSON.stringify({
-        applicationId: "LNA-2M4K-9P7Q",
-        verificationType: "phone",
-        contactValue: "01711223344",
-      }),
-    });
-    const foundRes = await POST(foundReq);
-    expect(foundRes.status).toBe(200);
-    const json = await foundRes.json();
-    expect(json).toMatchObject({
-      ok: true,
-      found: true,
-      result: {
-        applicationReference: "LNA-2M4K-9P7Q",
-        status: "Enrollment confirmed",
-      },
-    });
+    ];
+    redeem.mockResolvedValueOnce(applications);
+    const response = await POST(request({ action: "redeem", token: "b".repeat(64) }));
+    expect(await response.json()).toEqual({ ok: true, applications });
   });
 });

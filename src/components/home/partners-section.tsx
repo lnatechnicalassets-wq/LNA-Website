@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import type { Partner } from "@/lib/content";
 
 export interface PartnersSectionProps {
@@ -11,7 +12,22 @@ export interface PartnersSectionProps {
  * Corporate Partner Logos & Wordmarks (Provenance Class A, Rule R15).
  * Generously sized for high-visibility editorial branding across desktop and mobile.
  */
-function PartnerWordmark({ id }: { id: string }) {
+function PartnerWordmark({ partner }: { partner: Partner }) {
+  const { id } = partner;
+  if (partner.logoSrc !== undefined) {
+    return partner.logoSrc ? (
+      <Image
+        src={partner.logoSrc}
+        alt={partner.name}
+        width={200}
+        height={72}
+        sizes="200px"
+        className="h-10 w-auto max-w-[200px] object-contain sm:h-12 lg:h-16"
+      />
+    ) : (
+      <span className="text-xl font-bold text-primary-900">{partner.name}</span>
+    );
+  }
   const uniformLogoClass =
     "h-10 sm:h-11 md:h-13 lg:h-15 xl:h-16 w-auto object-contain select-none shrink-0";
   const uniformContainerClass =
@@ -334,7 +350,7 @@ export function PartnersSection({ partners }: PartnersSectionProps) {
                       : partner.name
                   }
                 >
-                  <PartnerWordmark id={partner.id} />
+                  <PartnerWordmark partner={partner} />
                   {partner.isPlaceholder && (
                     <span className="sr-only"> (Demonstration Wordmark)</span>
                   )}
@@ -352,7 +368,7 @@ export function PartnersSection({ partners }: PartnersSectionProps) {
                   key={`dup-${partner.id}-${index}`}
                   className="flex items-center opacity-95 hover:opacity-100 transition-opacity select-none shrink-0"
                 >
-                  <PartnerWordmark id={partner.id} />
+                  <PartnerWordmark partner={partner} />
                 </div>
               ))}
             </div>

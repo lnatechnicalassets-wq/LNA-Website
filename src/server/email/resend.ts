@@ -1,5 +1,6 @@
 import "server-only";
-import { Resend } from "resend";
+import { after } from "next/server";
+import { receiptFilename, receiptSchema, renderPaymentReceipt } from "./receipt";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatPoishaToBDT } from "@/lib/money";
 import { parseCurrentServerEnv } from "@/server/env";
@@ -16,7 +17,7 @@ export interface ConfirmationEmailPayload {
   venue: string;
   start_date: string;
   payable_poisha: number | string;
-  payment_method: "bkash" | "free" | "bank_transfer";
+  payment_method: "bkash" | "free" | "bank_transfer" | "cash" | "full_fee_waiver";
 }
 
 export interface EmailOutboxDispatchResult {
@@ -36,6 +37,7 @@ export interface OutboxEmailSender {
     html: string;
     text: string;
     idempotencyKey: string;
+    attachments?: { filename: string; content: string }[];
   }): Promise<{ id?: string; error?: string }>;
 }
 
@@ -57,8 +59,12 @@ export function renderConfirmationEmailContent(
   appUrl: string
 ): { subject: string; html: string; text: string } {
   const poisha = BigInt(payload.payable_poisha ?? 0);
-  const feeDisplay =
-    poisha === 0n ? "Free Registration" : formatPoishaToBDT(poisha).replace("৳", "BDT ");
+  const waived = payload.payment_method === "full_fee_waiver";
+  const feeDisplay = waived
+    ? "Full fee waiver (BDT 0.00 collected)"
+    : poisha === 0n
+      ? "Free Registration"
+      : formatPoishaToBDT(poisha).replace("৳", "BDT ");
   const statusUrl = `${appUrl.replace(/\/+$/, "")}/status?ref=${encodeURIComponent(payload.public_ref)}`;
   const isFree = template === "enrollment_confirmed_free" || poisha === 0n;
 
@@ -69,9 +75,11 @@ export function renderConfirmationEmailContent(
   const text = [
     `Dear ${payload.full_name},`,
     "",
-    isFree
-      ? `Your free registration with Lead Nation Academy is confirmed.`
-      : `Your payment has been verified and your seat with Lead Nation Academy is confirmed.`,
+    waived
+      ? "Your enrollment with an approved full fee waiver is confirmed."
+      : isFree
+        ? `Your free registration with Lead Nation Academy is confirmed.`
+        : `Your payment has been verified and your seat with Lead Nation Academy is confirmed.`,
     "",
     `LNA Application ID: ${payload.public_ref}`,
     `Program: ${payload.course_title}`,
@@ -93,9 +101,11 @@ export function renderConfirmationEmailContent(
       </div>
       <p>Dear ${escapeHtml(payload.full_name)},</p>
       <p>${
-        isFree
-          ? "Your place in the selected Lead Nation Academy cohort is confirmed."
-          : "Your payment has been verified and your seat in the cohort is confirmed."
+        waived
+          ? "Your enrollment with an approved full fee waiver is confirmed."
+          : isFree
+            ? "Your place in the selected Lead Nation Academy cohort is confirmed."
+            : "Your payment has been verified and your seat in the cohort is confirmed."
       }</p>
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #F6FAFA; border: 1px solid #C5E2E5; border-radius: 8px;">
         <tbody>
@@ -135,98 +145,119 @@ export async function dispatchEmailOutboxById(
     return { sent: false, skipped: true, mode, error: "SUPABASE_NOT_CONFIGURED" };
   }
 
+  if (mode === "disabled") return { sent: false, skipped: true, mode };
+  if (mode === "mock" && env.NODE_ENV === "production") return { sent: false, skipped: true, mode };
+
   const admin = options?.adminOverride ?? createSupabaseAdminClient();
-  const { data: outbox, error: fetchError } = await admin
-    .from("email_outbox")
-    .select(
-      "id, template, recipient_email, idempotency_key, payload, status, provider_message_id, retry_count"
-    )
-    .eq("id", outboxId)
-    .maybeSingle();
-
-  if (fetchError || !outbox) {
-    return { sent: false, mode, error: "OUTBOX_RECORD_NOT_FOUND" };
+  const { data: claim, error: claimError } = await admin.rpc("claim_confirmation_email", {
+    p_id: outboxId,
+    p_live: mode === "live",
+  });
+  if (claimError || !claim || typeof claim !== "object") {
+    return { sent: false, mode, error: "EMAIL_CLAIM_FAILED" };
   }
-
-  if (outbox.status === "sent") {
+  if (claim.status === "sent") {
+    return { sent: true, alreadySent: true, mode, providerMessageId: claim.provider_message_id };
+  }
+  if (claim.status !== "claimed" || !claim.outbox?.dispatch_token) {
     return {
-      sent: true,
-      alreadySent: true,
+      sent: false,
+      skipped: true,
       mode,
-      providerMessageId: outbox.provider_message_id,
+      error: String(claim.status ?? "EMAIL_UNAVAILABLE").toUpperCase(),
     };
   }
-
-  if (mode === "disabled") {
-    return { sent: false, skipped: true, mode };
-  }
-
-  const payload = outbox.payload as unknown as ConfirmationEmailPayload;
-  const rendered = renderConfirmationEmailContent(outbox.template, payload, env.APP_URL);
-  const fromHeader = `Lead Nation Academy Admissions <${env.RESEND_FROM_EMAIL}>`;
-
+  const outbox = claim.outbox;
+  let providerMessageId: string | null = null;
+  let safeError: string | null = null;
   try {
-    let providerMessageId: string | null = null;
-
+    const payload = outbox.payload as ConfirmationEmailPayload;
+    const rendered = renderConfirmationEmailContent(outbox.template, payload, env.APP_URL);
+    const paid = outbox.template === "enrollment_confirmed_paid";
+    const receipt = paid ? receiptSchema.parse(claim.receipt) : null;
+    const attachments = receipt
+      ? [
+          {
+            filename: receiptFilename(receipt),
+            content: renderPaymentReceipt(receipt).toString("base64"),
+          },
+        ]
+      : undefined;
+    const args = {
+      from: `Lead Nation Academy Admissions <${env.RESEND_FROM_EMAIL}>`,
+      to: [String(outbox.recipient_email)],
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      ...(attachments ? { attachments } : {}),
+    };
     if (options?.senderOverride) {
-      const customResult = await options.senderOverride.send({
-        from: fromHeader,
-        to: [String(outbox.recipient_email)],
-        subject: rendered.subject,
-        html: rendered.html,
-        text: rendered.text,
-        idempotencyKey: outbox.idempotency_key,
+      const result = await options.senderOverride.send({
+        ...args,
+        idempotencyKey: String(outbox.idempotency_key),
       });
-      if (customResult.error || !customResult.id) {
-        throw new Error(customResult.error ?? "Email provider rejected dispatch");
-      }
-      providerMessageId = customResult.id;
+      if (result.error || !result.id) throw new Error("EMAIL_PROVIDER_REJECTED");
+      providerMessageId = result.id;
     } else if (mode === "mock") {
-      if (env.NODE_ENV === "production") {
-        throw new Error("Mock email dispatch is forbidden in production");
-      }
       providerMessageId = `mock_resend_${String(outbox.id).replace(/-/g, "").slice(0, 12)}`;
     } else {
-      const resend = new Resend(env.RESEND_API_KEY);
-      const { data, error } = await resend.emails.send({
-        from: fromHeader,
-        to: [String(outbox.recipient_email)],
-        subject: rendered.subject,
-        html: rendered.html,
-        text: rendered.text,
+      // The actual Resend idempotency header (not an informational X-Entity-Ref-ID).
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
         headers: {
-          "X-Entity-Ref-ID": String(outbox.idempotency_key),
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": String(outbox.idempotency_key),
         },
+        body: JSON.stringify(args),
+        cache: "no-store",
+        signal: AbortSignal.timeout(12000),
       });
-
-      if (error || !data?.id) {
-        throw new Error(error?.message ?? "Resend API dispatch failed");
+      const result: unknown = await response.json().catch(() => null);
+      if (
+        !response.ok ||
+        !result ||
+        typeof result !== "object" ||
+        !("id" in result) ||
+        typeof result.id !== "string" ||
+        !result.id
+      ) {
+        throw new Error(`EMAIL_PROVIDER_HTTP_${response.status}`);
       }
-      providerMessageId = data.id;
+      providerMessageId = result.id;
     }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    safeError = /^EMAIL_PROVIDER_(REJECTED|HTTP_\d{3})$/.test(message)
+      ? message
+      : "EMAIL_DISPATCH_FAILED";
+  }
+  const { data: finished, error: finishError } = await admin.rpc("finish_confirmation_email", {
+    p_id: outboxId,
+    p_token: outbox.dispatch_token,
+    p_provider_id: providerMessageId,
+    p_error: safeError,
+  });
+  if (finishError || finished !== true)
+    return { sent: false, mode, error: "EMAIL_FINALIZATION_UNCONFIRMED" };
+  if (providerMessageId) return { sent: true, mode, providerMessageId };
+  return { sent: false, mode, error: safeError ?? "EMAIL_DISPATCH_FAILED" };
+}
 
-    await admin
-      .from("email_outbox")
-      .update({
-        status: "sent",
-        provider_message_id: providerMessageId,
-        sent_at: new Date().toISOString(),
-        last_error: null,
-      })
-      .eq("id", outbox.id);
-
-    return { sent: true, mode, providerMessageId };
-  } catch (err) {
-    const safeError = err instanceof Error ? err.message.slice(0, 200) : "Email dispatch failure";
-    await admin
-      .from("email_outbox")
-      .update({
-        status: "failed",
-        retry_count: Number(outbox.retry_count ?? 0) + 1,
-        last_error: safeError,
-      })
-      .eq("id", outbox.id);
-
-    return { sent: false, mode, error: safeError };
+/** Keep the applicant's response independent of mail delivery. The database outbox is durable. */
+export async function scheduleConfirmationEmail(
+  id: string,
+  options?: { senderOverride?: OutboxEmailSender; adminOverride?: SupabaseClient }
+): Promise<void> {
+  if (options?.senderOverride || options?.adminOverride || process.env.NODE_ENV === "test") {
+    await dispatchEmailOutboxById(id, options).catch(() => null);
+    return;
+  }
+  try {
+    after(async () => {
+      await dispatchEmailOutboxById(id).catch(() => null);
+    });
+  } catch {
+    // Outside a request context, the authenticated scheduled worker will pick up the row.
   }
 }

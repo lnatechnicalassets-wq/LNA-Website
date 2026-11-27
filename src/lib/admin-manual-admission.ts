@@ -24,11 +24,11 @@ export const manualAdmissionCopy = {
   fee: "Batch fee",
   free: "Free",
   freeDescription: "Saving confirms the student’s place in this free batch.",
-  paidDescription: "A Super Admin must verify the payment before a seat is confirmed.",
+  paidDescription: "Record the received fee or approved waiver to confirm the student’s place.",
   paymentDetails: "Payment details",
   paymentMethod: "Payment method",
   choosePaymentMethod: "Choose a payment method",
-  bkash: "bKash",
+  bkash: "bKash Transfer",
   bankTransfer: "Bank transfer",
   bkashReference: "bKash transaction ID",
   bankReference: "Bank transfer reference",
@@ -38,7 +38,7 @@ export const manualAdmissionCopy = {
   batchClosed: "Enrollment is closed for this batch.",
   batchUnavailable: "The batch could not be loaded. Try again.",
   save: "Add student",
-  saveForReview: "Save for verification",
+  saveForReview: "Confirm admission",
   saving: "Adding student…",
   fullName: "Full name",
   email: "Email",
@@ -157,12 +157,33 @@ export interface ManualAdmissionBatchOption {
   startDate: string;
   revision: string;
   fee: string;
+  feePoisha: string;
   isFree: boolean;
   questions: ProgramQuestion[];
+  questionVersion?: number;
 }
 
 export interface ManualAdmissionState {
   message?: string;
   fieldErrors?: Record<string, string[] | undefined>;
   existingId?: string;
+  success?: {
+    enrollmentId: string;
+    studentId: string | null;
+    reference: string;
+    collectedPoisha: string;
+    email: "accepted" | "queued" | "not_requested";
+  };
+  referenceAckRequired?: boolean;
+}
+
+export interface ExistingStudentLookup {
+  message?: string;
+  student?: {
+    fullName: string;
+    email: string;
+    phone: string;
+    university: string | null;
+    answers: Record<string, string>;
+  };
 }

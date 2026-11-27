@@ -175,6 +175,9 @@ export function AdminEnrollmentsView({
                 {t(key)}
               </Link>
             ))}
+            <Link href="/admin/enrollments/attention" className={recordTabClass}>
+              Needs Attention
+            </Link>
           </nav>
           <p
             className="py-2 text-xs font-medium tabular-nums text-text-secondary sm:text-sm"
@@ -476,7 +479,12 @@ export function AdminEnrollmentsView({
                       </div>
                     </div>
                     <div className="col-span-2 flex justify-end border-t border-border-subtle pt-2 @4xl:col-span-1 @4xl:border-0 @4xl:pt-0">
-                      <EnrollmentRowActions item={item} allowPurge={staff.role === "super_admin"} />
+                      <EnrollmentRowActions
+                        item={item}
+                        allowPurge={
+                          process.env.NODE_ENV !== "production" && staff.role === "super_admin"
+                        }
+                      />
                     </div>
                   </li>
                 ))}

@@ -229,7 +229,9 @@ export default async function StudentsDirectory({
                           revision: student.updated_at,
                           archived: Boolean(student.archived_at),
                         }}
-                        allowPurge={staff.role === "super_admin"}
+                        allowPurge={
+                          process.env.NODE_ENV !== "production" && staff.role === "super_admin"
+                        }
                         courses={student.courses}
                         details={<StudentDetails student={student} />}
                         fields={

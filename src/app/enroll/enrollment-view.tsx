@@ -45,6 +45,9 @@ export interface EnrollmentSubmissionPayload {
   whatsapp: string;
   answers: Record<string, string>;
   transactionId?: string;
+  questionVersion?: number;
+  expectedPayablePoisha: number;
+  policyAccepted: boolean;
 }
 
 export interface EnrollmentCheckoutResponse {
@@ -70,6 +73,7 @@ export interface EnrollmentViewProps {
   checkoutMode?: "closed" | "mock" | "live";
   sandboxPaymentEnabled?: boolean;
   manualPaymentEnabled?: boolean;
+  freeRegistrationEnabled?: boolean;
   initialOutcome?: EnrollmentOutcomeSummary | null;
   invalidOutcomeNotice?: boolean;
   onStartCheckout?: (
@@ -110,12 +114,14 @@ async function defaultStartCheckout(
     body: JSON.stringify(payload),
   });
   const data = (await res.json().catch(() => null)) as
-    | (EnrollmentCheckoutResponse & { ok?: boolean; message?: string })
+    | (EnrollmentCheckoutResponse & { ok?: boolean; message?: string; code?: string })
     | null;
   if (!res.ok || !data || data.ok === false) {
-    throw new Error(
+    const error = new Error(
       data?.message || "Unable to submit your application right now. Please try again."
     );
+    error.name = data?.code === "FEE_CHANGED" ? "FEE_CHANGED" : "Error";
+    throw error;
   }
   return data;
 }
@@ -203,6 +209,7 @@ export function EnrollmentView({
   checkoutMode = "closed",
   sandboxPaymentEnabled = false,
   manualPaymentEnabled = false,
+  freeRegistrationEnabled = false,
   initialOutcome = null,
   invalidOutcomeNotice = false,
   onStartCheckout,
@@ -213,9 +220,15 @@ export function EnrollmentView({
 
   const urlCourseId = searchParams.get("course") || searchParams.get("program") || "";
   const urlBatchId = searchParams.get("batch") || "";
-  const canSubmitOnline = Boolean(
+  const canSubmitPaid = Boolean(
     config.payment.submissionEnabled && (checkoutMode !== "closed" || manualPaymentEnabled)
   );
+
+  const canSubmitFree = freeRegistrationEnabled || canSubmitPaid;
+  const canSubmitOnline =
+    canSubmitPaid ||
+    (canSubmitFree &&
+      batches.some((b) => canBatchAcceptApplications(b) && getBatchPayablePoisha(b) === 0));
 
   const publishedCourses = useMemo(
     () => courses.filter((c) => c.status === "published"),
@@ -254,6 +267,9 @@ export function EnrollmentView({
   const [showAnswersExpanded, setShowAnswersExpanded] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
   const [transactionId, setTransactionId] = useState("");
+  const [policyAccepted, setPolicyAccepted] = useState(false);
+  const [feeChanged, setFeeChanged] = useState(false);
+  const [reviewedPayablePoisha, setReviewedPayablePoisha] = useState<number | null>(null);
   const [merchantCopyMessage, setMerchantCopyMessage] = useState("");
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
@@ -367,6 +383,8 @@ export function EnrollmentView({
   }, [selectedBatch, outcomeSummary]);
 
   const isFree = feeDetails.isFree;
+  const selectedBatchCanSubmit =
+    canBatchAcceptApplications(selectedBatch) && (isFree ? canSubmitFree : canSubmitPaid);
 
   const selectedBatchSeatsRemaining = useMemo(() => {
     if (!selectedBatch) return 0;
@@ -391,6 +409,9 @@ export function EnrollmentView({
     appliedUrlSelectionRef.current = true;
     setErrors({});
     setSubmitError("");
+    setPolicyAccepted(false);
+    setFeeChanged(false);
+    setTransactionId("");
     const courseBatches = batches.filter(
       (b) => b.courseId === newCourseId && b.status === "open_for_enrollment"
     );
@@ -401,6 +422,7 @@ export function EnrollmentView({
       ...prev,
       courseId: newCourseId,
       batchId: defaultBatchId,
+      answers: prev.courseId === newCourseId ? prev.answers : {},
     }));
   };
 
@@ -409,101 +431,66 @@ export function EnrollmentView({
     appliedUrlSelectionRef.current = true;
     setErrors({});
     setSubmitError("");
+    setPolicyAccepted(false);
+    setFeeChanged(false);
+    setTransactionId("");
     setState((prev) => ({ ...prev, batchId: newBatchId }));
   };
 
   const handleContinueFromProgram = () => {
-    if (!canSubmitOnline) {
-      return;
-    }
+    if (!canSubmitOnline) return;
     const newErrors: Record<string, string> = {};
-    if (!state.courseId) {
-      newErrors.courseId = "Please select a program.";
-    } else if (availableBatches.length === 0) {
-      newErrors.batchId = "No open batches are available for this program.";
-    } else if (!state.batchId) {
-      newErrors.batchId = "Please select an available batch.";
-    } else if (selectedBatch && selectedBatchSeatsRemaining <= 0) {
-      newErrors.batchId = "This batch is currently full.";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      focusFieldById(newErrors.courseId ? "program-select" : "batch-select");
-      return;
-    }
-
-    setErrors({});
-    transitionToStep("details");
-  };
-
-  const getProgramQuestionErrors = () => {
-    const answerErrors: Record<string, string> = {};
-    for (const question of programQuestions) {
-      if (question.required && !state.answers[question.id]?.trim()) {
-        answerErrors[question.id] = "Please answer this question.";
+    if (!state.courseId) newErrors.courseId = "Please select a program.";
+    else if (!selectedBatch) newErrors.batchId = "Please select an available batch.";
+    else if (!canBatchAcceptApplications(selectedBatch))
+      newErrors.batchId = "This batch is currently unavailable.";
+    else if (!selectedBatchCanSubmit)
+      newErrors.batchId = "Paid online enrollment is currently closed.";
+    if (selectedBatchCanSubmit) {
+      if (state.fullName.trim().length < 2) newErrors.fullName = "Please enter your full name.";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email.trim()))
+        newErrors.email = "Please enter a valid email address.";
+      if (!isValidBdPhone(state.whatsapp))
+        newErrors.whatsapp = "Please enter a valid 11-digit Bangladeshi mobile number.";
+      for (const question of programQuestions) {
+        const answer = state.answers[question.id]?.trim() ?? "";
+        if (question.required && !answer) newErrors[question.id] = "Please answer this question.";
+        else if (answer && question.type === "select" && !question.options?.includes(answer))
+          newErrors[question.id] = "Choose a valid option.";
       }
     }
-    return answerErrors;
-  };
-
-  const handleContinueFromDetails = () => {
-    if (!canSubmitOnline) {
-      return;
-    }
-    const newErrors: Record<string, string> = {};
-    if (!state.fullName.trim()) {
-      newErrors.fullName = "Please enter your full name.";
-    }
-    if (!state.email.trim()) {
-      newErrors.email = "Please enter your email address.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email.trim())) {
-      newErrors.email = "Please enter a valid email address.";
-    }
-    if (!state.whatsapp.trim()) {
-      newErrors.whatsapp = "Please enter your phone / WhatsApp number.";
-    } else if (!isValidBdPhone(state.whatsapp)) {
-      newErrors.whatsapp = "Please enter a valid 11-digit Bangladeshi mobile number.";
-    }
-
-    if (manualPaymentEnabled) Object.assign(newErrors, getProgramQuestionErrors());
-
+    setErrors(newErrors);
     const firstId = Object.keys(newErrors)[0];
     if (firstId) {
-      setErrors(newErrors);
-      focusFieldById(firstId);
+      focusFieldById(
+        firstId === "courseId" ? "program-select" : firstId === "batchId" ? "batch-select" : firstId
+      );
       return;
     }
-
-    setErrors({});
-    if (!manualPaymentEnabled && programQuestions.length > 0) {
-      transitionToStep("questions");
-    } else {
-      transitionToStep("review");
-    }
-  };
-
-  const handleContinueFromQuestions = () => {
-    if (!canSubmitOnline) {
-      return;
-    }
-    const answerErrors = getProgramQuestionErrors();
-    const firstInvalidId = Object.keys(answerErrors)[0];
-    if (firstInvalidId) {
-      setErrors(answerErrors);
-      focusFieldById(firstInvalidId);
-      return;
-    }
-
-    setErrors({});
+    setPolicyAccepted(false);
+    setReviewedPayablePoisha(feeDetails.payablePoisha);
     transitionToStep("review");
   };
 
   const handleSubmitEnrollment = async () => {
-    if (!canSubmitOnline || !selectedCourse || !selectedBatch) {
+    if (
+      !selectedBatchCanSubmit ||
+      !selectedCourse ||
+      !selectedBatch ||
+      !policyAccepted ||
+      feeChanged ||
+      isSubmitting ||
+      reviewedPayablePoisha === null
+    ) {
       return;
     }
 
+    if (reviewedPayablePoisha !== feeDetails.payablePoisha) {
+      setFeeChanged(true);
+      setPolicyAccepted(false);
+      setSubmitError("The batch fee changed. Review the updated fee before applying.");
+      return;
+    }
     const manualPaid = manualPaymentEnabled && !isFree;
     const normalizedId = normalizeBkashTransactionId(transactionId);
     setSubmitError("");
@@ -524,6 +511,11 @@ export function EnrollmentView({
         email: state.email.trim(),
         whatsapp: state.whatsapp.trim(),
         answers: state.answers,
+        expectedPayablePoisha: reviewedPayablePoisha,
+        policyAccepted,
+        ...(config.programQuestionVersions
+          ? { questionVersion: config.programQuestionVersions[selectedCourse.id] ?? 0 }
+          : {}),
         ...(manualPaid ? { transactionId: normalizedId } : {}),
       });
 
@@ -546,6 +538,10 @@ export function EnrollmentView({
 
       transitionToStep("pending_verification");
     } catch (err) {
+      if (err instanceof Error && err.name === "FEE_CHANGED") {
+        setFeeChanged(true);
+        setPolicyAccepted(false);
+      }
       setSubmitError(
         err instanceof Error && err.message
           ? err.message
@@ -557,7 +553,7 @@ export function EnrollmentView({
   };
 
   const handleContinueFromReview = async () => {
-    if (!canSubmitOnline) {
+    if (!selectedBatchCanSubmit || !policyAccepted || feeChanged) {
       return;
     }
     setErrors({});
@@ -628,7 +624,6 @@ export function EnrollmentView({
     }, 2500);
   };
 
-  const isPaymentStep = step === "payment";
   const isCompletedStep =
     step === "confirmed" ||
     step === "pending_verification" ||
@@ -669,18 +664,15 @@ export function EnrollmentView({
     if (step === "program") {
       if (errors.courseId) list.push({ fieldId: "program-select", message: errors.courseId });
       if (errors.batchId) list.push({ fieldId: "batch-select", message: errors.batchId });
-    } else if (step === "details") {
       if (errors.fullName) list.push({ fieldId: "fullName", message: errors.fullName });
       if (errors.email) list.push({ fieldId: "email", message: errors.email });
       if (errors.whatsapp) list.push({ fieldId: "whatsapp", message: errors.whatsapp });
-    }
-    if (step === "questions" || (step === "details" && manualPaymentEnabled)) {
       programQuestions.forEach((q) => {
         if (errors[q.id]) list.push({ fieldId: q.id, message: errors[q.id] });
       });
     }
     return list;
-  }, [errors, manualPaymentEnabled, programQuestions, step]);
+  }, [errors, programQuestions, step]);
 
   const renderErrorSummary = () => {
     if (errorEntries.length === 0) return null;
@@ -863,37 +855,7 @@ export function EnrollmentView({
                         <span className="italic font-normal text-[#086477]">comes next.</span>
                       </h1>
                       <p className="text-sm sm:text-base text-[#526E77]">
-                        Choose a program and an available batch to get started.
-                      </p>
-                    </>
-                  )}
-
-                  {step === "details" && (
-                    <>
-                      <h1
-                        ref={stepHeadingRef}
-                        tabIndex={-1}
-                        className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2 focus:outline-none"
-                      >
-                        Tell us about yourself.
-                      </h1>
-                      <p className="text-sm sm:text-base text-[#526E77]">
-                        Enter the contact details LNA should use for this application.
-                      </p>
-                    </>
-                  )}
-
-                  {step === "questions" && (
-                    <>
-                      <h1
-                        ref={stepHeadingRef}
-                        tabIndex={-1}
-                        className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-tight tracking-tight mb-2 focus:outline-none"
-                      >
-                        A few more details.
-                      </h1>
-                      <p className="text-sm sm:text-base text-[#526E77]">
-                        These questions are specific to the program you selected.
+                        Choose a program and batch, then complete your application below.
                       </p>
                     </>
                   )}
@@ -999,7 +961,7 @@ export function EnrollmentView({
                       </h1>
                       <p className="text-sm sm:text-base text-[#526E77]">
                         {summaryPaymentMethod === "free"
-                          ? "Your place in the workshop is confirmed."
+                          ? "Your place in the program is confirmed."
                           : isManualReceipt
                             ? "Admissions verified your bKash payment and confirmed your seat."
                             : "Your bKash payment was verified server-side and your seat is confirmed."}
@@ -1119,86 +1081,24 @@ export function EnrollmentView({
             ) : (
               <>
                 {!isCompletedStep && (
-                  <nav aria-label="Enrollment progress" className="mb-8">
-                    {isPaymentStep ? (
-                      <ol className="grid grid-cols-4 gap-2 sm:gap-3">
-                        <li>
-                          <div className="h-1 rounded-full bg-[#086477] mb-2" aria-hidden="true" />
-                          <span className="text-[11px] sm:text-xs text-[#526E77]">01 Program</span>
-                        </li>
-                        <li>
-                          <div className="h-1 rounded-full bg-[#086477] mb-2" aria-hidden="true" />
-                          <span className="text-[11px] sm:text-xs text-[#526E77]">02 Details</span>
-                        </li>
-                        <li>
-                          <div className="h-1 rounded-full bg-[#086477] mb-2" aria-hidden="true" />
-                          <span className="text-[11px] sm:text-xs text-[#526E77]">03 Review</span>
-                        </li>
-                        <li aria-current="step">
-                          <div className="h-1 rounded-full bg-[#086477] mb-2" aria-hidden="true" />
-                          <span className="text-[11px] sm:text-xs font-bold text-[#172E35]">
-                            04 bKash Checkout
-                          </span>
-                        </li>
-                      </ol>
-                    ) : (
-                      <ol className="grid grid-cols-3 gap-3">
-                        <li aria-current={step === "program" ? "step" : undefined}>
-                          <div className="h-1 rounded-full mb-2 bg-[#086477]" aria-hidden="true" />
-                          <span
-                            className={`text-xs ${
-                              step === "program" ? "font-bold text-[#172E35]" : "text-[#526E77]"
-                            }`}
-                          >
-                            01 Program
-                          </span>
-                        </li>
-                        <li
-                          aria-current={
-                            step === "details" || step === "questions" ? "step" : undefined
-                          }
-                        >
-                          <div
-                            className={`h-1 rounded-full mb-2 ${
-                              step === "details" || step === "questions" || step === "review"
-                                ? "bg-[#086477]"
-                                : "bg-[#C5DDE0]"
-                            }`}
-                            aria-hidden="true"
-                          />
-                          <span
-                            className={`text-xs ${
-                              step === "details" || step === "questions"
-                                ? "font-bold text-[#172E35]"
-                                : "text-[#526E77]"
-                            }`}
-                          >
-                            02 Details
-                          </span>
-                        </li>
-                        <li aria-current={step === "review" ? "step" : undefined}>
-                          <div
-                            className={`h-1 rounded-full mb-2 ${
-                              step === "review" ? "bg-[#086477]" : "bg-[#C5DDE0]"
-                            }`}
-                            aria-hidden="true"
-                          />
-                          <span
-                            className={`text-xs ${
-                              step === "review" ? "font-bold text-[#172E35]" : "text-[#526E77]"
-                            }`}
-                          >
-                            {manualPaymentEnabled && !isFree ? "03 Review & Pay" : "03 Review"}
-                          </span>
-                        </li>
-                      </ol>
-                    )}
-
-                    {step === "questions" && (
-                      <div className="mt-3 text-[11px] font-bold tracking-wider uppercase text-[#086477]">
-                        DETAILS / PROGRAM QUESTIONS
-                      </div>
-                    )}
+                  <nav aria-label="Enrollment progress" className="mb-6">
+                    <ol className="grid grid-cols-2 gap-3 text-sm font-semibold text-[#172E35]">
+                      <li
+                        aria-current={step === "program" ? "step" : undefined}
+                        className="border-t-4 border-[#086477] pt-2"
+                      >
+                        01 Application
+                      </li>
+                      <li
+                        aria-current={step !== "program" ? "step" : undefined}
+                        className={clsx(
+                          "border-t-4 pt-2",
+                          step === "program" ? "border-[#C5DDE0]" : "border-[#086477]"
+                        )}
+                      >
+                        02 Review{isFree ? " and confirm" : " and payment"}
+                      </li>
+                    </ol>
                   </nav>
                 )}
 
@@ -1324,7 +1224,12 @@ export function EnrollmentView({
                       {selectedBatch && (
                         <p className="mt-2 text-xs font-medium text-[#526E77]">
                           Starts {formatStartDate(selectedBatch.startDate)} |{" "}
-                          {selectedBatchSeatsRemaining > 0 ? "Open for enrollment" : "Batch full"} |{" "}
+                          {selectedBatchCanSubmit
+                            ? "Open for enrollment"
+                            : selectedBatchSeatsRemaining <= 0
+                              ? "Batch full"
+                              : "Online enrollment unavailable"}{" "}
+                          |{" "}
                           {feeDetails.hasDiscount && (
                             <span className="line-through mr-1.5 text-[#526E77]">
                               {feeDetails.formattedBase}
@@ -1366,6 +1271,134 @@ export function EnrollmentView({
                       )}
                     </div>
 
+                    {selectedBatch && !selectedBatchCanSubmit && (
+                      <p role="status" className="text-sm text-[#526E77]">
+                        This batch is not available for online applications right now.
+                      </p>
+                    )}
+                    {selectedBatchCanSubmit && (
+                      <fieldset className="space-y-5 border-t border-[#C5E2E5] pt-5">
+                        <legend className="pr-3 font-semibold text-[#172E35]">
+                          Applicant details
+                        </legend>
+                        <div>
+                          <label
+                            htmlFor="fullName"
+                            className="block text-sm font-semibold text-[#172E35] mb-1.5"
+                          >
+                            Full name
+                          </label>
+                          <input
+                            id="fullName"
+                            maxLength={120}
+                            type="text"
+                            autoComplete="name"
+                            value={state.fullName}
+                            onChange={(e) => {
+                              setErrors((prev) => ({ ...prev, fullName: "" }));
+                              setState((prev) => ({ ...prev, fullName: e.target.value }));
+                            }}
+                            placeholder="Enter your full name"
+                            aria-invalid={Boolean(errors.fullName)}
+                            aria-describedby={errors.fullName ? "fullName-error" : undefined}
+                            className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
+                          />
+                          {errors.fullName && (
+                            <p
+                              id="fullName-error"
+                              role="alert"
+                              className="mt-1.5 text-xs text-rose-700 font-medium"
+                            >
+                              {errors.fullName}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label
+                              htmlFor="email"
+                              className="block text-sm font-semibold text-[#172E35] mb-1.5"
+                            >
+                              Email address
+                            </label>
+                            <input
+                              id="email"
+                              maxLength={160}
+                              type="email"
+                              autoComplete="email"
+                              inputMode="email"
+                              value={state.email}
+                              onChange={(e) => {
+                                setErrors((prev) => ({ ...prev, email: "" }));
+                                setState((prev) => ({ ...prev, email: e.target.value }));
+                              }}
+                              placeholder="name@example.com"
+                              aria-invalid={Boolean(errors.email)}
+                              aria-describedby={errors.email ? "email-error" : undefined}
+                              className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
+                            />
+                            {errors.email && (
+                              <p
+                                id="email-error"
+                                role="alert"
+                                className="mt-1.5 text-xs text-rose-700 font-medium"
+                              >
+                                {errors.email}
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor="whatsapp"
+                              className="block text-sm font-semibold text-[#172E35] mb-1.5"
+                            >
+                              WhatsApp / Phone number
+                            </label>
+                            <input
+                              id="whatsapp"
+                              maxLength={24}
+                              type="tel"
+                              autoComplete="tel"
+                              inputMode="tel"
+                              value={state.whatsapp}
+                              onChange={(e) => {
+                                setErrors((prev) => ({ ...prev, whatsapp: "" }));
+                                setState((prev) => ({ ...prev, whatsapp: e.target.value }));
+                              }}
+                              placeholder="01XXXXXXXXX"
+                              aria-invalid={Boolean(errors.whatsapp)}
+                              aria-describedby={errors.whatsapp ? "whatsapp-error" : undefined}
+                              className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
+                            />
+                            {errors.whatsapp && (
+                              <p
+                                id="whatsapp-error"
+                                role="alert"
+                                className="mt-1.5 text-xs text-rose-700 font-medium"
+                              >
+                                {errors.whatsapp}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {programQuestions.length > 0 && (
+                          <fieldset className="space-y-4 border-t border-[#C5E2E5] pt-4">
+                            <legend className="pr-3 text-sm font-semibold text-[#172E35]">
+                              Program questions
+                            </legend>
+                            {renderProgramQuestions()}
+                          </fieldset>
+                        )}
+
+                        <p className="text-xs text-[#526E77] pt-1">
+                          We&apos;ll use your email or phone number to verify your application
+                          status later.
+                        </p>
+                      </fieldset>
+                    )}
                     {(!state.courseId || availableBatches.length > 0) && (
                       <div className="pt-2">
                         <button
@@ -1380,190 +1413,6 @@ export function EnrollmentView({
                   </form>
                 )}
 
-                {/* STEP 2: APPLICANT DETAILS */}
-                {step === "details" && (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleContinueFromDetails();
-                    }}
-                    noValidate
-                    className="space-y-5"
-                  >
-                    {renderErrorSummary()}
-
-                    <div>
-                      <label
-                        htmlFor="fullName"
-                        className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                      >
-                        Full name
-                      </label>
-                      <input
-                        id="fullName"
-                        type="text"
-                        autoComplete="name"
-                        value={state.fullName}
-                        onChange={(e) => {
-                          setErrors((prev) => ({ ...prev, fullName: "" }));
-                          setState((prev) => ({ ...prev, fullName: e.target.value }));
-                        }}
-                        placeholder="Enter your full name"
-                        aria-invalid={Boolean(errors.fullName)}
-                        aria-describedby={errors.fullName ? "fullName-error" : undefined}
-                        className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
-                      />
-                      {errors.fullName && (
-                        <p
-                          id="fullName-error"
-                          role="alert"
-                          className="mt-1.5 text-xs text-rose-700 font-medium"
-                        >
-                          {errors.fullName}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label
-                          htmlFor="email"
-                          className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                        >
-                          Email address
-                        </label>
-                        <input
-                          id="email"
-                          type="email"
-                          autoComplete="email"
-                          inputMode="email"
-                          value={state.email}
-                          onChange={(e) => {
-                            setErrors((prev) => ({ ...prev, email: "" }));
-                            setState((prev) => ({ ...prev, email: e.target.value }));
-                          }}
-                          placeholder="name@example.com"
-                          aria-invalid={Boolean(errors.email)}
-                          aria-describedby={errors.email ? "email-error" : undefined}
-                          className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
-                        />
-                        {errors.email && (
-                          <p
-                            id="email-error"
-                            role="alert"
-                            className="mt-1.5 text-xs text-rose-700 font-medium"
-                          >
-                            {errors.email}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="whatsapp"
-                          className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                        >
-                          WhatsApp / Phone number
-                        </label>
-                        <input
-                          id="whatsapp"
-                          type="tel"
-                          autoComplete="tel"
-                          inputMode="tel"
-                          value={state.whatsapp}
-                          onChange={(e) => {
-                            setErrors((prev) => ({ ...prev, whatsapp: "" }));
-                            setState((prev) => ({ ...prev, whatsapp: e.target.value }));
-                          }}
-                          placeholder="01XXXXXXXXX"
-                          aria-invalid={Boolean(errors.whatsapp)}
-                          aria-describedby={errors.whatsapp ? "whatsapp-error" : undefined}
-                          className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
-                        />
-                        {errors.whatsapp && (
-                          <p
-                            id="whatsapp-error"
-                            role="alert"
-                            className="mt-1.5 text-xs text-rose-700 font-medium"
-                          >
-                            {errors.whatsapp}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {manualPaymentEnabled && programQuestions.length > 0 && (
-                      <fieldset className="space-y-4 border-t border-[#C5E2E5] pt-4">
-                        <legend className="pr-3 text-sm font-semibold text-[#172E35]">
-                          Program questions
-                        </legend>
-                        {renderProgramQuestions()}
-                      </fieldset>
-                    )}
-
-                    <p className="text-xs text-[#526E77] pt-1">
-                      We&apos;ll use your email or phone number to verify your application status
-                      later.
-                    </p>
-
-                    <div className="flex items-center justify-between pt-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setErrors({});
-                          transitionToStep("program");
-                        }}
-                        className="min-h-[44px] px-2 rounded text-sm font-semibold text-[#086477] hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                      >
-                        Back
-                      </button>
-                      <button
-                        type="submit"
-                        className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                      >
-                        <span>Continue</span>
-                        <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {/* STEP 2b: PROGRAM-SPECIFIC QUESTIONS */}
-                {step === "questions" && (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleContinueFromQuestions();
-                    }}
-                    noValidate
-                    className="space-y-5"
-                  >
-                    {renderErrorSummary()}
-
-                    {renderProgramQuestions()}
-
-                    <div className="flex items-center justify-between pt-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setErrors({});
-                          transitionToStep("details");
-                        }}
-                        className="min-h-[44px] px-2 rounded text-sm font-semibold text-[#086477] hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                      >
-                        Back
-                      </button>
-                      <button
-                        type="submit"
-                        className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-semibold text-sm transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                      >
-                        <span>Continue</span>
-                        <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                      </button>
-                    </div>
-                  </form>
-                )}
-
                 {/* STEP 3: REVIEW APPLICATION */}
                 {step === "review" && (
                   <div className="space-y-6">
@@ -1574,7 +1423,10 @@ export function EnrollmentView({
                         </h3>
                         <button
                           type="button"
-                          onClick={() => transitionToStep("details")}
+                          onClick={() => {
+                            setPolicyAccepted(false);
+                            transitionToStep("program");
+                          }}
                           className="min-h-[44px] px-2 rounded text-xs sm:text-sm font-semibold text-[#086477] underline hover:text-[#06505F] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                         >
                           Edit
@@ -1760,23 +1612,41 @@ export function EnrollmentView({
                       </p>
                     )}
 
-                    <p className="text-xs text-[#526E77]">
-                      By continuing, you agree to the enrollment{" "}
-                      <Link
-                        href="/terms"
-                        className="underline text-[#086477] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                    <div className="flex items-start gap-2 text-sm text-[#526E77]">
+                      <input
+                        id="accept-enrollment-policy"
+                        type="checkbox"
+                        checked={policyAccepted}
+                        onChange={(event) => setPolicyAccepted(event.target.checked)}
+                        className="mt-1 h-4 w-4"
+                      />
+                      <label htmlFor="accept-enrollment-policy">
+                        I accept the enrollment{" "}
+                        <Link
+                          href="/terms"
+                          className="underline text-[#086477] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                        >
+                          terms
+                        </Link>{" "}
+                        and{" "}
+                        <Link
+                          href="/privacy"
+                          className="underline text-[#086477] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
+                        >
+                          privacy policy
+                        </Link>
+                        .
+                      </label>
+                    </div>
+                    {feeChanged && (
+                      <button
+                        type="button"
+                        className="text-sm font-semibold underline text-[#086477]"
+                        onClick={() => window.location.reload()}
                       >
-                        terms
-                      </Link>{" "}
-                      and{" "}
-                      <Link
-                        href="/privacy"
-                        className="underline text-[#086477] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                      >
-                        privacy policy
-                      </Link>
-                      .
-                    </p>
+                        Reload and review updated fee
+                      </button>
+                    )}
 
                     <div className="flex items-center justify-between pt-2">
                       <button
@@ -1784,11 +1654,8 @@ export function EnrollmentView({
                         onClick={() => {
                           setErrors({});
                           setSubmitError("");
-                          if (!manualPaymentEnabled && programQuestions.length > 0) {
-                            transitionToStep("questions");
-                          } else {
-                            transitionToStep("details");
-                          }
+                          setPolicyAccepted(false);
+                          transitionToStep("program");
                         }}
                         className="min-h-[44px] px-2 rounded text-sm font-semibold text-[#086477] hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
                       >
@@ -1797,14 +1664,14 @@ export function EnrollmentView({
                       <button
                         type={manualPaymentEnabled && !isFree ? "submit" : "button"}
                         form={manualPaymentEnabled && !isFree ? "manual-bkash-proof" : undefined}
-                        disabled={isSubmitting}
-                        aria-disabled={isSubmitting}
+                        disabled={isSubmitting || !policyAccepted || feeChanged}
+                        aria-disabled={isSubmitting || !policyAccepted || feeChanged}
                         aria-busy={isSubmitting ? "true" : undefined}
                         onClick={
                           manualPaymentEnabled && !isFree ? undefined : handleContinueFromReview
                         }
                         className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
-                          isSubmitting
+                          isSubmitting || !policyAccepted || feeChanged
                             ? "bg-[#E2ECEF] text-[#3B555E] border border-[#94B0B8] cursor-not-allowed"
                             : "bg-[#086477] hover:bg-[#06505F] text-white cursor-pointer"
                         }`}
@@ -1917,6 +1784,15 @@ export function EnrollmentView({
                       </p>
                     )}
 
+                    {feeChanged && (
+                      <button
+                        type="button"
+                        className="text-sm font-semibold underline text-[#086477]"
+                        onClick={() => window.location.reload()}
+                      >
+                        Reload and review updated fee
+                      </button>
+                    )}
                     <div className="flex items-center justify-between gap-4 pt-2">
                       <button
                         type="button"
@@ -1931,12 +1807,12 @@ export function EnrollmentView({
                       </button>
                       <button
                         type="button"
-                        disabled={isSubmitting}
-                        aria-disabled={isSubmitting}
+                        disabled={isSubmitting || !policyAccepted || feeChanged}
+                        aria-disabled={isSubmitting || !policyAccepted || feeChanged}
                         aria-busy={isSubmitting ? "true" : undefined}
                         onClick={handleSubmitEnrollment}
                         className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
-                          isSubmitting
+                          isSubmitting || !policyAccepted || feeChanged
                             ? "bg-[#E2ECEF] text-[#3B555E] border border-[#94B0B8] cursor-not-allowed"
                             : "bg-[#086477] hover:bg-[#06505F] text-white cursor-pointer"
                         }`}
@@ -2011,7 +1887,7 @@ export function EnrollmentView({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
-                      {outcomeSummary?.canRetry && checkoutMode !== "closed" && canSubmitOnline && (
+                      {outcomeSummary?.canRetry && checkoutMode !== "closed" && canSubmitPaid && (
                         <button
                           type="button"
                           disabled={isSubmitting}

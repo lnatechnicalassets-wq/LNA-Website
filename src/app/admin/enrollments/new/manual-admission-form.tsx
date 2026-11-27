@@ -7,9 +7,12 @@ import {
   manualAdmissionCopy as copy,
   manualAnswerField,
   manualStudentFields,
+  type ExistingStudentLookup,
   type ManualAdmissionBatchOption,
   type ManualAdmissionState,
 } from "@/lib/admin-manual-admission";
+import { formatPoishaToBDT } from "@/lib/money";
+import { StaffPaymentFields } from "./staff-payment-fields";
 import { adminEnrollmentsHref, adminPaths } from "@/lib/admin-navigation";
 
 const fieldClass =
@@ -26,10 +29,16 @@ export function ManualAdmissionForm({
   batches,
   initialBatchId,
   save,
+  lookup,
 }: {
   batches: ManualAdmissionBatchOption[];
   initialBatchId?: string;
   save: (state: ManualAdmissionState, formData: FormData) => Promise<ManualAdmissionState>;
+  lookup?: (input: {
+    email: string;
+    phone: string;
+    courseId: string;
+  }) => Promise<ExistingStudentLookup>;
 }) {
   const courses = [...new Map(batches.map((batch) => [batch.courseId, batch.courseTitle]))].sort(
     ([, a], [, b]) => a.localeCompare(b, "en")
@@ -40,6 +49,8 @@ export function ManualAdmissionForm({
   );
   const [batchId, setBatchId] = useState(initialBatch?.id ?? "");
   const [showResult, setShowResult] = useState(false);
+  const [lookupResult, setLookupResult] = useState<ExistingStudentLookup>({});
+  const [lookupPending, setLookupPending] = useState(false);
   const [state, action, pending] = useActionState(save, {});
   const [values, setValues] = useState<Record<string, string>>({});
 
@@ -60,6 +71,55 @@ export function ManualAdmissionForm({
     })),
   ];
 
+  if (result.success) {
+    const success = result.success;
+    return (
+      <section className={cardClass} aria-labelledby="admission-success">
+        <h2 id="admission-success" className="text-xl font-semibold text-primary-900">
+          Admission confirmed
+        </h2>
+        <p role="status">
+          {success.reference} · Collection: {formatPoishaToBDT(success.collectedPoisha)}
+        </p>
+        <p className="text-sm text-text-secondary">
+          Confirmation email:{" "}
+          {success.email === "accepted"
+            ? "Accepted by email provider"
+            : success.email === "queued"
+              ? "Queued or pending delivery"
+              : "Not requested"}
+        </p>
+        <p className="text-sm text-text-secondary">
+          Receipt PDF will be available when receipt generation is implemented.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => {
+              setShowResult(false);
+              setValues({});
+              setLookupResult({});
+            }}
+          >
+            Add Another Student
+          </Button>
+          <Link
+            className="text-sm font-semibold underline"
+            href={`${adminPaths.admissions}/${success.enrollmentId}`}
+          >
+            View Admission
+          </Link>
+          <Link
+            className="text-sm font-semibold underline"
+            href={adminEnrollmentsHref({ view: "students", batchId: selected?.id })}
+          >
+            View Students
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <form
       onSubmit={(event) => {
@@ -69,7 +129,11 @@ export function ManualAdmissionForm({
         startTransition(() => action(data));
       }}
     >
-      <fieldset disabled={pending} aria-busy={pending} className="space-y-4">
+      <fieldset
+        disabled={pending || lookupPending}
+        aria-busy={pending || lookupPending}
+        className="space-y-4"
+      >
         <section className={cardClass} aria-labelledby="admission-batch-heading">
           <h2 id="admission-batch-heading" className="font-semibold text-primary-900">
             {copy.chooseBatchHeading}
@@ -87,6 +151,7 @@ export function ManualAdmissionForm({
                   setCourseId(event.currentTarget.value);
                   setBatchId("");
                   setShowResult(false);
+                  setLookupResult({});
                   setValues((previous) =>
                     Object.fromEntries(
                       manualStudentFields.map(({ name }) => [name, previous[name] ?? ""])
@@ -114,6 +179,7 @@ export function ManualAdmissionForm({
                 onChange={(event) => {
                   setBatchId(event.currentTarget.value);
                   setShowResult(false);
+                  setLookupResult({});
                 }}
               >
                 <option value="" disabled={batchOptions.length === 1}>
@@ -148,79 +214,6 @@ export function ManualAdmissionForm({
           )}
         </section>
 
-        {selected && !selected.isFree && (
-          <section className={cardClass} aria-labelledby="admission-payment-heading">
-            <h2 id="admission-payment-heading" className="font-semibold text-primary-900">
-              {copy.paymentDetails}
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label htmlFor="paymentMethod" className="block text-sm font-medium">
-                  {copy.paymentMethod}
-                </label>
-                <select
-                  id="paymentMethod"
-                  name="paymentMethod"
-                  className={fieldClass}
-                  value={values.paymentMethod ?? ""}
-                  onChange={(event) => {
-                    const paymentMethod = event.currentTarget.value;
-                    setValues((previous) => ({ ...previous, paymentMethod, paymentReference: "" }));
-                  }}
-                  required
-                  aria-invalid={Boolean(result.fieldErrors?.paymentMethod)}
-                  aria-describedby={
-                    result.fieldErrors?.paymentMethod ? "payment-method-error" : undefined
-                  }
-                >
-                  <option value="">{copy.choosePaymentMethod}</option>
-                  <option value="bkash">{copy.bkash}</option>
-                  <option value="bank_transfer">{copy.bankTransfer}</option>
-                </select>
-                {result.fieldErrors?.paymentMethod?.[0] && (
-                  <p id="payment-method-error" className="text-sm text-status-danger-text">
-                    {result.fieldErrors.paymentMethod[0]}
-                  </p>
-                )}
-              </div>
-              {values.paymentMethod && (
-                <div className="space-y-1">
-                  <label htmlFor="paymentReference" className="block text-sm font-medium">
-                    {values.paymentMethod === "bkash" ? copy.bkashReference : copy.bankReference}
-                  </label>
-                  <input
-                    id="paymentReference"
-                    name="paymentReference"
-                    className={fieldClass}
-                    value={values.paymentReference ?? ""}
-                    onChange={(event) => {
-                      const paymentReference = event.currentTarget.value;
-                      setValues((previous) => ({ ...previous, paymentReference }));
-                    }}
-                    required
-                    maxLength={128}
-                    aria-invalid={Boolean(result.fieldErrors?.paymentReference)}
-                    aria-describedby={
-                      result.fieldErrors?.paymentReference
-                        ? "payment-reference-error"
-                        : "payment-reference-help"
-                    }
-                  />
-                  {result.fieldErrors?.paymentReference?.[0] ? (
-                    <p id="payment-reference-error" className="text-sm text-status-danger-text">
-                      {result.fieldErrors.paymentReference[0]}
-                    </p>
-                  ) : (
-                    <p id="payment-reference-help" className="text-sm text-text-secondary">
-                      {copy.referenceHelp}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
         {selected && (
           <section className={cardClass} aria-labelledby="admission-details-heading">
             <h2 id="admission-details-heading" className="font-semibold text-primary-900">
@@ -228,6 +221,9 @@ export function ManualAdmissionForm({
             </h2>
             <input type="hidden" name="batchId" value={selected.id} />
             <input type="hidden" name="batchRevision" value={selected.revision} />
+            {selected.questionVersion !== undefined && (
+              <input type="hidden" name="questionVersion" value={selected.questionVersion} />
+            )}
             {result.message && (
               <div
                 role="alert"
@@ -261,6 +257,7 @@ export function ManualAdmissionForm({
                     >
                   ) => {
                     const value = event.currentTarget.value;
+                    if (name === "email" || name === "phone") setLookupResult({});
                     setValues((previous) => ({ ...previous, [name]: value }));
                   },
                 };
@@ -291,10 +288,93 @@ export function ManualAdmissionForm({
                 );
               })}
             </div>
+            {lookup && (
+              <div className="space-y-3 rounded-lg border border-border-subtle p-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  isLoading={lookupPending}
+                  onClick={async () => {
+                    setLookupPending(true);
+                    setLookupResult({});
+                    try {
+                      setLookupResult(
+                        await lookup({
+                          email: values.email ?? "",
+                          phone: values.phone ?? "",
+                          courseId,
+                        })
+                      );
+                    } catch {
+                      setLookupResult({ message: "Student lookup is unavailable. Try again." });
+                    } finally {
+                      setLookupPending(false);
+                    }
+                  }}
+                >
+                  Find existing student
+                </Button>
+                <p className="text-xs text-text-secondary">
+                  Enter both email and mobile number to find the exact student. Review the details
+                  before using them.
+                </p>
+                {lookupResult.message && (
+                  <p role="status" className="text-sm">
+                    {lookupResult.message}
+                  </p>
+                )}
+                {lookupResult.student && (
+                  <div className="space-y-2 text-sm">
+                    <p>
+                      {lookupResult.student.fullName} · {lookupResult.student.email} ·{" "}
+                      {lookupResult.student.phone}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const student = lookupResult.student;
+                        if (!student) return;
+                        const answers = Object.fromEntries(
+                          selected.questions.flatMap((q) => {
+                            const value = Object.hasOwn(student.answers, q.id)
+                              ? student.answers[q.id]
+                              : q.id === "university"
+                                ? student.university
+                                : undefined;
+                            return typeof value === "string" &&
+                              (q.type !== "select" || q.options?.includes(value))
+                              ? [[manualAnswerField(q.id), value]]
+                              : [];
+                          })
+                        );
+                        setValues((previous) => ({
+                          ...previous,
+                          ...answers,
+                          fullName: student.fullName,
+                          email: student.email,
+                          phone: student.phone,
+                        }));
+                        setLookupResult({
+                          message: "Existing details filled. Review them before saving.",
+                        });
+                      }}
+                    >
+                      Use existing details
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+        {selected && (
+          <>
+            <StaffPaymentFields key={selected.id} batch={selected} result={result} />
             <Button type="submit" isLoading={pending} className="min-h-11">
               {pending ? copy.saving : selected.isFree ? copy.save : copy.saveForReview}
             </Button>
-          </section>
+          </>
         )}
       </fieldset>
     </form>

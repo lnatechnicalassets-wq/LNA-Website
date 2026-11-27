@@ -31,6 +31,8 @@ function studentForm(overrides: Record<string, string> = {}) {
     email: "Nadia@Example.COM",
     phone: "01711223344",
     university: "University of Dhaka",
+    reason: "Verified correction",
+    attested: "on",
     ...overrides,
   };
   for (const [k, v] of Object.entries(values)) {
@@ -91,18 +93,16 @@ describe("Student directory actions characterization", () => {
       saveStudent({ operation: "edit", id: studentId, revision }, {}, studentForm())
     ).resolves.toEqual({ success: true });
 
-    expect(rpc).toHaveBeenLastCalledWith("manage_staff_student", {
+    expect(rpc).toHaveBeenLastCalledWith("correct_staff_student_profile", {
       p_actor: actorId,
-      p_operation: "edit",
       p_id: studentId,
       p_revision: revision,
       p_name: "Nadia Sultana",
       p_email: "nadia@example.com",
       p_phone: "01711223344",
       p_university: "University of Dhaka",
-      p_course: null,
-      p_batch: null,
-      p_completed: null,
+      p_reason: "Verified correction",
+      p_attested: true,
     });
     expect(revalidatePath).toHaveBeenCalledWith("/admin/students");
   });

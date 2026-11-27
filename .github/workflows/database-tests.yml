@@ -17,7 +17,7 @@ jobs:
   isolated-postgres-pgtap:
     name: PostgreSQL 17 Migrations & pgTAP
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       # Safe empty placeholders solely for supabase/config.toml env() parsing; zero real secrets or hosted targets.
       OPENAI_API_KEY: ""
@@ -57,7 +57,7 @@ jobs:
           supabase --version
           supabase start --exclude studio,imgproxy,edge-runtime,logflare,vector,analytics
 
-      - name: Replay all 20 migrations cleanly and verify PostgreSQL 17 + extensions
+      - name: Replay all 28 migrations cleanly and verify PostgreSQL 17 + extensions
         env:
           LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
@@ -82,17 +82,17 @@ jobs:
           MIGRATION_FILES="$(ls -1 supabase/migrations/*.sql | wc -l | tr -d ' ')"
           APPLIED_MIGRATIONS="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
           echo "Migration files=$MIGRATION_FILES, applied=$APPLIED_MIGRATIONS"
-          if [ "$MIGRATION_FILES" -ne 20 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
+          if [ "$MIGRATION_FILES" -ne 28 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
             echo "::error::Migration replay count mismatch."
             exit 1
           fi
 
-      - name: Run all 20 pgTAP suites
+      - name: Run all 28 pgTAP suites
         run: |
           set -euo pipefail
           TEST_COUNT="$(ls -1 supabase/tests/*.sql | wc -l | tr -d ' ')"
-          if [ "$TEST_COUNT" -ne 20 ]; then
-            echo "::error::Expected 20 pgTAP test files, found $TEST_COUNT"
+          if [ "$TEST_COUNT" -ne 28 ]; then
+            echo "::error::Expected 28 pgTAP test files, found $TEST_COUNT"
             exit 1
           fi
           supabase test db --local
@@ -116,14 +116,38 @@ jobs:
           M19_PATH: supabase/migrations/20261127100000_w2a_t02_db_auth_and_audit.sql
           T19_PATH: supabase/tests/0019_w2a_t02_db_auth_and_audit.sql
           M20_PATH: supabase/migrations/20261128100000_w1_course_content.sql
+          M21_PATH: supabase/migrations/20261128110000_w4_application_questions.sql
+          M22_PATH: supabase/migrations/20261128120000_w4_public_enrollment.sql
+          M23_PATH: supabase/migrations/20261128130000_w4_staff_admissions.sql
+          M24_PATH: supabase/migrations/20261128140000_w4_bkash_safety.sql
+          M25_PATH: supabase/migrations/20261128150000_w4_payment_attention.sql
+          M26_PATH: supabase/migrations/20261128160000_w4_admission_management.sql
+          M27_PATH: supabase/migrations/20261128170000_w4_application_recovery.sql
+          M28_PATH: supabase/migrations/20261128180000_w5_core_receipts_partners.sql
         run: |
           set -euo pipefail
           TMP_M18="$(mktemp)"
           TMP_M19="$(mktemp)"
           TMP_M20="$(mktemp)"
+          TMP_M21="$(mktemp)"
+          TMP_M22="$(mktemp)"
+          TMP_M23="$(mktemp)"
+          TMP_M24="$(mktemp)"
+          TMP_M25="$(mktemp)"
+          TMP_M26="$(mktemp)"
+          TMP_M27="$(mktemp)"
+          TMP_M28="$(mktemp)"
           cp "$M18_PATH" "$TMP_M18"
           cp "$M19_PATH" "$TMP_M19"
           cp "$M20_PATH" "$TMP_M20"
+          cp "$M21_PATH" "$TMP_M21"
+          cp "$M22_PATH" "$TMP_M22"
+          cp "$M23_PATH" "$TMP_M23"
+          cp "$M24_PATH" "$TMP_M24"
+          cp "$M25_PATH" "$TMP_M25"
+          cp "$M26_PATH" "$TMP_M26"
+          cp "$M27_PATH" "$TMP_M27"
+          cp "$M28_PATH" "$TMP_M28"
           restore_migrations() {
             if [ -f "$TMP_M18" ]; then
               cp "$TMP_M18" "$M18_PATH"
@@ -137,10 +161,42 @@ jobs:
               cp "$TMP_M20" "$M20_PATH"
               rm -f "$TMP_M20"
             fi
+            if [ -f "$TMP_M21" ]; then
+              cp "$TMP_M21" "$M21_PATH"
+              rm -f "$TMP_M21"
+            fi
+            if [ -f "$TMP_M28" ]; then
+              cp "$TMP_M28" "$M28_PATH"
+              rm -f "$TMP_M28"
+            fi
+            if [ -f "$TMP_M27" ]; then
+              cp "$TMP_M27" "$M27_PATH"
+              rm -f "$TMP_M27"
+            fi
+            if [ -f "$TMP_M26" ]; then
+              cp "$TMP_M26" "$M26_PATH"
+              rm -f "$TMP_M26"
+            fi
+            if [ -f "$TMP_M25" ]; then
+              cp "$TMP_M25" "$M25_PATH"
+              rm -f "$TMP_M25"
+            fi
+            if [ -f "$TMP_M24" ]; then
+              cp "$TMP_M24" "$M24_PATH"
+              rm -f "$TMP_M24"
+            fi
+            if [ -f "$TMP_M23" ]; then
+              cp "$TMP_M23" "$M23_PATH"
+              rm -f "$TMP_M23"
+            fi
+            if [ -f "$TMP_M22" ]; then
+              cp "$TMP_M22" "$M22_PATH"
+              rm -f "$TMP_M22"
+            fi
           }
           trap restore_migrations EXIT
 
-          rm -f "$M18_PATH" "$M19_PATH" "$M20_PATH"
+          rm -f "$M18_PATH" "$M19_PATH" "$M20_PATH" "$M21_PATH" "$M22_PATH" "$M23_PATH" "$M24_PATH" "$M25_PATH" "$M26_PATH" "$M27_PATH" "$M28_PATH"
           supabase db reset --local
 
           APPLIED_17="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
@@ -603,11 +659,120 @@ jobs:
           set -euo pipefail
           BEFORE="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
           test "$BEFORE" -eq 19
+          M21_PATH=supabase/migrations/20261128110000_w4_application_questions.sql
+          M22_PATH=supabase/migrations/20261128120000_w4_public_enrollment.sql
+          M23_PATH=supabase/migrations/20261128130000_w4_staff_admissions.sql
+          M24_PATH=supabase/migrations/20261128140000_w4_bkash_safety.sql
+          M25_PATH=supabase/migrations/20261128150000_w4_payment_attention.sql
+          M26_PATH=supabase/migrations/20261128160000_w4_admission_management.sql
+          M27_PATH=supabase/migrations/20261128170000_w4_application_recovery.sql
+          M28_PATH=supabase/migrations/20261128180000_w5_core_receipts_partners.sql
+          TMP_M22="$(mktemp)"
+          TMP_M23="$(mktemp)"
+          TMP_M24="$(mktemp)"
+          TMP_M25="$(mktemp)"
+          TMP_M26="$(mktemp)"
+          TMP_M27="$(mktemp)"
+          TMP_M28="$(mktemp)"
+          TMP_M21="$(mktemp)"
+          cp "$M21_PATH" "$TMP_M21"
+          cp "$M22_PATH" "$TMP_M22"
+          cp "$M23_PATH" "$TMP_M23"
+          cp "$M24_PATH" "$TMP_M24"
+          cp "$M25_PATH" "$TMP_M25"
+          cp "$M26_PATH" "$TMP_M26"
+          cp "$M27_PATH" "$TMP_M27"
+          cp "$M28_PATH" "$TMP_M28"
+          restore_later_migrations() {
+            if [ -f "$TMP_M21" ]; then
+              cp "$TMP_M21" "$M21_PATH"
+              rm -f "$TMP_M21"
+            fi
+            if [ -f "$TMP_M28" ]; then
+              cp "$TMP_M28" "$M28_PATH"
+              rm -f "$TMP_M28"
+            fi
+            if [ -f "$TMP_M27" ]; then
+              cp "$TMP_M27" "$M27_PATH"
+              rm -f "$TMP_M27"
+            fi
+            if [ -f "$TMP_M26" ]; then
+              cp "$TMP_M26" "$M26_PATH"
+              rm -f "$TMP_M26"
+            fi
+            if [ -f "$TMP_M25" ]; then
+              cp "$TMP_M25" "$M25_PATH"
+              rm -f "$TMP_M25"
+            fi
+            if [ -f "$TMP_M24" ]; then
+              cp "$TMP_M24" "$M24_PATH"
+              rm -f "$TMP_M24"
+            fi
+            if [ -f "$TMP_M23" ]; then
+              cp "$TMP_M23" "$M23_PATH"
+              rm -f "$TMP_M23"
+            fi
+            if [ -f "$TMP_M22" ]; then
+              cp "$TMP_M22" "$M22_PATH"
+              rm -f "$TMP_M22"
+            fi
+          }
+          trap restore_later_migrations EXIT
+          rm -f "$M21_PATH" "$M22_PATH" "$M23_PATH" "$M24_PATH" "$M25_PATH" "$M26_PATH" "$M27_PATH" "$M28_PATH"
           supabase migration up --local
           AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
           test "$AFTER" -eq 20
           supabase test db --local supabase/tests/0020_w1_course_content.sql
           pnpm vitest run src/lib/course-content.test.ts
+          cp "$TMP_M21" "$M21_PATH"
+          rm -f "$TMP_M21"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 21
+          supabase test db --local supabase/tests/0021_w4_application_questions.sql
+          pnpm vitest run src/lib/enrollment/program-questions.test.ts
+          cp "$TMP_M22" "$M22_PATH"
+          rm -f "$TMP_M22"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 22
+          supabase test db --local supabase/tests/0022_w4_public_enrollment.sql
+          cp "$TMP_M23" "$M23_PATH"
+          rm -f "$TMP_M23"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 23
+          supabase test db --local supabase/tests/0023_w4_staff_admissions.sql
+          cp "$TMP_M24" "$M24_PATH"
+          rm -f "$TMP_M24"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 24
+          supabase test db --local supabase/tests/0024_w4_bkash_safety.sql
+          cp "$TMP_M25" "$M25_PATH"
+          rm -f "$TMP_M25"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 25
+          supabase test db --local supabase/tests/0025_w4_payment_attention.sql
+          cp "$TMP_M26" "$M26_PATH"
+          rm -f "$TMP_M26"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 26
+          supabase test db --local supabase/tests/0026_w4_admission_management.sql
+          cp "$TMP_M27" "$M27_PATH"
+          rm -f "$TMP_M27"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 27
+          supabase test db --local supabase/tests/0027_w4_application_recovery.sql
+          cp "$TMP_M28" "$M28_PATH"
+          rm -f "$TMP_M28"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 28
+          supabase test db --local supabase/tests/0028_w5_core_receipts_partners.sql
 
       - name: Clean up isolated local Supabase environment
         if: always()

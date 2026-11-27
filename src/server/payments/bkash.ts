@@ -167,10 +167,15 @@ export function isBkashSandboxV2(baseUrl: string, apiVersion: string): boolean {
 export function isBkashSandboxRefundEnabled(
   env: Pick<
     ServerEnv,
-    "BKASH_SANDBOX_REFUNDS_ENABLED" | "BKASH_CHECKOUT_MODE" | "BKASH_BASE_URL" | "BKASH_API_VERSION"
+    | "NODE_ENV"
+    | "BKASH_SANDBOX_REFUNDS_ENABLED"
+    | "BKASH_CHECKOUT_MODE"
+    | "BKASH_BASE_URL"
+    | "BKASH_API_VERSION"
   >
 ): boolean {
   return (
+    env.NODE_ENV !== "production" &&
     env.BKASH_SANDBOX_REFUNDS_ENABLED === "true" &&
     env.BKASH_CHECKOUT_MODE === "live" &&
     isBkashSandboxV2(env.BKASH_BASE_URL, env.BKASH_API_VERSION)

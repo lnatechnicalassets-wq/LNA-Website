@@ -71,3 +71,33 @@ describe("Permanent admission deletion", () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 });
+
+describe("Admission contact correction", () => {
+  it("requires an attested correction reason and uses the audited contact RPC", async () => {
+    vi.resetAllMocks();
+    requireStaff.mockResolvedValue({ userId: "fixture-staff" });
+    const edit = { ...target, operation: "edit" as const };
+    const form = new FormData();
+    form.set("fullName", "Test Student");
+    form.set("email", "Updated@Example.invalid");
+    form.set("phone", "+8801711223344");
+    expect(await manageEnrollmentRecord(edit, {}, form)).toMatchObject({
+      message: expect.stringContaining("reason"),
+    });
+    expect(rpc).not.toHaveBeenCalled();
+    form.set("reason", "Verified applicant correction");
+    form.set("attested", "on");
+    rpc.mockResolvedValue({ data: "OK", error: null });
+    expect(await manageEnrollmentRecord(edit, {}, form)).toEqual({ success: true });
+    expect(rpc).toHaveBeenCalledWith("correct_staff_admission_contact", {
+      p_actor: "fixture-staff",
+      p_id: edit.id,
+      p_revision: edit.revision,
+      p_name: "Test Student",
+      p_email: "updated@example.invalid",
+      p_phone: "01711223344",
+      p_reason: "Verified applicant correction",
+      p_attested: true,
+    });
+  });
+});

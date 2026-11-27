@@ -124,6 +124,21 @@ describe("CourseDetailPage", () => {
     expect(screen.queryByRole("link", { name: /Enroll in MTO Readiness Program/i })).toBeNull();
   });
 
+  it("offers only eligible live free batches when paid checkout is closed", async () => {
+    vi.spyOn(catalogService, "getPublicCatalogFromSupabase").mockResolvedValue({
+      courses: [mtoCourseFixture],
+      batches: [
+        makeBatch(),
+        makeBatch({ id: "free-batch", name: "Free batch", batchNumber: 2, feePoisha: 0 }),
+      ],
+    });
+    render(await CourseDetailPage({ params: Promise.resolve({ slug: "mto-readiness" }) }));
+    expect(screen.getByTestId("course-payable-fee").textContent).toBe("Free");
+    for (const link of screen.getAllByRole("link", { name: /Enroll in MTO Readiness Program/i })) {
+      expect(link.getAttribute("href")).toBe("/enroll?course=mto-readiness&batch=free-batch");
+    }
+  });
+
   it("matches server discounted fee in integer poisha and shows Enroll links only when checkout and batch are open", async () => {
     vi.spyOn(runtimeConfig, "getEnrollmentRuntimeConfig").mockReturnValue({
       checkoutMode: "mock",

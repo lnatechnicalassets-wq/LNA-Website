@@ -25,6 +25,7 @@ import { BatchIntakeEditor } from "./batch-intake-editor";
 import { saveCatalogEdit } from "./actions";
 import { CourseContentEditor } from "./course-content-editor";
 import { CourseMentorEditor } from "./course-mentor-editor";
+import { CourseQuestionsEditor } from "./course-questions-editor";
 import { EditForm } from "./edit-form";
 import { CourseBatchDefaultsEditor } from "./course-batch-defaults-editor";
 import { deleteUnusedBatchDraft } from "./delete-draft-action";
@@ -155,6 +156,13 @@ export default async function CatalogEditPage({
                 id={id}
                 actorId={staff.userId}
                 saved={(await searchParams)?.mentorsSaved === "1"}
+              />
+            )}
+            {section === "courses" && (
+              <CourseQuestionsEditor
+                id={id}
+                actorId={staff.userId}
+                saved={(await searchParams)?.questionsSaved === "1"}
               />
             )}
             {section === "courses" && (

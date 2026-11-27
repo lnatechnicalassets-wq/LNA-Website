@@ -68,7 +68,7 @@ function HeroCountdown({
   }, [deadline]);
 
   const pad = (n: number) => String(n).padStart(2, "0");
-  const display = timeLeft ?? { days: 13, hours: 8, minutes: 45, seconds: 20 };
+  const display = timeLeft ?? { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
   return (
     <div className={styles.countdown} aria-label={`${label}: ${display.days} days remaining`}>
@@ -276,14 +276,16 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
 
                   {/* Right column: Rotating mentor profile details & Enrollment action */}
                   <div className={styles.profileColumn}>
-                    <HeroCountdown
-                      deadline={program.deadline || "2026-11-30T23:59:59+06:00"}
-                      label={
-                        "countdownLabel" in copy && typeof copy.countdownLabel === "string"
-                          ? copy.countdownLabel
-                          : "Admissions Close In"
-                      }
-                    />
+                    {program.deadline && (
+                      <HeroCountdown
+                        deadline={program.deadline}
+                        label={
+                          "countdownLabel" in copy && typeof copy.countdownLabel === "string"
+                            ? copy.countdownLabel
+                            : "Admissions Close In"
+                        }
+                      />
+                    )}
                     <div className={styles.profiles} aria-live="off">
                       {roster.map((mentor, index) => {
                         const lastSpaceIndex = mentor.name.lastIndexOf(" ");

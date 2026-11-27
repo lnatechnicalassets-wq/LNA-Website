@@ -23,8 +23,12 @@ vi.mock("@/server/ratelimit/limiter", () => ({
   consumeRateLimit: (...args: unknown[]) => mockConsumeRateLimit(...args),
 }));
 
-vi.mock("@/lib/enrollment/config", () => ({
-  getEnrollmentConfig: () => mockGetEnrollmentConfig(),
+const mockQuestionVersions = vi.fn();
+vi.mock("@/server/enrollment/program-questions", () => ({
+  loadProgramQuestionSets: async () => ({
+    ...mockGetEnrollmentConfig(),
+    programQuestionVersions: mockQuestionVersions(),
+  }),
 }));
 
 import { POST } from "./route";
@@ -43,6 +47,7 @@ describe("POST /api/enrollments", () => {
       remaining: 14,
       resetAtMs: Date.now() + 60000,
     });
+    mockQuestionVersions.mockReturnValue({ "mto-readiness": 0 });
     mockGetEnrollmentConfig.mockReturnValue({
       programQuestions: {
         "mto-readiness": [{ id: "university", label: "University", type: "text", required: true }],
@@ -52,6 +57,66 @@ describe("POST /api/enrollments", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("rejects stale question versions before starting payment", async () => {
+    mockQuestionVersions.mockReturnValue({ "mto-readiness": 2 });
+    const request = new NextRequest("http://localhost:3000/api/enrollments", {
+      method: "POST",
+      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+      body: JSON.stringify({
+        courseId: "mto-readiness",
+        email: "learner@example.com",
+        questionVersion: 1,
+        expectedPayablePoisha: 750000,
+        policyAccepted: true,
+      }),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "STALE_APPLICATION_QUESTIONS" });
+    expect(mockStartEnrollmentCheckout).not.toHaveBeenCalled();
+    expect(mockSubmitManualBkashEnrollment).not.toHaveBeenCalled();
+  });
+
+  it("requires explicit fee and policy confirmation before submission", async () => {
+    const makeRequest = (body: Record<string, unknown>) =>
+      new NextRequest("http://localhost:3000/api/enrollments", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    expect(await (await POST(makeRequest({}))).json()).toMatchObject({
+      code: "FEE_CONFIRMATION_REQUIRED",
+    });
+    expect(await (await POST(makeRequest({ expectedPayablePoisha: 750000 }))).json()).toMatchObject(
+      { code: "POLICY_ACCEPTANCE_REQUIRED" }
+    );
+    expect(mockStartEnrollmentCheckout).not.toHaveBeenCalled();
+  });
+
+  it("routes a free registration to the checked no-gateway path even when paid checkout is closed", async () => {
+    mockGetEnrollmentRuntimeConfig.mockReturnValue({
+      checkoutMode: "closed",
+      submissionEnabled: false,
+    });
+    mockSubmitManualBkashEnrollment.mockResolvedValueOnce({
+      isFree: true,
+      status: "confirmed",
+      applicationReference: "LNA-2M4K-9P7Q",
+    });
+    const body = { courseId: "free-workshop", expectedPayablePoisha: 0, policyAccepted: true };
+    const request = new NextRequest("http://localhost:3000/api/enrollments", {
+      method: "POST",
+      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    expect((await POST(request)).status).toBe(200);
+    expect(mockSubmitManualBkashEnrollment).toHaveBeenCalledWith(body, {
+      programQuestionsSnapshot: [],
+      expectedPayablePoisha: 0,
+    });
+    expect(mockStartEnrollmentCheckout).not.toHaveBeenCalled();
   });
 
   it("rejects cross-origin POST requests with HTTP 403 CSRF_ORIGIN_MISMATCH", async () => {
@@ -110,6 +175,8 @@ describe("POST /api/enrollments", () => {
       email: "nadia@example.com",
       courseId: "mto-readiness",
       transactionId: "BK15A2H90X",
+      expectedPayablePoisha: 750000,
+      policyAccepted: true,
       answers: { university: "DU" },
     };
     const req = new NextRequest("http://localhost:3000/api/enrollments", {
@@ -127,6 +194,7 @@ describe("POST /api/enrollments", () => {
       status: "pending",
     });
     expect(mockSubmitManualBkashEnrollment).toHaveBeenCalledWith(body, {
+      expectedPayablePoisha: 750000,
       programQuestionsSnapshot: [
         { id: "university", label: "University", type: "text", required: true },
       ],
@@ -174,6 +242,8 @@ describe("POST /api/enrollments", () => {
         email: "nadia@example.com",
         whatsapp: "01711223344",
         answers: { university: "DU" },
+        expectedPayablePoisha: 750000,
+        policyAccepted: true,
       }),
     });
 
@@ -203,6 +273,8 @@ describe("POST /api/enrollments", () => {
         email: "nadia@example.com",
         whatsapp: "01711223344",
         answers: { university: "DU" },
+        expectedPayablePoisha: 750000,
+        policyAccepted: true,
       }),
     });
 

@@ -1,11 +1,17 @@
 import React, { cache } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { canBatchAcceptApplications, getBatchRepository, getCourseRepository } from "@/lib/content";
+import {
+  canBatchAcceptApplications,
+  getBatchPayablePoisha,
+  getBatchRepository,
+  getCourseRepository,
+} from "@/lib/content";
 import { getCourseMentorRoster } from "@/lib/mentors";
 import { getPublicMentors } from "@/server/catalog/mentors";
 import { getArchivedCatalogSlugs } from "@/server/catalog/visibility";
 import { getEnrollmentRuntimeConfig } from "@/server/enrollment/config";
+import { hasConfiguredSupabaseServerEnv } from "@/server/supabase/clients";
 import { getPublicCatalogFromSupabase } from "@/server/enrollment/service";
 import { CourseDetailView } from "./course-detail-view";
 
@@ -33,7 +39,9 @@ export async function generateMetadata({ params }: CoursePageProps): Promise<Met
     courseRepo.getCourseById(slug),
     getArchivedCatalogSlugs(),
   ]);
-  const course = liveCatalog.courses.find((item) => item.id === slug) ?? repoCourse;
+  const course =
+    liveCatalog.courses.find((item) => item.id === slug) ??
+    (hasConfiguredSupabaseServerEnv() ? null : repoCourse);
 
   if (archived.courses.has(slug) || !course || course.status !== "published") {
     return {
@@ -64,18 +72,22 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
   const liveCourse = liveCatalog.courses.find((c) => c.id === slug) ?? null;
   const liveBatches = liveCatalog.batches.filter((b) => b.courseId === slug);
   const usesLiveCatalogForCourse = Boolean(liveCourse || liveBatches.length > 0);
-  const course = liveCourse ?? repoCourse;
+  const course = liveCourse ?? (hasConfiguredSupabaseServerEnv() ? null : repoCourse);
   const batches = (usesLiveCatalogForCourse ? liveBatches : repoBatches).filter(
     (batch) => !archived.batches.has(batch.id)
   );
-  const serverCatalogReadyForCourse = liveCatalog.courses.length === 0 || Boolean(liveCourse);
+  const serverCatalogReadyForCourse = Boolean(liveCourse);
 
   if (archived.courses.has(slug) || !course || course.status !== "published") {
     notFound();
     return null;
   }
 
-  const eligibleBatches = batches.filter((batch) => canBatchAcceptApplications(batch));
+  const allEligibleBatches = batches.filter((batch) => canBatchAcceptApplications(batch));
+  const freeEligibleBatches = liveCourse
+    ? allEligibleBatches.filter((batch) => getBatchPayablePoisha(batch) === 0)
+    : [];
+  const eligibleBatches = runtime.submissionEnabled ? allEligibleBatches : freeEligibleBatches;
   const activeBatch =
     eligibleBatches[0] ?? batches.find((b) => b.status === "open_for_enrollment") ?? batches[0];
 
@@ -88,7 +100,9 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
       batch={activeBatch}
       eligibleBatches={eligibleBatches}
       mentors={courseMentors}
-      submissionEnabled={runtime.submissionEnabled && serverCatalogReadyForCourse}
+      submissionEnabled={
+        (runtime.submissionEnabled && serverCatalogReadyForCourse) || freeEligibleBatches.length > 0
+      }
     />
   );
 }

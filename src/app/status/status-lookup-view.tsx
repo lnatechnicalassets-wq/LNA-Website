@@ -1,613 +1,211 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, AlertCircle, Search, Mail, Phone } from "lucide-react";
 import {
-  formatPaymentMethodLabel,
-  isValidBdPhone,
-  normalizeApplicationRef,
-  type SafeStatusLookupResult,
-  type StatusLookupQuery,
-  type VerificationContactType,
-} from "@/lib/enrollment/status";
+  recoveryNotice,
+  recoveryPaymentLabels,
+  recoveryRequestSchema,
+  recoveryResultSchema,
+  recoveryStatusLabels,
+  type RecoveredApplication,
+} from "@/lib/enrollment/recovery";
 
-export interface StatusLookupViewProps {
-  enabled?: boolean;
-  onLookup?: (
-    query: StatusLookupQuery
-  ) => SafeStatusLookupResult | null | Promise<SafeStatusLookupResult | null>;
-}
+const fieldClass =
+  "w-full min-h-11 rounded-lg border border-[#73939C] bg-white px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]";
+const buttonClass =
+  "min-h-11 rounded-lg bg-[#086477] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]";
+export function StatusLookupView({ enabled = false }: { enabled?: boolean }) {
+  const params = useSearchParams();
+  const [reference, setReference] = useState(params.get("ref") ?? "");
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState("");
+  const [applications, setApplications] = useState<RecoveredApplication[] | null>(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  useEffect(() => {
+    const candidate = new URLSearchParams(window.location.hash.slice(1)).get("recovery");
+    if (candidate && /^[a-f0-9]{64}$/.test(candidate)) {
+      setToken(candidate);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + window.location.search
+      );
+    }
+  }, []);
 
-async function defaultApiStatusLookup(
-  query: StatusLookupQuery
-): Promise<SafeStatusLookupResult | null> {
-  const res = await fetch("/api/status", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(query),
-  });
-  const data = (await res.json().catch(() => null)) as {
-    ok?: boolean;
-    found?: boolean;
-    result?: SafeStatusLookupResult | null;
-    message?: string;
-  } | null;
-
-  if (!res.ok || !data || data.ok === false) {
-    throw new Error(data?.message || "Unable to check application status right now.");
+  async function submit(action: "request" | "redeem") {
+    if (pending || !enabled) return;
+    const input = recoveryRequestSchema.safeParse(
+      action === "request" ? { action, email, reference } : { action, token }
+    );
+    if (!input.success) {
+      setError("Enter a valid email and, if supplied, LNA Application ID.");
+      return;
+    }
+    setPending(true);
+    setError("");
+    setMessage("");
+    setApplications(null);
+    try {
+      const response = await fetch("/api/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input.data),
+      });
+      const data: unknown = await response.json();
+      if (!response.ok) {
+        const reason =
+          data && typeof data === "object" && "message" in data && typeof data.message === "string"
+            ? data.message
+            : "Unable to check your application.";
+        if (action === "redeem" && response.status === 400) setToken("");
+        throw new Error(reason);
+      }
+      if (action === "request") setMessage(recoveryNotice);
+      else {
+        setApplications(recoveryResultSchema.parse(data).applications);
+        setToken("");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Try again later.");
+    } finally {
+      setPending(false);
+    }
   }
 
-  return data.found && data.result ? data.result : null;
-}
-
-export function StatusLookupView({ enabled = false, onLookup }: StatusLookupViewProps) {
-  const searchParams = useSearchParams();
-  const refParam = searchParams.get("ref") || "";
-  const activeLookup = onLookup ?? defaultApiStatusLookup;
-  const isLookupAvailable = Boolean(enabled);
-
-  const [applicationId, setApplicationId] = useState<string>(() =>
-    refParam ? normalizeApplicationRef(refParam) : ""
-  );
-  const [verificationType, setVerificationType] = useState<VerificationContactType>("email");
-  const [contactValue, setContactValue] = useState<string>("");
-  const [fieldErrors, setFieldErrors] = useState<{
-    applicationId?: string;
-    contactValue?: string;
-  }>({});
-  const [hasSearched, setHasSearched] = useState<boolean>(false);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [lookupError, setLookupError] = useState<string>("");
-  const [result, setResult] = useState<SafeStatusLookupResult | null>(null);
-  const appIdInputRef = useRef<HTMLInputElement | null>(null);
-  const contactInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (refParam) {
-      setApplicationId(normalizeApplicationRef(refParam));
-    }
-  }, [refParam]);
-
-  const handleVerificationTypeChange = (nextType: VerificationContactType) => {
-    setVerificationType(nextType);
-    if (nextType !== verificationType) {
-      setContactValue("");
-    }
-    setFieldErrors((prev) => ({ ...prev, contactValue: undefined }));
-    setHasSearched(false);
-    setLookupError("");
-    setResult(null);
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!isLookupAvailable) {
-      return;
-    }
-
-    const trimmedRef = applicationId.trim();
-    const trimmedContact = contactValue.trim();
-    const nextErrors: { applicationId?: string; contactValue?: string } = {};
-
-    if (!trimmedRef) {
-      nextErrors.applicationId = "Please enter your LNA Application ID.";
-    } else if (trimmedRef.length < 4) {
-      nextErrors.applicationId = "Please enter a valid LNA Application ID (at least 4 characters).";
-    }
-
-    if (!trimmedContact) {
-      nextErrors.contactValue =
-        verificationType === "email"
-          ? "Please enter the email address from your application."
-          : "Please enter the phone number from your application.";
-    } else if (verificationType === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedContact)) {
-      nextErrors.contactValue = "Please enter a valid email address.";
-    } else if (verificationType === "phone" && !isValidBdPhone(trimmedContact)) {
-      nextErrors.contactValue = "Please enter a valid 11-digit Bangladeshi phone number.";
-    }
-
-    if (nextErrors.applicationId || nextErrors.contactValue) {
-      setFieldErrors(nextErrors);
-      setHasSearched(false);
-      setLookupError("");
-      setResult(null);
-      requestAnimationFrame(() => {
-        if (nextErrors.applicationId) {
-          appIdInputRef.current?.focus();
-        } else if (nextErrors.contactValue) {
-          contactInputRef.current?.focus();
-        }
-      });
-      return;
-    }
-
-    setFieldErrors({});
-    setLookupError("");
-    setIsSearching(true);
-
-    try {
-      const matched = await activeLookup({
-        applicationId: trimmedRef,
-        verificationType,
-        contactValue: trimmedContact,
-      });
-      setHasSearched(true);
-      setResult(matched);
-    } catch (err) {
-      setHasSearched(false);
-      setResult(null);
-      setLookupError(
-        err instanceof Error && err.message
-          ? err.message
-          : "Unable to check application status right now. Please try again shortly."
-      );
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
   return (
-    <div className="w-full bg-[#F6FAFA] text-[#172E35] min-h-screen py-8 sm:py-12 lg:py-16">
-      <div className="max-w-7xl xl:max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="max-w-3xl mb-8 sm:mb-10">
-          <div className="flex flex-wrap items-center gap-2.5 mb-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#086477]">
-              APPLICATION STATUS
-            </span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#172E35] leading-[1.1] tracking-tight mb-3">
-            Check your{" "}
-            <span className="italic font-normal text-[#086477]">application status.</span>
-          </h1>
-          <p className="text-sm sm:text-base text-[#526E77] leading-relaxed">
-            Enter your LNA Application ID and verify with either the email address or phone number
-            used during enrollment.
+    <main className="min-h-screen bg-[#F6FAFA] px-4 py-10 text-[#172E35] sm:py-16">
+      <div className="mx-auto max-w-xl space-y-5">
+        <header className="space-y-2">
+          <h1 className="text-3xl font-bold">Find My Application</h1>
+          <p className="text-sm text-[#526E77]">
+            Check your registration and payment status using the email address you provided when
+            applying.
           </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* ========================================================== */}
-          {/* LEFT COLUMN: Status Lookup Form & Sanitized Result         */}
-          {/* ========================================================== */}
-          <div className="lg:col-span-7 space-y-6 min-w-0">
-            {!isLookupAvailable && (
-              <div
-                role="status"
-                data-testid="status-coming-soon-notice"
-                className="p-4 sm:p-5 rounded-2xl bg-[#FEF3C7]/70 border border-[#FDE68A] text-xs sm:text-sm text-[#78350F] flex items-start gap-3"
+        </header>
+        <section className="space-y-4 rounded-xl border border-[#C5E2E5] bg-white p-5 sm:p-6">
+          {!enabled ? (
+            <p role="status">
+              Application status lookup is currently unavailable. Contact Lead Nation Academy for
+              help.
+            </p>
+          ) : token ? (
+            <>
+              <h2 className="font-semibold">Open your applications</h2>
+              <p className="text-sm">
+                This secure email link can be used once. Continue to see the latest status.
+              </p>
+              <button
+                className={buttonClass}
+                disabled={pending}
+                onClick={() => void submit("redeem")}
               >
-                <AlertCircle
-                  className="w-5 h-5 text-[#B45309] shrink-0 mt-0.5"
-                  aria-hidden="true"
-                />
-                <div>
-                  <div className="font-bold text-[#92400E]">Online enrollment is coming soon</div>
-                  <p className="text-xs sm:text-sm text-[#78350F] mt-1 leading-relaxed">
-                    Application status lookup will be available once online enrollment opens and
-                    submitted records are saved for staff verification.
-                  </p>
-                </div>
-              </div>
-            )}
-
+                {pending ? "Checking…" : "View application status"}
+              </button>
+              <button
+                className="block text-sm underline"
+                disabled={pending}
+                onClick={() => {
+                  setToken("");
+                  setError("");
+                }}
+              >
+                Request a new link
+              </button>
+            </>
+          ) : applications ? (
+            <>
+              <h2 className="font-semibold">Your applications</h2>
+              <ul className="divide-y divide-[#C5E2E5]">
+                {applications.map((item) => (
+                  <li key={item.reference} className="space-y-1 py-4 text-sm">
+                    <p className="font-mono text-xs">{item.reference}</p>
+                    <h3 className="font-semibold">{item.course}</h3>
+                    <p>{item.batch}</p>
+                    <p className="font-medium text-[#086477]">
+                      {recoveryStatusLabels[item.status]}
+                    </p>
+                    <p>{recoveryPaymentLabels[item.paymentStatus]}</p>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-[#526E77]">
+                Up to 20 recent applications are shown. If a payment is pending or under review, do
+                not pay again until Admissions confirms the previous payment status.
+              </p>
+              <button
+                className="text-sm underline"
+                onClick={() => {
+                  setApplications(null);
+                  setEmail("");
+                  setReference("");
+                }}
+              >
+                Check another application
+              </button>
+            </>
+          ) : (
             <form
-              onSubmit={handleSubmit}
-              noValidate
-              className="bg-white border border-[#E5ECEE] rounded-2xl p-5 sm:p-8 shadow-2xs space-y-6"
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submit("request");
+              }}
             >
-              {(fieldErrors.applicationId || fieldErrors.contactValue) && (
-                <div
-                  role="region"
-                  aria-labelledby="status-error-summary-heading"
-                  data-testid="status-error-summary"
-                  className="p-4 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-xs sm:text-sm text-[#991B1B]"
-                >
-                  <div className="flex items-start gap-2.5">
-                    <AlertCircle
-                      className="w-4 h-4 shrink-0 mt-0.5 text-[#991B1B]"
-                      aria-hidden="true"
-                    />
-                    <div className="space-y-1.5">
-                      <h2 id="status-error-summary-heading" className="font-bold text-[#991B1B]">
-                        Please review the highlighted fields
-                      </h2>
-                      <ul className="list-disc list-inside space-y-1 text-xs">
-                        {fieldErrors.applicationId && (
-                          <li>
-                            <a
-                              href="#status-application-id"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                appIdInputRef.current?.focus();
-                              }}
-                              className="underline font-semibold hover:text-[#7F1D1D] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#991B1B] rounded"
-                            >
-                              {fieldErrors.applicationId}
-                            </a>
-                          </li>
-                        )}
-                        {fieldErrors.contactValue && (
-                          <li>
-                            <a
-                              href="#status-contact-value"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                contactInputRef.current?.focus();
-                              }}
-                              className="underline font-semibold hover:text-[#7F1D1D] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#991B1B] rounded"
-                            >
-                              {fieldErrors.contactValue}
-                            </a>
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* LNA Application ID */}
-              <div>
-                <label
-                  htmlFor="status-application-id"
-                  className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                >
-                  LNA Application ID{" "}
-                  <span className="text-rose-700" aria-hidden="true">
-                    *
-                  </span>
-                </label>
+              <label className="block space-y-1 text-sm font-medium">
+                <span>Email address</span>
                 <input
-                  ref={appIdInputRef}
-                  id="status-application-id"
-                  type="text"
-                  autoComplete="off"
-                  spellCheck={false}
+                  type="email"
+                  className={fieldClass}
                   required
-                  value={applicationId}
-                  onChange={(e) => {
-                    setFieldErrors((prev) => ({ ...prev, applicationId: undefined }));
-                    setApplicationId(e.target.value);
-                  }}
+                  autoComplete="email"
+                  maxLength={160}
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  disabled={pending}
+                />
+              </label>
+              <label className="block space-y-1 text-sm font-medium">
+                <span>LNA Application ID (optional)</span>
+                <input
+                  className={fieldClass}
+                  maxLength={32}
                   placeholder="LNA-XXXX-XXXX"
-                  aria-invalid={Boolean(fieldErrors.applicationId)}
-                  aria-describedby={[
-                    fieldErrors.applicationId ? "status-application-id-error" : null,
-                    "status-application-id-hint",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm font-mono uppercase text-[#172E35] placeholder:text-[#526E77] placeholder:normal-case placeholder:font-sans focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
+                  value={reference}
+                  onChange={(event) => setReference(event.target.value)}
+                  disabled={pending}
                 />
-                <p id="status-application-id-hint" className="mt-1.5 text-xs text-[#526E77]">
-                  Enter the LNA Application ID issued after submitting your enrollment form.
-                </p>
-                {fieldErrors.applicationId && (
-                  <p
-                    id="status-application-id-error"
-                    role="alert"
-                    className="mt-1.5 text-xs text-rose-700 font-medium"
-                  >
-                    {fieldErrors.applicationId}
-                  </p>
-                )}
-              </div>
-
-              {/* Verification Method Switch (Email OR Phone number) */}
-              <fieldset className="space-y-3">
-                <legend className="text-sm font-semibold text-[#172E35] mb-1">
-                  Verify identity using
-                </legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label
-                    htmlFor="verify-by-email"
-                    className={`flex items-center gap-3 p-3.5 min-h-[44px] rounded-xl border transition-all cursor-pointer ${
-                      verificationType === "email"
-                        ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
-                        : "bg-white border-[#73939C] hover:border-[#086477]"
-                    }`}
-                  >
-                    <input
-                      id="verify-by-email"
-                      type="radio"
-                      name="verificationType"
-                      value="email"
-                      checked={verificationType === "email"}
-                      onChange={() => handleVerificationTypeChange("email")}
-                      className="h-4 w-4 text-[#086477] focus:ring-[#086477] cursor-pointer"
-                    />
-                    <Mail className="w-4 h-4 text-[#086477] shrink-0" aria-hidden="true" />
-                    <span className="font-semibold text-sm text-[#172E35]">Use Email</span>
-                  </label>
-
-                  <label
-                    htmlFor="verify-by-phone"
-                    className={`flex items-center gap-3 p-3.5 min-h-[44px] rounded-xl border transition-all cursor-pointer ${
-                      verificationType === "phone"
-                        ? "bg-[#EBF5F6] border-[#086477] shadow-xs"
-                        : "bg-white border-[#73939C] hover:border-[#086477]"
-                    }`}
-                  >
-                    <input
-                      id="verify-by-phone"
-                      type="radio"
-                      name="verificationType"
-                      value="phone"
-                      checked={verificationType === "phone"}
-                      onChange={() => handleVerificationTypeChange("phone")}
-                      className="h-4 w-4 text-[#086477] focus:ring-[#086477] cursor-pointer"
-                    />
-                    <Phone className="w-4 h-4 text-[#086477] shrink-0" aria-hidden="true" />
-                    <span className="font-semibold text-sm text-[#172E35]">Use Phone</span>
-                  </label>
-                </div>
-              </fieldset>
-
-              {/* Contact Value Input */}
-              <div>
-                <label
-                  htmlFor="status-contact-value"
-                  className="block text-sm font-semibold text-[#172E35] mb-1.5"
-                >
-                  {verificationType === "email" ? "Email address" : "Phone number"}{" "}
-                  <span className="text-rose-700" aria-hidden="true">
-                    *
-                  </span>
-                </label>
-                <input
-                  ref={contactInputRef}
-                  id="status-contact-value"
-                  type={verificationType === "email" ? "email" : "tel"}
-                  autoComplete={verificationType === "email" ? "email" : "tel"}
-                  inputMode={verificationType === "email" ? "email" : "tel"}
-                  required
-                  value={contactValue}
-                  onChange={(e) => {
-                    setFieldErrors((prev) => ({ ...prev, contactValue: undefined }));
-                    setContactValue(e.target.value);
-                  }}
-                  placeholder={verificationType === "email" ? "name@example.com" : "01XXXXXXXXX"}
-                  aria-invalid={Boolean(fieldErrors.contactValue)}
-                  aria-describedby={[
-                    fieldErrors.contactValue ? "status-contact-error" : null,
-                    "status-contact-hint",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  className="w-full min-h-[44px] px-4 py-3 rounded-xl bg-white border border-[#73939C] text-sm text-[#172E35] placeholder:text-[#526E77] focus:outline-none focus:border-[#086477] focus:ring-2 focus:ring-[#086477]/25 shadow-2xs"
-                />
-                <p id="status-contact-hint" className="mt-1.5 text-xs text-[#526E77]">
-                  {verificationType === "email"
-                    ? "Enter the email address used on your enrollment form."
-                    : "Enter the 11-digit phone or WhatsApp number used on your enrollment form."}
-                </p>
-                {fieldErrors.contactValue && (
-                  <p
-                    id="status-contact-error"
-                    role="alert"
-                    className="mt-1.5 text-xs text-rose-700 font-medium"
-                  >
-                    {fieldErrors.contactValue}
-                  </p>
-                )}
-              </div>
-
-              {lookupError && (
-                <p role="alert" className="text-xs text-rose-700 font-medium">
-                  {lookupError}
-                </p>
-              )}
-
-              <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-                <button
-                  type="submit"
-                  disabled={!isLookupAvailable || isSearching}
-                  aria-disabled={!isLookupAvailable || isSearching}
-                  aria-busy={isSearching ? "true" : undefined}
-                  className={`inline-flex items-center justify-center gap-2 w-full sm:w-auto min-h-[44px] px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477] ${
-                    !isLookupAvailable || isSearching
-                      ? "bg-[#E2ECEF] text-[#3B555E] border border-[#94B0B8] cursor-not-allowed"
-                      : "bg-[#086477] hover:bg-[#06505F] text-white cursor-pointer"
-                  }`}
-                >
-                  <Search className="w-4 h-4" aria-hidden="true" />
-                  <span>
-                    {!isLookupAvailable
-                      ? "Status lookup coming soon"
-                      : isSearching
-                        ? "Checking status..."
-                        : "Check application status"}
-                  </span>
-                </button>
-
-                <Link
-                  href="/enroll"
-                  className="inline-flex items-center min-h-[44px] px-1 rounded text-xs sm:text-sm font-semibold text-[#086477] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                >
-                  Back to enrollment →
-                </Link>
-              </div>
+              </label>
+              <button className={buttonClass} type="submit" disabled={pending}>
+                {pending ? "Requesting…" : "Send secure link"}
+              </button>
             </form>
-
-            {/* Generic Mismatch Feedback */}
-            {isLookupAvailable && hasSearched && !result && (
-              <div
-                role="alert"
-                data-testid="status-mismatch-message"
-                className="p-5 sm:p-6 rounded-2xl bg-white border border-[#D5E2E5] shadow-2xs flex items-start gap-3"
-              >
-                <AlertCircle
-                  className="w-5 h-5 text-[#086477] shrink-0 mt-0.5"
-                  aria-hidden="true"
-                />
-                <div>
-                  <h2 className="font-serif font-bold text-base text-[#172E35] mb-1">
-                    No matching application found
-                  </h2>
-                  <p className="text-xs sm:text-sm text-[#526E77] leading-relaxed">
-                    We couldn&apos;t find an application matching those details. Please check your
-                    LNA Application ID and your email or phone number, then try again.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Sanitized Status Result Card (Strictly omits tx refs, email, and phone) */}
-            {isLookupAvailable && hasSearched && result && (
-              <section
-                aria-label="Application status summary"
-                data-testid="status-result-card"
-                className="bg-white border border-[#C5E2E5] rounded-2xl p-5 sm:p-8 shadow-2xs space-y-5"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-[#E5ECEE]">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {result.status === "Enrollment confirmed" ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0]">
-                        <span
-                          className="w-1.5 h-1.5 rounded-full bg-[#16A34A]"
-                          aria-hidden="true"
-                        />
-                        Enrollment confirmed
-                      </span>
-                    ) : result.status === "Reservation expired" ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F1F5F9] text-[#475569] border border-[#CBD5E1]">
-                        <span
-                          className="w-1.5 h-1.5 rounded-full bg-[#64748B]"
-                          aria-hidden="true"
-                        />
-                        Reservation expired
-                      </span>
-                    ) : result.status === "Cancelled" ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]">
-                        <span
-                          className="w-1.5 h-1.5 rounded-full bg-[#DC2626]"
-                          aria-hidden="true"
-                        />
-                        Cancelled
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
-                        <span
-                          className="w-1.5 h-1.5 rounded-full bg-[#D97706]"
-                          aria-hidden="true"
-                        />
-                        Application in process
-                      </span>
-                    )}
-                  </div>
-
-                  <span className="font-mono text-xs sm:text-sm font-bold text-[#086477]">
-                    {result.applicationReference}
-                  </span>
-                </div>
-
-                <div>
-                  <h2 className="text-2xl font-serif font-bold text-[#172E35] mb-1.5">
-                    {result.status}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-[#526E77] leading-relaxed">
-                    {result.status === "Enrollment confirmed"
-                      ? "Your enrollment in this cohort is confirmed."
-                      : result.status === "Reservation expired"
-                        ? "The temporary seat reservation window for this unpaid application expired before payment completed."
-                        : result.status === "Cancelled"
-                          ? "This enrollment application has been cancelled."
-                          : "Your application is saved and currently awaiting payment completion or server verification."}
-                  </p>
-                </div>
-
-                <dl className="divide-y divide-[#E5ECEE] text-xs sm:text-sm">
-                  <div className="py-3 flex flex-wrap items-center justify-between gap-2">
-                    <dt className="text-[#526E77]">Applicant name</dt>
-                    <dd className="font-semibold text-[#172E35] text-right">{result.fullName}</dd>
-                  </div>
-
-                  {result.university && (
-                    <div className="py-3 flex flex-wrap items-center justify-between gap-2">
-                      <dt className="text-[#526E77]">University</dt>
-                      <dd className="font-semibold text-[#172E35] text-right">
-                        {result.university}
-                      </dd>
-                    </div>
-                  )}
-
-                  <div className="py-3 flex flex-wrap items-center justify-between gap-2">
-                    <dt className="text-[#526E77]">Course</dt>
-                    <dd className="font-semibold text-[#172E35] text-right">
-                      {result.courseTitle}
-                    </dd>
-                  </div>
-
-                  <div className="py-3 flex flex-wrap items-center justify-between gap-2">
-                    <dt className="text-[#526E77]">Batch</dt>
-                    <dd className="font-semibold text-[#172E35] text-right">{result.batchName}</dd>
-                  </div>
-
-                  <div className="py-3 flex flex-wrap items-center justify-between gap-2">
-                    <dt className="text-[#526E77]">Payment method</dt>
-                    <dd className="font-semibold text-[#172E35] text-right">
-                      {formatPaymentMethodLabel(result.paymentMethod)}
-                    </dd>
-                  </div>
-
-                  <div className="py-3 flex flex-wrap items-center justify-between gap-2">
-                    <dt className="text-[#526E77]">Current status</dt>
-                    <dd className="font-bold text-[#086477] text-right">{result.status}</dd>
-                  </div>
-                </dl>
-              </section>
-            )}
-          </div>
-
-          {/* ========================================================== */}
-          {/* RIGHT COLUMN: Helpful Admissions & Program Guidance        */}
-          {/* ========================================================== */}
-          <aside className="lg:col-span-5 space-y-6 min-w-0">
-            <div className="bg-[#EBF5F6] border border-[#C5E2E5] rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
-              <span className="text-[11px] font-bold tracking-wider uppercase text-[#086477] block">
-                STATUS VERIFICATION
-              </span>
-              <h2 className="font-serif font-bold text-xl text-[#172E35]">
-                How verification works
-              </h2>
-              <p className="text-xs sm:text-sm text-[#526E77] leading-relaxed">
-                For privacy, application status checks require both your unique LNA Application ID
-                and the matching email address or phone number submitted on your form. Sensitive
-                contact and payment transaction references are never shown in status results.
-              </p>
-            </div>
-
-            <div className="bg-white border border-[#E5ECEE] rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col gap-3">
-              <h2 className="font-serif font-bold text-lg text-[#172E35]">
-                Need assistance from LNA admissions?
-              </h2>
-              <p className="text-xs sm:text-sm text-[#526E77] leading-relaxed">
-                If you have questions about upcoming cohorts or enrollment opening dates, contact
-                our admissions desk or review available programs.
-              </p>
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <Link
-                  href="/enroll"
-                  className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white text-xs sm:text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                >
-                  <span>Go to enrollment</span>
-                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                </Link>
-                <a
-                  href="mailto:admissions@lnabd.org"
-                  className="inline-flex items-center min-h-[44px] px-2 rounded text-xs sm:text-sm font-semibold text-[#086477] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086477]"
-                >
-                  Contact admissions
-                </a>
-              </div>
-            </div>
-          </aside>
-        </div>
+          )}
+          {message && (
+            <p role="status" className="text-sm">
+              {message}
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
+          )}
+        </section>
+        <p className="text-sm text-[#526E77]">
+          Need help or used the wrong email?{" "}
+          <Link href="/about" className="font-medium underline">
+            Contact Lead Nation Academy.
+          </Link>
+        </p>
+        <Link href="/courses" className="text-sm font-medium text-[#086477] underline">
+          Browse courses
+        </Link>
       </div>
-    </div>
+    </main>
   );
 }

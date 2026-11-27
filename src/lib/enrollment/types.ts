@@ -34,6 +34,7 @@ export interface BankTransferConfig {
 
 export interface EnrollmentConfig {
   programQuestions: Record<string, ProgramQuestion[]>;
+  programQuestionVersions?: Record<string, number>;
   payment: {
     submissionEnabled: boolean;
     bkash: BkashPaymentConfig;
@@ -68,7 +69,7 @@ export interface EnrollmentOutcomeSummary {
   courseTitle: string;
   batchName: string;
   payablePoisha: number;
-  paymentMethod: "bkash" | "free" | "bank_transfer";
+  paymentMethod: "bkash" | "free" | "bank_transfer" | "cash" | "full_fee_waiver";
   status: string;
   holdExpiresAt: string | null;
   canRetry: boolean;

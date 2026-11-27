@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/server/supabase/clients";
 
 export async function loadPurgeImpact(kind: PurgeKind, id: string): Promise<PurgeImpact> {
   const staff = await requireSuperAdmin("enrollments:manage");
+  if (process.env.NODE_ENV === "production") return { status: "unavailable" };
   if (!purgeKind.safeParse(kind).success || !z.string().uuid().safeParse(id).success) {
     return { status: "not_found" };
   }

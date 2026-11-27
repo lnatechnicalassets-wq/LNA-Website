@@ -20,20 +20,13 @@ export function CoursesSection({ courses, batches, mentors = [] }: CoursesSectio
     }
   }
 
-  // Display flagship homepage courses (MTO Readiness and IRGP) in approved order
+  // Preserve flagship ordering, but never hide newly published courses or courses without a batch.
   const targetIds = ["mto-readiness", "irgp"];
-  const targeted = targetIds
-    .map((id) => courses.find((c) => c.id === id))
-    .filter(
-      (c): c is Course => c !== undefined && c.status === "published" && batchLookup.has(c.id)
-    );
-
-  const eligibleCourses =
-    targeted.length > 0
-      ? targeted
-      : courses
-          .filter((course) => course.status === "published" && batchLookup.has(course.id))
-          .slice(0, 3);
+  const priority = (id: string) =>
+    targetIds.includes(id) ? targetIds.indexOf(id) : targetIds.length;
+  const eligibleCourses = courses
+    .filter((course) => course.status === "published")
+    .sort((a, b) => priority(a.id) - priority(b.id));
 
   const openCohortCount = eligibleCourses.filter(
     (course) => batchLookup.get(course.id)?.status === "open_for_enrollment"

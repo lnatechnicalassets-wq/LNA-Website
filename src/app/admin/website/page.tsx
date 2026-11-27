@@ -24,11 +24,11 @@ export default async function AdminWebsitePage() {
           title={t("mentors")}
           statusLabel={t("websiteTitle")}
           description={t("websiteWorkspaceDescription")}
-          notice={t("websiteScheduledNotice")}
+          notice="Manage mentors and partner organizations. Other website sections remain unchanged."
           actionHref={adminPaths.mentors}
           actionLabel={t("manageMentors")}
-          secondaryActionHref={adminPaths.courses}
-          secondaryActionLabel={t("manageCourses")}
+          secondaryActionHref="/admin/website/partners"
+          secondaryActionLabel="Manage partners"
         />
       </section>
     </AdminPortalShell>
