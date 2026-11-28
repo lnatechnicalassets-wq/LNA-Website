@@ -116,21 +116,32 @@ function HeroCountdown({
   );
 }
 
-export function MtoHero({ program }: { program: MtoHeroCourse }) {
+export function MtoHero({
+  program,
+  availabilityPending = false,
+}: {
+  program: MtoHeroCourse;
+  availabilityPending?: boolean;
+}) {
   const { copy, roster } = program;
   const [activeIndex, setActiveIndex] = useState(0);
+  const [firstPortraitSettled, setFirstPortraitSettled] = useState(false);
+  const [loadedLogos, setLoadedLogos] = useState<string[]>([]);
+  const canLoadSecondaryMedia =
+    !availabilityPending && (firstPortraitSettled || !roster[0]?.portrait);
+  const settleFirstPortrait = () => setFirstPortraitSettled(true);
   const spotlight = useRef<HTMLDivElement>(null);
   const active = activeIndex % Math.max(1, roster.length);
 
   useEffect(() => {
-    if (roster.length < 2) return;
+    if (!canLoadSecondaryMedia || roster.length < 2) return;
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     const timer = window.setInterval(() => {
       if (document.hidden || reducedMotion?.matches) return;
       setActiveIndex((index) => index + 1);
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [roster.length]);
+  }, [canLoadSecondaryMedia, roster.length]);
 
   return (
     <section className={styles.hero} aria-labelledby="mto-hero-title">
@@ -214,7 +225,7 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
                   );
                 })}
               </ul>
-              <Link className={styles.secondary} href={program.programHref}>
+              <Link className={styles.secondary} href={program.programHref} prefetch={false}>
                 <span>{copy.program}</span>
                 <ChevronRight
                   className={styles.chevron}
@@ -260,7 +271,7 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
                       >
                         {mentor.portrait &&
                           (index === active ||
-                            index === (active + 1) % roster.length ||
+                            (canLoadSecondaryMedia && index === (active + 1) % roster.length) ||
                             (activeIndex > 0 &&
                               index === (active - 1 + roster.length) % roster.length)) && (
                             <Image
@@ -273,7 +284,9 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
                               fill
                               sizes="(min-width: 75rem) 35vw, (min-width: 48rem) 50vw, 100vw"
                               loading={index === active ? "eager" : "lazy"}
-                              fetchPriority={index === active ? "high" : "low"}
+                              fetchPriority={index === 0 && !canLoadSecondaryMedia ? "high" : "low"}
+                              onLoad={index === 0 ? settleFirstPortrait : undefined}
+                              onError={index === 0 ? settleFirstPortrait : undefined}
                               unoptimized={usesMentorMediaSource(mentor.portrait)}
                               className={styles.portraitImg}
                             />
@@ -302,6 +315,11 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
                         const nameLast =
                           lastSpaceIndex > 0 ? mentor.name.slice(lastSpaceIndex + 1) : null;
 
+                        // Keep previously shown logos mounted so rotation can reuse the images.
+                        const logo =
+                          canLoadSecondaryMedia && index <= activeIndex ? mentor.logo : null;
+                        const logoLoaded = logo && loadedLogos.includes(logo.src);
+
                         return (
                           <div
                             className={styles.slide}
@@ -329,10 +347,13 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
                               <p className={styles.mentorRole}>{mentor.role}</p>
                             </div>
                             <div className={styles.company}>
-                              {mentor.logo && (
+                              {logo && (
                                 <span
+                                  style={
+                                    logoLoaded ? undefined : { position: "absolute", opacity: 0 }
+                                  }
                                   className={
-                                    mentor.logo.src.includes("brand/logo") ||
+                                    logo.src.includes("brand/logo") ||
                                     mentor.id === "mentor-mir-hasib" ||
                                     Boolean(
                                       mentor.organization?.toLowerCase().includes("lead nation")
@@ -343,16 +364,23 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
                                   aria-hidden="true"
                                 >
                                   <OfficialCompanyLogo
-                                    src={mentor.logo.src}
+                                    src={logo.src}
                                     alt=""
                                     size="hero"
                                     compact
+                                    onLoad={() =>
+                                      setLoadedLogos((current) =>
+                                        current.includes(logo.src)
+                                          ? current
+                                          : [...current, logo.src]
+                                      )
+                                    }
                                   />
                                 </span>
                               )}
                               <span
                                 className={
-                                  mentor.logo ? styles.organizationHidden : styles.organization
+                                  logoLoaded ? styles.organizationHidden : styles.organization
                                 }
                               >
                                 {mentor.organization}
@@ -365,7 +393,9 @@ export function MtoHero({ program }: { program: MtoHeroCourse }) {
 
                     {/* Enrollment Action in the same right-hand column */}
                     <div className={styles.action}>
-                      {program.enrollHref ? (
+                      {availabilityPending ? (
+                        <div className={styles.closedWrap} aria-hidden="true" />
+                      ) : program.enrollHref ? (
                         <div className={styles.enrollWrap}>
                           <Link
                             className={styles.enroll}

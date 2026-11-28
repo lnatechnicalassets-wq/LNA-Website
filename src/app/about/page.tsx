@@ -180,6 +180,7 @@ export default function AboutPage() {
 
           <Link
             href="/#courses"
+            prefetch={false}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#086477] hover:bg-[#06505F] text-white font-medium text-sm sm:text-base transition-colors shrink-0 shadow-xs cursor-pointer group"
           >
             <span>Explore courses</span>

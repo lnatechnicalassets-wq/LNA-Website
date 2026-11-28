@@ -138,6 +138,7 @@ export function CourseCard({
       {/* Primary Accessible Card Link */}
       <Link
         href={courseHref}
+        prefetch={false}
         className="absolute inset-0 z-0 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 cursor-pointer"
         aria-label={`View ${course.title} details`}
       />

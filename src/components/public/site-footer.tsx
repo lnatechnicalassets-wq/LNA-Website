@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { homepageNavigationHref } from "@/components/home/homepage-section-scroll";
 import { ArrowRight, ArrowUp, Mail, MapPin, Phone } from "lucide-react";
 import type { NavigationConfig, Organization } from "@/lib/content";
 
@@ -113,6 +114,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
           {/* Left Column: Brand Lockup, Serif Headline, Soft-Teal Enroll Now Button */}
           <div className="max-w-md xl:max-w-lg shrink-0">
             <Link
+              prefetch={false}
               href="/"
               className="inline-flex items-center gap-3 sm:gap-3.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5E2E5] rounded-lg group"
               aria-label={`${organization?.name || "Lead Nation Academy"} Home`}
@@ -135,6 +137,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
 
             <div>
               <Link
+                prefetch={false}
                 href="/enroll"
                 className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl bg-[#C5E2E5] text-[#073A44] hover:bg-[#B5DDE2] transition-colors font-semibold text-sm sm:text-base shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5E2E5]"
               >
@@ -154,6 +157,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
               <ul className="space-y-3 sm:space-y-3.5 text-sm sm:text-base text-[#D4E8EB]">
                 <li>
                   <Link
+                    prefetch={false}
                     href="/about"
                     className="hover:text-white transition-colors cursor-pointer block"
                   >
@@ -162,6 +166,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
                 </li>
                 <li>
                   <Link
+                    prefetch={false}
                     href="/#courses"
                     onClick={handleNavClick("/#courses")}
                     className="hover:text-white transition-colors cursor-pointer block"
@@ -171,7 +176,8 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
                 </li>
                 <li>
                   <Link
-                    href="/#mentors"
+                    prefetch={false}
+                    href={homepageNavigationHref("/#mentors")}
                     onClick={handleNavClick("/#mentors")}
                     className="hover:text-white transition-colors cursor-pointer block"
                   >
@@ -180,6 +186,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
                 </li>
                 <li>
                   <Link
+                    prefetch={false}
                     href="/#internships"
                     onClick={handleNavClick("/#internships")}
                     className="hover:text-white transition-colors cursor-pointer block"
@@ -189,6 +196,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
                 </li>
                 <li>
                   <Link
+                    prefetch={false}
                     href="/news"
                     className="hover:text-white transition-colors cursor-pointer block"
                   >
@@ -212,6 +220,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
               <ul className="space-y-3 sm:space-y-3.5 text-sm sm:text-base text-[#D4E8EB]">
                 <li>
                   <Link
+                    prefetch={false}
                     href="/terms"
                     className="hover:text-white transition-colors cursor-pointer block"
                   >
@@ -220,6 +229,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
                 </li>
                 <li>
                   <Link
+                    prefetch={false}
                     href="/privacy"
                     className="hover:text-white transition-colors cursor-pointer block"
                   >
@@ -243,6 +253,7 @@ export function SiteFooter({ organization, className = "" }: SiteFooterProps) {
               <ul className="space-y-3.5 sm:space-y-4 text-sm sm:text-base text-[#D4E8EB]">
                 <li>
                   <Link
+                    prefetch={false}
                     href="/#contact"
                     onClick={handleNavClick("/#contact")}
                     className="inline-flex items-center gap-3 hover:text-white transition-colors cursor-pointer"

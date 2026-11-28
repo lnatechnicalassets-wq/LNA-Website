@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { MtoHero } from "./mto-hero";
 import type { MtoHeroCourse } from "@/server/catalog/mto-hero";
@@ -36,19 +36,27 @@ const mockProgram: MtoHeroCourse = {
 };
 
 describe("MtoHero Component", () => {
-  it("initially renders only the first two mentor portraits and prioritizes the visible one", () => {
+  it("loads the first portrait before the next portrait and company logo", async () => {
     const roster = Array.from({ length: 5 }, (_, index) => ({
       ...mockProgram.roster[0],
       id: `mentor-fixture-${index}`,
       portrait: `/images/mentors/fixture-${index}.png`,
     }));
     const { container } = render(<MtoHero program={{ ...mockProgram, roster }} />);
-    const portraits = Array.from(container.querySelectorAll("[data-mentor] img")).filter((img) =>
-      img.getAttribute("src")?.includes("fixture-")
-    );
-    expect(portraits).toHaveLength(2);
-    expect(portraits[0].getAttribute("fetchpriority")).toBe("high");
-    expect(portraits[1].getAttribute("loading")).toBe("lazy");
+    const portraits = () =>
+      Array.from(container.querySelectorAll("[data-mentor] img")).filter((img) =>
+        img.getAttribute("src")?.includes("fixture-")
+      );
+    const logo = () => container.querySelector('img[src*="nagad.png"]');
+
+    expect(portraits()).toHaveLength(1);
+    expect(portraits()[0].getAttribute("fetchpriority")).toBe("high");
+    expect(logo()).toBeNull();
+
+    fireEvent.load(portraits()[0]);
+    await waitFor(() => expect(portraits()).toHaveLength(2));
+    expect(portraits()[1].getAttribute("loading")).toBe("lazy");
+    expect(logo()?.getAttribute("fetchpriority")).toBe("low");
   });
 
   it("renders the eyebrow with two lines and teal rule", () => {

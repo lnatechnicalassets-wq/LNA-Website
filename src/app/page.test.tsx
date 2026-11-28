@@ -1,6 +1,8 @@
 import { act, render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import HomePage from "./page";
+import { loadHomepageCatalog } from "@/server/enrollment/service";
+import { hasConfiguredSupabaseServerEnv } from "@/server/supabase/clients";
 
 vi.mock("@/server/catalog/visibility", () => ({
   getArchivedCatalogSlugs: async () => ({ courses: new Set(), batches: new Set() }),
@@ -18,9 +20,35 @@ vi.mock("@/server/enrollment/config", () => ({
 }));
 vi.mock("@/server/enrollment/service", () => ({
   getPublicCatalogFromSupabase: async () => ({ courses: [], batches: [] }),
+  loadHomepageCatalog: vi.fn(),
+}));
+vi.mock("@/server/supabase/clients", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/server/supabase/clients")>()),
+  hasConfiguredSupabaseServerEnv: vi.fn(() => false),
 }));
 
 describe("HomePage - Phase 4 Approved Architecture", () => {
+  it("renders the requested Mentors section before the catalog resolves", async () => {
+    const { promise, resolve } =
+      Promise.withResolvers<Awaited<ReturnType<typeof loadHomepageCatalog>["availability"]>>();
+    vi.mocked(hasConfiguredSupabaseServerEnv).mockReturnValueOnce(true);
+    vi.mocked(loadHomepageCatalog).mockReturnValueOnce({
+      presentation: promise,
+      availability: promise,
+    });
+
+    const page = await HomePage({ searchParams: Promise.resolve({ section: "mentors" }) });
+    await act(async () => {
+      render(page);
+    });
+    expect(screen.getByRole("heading", { name: /Meet Our Mentors/i })).toBeDefined();
+    expect(screen.queryByRole("heading", { name: /Courses & Programs/i })).toBeNull();
+
+    await act(async () => {
+      resolve({ courses: [], batches: [] });
+    });
+  });
+
   it("renders the primary homepage sections in correct sequence", async () => {
     const Component = await HomePage();
     await act(async () => {
