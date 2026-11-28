@@ -15,6 +15,14 @@ Code changed in `src/app/page.tsx`, `src/app/about/page.tsx`, `src/server/enroll
 
 ---
 
+## Payment receipt issuance details
+
+The staff PDF download and confirmation email use the same A4 receipt design with the supplied full LNA logo, official contact, Payment Confirmed seal, and separate Bangladesh issue and payment dates. M30 records the date at first issuance, takes the hosted TrxID from its validated attempt, and records fee adjustments where applicable. Existing receipts use their original creation date and receive a TrxID where the original validated collection matches.
+
+Local checks passed for type checking, lint, formatting, the production build, and 469 application tests with six environment-gated tests skipped. In local PostgreSQL 17.5, all 30 migrations replayed, the legacy receipt upgrade check passed, and the M28 and M30 receipt suites passed 29 assertions. The isolated Supabase CI run, hosted migration and live delivery remain open. Apply M30 before deploying the app changes. The receipt typefaces still require a registration-record fallback for Bangla text.
+
+---
+
 ## 0. Rev3.0 Implementation Boundary (`W0`–`W9`)
 
 - **Current Observed Code Baseline (Pre-Rev3.0 Partial Build):**
