@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import HomePage from "./page";
 
@@ -8,6 +8,10 @@ vi.mock("@/server/catalog/visibility", () => ({
 vi.mock("@/server/catalog/mentors", async () => {
   const { getHomeRepository } = await import("@/lib/content");
   return { getPublicMentors: () => getHomeRepository().getMentors() };
+});
+vi.mock("@/server/catalog/partners", async () => {
+  const { getHomeRepository } = await import("@/lib/content");
+  return { getPublicPartners: () => getHomeRepository().getPartners() };
 });
 vi.mock("@/server/enrollment/config", () => ({
   getEnrollmentRuntimeConfig: () => ({ submissionEnabled: false }),
@@ -19,12 +23,14 @@ vi.mock("@/server/enrollment/service", () => ({
 describe("HomePage - Phase 4 Approved Architecture", () => {
   it("renders the primary homepage sections in correct sequence", async () => {
     const Component = await HomePage();
-    render(Component);
+    await act(async () => {
+      render(Component);
+    });
 
     expect(screen.getByRole("region", { name: /MTO Readiness/i })).toBeDefined();
 
     // 2. Partners Strip
-    const partnersSection = screen.getByLabelText(/Corporate Sector Alignments/i);
+    const partnersSection = await screen.findByLabelText(/Corporate Sector Alignments/i);
     expect(partnersSection).toBeDefined();
 
     // 3. Courses Section
@@ -67,7 +73,10 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
   }, 15000);
 
   it("shows the MTO program with View Program and Enroll Now actions", async () => {
-    render(await HomePage());
+    const Component = await HomePage();
+    await act(async () => {
+      render(Component);
+    });
     const hero = screen.getByRole("region", { name: /MTO Readiness/i });
     expect(hero.querySelector("h1")?.textContent).toMatch(/MTO\s+Readiness/i);
     expect(hero.querySelectorAll("button, [role=tab]")).toHaveLength(0);
@@ -79,7 +88,10 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
   });
 
   it("keeps MTO and IRGP in the course catalog", async () => {
-    render(await HomePage());
+    const Component = await HomePage();
+    await act(async () => {
+      render(Component);
+    });
     expect(screen.getByRole("heading", { name: "MTO Readiness Program" })).toBeDefined();
     expect(
       screen.getByRole("heading", { name: "Industry Readiness Graduate Program" })
@@ -88,7 +100,9 @@ describe("HomePage - Phase 4 Approved Architecture", () => {
 
   it("renders learner testimonials with accessible navigation controls", async () => {
     const Component = await HomePage();
-    render(Component);
+    await act(async () => {
+      render(Component);
+    });
 
     // Manual navigation buttons present
     const prevTestimonial = screen.getByRole("button", {

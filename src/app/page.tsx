@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, use } from "react";
 import { getHomeRepository, getCourseRepository, getBatchRepository } from "@/lib/content";
 import {
   PartnersSection,
@@ -25,16 +25,25 @@ export const metadata = {
     "Premium offline executive development masterclasses and leadership programs in Dhaka, Bangladesh. Designed for directors, C-level executives, and enterprise leaders.",
 };
 
+function PartnersSectionDeferred({
+  partnersPromise,
+}: {
+  partnersPromise: ReturnType<typeof getPublicPartners>;
+}) {
+  const partners = use(partnersPromise);
+  return <PartnersSection partners={partners} />;
+}
+
 export default async function HomePage() {
   const homeRepo = getHomeRepository();
   const courseRepo = getCourseRepository();
   const batchRepo = getBatchRepository();
 
   const live = hasConfiguredSupabaseServerEnv();
+  const partnersPromise = getPublicPartners();
 
-  // Load homepage data in parallel via clean repository interfaces (Rule R4)
+  // Load hero and shared catalog/content data without waiting on below-the-fold partners fetch
   const [
-    partners,
     allCourses,
     allBatches,
     mentors,
@@ -45,7 +54,6 @@ export default async function HomePage() {
     archived,
     liveCatalog,
   ] = await Promise.all([
-    getPublicPartners(),
     live ? Promise.resolve([]) : courseRepo.getAllCourses(),
     live ? Promise.resolve([]) : batchRepo.getAllBatches(),
     getPublicMentors(),
@@ -74,8 +82,10 @@ export default async function HomePage() {
       <div className="flex flex-col bg-surface-base">
         {program && <MtoHero program={program} />}
 
-        {/* 2. Partners Section (Corporate Sector Alignments) */}
-        <PartnersSection partners={partners} />
+        {/* 2. Partners Section (Corporate Sector Alignments) - streamed independently */}
+        <Suspense fallback={null}>
+          <PartnersSectionDeferred partnersPromise={partnersPromise} />
+        </Suspense>
 
         {/* 3. Courses Section (Offline Masterclasses & Open Batches) */}
         <CoursesSection courses={courses} batches={batches} mentors={mentors} />
