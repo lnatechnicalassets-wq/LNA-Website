@@ -42,6 +42,9 @@ export default async function AdminLoginPage({
     deniedMessage = "This staff account is currently suspended or archived.";
   } else if (session.reason === "mfa_required") {
     initialStep = "mfa";
+  } else if (queryError === "auth_callback") {
+    deniedMessage =
+      "Your invitation or sign-in link has expired or is invalid. Ask an administrator to send a new invitation.";
   }
 
   return (
