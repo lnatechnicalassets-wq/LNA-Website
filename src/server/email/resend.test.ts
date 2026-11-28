@@ -24,6 +24,7 @@ function createOutboxAdminStub(row: Record<string, unknown> | null) {
                 course_title: payload.course_title,
                 batch_name: payload.batch_name,
                 confirmed_at: "2026-11-28T03:00:00Z",
+                issued_at: "2026-11-28T03:00:01Z",
                 collected_poisha: String(payload.payable_poisha),
                 payment_method: payload.payment_method,
                 is_test: false,
@@ -258,6 +259,6 @@ describe("Resend email outbox & templates (FR-PAY-009, NFR-AVL-01)", () => {
     );
     expect(
       Buffer.from(sender.send.mock.calls[0][0].attachments[0].content, "base64").toString("ascii")
-    ).toContain("%PDF-1.4");
+    ).toContain("%PDF-1.7");
   });
 });

@@ -57,7 +57,7 @@ jobs:
           supabase --version
           supabase start --exclude studio,imgproxy,edge-runtime,logflare,vector,analytics
 
-      - name: Replay all 29 migrations cleanly and verify PostgreSQL 17 + extensions
+      - name: Replay all 30 migrations cleanly and verify PostgreSQL 17 + extensions
         env:
           LOCAL_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
@@ -82,17 +82,17 @@ jobs:
           MIGRATION_FILES="$(ls -1 supabase/migrations/*.sql | wc -l | tr -d ' ')"
           APPLIED_MIGRATIONS="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
           echo "Migration files=$MIGRATION_FILES, applied=$APPLIED_MIGRATIONS"
-          if [ "$MIGRATION_FILES" -ne 29 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
+          if [ "$MIGRATION_FILES" -ne 30 ] || [ "$APPLIED_MIGRATIONS" -ne "$MIGRATION_FILES" ]; then
             echo "::error::Migration replay count mismatch."
             exit 1
           fi
 
-      - name: Run all 29 pgTAP suites
+      - name: Run all 30 pgTAP suites
         run: |
           set -euo pipefail
           TEST_COUNT="$(ls -1 supabase/tests/*.sql | wc -l | tr -d ' ')"
-          if [ "$TEST_COUNT" -ne 29 ]; then
-            echo "::error::Expected 29 pgTAP test files, found $TEST_COUNT"
+          if [ "$TEST_COUNT" -ne 30 ]; then
+            echo "::error::Expected 30 pgTAP test files, found $TEST_COUNT"
             exit 1
           fi
           supabase test db --local
@@ -125,6 +125,7 @@ jobs:
           M27_PATH: supabase/migrations/20261128170000_w4_application_recovery.sql
           M28_PATH: supabase/migrations/20261128180000_w5_core_receipts_partners.sql
           M29_PATH: supabase/migrations/20261128190000_c4_unused_catalog_deletion.sql
+          M30_PATH: supabase/migrations/20261128200000_w5_receipt_issuance_details.sql
         run: |
           set -euo pipefail
           TMP_M18="$(mktemp)"
@@ -139,6 +140,7 @@ jobs:
           TMP_M27="$(mktemp)"
           TMP_M28="$(mktemp)"
           TMP_M29="$(mktemp)"
+          TMP_M30="$(mktemp)"
           cp "$M18_PATH" "$TMP_M18"
           cp "$M19_PATH" "$TMP_M19"
           cp "$M20_PATH" "$TMP_M20"
@@ -151,6 +153,7 @@ jobs:
           cp "$M27_PATH" "$TMP_M27"
           cp "$M28_PATH" "$TMP_M28"
           cp "$M29_PATH" "$TMP_M29"
+          cp "$M30_PATH" "$TMP_M30"
           restore_migrations() {
             if [ -f "$TMP_M18" ]; then
               cp "$TMP_M18" "$M18_PATH"
@@ -167,6 +170,10 @@ jobs:
             if [ -f "$TMP_M21" ]; then
               cp "$TMP_M21" "$M21_PATH"
               rm -f "$TMP_M21"
+            fi
+            if [ -f "$TMP_M30" ]; then
+              cp "$TMP_M30" "$M30_PATH"
+              rm -f "$TMP_M30"
             fi
             if [ -f "$TMP_M29" ]; then
               cp "$TMP_M29" "$M29_PATH"
@@ -203,7 +210,7 @@ jobs:
           }
           trap restore_migrations EXIT
 
-          rm -f "$M18_PATH" "$M19_PATH" "$M20_PATH" "$M21_PATH" "$M22_PATH" "$M23_PATH" "$M24_PATH" "$M25_PATH" "$M26_PATH" "$M27_PATH" "$M28_PATH" "$M29_PATH"
+          rm -f "$M18_PATH" "$M19_PATH" "$M20_PATH" "$M21_PATH" "$M22_PATH" "$M23_PATH" "$M24_PATH" "$M25_PATH" "$M26_PATH" "$M27_PATH" "$M28_PATH" "$M29_PATH" "$M30_PATH"
           supabase db reset --local
 
           APPLIED_17="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
@@ -675,6 +682,7 @@ jobs:
           M27_PATH=supabase/migrations/20261128170000_w4_application_recovery.sql
           M28_PATH=supabase/migrations/20261128180000_w5_core_receipts_partners.sql
           M29_PATH=supabase/migrations/20261128190000_c4_unused_catalog_deletion.sql
+          M30_PATH=supabase/migrations/20261128200000_w5_receipt_issuance_details.sql
           TMP_M22="$(mktemp)"
           TMP_M23="$(mktemp)"
           TMP_M24="$(mktemp)"
@@ -683,6 +691,7 @@ jobs:
           TMP_M27="$(mktemp)"
           TMP_M28="$(mktemp)"
           TMP_M29="$(mktemp)"
+          TMP_M30="$(mktemp)"
           TMP_M21="$(mktemp)"
           cp "$M21_PATH" "$TMP_M21"
           cp "$M22_PATH" "$TMP_M22"
@@ -693,10 +702,15 @@ jobs:
           cp "$M27_PATH" "$TMP_M27"
           cp "$M28_PATH" "$TMP_M28"
           cp "$M29_PATH" "$TMP_M29"
+          cp "$M30_PATH" "$TMP_M30"
           restore_later_migrations() {
             if [ -f "$TMP_M21" ]; then
               cp "$TMP_M21" "$M21_PATH"
               rm -f "$TMP_M21"
+            fi
+            if [ -f "$TMP_M30" ]; then
+              cp "$TMP_M30" "$M30_PATH"
+              rm -f "$TMP_M30"
             fi
             if [ -f "$TMP_M29" ]; then
               cp "$TMP_M29" "$M29_PATH"
@@ -732,7 +746,7 @@ jobs:
             fi
           }
           trap restore_later_migrations EXIT
-          rm -f "$M21_PATH" "$M22_PATH" "$M23_PATH" "$M24_PATH" "$M25_PATH" "$M26_PATH" "$M27_PATH" "$M28_PATH" "$M29_PATH"
+          rm -f "$M21_PATH" "$M22_PATH" "$M23_PATH" "$M24_PATH" "$M25_PATH" "$M26_PATH" "$M27_PATH" "$M28_PATH" "$M29_PATH" "$M30_PATH"
           supabase migration up --local
           AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
           test "$AFTER" -eq 20
@@ -793,6 +807,12 @@ jobs:
           AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
           test "$AFTER" -eq 29
           supabase test db --local supabase/tests/0029_c4_unused_catalog_deletion.sql
+          cp "$TMP_M30" "$M30_PATH"
+          rm -f "$TMP_M30"
+          supabase migration up --local
+          AFTER="$(psql "$LOCAL_DB_URL" -Atqc "SELECT count(*) FROM supabase_migrations.schema_migrations;")"
+          test "$AFTER" -eq 30
+          supabase test db --local supabase/tests/0030_w5_receipt_issuance_details.sql
 
       - name: Clean up isolated local Supabase environment
         if: always()

@@ -192,6 +192,7 @@ function createServiceAdminMock(state: MockTableState) {
                 course_title: payload.course_title,
                 batch_name: payload.batch_name,
                 confirmed_at: "2026-11-28T03:00:00Z",
+                issued_at: "2026-11-28T03:00:01Z",
                 collected_poisha: String(payload.payable_poisha),
                 payment_method: payload.payment_method,
                 is_test: false,
