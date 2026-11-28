@@ -306,6 +306,7 @@ export interface OfficialCompanyLogoProps {
   alt: string;
   size?: "hero" | "card" | "modal";
   compact?: boolean;
+  onLoad?: () => void;
 }
 
 /**
@@ -317,6 +318,7 @@ export function OfficialCompanyLogo({
   alt,
   size = "card",
   compact = false,
+  onLoad,
 }: OfficialCompanyLogoProps) {
   const isHero = size === "hero";
   const isModal = size === "modal";
@@ -332,6 +334,8 @@ export function OfficialCompanyLogo({
         <img
           loading="lazy"
           decoding="async"
+          fetchPriority="low"
+          onLoad={onLoad}
           src={src}
           alt={alt}
           title={alt}
@@ -358,6 +362,8 @@ export function OfficialCompanyLogo({
         <img
           loading="lazy"
           decoding="async"
+          fetchPriority="low"
+          onLoad={onLoad}
           src={src}
           alt={alt}
           title={alt}
@@ -450,6 +456,8 @@ export function OfficialCompanyLogo({
     <img
       loading="lazy"
       decoding="async"
+      fetchPriority="low"
+      onLoad={onLoad}
       src={src}
       alt={alt}
       title={alt}

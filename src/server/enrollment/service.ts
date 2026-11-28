@@ -419,16 +419,11 @@ export function verifyEnrollmentOutcomeToken(
   };
 }
 
-/**
- * Loads published non-archived courses and batches directly from PostgreSQL (Supabase),
- * returning live remaining-seat totals via count_batch_active_seats(uuid).
- */
-export async function getPublicCatalogFromSupabase(
-  adminOverride?: SupabaseClient
-): Promise<{ courses: PublicCatalogCourse[]; batches: PublicCatalogBatch[] }> {
-  if (!adminOverride && !hasConfiguredSupabaseServerEnv()) {
-    return { courses: [], batches: [] };
-  }
+type PublicCatalog = { courses: PublicCatalogCourse[]; batches: PublicCatalogBatch[] };
+type SeatResults = ReadonlyMap<string, { count: number; failed: boolean }>;
+
+async function loadPublicCatalogRows(adminOverride?: SupabaseClient) {
+  if (!adminOverride && !hasConfiguredSupabaseServerEnv()) return null;
 
   const admin = adminOverride ?? createSupabaseAdminClient();
   const loadBatches = (includeIntake: boolean) => {
@@ -511,10 +506,22 @@ export async function getPublicCatalogFromSupabase(
     };
   });
 
-  const nowMs = Date.now();
-  const batches: PublicCatalogBatch[] = [];
+  return {
+    admin,
+    courses,
+    courseSlugByUuid,
+    batchRows: batchesRes.data ?? [],
+    nowMs: Date.now(),
+  };
+}
 
-  const batchRows = batchesRes.data ?? [];
+type PublicCatalogRows = NonNullable<Awaited<ReturnType<typeof loadPublicCatalogRows>>>;
+
+async function loadPublicCatalogSeatCounts({
+  admin,
+  batchRows,
+  courseSlugByUuid,
+}: PublicCatalogRows) {
   const seatResults = new Map<string, { count: number; failed: boolean }>();
   for (let offset = 0; offset < batchRows.length; offset += 8) {
     await Promise.all(
@@ -536,6 +543,15 @@ export async function getPublicCatalogFromSupabase(
       })
     );
   }
+  return seatResults;
+}
+
+function mapPublicCatalog(
+  { courses, batchRows, courseSlugByUuid, nowMs }: PublicCatalogRows,
+  seatResults: SeatResults
+): PublicCatalog {
+  const batches: PublicCatalogBatch[] = [];
+
   for (const row of batchRows) {
     const courseSlug = courseSlugByUuid.get(String(row.course_id));
     if (!courseSlug) continue;
@@ -626,6 +642,30 @@ export async function getPublicCatalogFromSupabase(
   }
 
   return { courses, batches };
+}
+
+async function catalogWithAvailability(rows: PublicCatalogRows | null): Promise<PublicCatalog> {
+  if (!rows) return { courses: [], batches: [] };
+  return mapPublicCatalog(rows, await loadPublicCatalogSeatCounts(rows));
+}
+
+/** Loads the public catalog with current seat availability. */
+export async function getPublicCatalogFromSupabase(
+  adminOverride?: SupabaseClient
+): Promise<PublicCatalog> {
+  return catalogWithAvailability(await loadPublicCatalogRows(adminOverride));
+}
+
+/** Shares the catalog reads across the homepage preview and authoritative availability. */
+export function loadHomepageCatalog(adminOverride?: SupabaseClient) {
+  const rows = loadPublicCatalogRows(adminOverride).catch(() => null);
+
+  return {
+    presentation: rows.then((data) =>
+      data ? mapPublicCatalog(data, new Map()) : { courses: [], batches: [] }
+    ),
+    availability: rows.then(catalogWithAvailability).catch(() => ({ courses: [], batches: [] })),
+  };
 }
 
 /**

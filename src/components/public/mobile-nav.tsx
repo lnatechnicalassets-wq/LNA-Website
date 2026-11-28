@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { homepageNavigationHref } from "@/components/home/homepage-section-scroll";
 import { usePathname } from "next/navigation";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, Phone, Mail, MapPin } from "lucide-react";
@@ -63,6 +64,7 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
           <div className="space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
               <Link
+                prefetch={false}
                 href="/"
                 onClick={() => onOpenChange(false)}
                 className="inline-flex items-center shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
@@ -99,7 +101,8 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
                   return (
                     <li key={item.href}>
                       <Link
-                        href={item.href}
+                        prefetch={false}
+                        href={homepageNavigationHref(item.href)}
                         onClick={handleNavClick(item.href)}
                         aria-current={isActive ? "page" : undefined}
                         className={cn(
@@ -119,7 +122,12 @@ export function MobileNav({ open, onOpenChange, navItems, cta, organization }: M
 
             {/* Mobile CTA */}
             <div className="pt-2">
-              <Link href={cta.href} onClick={handleNavClick(cta.href)} className="w-full block">
+              <Link
+                prefetch={false}
+                href={cta.href}
+                onClick={handleNavClick(cta.href)}
+                className="w-full block"
+              >
                 <Button variant="primary" size="lg" className="w-full justify-center">
                   {cta.label}
                 </Button>

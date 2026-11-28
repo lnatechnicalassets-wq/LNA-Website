@@ -7,6 +7,14 @@
 
 ---
 
+## Homepage progressive loading
+
+Implemented on the homepage performance branch for NFR-PER-01. The homepage can show the MTO hero before seat availability resolves. The current enrollment action appears after the seat-count check. The Mentors link from another page prioritizes the Mentors section, and the public navigation and homepage course links fetch their destinations on click. The first hero portrait gets priority over later portraits and company logos. The mentor media route still enforces published visibility.
+
+Code changed in `src/app/page.tsx`, `src/app/about/page.tsx`, `src/server/enrollment/service.ts`, the homepage hero and company-logo components, the homepage section scroll helper, the course card, and the public header, mobile navigation, and footer. The local suite passed 463 tests with 6 environment-gated tests skipped, and the production build passed. A local streaming check with delayed catalog and seat responses confirmed the hero before enrollment on Home and the Mentors section before the hero when Mentors was the destination. Preview and production performance remain to be measured. Next, compare the hero and Mentors arrival times against the baseline in the same isolated Preview environment.
+
+---
+
 ## 0. Rev3.0 Implementation Boundary (`W0`–`W9`)
 
 - **Current Observed Code Baseline (Pre-Rev3.0 Partial Build):**

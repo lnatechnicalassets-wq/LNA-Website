@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { homepageNavigationHref } from "@/components/home/homepage-section-scroll";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { DemoLogo } from "@/components/ui/demo-logo";
@@ -52,6 +53,7 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
       <div className="lna-content h-16 sm:h-20 flex items-center justify-between gap-4">
         {/* Logo Brand Lockup */}
         <Link
+          prefetch={false}
           href="/"
           className="flex items-center shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
           aria-label={`${organization.name} Home`}
@@ -78,8 +80,9 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
 
             return (
               <Link
+                prefetch={false}
                 key={item.href}
-                href={item.href}
+                href={homepageNavigationHref(item.href)}
                 onClick={handleNavClick(item.href)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
@@ -103,7 +106,7 @@ export function SiteHeader({ navigation, organization, className = "" }: SiteHea
 
         {/* Desktop Right CTA Actions */}
         <div className="hidden lg:flex items-center gap-3">
-          <Link href={header.cta.href} onClick={handleNavClick(header.cta.href)}>
+          <Link prefetch={false} href={header.cta.href} onClick={handleNavClick(header.cta.href)}>
             <Button variant="primary" size="md" className="cursor-pointer">
               {header.cta.label}
             </Button>
